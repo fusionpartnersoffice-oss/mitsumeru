@@ -1,0 +1,1434 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ミツメル — Fusion Partners</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%233a3028'/><polygon points='16,3 27,9.5 27,22.5 16,29 5,22.5 5,9.5' fill='none' stroke='%23c8b89a' stroke-width='1.2'/><polygon points='9,10 15,14 9,22' fill='%238a7a6a'/><polygon points='23,10 17,14 23,22' fill='%238a7a6a'/><circle cx='16' cy='16' r='3.5' fill='%23c8b89a'/></svg>">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;500&family=Noto+Sans+JP:wght@300;400;500&display=swap');
+
+  :root {
+    --bg: #f5f1ea;
+    --bg2: #ede8df;
+    --border: #c8b89a;
+    --text: #3a3028;
+    --text2: #6a5a4a;
+    --text3: #9a8a7a;
+    --accent: #8a7a6a;
+    --green: #2d7a52;
+    --red: #c0392b;
+    --gold: #b8860b;
+    --card: #faf7f2;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 0 0 80px 0;
+  }
+
+  .header {
+    background: var(--text);
+    color: var(--bg);
+    padding: 20px 24px 16px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+  }
+
+  .header h1 {
+    font-family: 'Noto Serif JP', serif;
+    font-size: 20px;
+    font-weight: 400;
+    letter-spacing: 4px;
+  }
+
+  .header span {
+    font-size: 11px;
+    color: var(--border);
+    letter-spacing: 2px;
+  }
+
+  .mode-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg2);
+    position: sticky;
+    top: 61px;
+    z-index: 99;
+  }
+
+  .mode-tab {
+    flex: 1;
+    padding: 14px;
+    text-align: center;
+    font-size: 13px;
+    cursor: pointer;
+    border: none;
+    background: none;
+    color: var(--text3);
+    letter-spacing: 1px;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+  }
+
+  .mode-tab.active {
+    color: var(--text);
+    border-bottom-color: var(--accent);
+    background: var(--bg);
+    font-weight: 500;
+  }
+
+  .screen { display: none; padding: 20px 16px; }
+  .screen.active { display: block; }
+
+  .section {
+    background: var(--card);
+    border: 0.5px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+
+  .section-title {
+    font-size: 11px;
+    color: var(--text3);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    padding-bottom: 8px;
+    border-bottom: 0.5px solid var(--border);
+  }
+
+  .field { margin-bottom: 14px; }
+  .field:last-child { margin-bottom: 0; }
+
+  label {
+    display: block;
+    font-size: 12px;
+    color: var(--text2);
+    margin-bottom: 6px;
+    letter-spacing: 0.5px;
+  }
+
+  input[type="time"],
+  input[type="date"],
+  input[type="number"],
+  textarea,
+  select {
+    width: 100%;
+    padding: 9px 12px;
+    font-size: 14px;
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    border: 0.5px solid var(--border);
+    border-radius: 4px;
+    color: var(--text);
+    outline: none;
+  }
+
+  input[type="time"]:focus,
+  textarea:focus,
+  select:focus { border-color: var(--accent); }
+
+  textarea { min-height: 80px; resize: vertical; line-height: 1.7; }
+  textarea.tall { min-height: 120px; }
+
+  .score-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .score-row input[type="range"] { flex: 1; accent-color: var(--accent); }
+  .score-val { font-size: 16px; font-weight: 500; min-width: 20px; text-align: center; }
+
+  .checkbox-group { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  .checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--bg2);
+    border: 0.5px solid var(--border);
+    border-radius: 20px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.15s;
+  }
+
+  .checkbox-item input { display: none; }
+  .checkbox-item.checked { background: #8a7a6a !important; color: #f5f1ea !important; border-color: #8a7a6a !important; font-weight: 500; }
+
+  .debug-item {
+    background: var(--bg2);
+    border: 0.5px solid var(--border);
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 10px;
+  }
+
+  .debug-item:last-child { margin-bottom: 0; }
+
+  .debug-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text2);
+    margin-bottom: 4px;
+  }
+
+  .debug-desc {
+    font-size: 11px;
+    color: var(--text3);
+    margin-bottom: 10px;
+    line-height: 1.6;
+  }
+
+  .debug-score {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .debug-btn {
+    flex: 1;
+    padding: 7px;
+    border: 0.5px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg);
+    font-size: 14px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+  }
+
+  .debug-btn.selected-maru { background: var(--green); color: white; border-color: var(--green); }
+  .debug-btn.selected-sankaku { background: var(--gold); color: white; border-color: var(--gold); }
+  .debug-btn.selected-batsu { background: var(--red); color: white; border-color: var(--red); }
+
+  .status-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .status-card {
+    background: var(--bg2);
+    border: 0.5px solid var(--border);
+    border-radius: 6px;
+    padding: 12px 8px;
+    text-align: center;
+  }
+
+  .status-card .label { font-size: 11px; color: var(--text3); margin-bottom: 4px; }
+  .status-card .value { font-size: 26px; font-weight: 500; font-family: 'Noto Serif JP', serif; }
+  .hp-val { color: #1a7a52; }
+  .mp-val { color: #1a5a9a; }
+  .lv-val { color: #8a6a1a; }
+
+  .mode-badge {
+    text-align: center;
+    padding: 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 16px;
+    letter-spacing: 1px;
+  }
+
+  .mode-normal { background: #e8f5ee; color: var(--green); border: 0.5px solid #a8dfc4; }
+  .mode-dblock { background: #fff3cd; color: var(--gold); border: 0.5px solid #ffd970; }
+  .mode-2min { background: #fde8e8; color: var(--red); border: 0.5px solid #f5b5b5; }
+
+  .pomo-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .pomo-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 0.5px solid var(--border);
+    background: var(--bg);
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text);
+    transition: background 0.15s;
+  }
+
+  .pomo-btn:hover { background: var(--bg2); }
+  .pomo-count { font-size: 22px; font-weight: 500; min-width: 40px; text-align: center; }
+
+  .btn-primary {
+    width: 100%;
+    padding: 14px;
+    background: var(--text);
+    color: var(--bg);
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: 'Noto Sans JP', sans-serif;
+    letter-spacing: 2px;
+    cursor: pointer;
+    margin-bottom: 10px;
+    transition: opacity 0.15s;
+  }
+
+  .btn-primary:hover { opacity: 0.85; }
+
+  .btn-secondary {
+    width: 100%;
+    padding: 12px;
+    background: var(--bg);
+    color: var(--text);
+    border: 0.5px solid var(--border);
+    border-radius: 6px;
+    font-size: 13px;
+    font-family: 'Noto Sans JP', sans-serif;
+    cursor: pointer;
+    margin-bottom: 8px;
+    transition: background 0.15s;
+  }
+
+  .btn-secondary:hover { background: var(--bg2); }
+
+  .output-box {
+    background: var(--bg2);
+    border: 0.5px solid var(--border);
+    border-radius: 6px;
+    padding: 14px;
+    font-size: 12px;
+    color: var(--text2);
+    white-space: pre-wrap;
+    line-height: 1.8;
+    max-height: 300px;
+    overflow-y: auto;
+    display: none;
+  }
+
+  .output-box.visible { display: block; }
+
+  .loading-text {
+    text-align: center;
+    color: var(--text3);
+    font-size: 13px;
+    font-style: italic;
+    padding: 20px;
+    display: none;
+  }
+
+  .date-display {
+    font-size: 12px;
+    color: var(--text3);
+    text-align: right;
+    margin-bottom: 16px;
+    letter-spacing: 1px;
+  }
+
+  .divider {
+    height: 0.5px;
+    background: var(--border);
+    margin: 16px 0;
+  }
+
+  input[type="number"] { -moz-appearance: textfield; }
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;">
+    <!-- 外六角形 -->
+    <polygon points="16,2 27,8.5 27,23.5 16,30 5,23.5 5,8.5" fill="none" stroke="#c8b89a" stroke-width="1"/>
+    <!-- 内六角形 -->
+    <polygon points="16,6 23,10.5 23,21.5 16,26 9,21.5 9,10.5" fill="none" stroke="#c8b89a" stroke-width="0.5"/>
+    <!-- 左三角 -->
+    <polygon points="7,10 14,14 7,22" fill="#8a7a6a"/>
+    <!-- 右三角 -->
+    <polygon points="25,10 18,14 25,22" fill="#8a7a6a"/>
+    <!-- 中央円 -->
+    <circle cx="16" cy="16" r="4" fill="#c8b89a"/>
+  </svg>
+  <h1>ミツメル</h1>
+  <span>FUSION PARTNERS</span>
+  <button onclick="toggleHelp()" style="margin-left:auto;background:none;border:0.5px solid var(--border);color:var(--bg);border-radius:20px;padding:4px 12px;font-size:11px;cursor:pointer;letter-spacing:1px;">？ ヘルプ</button>
+  <button onclick="setApiKey()" style="margin-left:8px;background:none;border:0.5px solid var(--border);color:var(--bg);border-radius:20px;padding:4px 12px;font-size:11px;cursor:pointer;letter-spacing:1px;" id="api-btn">🔑 API</button>
+</div>
+
+<!-- 画像プレビューモーダル -->
+<div id="img-preview-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:300;display:none;align-items:center;justify-content:center;" onclick="closeImgPreview()">
+  <img id="img-preview-large" style="max-width:95%;max-height:95%;border-radius:8px;object-fit:contain;">
+</div>
+<div id="help-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:200;overflow-y:auto;padding:20px;">
+  <div style="background:var(--card);border-radius:12px;max-width:640px;margin:0 auto;padding:24px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <h2 style="font-family:'Noto Serif JP',serif;font-size:16px;font-weight:400;letter-spacing:3px;">取扱手順書</h2>
+      <button onclick="toggleHelp()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text3);">✕</button>
+    </div>
+
+    <div style="font-size:13px;line-height:1.9;color:var(--text2);">
+
+      <div style="background:#e8f5ee;border-radius:8px;padding:14px;margin-bottom:16px;border:0.5px solid #a8dfc4;">
+        <p style="font-weight:500;color:#1a7a52;margin-bottom:8px;">🔑 最初にやること（必須）</p>
+        <p>①右上の「🔑 API」ボタンをタップ</p>
+        <p>②APIキー（sk-ant-api03-...）を入力</p>
+        <p>③ボタンが緑色になれば設定完了</p>
+        <p style="color:#6a5a4a;font-size:12px;margin-top:6px;">※ブラウザを閉じるたびに再入力が必要です</p>
+        <p style="color:#6a5a4a;font-size:12px;">※APIキーはconsole.anthropic.comで取得できます</p>
+        <p style="color:#6a5a4a;font-size:12px;">※特殊Chrome（--disable-web-security）で開いてください</p>
+      </div>
+
+      <div style="background:var(--bg2);border-radius:8px;padding:14px;margin-bottom:16px;">
+        <p style="font-weight:500;color:var(--text);margin-bottom:8px;">🖥️ 特殊Chromeの起動方法</p>
+        <p>Windowsキー+Rで以下を実行：</p>
+        <p style="font-family:monospace;background:var(--bg);padding:6px;border-radius:4px;font-size:11px;margin-top:6px;word-break:break-all;">chrome.exe --disable-web-security --user-data-dir="%TEMP%\chrome_dev"</p>
+        <p style="color:var(--text3);font-size:12px;margin-top:6px;">※通常のChromeではAPIが動きません</p>
+      </div>
+
+      <div style="background:var(--bg2);border-radius:8px;padding:14px;margin-bottom:16px;">
+        <p style="font-weight:500;color:var(--text);margin-bottom:8px;">📋 基本の流れ</p>
+        <p>朝 → 随時メモ（日中） → 夜 → 出力</p>
+        <p style="color:var(--text3);font-size:12px;margin-top:4px;">この4ステップが毎日のルーティンです</p>
+      </div>
+
+      <p style="font-weight:500;color:var(--text);margin-bottom:6px;">🌅 朝の確認（2〜3分）</p>
+      <p>①就寝・起床時間を入力 → HPが自動計算されます</p>
+      <p>②体調・気分をスライダーで選択 → MPが自動計算されます</p>
+      <p>③ノイズをタップで選択、具体的な内容を入力</p>
+      <p>④タスクコース（1〜6）をスライダーで選択</p>
+      <p style="color:#b8860b;font-size:12px;">コース1超甘口〜コース6地獄。今日の負荷レベルを直感で選んでください</p>
+      <p>⑤「今日のモードを判定する」→ Claudeが一言アドバイスを出します</p>
+
+      <div style="height:1px;background:var(--border);margin:14px 0;"></div>
+
+      <p style="font-weight:500;color:var(--text);margin-bottom:6px;">📝 随時メモ（日中・都度）</p>
+      <p>Keepの代わりに使います。気づいたらすぐ記録。</p>
+      <p style="margin-top:6px;"><span style="color:#1a5a9a;font-weight:500;">#HP</span> 体調・睡眠・体の状態</p>
+      <p><span style="color:#1a7a52;font-weight:500;">#P</span> やったこと・ポモ数（実績）</p>
+      <p><span style="color:#c0392b;font-weight:500;">#V</span> ノイズ・削られたこと（追加するたび自動カウント）</p>
+      <p><span style="color:#b8860b;font-weight:500;">#G</span> 気づき・アイデア・ボヤキ</p>
+      <p style="margin-top:6px;">「今の時刻」ボタンで時刻を自動入力できます</p>
+      <p>📷 画像添付ボタンでスクリーンショットも一緒に記録できます</p>
+      <p style="color:var(--text3);font-size:12px;">NotebookLMのインフォグラフィックはここに貼ってください</p>
+
+      <div style="height:1px;background:var(--border);margin:14px 0;"></div>
+
+      <p style="font-weight:500;color:var(--text);margin-bottom:6px;">🌙 夜の振り返り（5〜10分）</p>
+      <p>①随時メモの内容が自動で表示されます（確認・補足）</p>
+      <p>②ノイズ回数・ポモ数は随時メモから自動集計されています</p>
+      <p>③Try100の達成数だけ手動で入力</p>
+      <p>④デバッグ5項目（〇△✕＋理由）を入力</p>
+      <p>⑤明日の確定アポを入力（形式：<span style="font-family:monospace;background:var(--bg2);padding:1px 4px;border-radius:2px;">0900 2 内容</span>）</p>
+      <p style="color:var(--text3);font-size:12px;">開始時刻4桁 ポモ数 イベント名の順で入力してください</p>
+      <p>⑥遅延タスク・Try100リスト・NotebookLMコメントを入力</p>
+      <p>⑦「翌日戦略を生成する」→ 出力タブに自動で移動します</p>
+
+      <div style="height:1px;background:var(--border);margin:14px 0;"></div>
+
+      <p style="font-weight:500;color:var(--text);margin-bottom:6px;">📤 出力（毎日の締め）</p>
+      <p><span style="color:var(--accent);">Markdownをコピー</span> → NotebookLMに貼り付け</p>
+      <p><span style="color:var(--green);">HTMLをダウンロード</span> → Googleドライブの「ミツメル記録」フォルダに保存</p>
+      <p style="color:var(--text3);font-size:12px;">HTMLには画像＋テキストがセットで保存されます</p>
+      <p>カレンダーCSV → Googleカレンダーにインポート</p>
+
+      <div style="height:1px;background:var(--border);margin:14px 0;"></div>
+
+      <p style="font-weight:500;color:var(--text);margin-bottom:6px;">⚠️ 注意事項</p>
+      <p>・ブラウザを閉じるとその日のデータは消えます。必ず出力してから閉じてください</p>
+      <p>・宵越し入力（0時を過ぎた場合）は朝・夜の「対象日」を前日に変更してください</p>
+      <p>・Claudeへの接続が必要です。オフライン時はアドバイス生成ができません</p>
+
+      <div style="background:var(--bg2);border-radius:8px;padding:14px;margin-top:16px;">
+        <p style="font-size:12px;color:var(--text3);text-align:center;">Fusion Partners ミツメル v2.0<br>柴山 靖章 × Claude</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="mode-tabs">
+  <button class="mode-tab active" onclick="switchTab('morning')">朝</button>
+  <button class="mode-tab" onclick="switchTab('memo')">随時メモ</button>
+  <button class="mode-tab" onclick="switchTab('evening')">夜</button>
+  <button class="mode-tab" onclick="switchTab('output')">出力</button>
+</div>
+
+<!-- 随時メモ -->
+<div id="screen-memo" class="screen">
+  <div class="date-display" id="memo-date"></div>
+
+  <div class="section">
+    <div class="section-title">随時メモ — Keepの代わりに</div>
+
+    <div class="field">
+      <label>タグを選択</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+        <button class="tag-btn active" onclick="selectTag(this,'HP')" style="flex:1;padding:10px;border-radius:6px;border:0.5px solid var(--border);background:var(--bg2);font-size:13px;font-weight:500;cursor:pointer;color:#1a5a9a;">🛡️ #HP</button>
+        <button class="tag-btn" onclick="selectTag(this,'P')" style="flex:1;padding:10px;border-radius:6px;border:0.5px solid var(--border);background:var(--bg);font-size:13px;font-weight:500;cursor:pointer;color:var(--text2);">⚡ #P</button>
+        <button class="tag-btn" onclick="selectTag(this,'V')" style="flex:1;padding:10px;border-radius:6px;border:0.5px solid var(--border);background:var(--bg);font-size:13px;font-weight:500;cursor:pointer;color:var(--text2);">🌊 #V</button>
+        <button class="tag-btn" onclick="selectTag(this,'G')" style="flex:1;padding:10px;border-radius:6px;border:0.5px solid var(--border);background:var(--bg);font-size:13px;font-weight:500;cursor:pointer;color:var(--text2);">💡 #G</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>時刻</label>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input type="time" id="memo-time" style="flex:1;">
+        <button onclick="setNowTime()" style="padding:9px 14px;background:var(--accent);color:var(--bg);border:none;border-radius:4px;font-size:12px;cursor:pointer;white-space:nowrap;">今の時刻</button>
+      </div>
+    </div>
+
+    <div id="memo-pomo-field" class="field" style="display:none;">
+      <label>ポモ数（#Pのみ）</label>
+      <div class="pomo-row">
+        <button class="pomo-btn" onclick="changeCount('memo-pomo',-1)">−</button>
+        <span class="pomo-count" id="memo-pomo-count">0</span>
+        <button class="pomo-btn" onclick="changeCount('memo-pomo',1)">＋</button>
+        <span style="font-size:12px;color:var(--text3)">ポモ</span>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>内容</label>
+      <textarea id="memo-content" placeholder="気づいたこと、起きたこと、ボヤキをそのまま入力"></textarea>
+    </div>
+
+    <div class="field">
+      <label>画像添付（任意）</label>
+      <div id="memo-image-preview" style="display:none;margin-bottom:8px;">
+        <img id="memo-image-thumb" style="max-width:100%;max-height:200px;border-radius:4px;border:0.5px solid var(--border);">
+        <button onclick="clearMemoImage()" style="display:block;margin-top:6px;background:none;border:none;color:var(--red);font-size:12px;cursor:pointer;">画像を削除</button>
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;padding:10px;background:var(--bg2);border:0.5px dashed var(--border);border-radius:4px;cursor:pointer;font-size:13px;color:var(--text3);">
+        <span>📷</span>
+        <span>タップして画像を選択</span>
+        <input type="file" id="memo-image-input" accept="image/*" style="display:none;" onchange="previewMemoImage(this)">
+      </label>
+    </div>
+
+    <button class="btn-primary" onclick="addMemo()">追加する</button>
+  </div>
+
+  <div class="section">
+    <div class="section-title">本日のメモ一覧</div>
+    <div id="memo-list" style="font-size:13px;color:var(--text2);line-height:2;">
+      <span style="color:var(--text3);font-size:12px;">まだメモがありません</span>
+    </div>
+    <button class="btn-secondary" onclick="clearMemos()" style="margin-top:12px;color:var(--red);border-color:var(--red);">メモをリセット</button>
+  </div>
+</div>
+
+<!-- 朝モード -->
+<div id="screen-morning" class="screen active">
+  <div class="date-display" id="morning-date"></div>
+
+  <div class="section">
+    <div class="section-title">対象日（宵越し・遅延入力の場合は変更）</div>
+    <div class="field">
+      <input type="date" id="m-date">
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">睡眠</div>
+    <div class="field">
+      <label>就寝時間（昨夜）</label>
+      <input type="time" id="m-sleep" value="23:00">
+    </div>
+    <div class="field">
+      <label>起床時間（今朝）</label>
+      <input type="time" id="m-wake" value="07:00">
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">今朝の状態</div>
+    <div class="field">
+      <label>体調（直感で）</label>
+      <div class="score-row">
+        <span style="font-size:11px;color:var(--text3)">最悪</span>
+        <input type="range" min="1" max="5" value="3" id="m-body" oninput="document.getElementById('m-body-val').textContent=this.value">
+        <span style="font-size:11px;color:var(--text3)">最高</span>
+        <span class="score-val" id="m-body-val">3</span>
+      </div>
+    </div>
+    <div class="field">
+      <label>気分・精神状態（直感で）</label>
+      <div class="score-row">
+        <span style="font-size:11px;color:var(--text3)">最悪</span>
+        <input type="range" min="1" max="5" value="3" id="m-mood" oninput="document.getElementById('m-mood-val').textContent=this.value">
+        <span style="font-size:11px;color:var(--text3)">最高</span>
+        <span class="score-val" id="m-mood-val">3</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">ノイズ</div>
+    <div class="field">
+      <label>気がかりになっていること（複数可）</label>
+      <div class="checkbox-group" id="m-noise-group">
+        <label class="checkbox-item" onclick="toggleCheck(this,event)"><input type="checkbox" value="仕事のこと">仕事のこと</label>
+        <label class="checkbox-item" onclick="toggleCheck(this,event)"><input type="checkbox" value="家族のこと">家族のこと</label>
+        <label class="checkbox-item" onclick="toggleCheck(this,event)"><input type="checkbox" value="友人のこと">友人のこと</label>
+        <label class="checkbox-item" onclick="toggleCheck(this,event)"><input type="checkbox" value="自分のこと">自分のこと</label>
+        <label class="checkbox-item" onclick="toggleCheck(this,event)"><input type="checkbox" value="お金のこと">お金のこと</label>
+        <label class="checkbox-item" onclick="toggleCheck(this,event)"><input type="checkbox" value="健康のこと">健康のこと</label>
+        <label class="checkbox-item" onclick="toggleCheck(this,event)"><input type="checkbox" value="その他">その他</label>
+      </div>
+    </div>
+    <div class="field">
+      <label>具体的に何がありましたか？</label>
+      <textarea id="m-noise-detail" placeholder="誰のどんな言葉・行動に削られたか、事実だけを吐き出す"></textarea>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">今日のスタート</div>
+    <div class="field">
+      <label>本日のタスクコース</label>
+      <div class="score-row">
+        <span style="font-size:11px;color:var(--text3)">超甘口</span>
+        <input type="range" min="1" max="6" value="3" id="m-course" oninput="updateCourse(this.value)">
+        <span style="font-size:11px;color:var(--text3)">地獄</span>
+      </div>
+      <div id="course-badge" style="margin-top:10px;text-align:center;padding:8px;border-radius:6px;font-size:13px;font-weight:500;background:var(--bg2);border:0.5px solid var(--border);">
+        コース3 — 中辛：いつもより少なめで動く
+      </div>
+    </div>
+    <div class="field">
+      <label>今日の一言（任意）</label>
+      <textarea id="m-want" placeholder="面接前で緊張している、など。なければ空欄でOK" style="min-height:60px;"></textarea>
+    </div>
+  </div>
+
+  <button class="btn-primary" onclick="calcMorning()">今日のモードを判定する</button>
+
+  <div id="morning-result" style="display:none;">
+    <div class="status-grid">
+      <div class="status-card"><div class="label">HP</div><div class="value hp-val" id="hp-val">—</div></div>
+      <div class="status-card"><div class="label">MP</div><div class="value mp-val" id="mp-val">—</div></div>
+      <div class="status-card"><div class="label">LV</div><div class="value lv-val">昨日</div></div>
+    </div>
+    <div class="mode-badge" id="mode-badge">判定中...</div>
+    <div class="section">
+      <div class="section-title">参謀からの一言</div>
+      <div class="loading-text" id="morning-loading">分析中...</div>
+      <div class="output-box" id="morning-advice"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 夜モード -->
+<div id="screen-evening" class="screen">
+  <div class="date-display" id="evening-date"></div>
+
+  <div class="section">
+    <div class="section-title">対象日（宵越し・遅延入力の場合は変更）</div>
+    <div class="field">
+      <input type="date" id="e-date">
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">本日の随時メモ確認</div>
+    <div id="evening-memo-preview" style="font-size:13px;color:var(--text2);line-height:1.8;min-height:40px;">
+      <span style="color:var(--text3);font-size:12px;">随時メモがありません。随時メモタブから追加してください。</span>
+    </div>
+    <div class="field" style="margin-top:12px;">
+      <label>補足・追記（随時メモに書ききれなかったこと）</label>
+      <textarea id="e-supplement" placeholder="随時メモで拾えなかった出来事や気づきがあれば追記してください。なければ空欄でOK" style="min-height:60px;"></textarea>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">本日のカウント（随時メモから自動集計）</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px;">
+      <div style="background:var(--bg2);border:0.5px solid var(--border);border-radius:6px;padding:10px;text-align:center;">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:4px;">#V ノイズ回数</div>
+        <div style="font-size:22px;font-weight:500;color:#c0392b;" id="auto-noise-count">0</div>
+      </div>
+      <div style="background:var(--bg2);border:0.5px solid var(--border);border-radius:6px;padding:10px;text-align:center;">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:4px;">#P ポモ合計</div>
+        <div style="font-size:22px;font-weight:500;color:#1a7a52;" id="auto-pomo-count">0</div>
+      </div>
+      <div style="background:var(--bg2);border:0.5px solid var(--border);border-radius:6px;padding:10px;text-align:center;">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:4px;">LV</div>
+        <div style="font-size:22px;font-weight:500;color:#8a6a1a;" id="auto-lv">0</div>
+      </div>
+    </div>
+    <div class="field">
+      <label>Try100 達成数（手動）</label>
+      <div class="pomo-row">
+        <button class="pomo-btn" onclick="changeCount('try100',-1)">−</button>
+        <span class="pomo-count" id="try100-count">0</span>
+        <button class="pomo-btn" onclick="changeCount('try100',1)">＋</button>
+        <span style="font-size:12px;color:var(--text3)">個</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">5つのデバッグ</div>
+
+    <div class="debug-item">
+      <div class="debug-label">Q10 役割のデバッグ</div>
+      <div class="debug-desc">その行動は「穴埋め」か「設計」か？ミスが二度と起きない仕組みを一行でも書き換えたか？</div>
+      <div class="debug-score">
+        <button class="debug-btn" onclick="selectDebug(this,'d1','maru')">〇</button>
+        <button class="debug-btn" onclick="selectDebug(this,'d1','sankaku')">△</button>
+        <button class="debug-btn" onclick="selectDebug(this,'d1','batsu')">✕</button>
+      </div>
+      <textarea id="d1-reason" placeholder="理由・気づきを一言"></textarea>
+    </div>
+
+    <div class="debug-item">
+      <div class="debug-label">Q11 委譲のデバッグ</div>
+      <div class="debug-desc">それはAIや仕組みに渡せる余地はないか？誰がやっても同じ結果が出るフローに落とし込めるか？</div>
+      <div class="debug-score">
+        <button class="debug-btn" onclick="selectDebug(this,'d2','maru')">〇</button>
+        <button class="debug-btn" onclick="selectDebug(this,'d2','sankaku')">△</button>
+        <button class="debug-btn" onclick="selectDebug(this,'d2','batsu')">✕</button>
+      </div>
+      <textarea id="d2-reason" placeholder="理由・気づきを一言"></textarea>
+    </div>
+
+    <div class="debug-item">
+      <div class="debug-label">Q12 動機のデバッグ</div>
+      <div class="debug-desc">「自分がやった方が早い」という誘惑に負けていないか？ドラえもんのヒゲが顔を出していないか？</div>
+      <div class="debug-score">
+        <button class="debug-btn" onclick="selectDebug(this,'d3','maru')">〇</button>
+        <button class="debug-btn" onclick="selectDebug(this,'d3','sankaku')">△</button>
+        <button class="debug-btn" onclick="selectDebug(this,'d3','batsu')">✕</button>
+      </div>
+      <textarea id="d3-reason" placeholder="理由・気づきを一言"></textarea>
+    </div>
+
+    <div class="debug-item">
+      <div class="debug-label">Q13 資産のデバッグ</div>
+      <div class="debug-desc">今日の活動は「消費」か「投資」か？未来の自分の時間を増やすマニュアル化・テンプレート化を行ったか？</div>
+      <div class="debug-score">
+        <button class="debug-btn" onclick="selectDebug(this,'d4','maru')">〇</button>
+        <button class="debug-btn" onclick="selectDebug(this,'d4','sankaku')">△</button>
+        <button class="debug-btn" onclick="selectDebug(this,'d4','batsu')">✕</button>
+      </div>
+      <textarea id="d4-reason" placeholder="理由・気づきを一言"></textarea>
+    </div>
+
+    <div class="debug-item">
+      <div class="debug-label">Q14 余白のデバッグ</div>
+      <div class="debug-desc">1440分のうち、アーキテクトとして思考した時間は？実務に飲み込まれず「凪」の時間を確保できたか？</div>
+      <div class="debug-score">
+        <button class="debug-btn" onclick="selectDebug(this,'d5','maru')">〇</button>
+        <button class="debug-btn" onclick="selectDebug(this,'d5','sankaku')">△</button>
+        <button class="debug-btn" onclick="selectDebug(this,'d5','batsu')">✕</button>
+      </div>
+      <textarea id="d5-reason" placeholder="理由・気づきを一言"></textarea>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">明日の設計</div>
+    <div class="field">
+      <label>明日の確定アポ（時刻4桁・ポモ数・内容）</label>
+      <textarea id="e-tomorrow" class="tall" placeholder="例：0900 2 Claude壁打ち ミツメルアプリ開発&#10;1400 2 LITALICO面接準備"></textarea>
+    </div>
+    <div class="field">
+      <label>遅延イベント（先送りタスク）</label>
+      <textarea id="e-delay" placeholder="先送りしたタスクを記録"></textarea>
+    </div>
+    <div class="field">
+      <label>明日のTry100・読む本・参考URL</label>
+      <textarea id="e-try100" placeholder="明日やりたいこと、読みたい本、NotebookLMに入れたい資料など箇条書きで"></textarea>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">フィードバック</div>
+    <div class="field">
+      <label>SuccessOSへのフィードバック</label>
+      <textarea id="e-feedback" placeholder="システムへの気づき・改善点"></textarea>
+    </div>
+    <div class="field">
+      <label>NotebookLMのまとめコメント（あれば貼り付け）</label>
+      <textarea id="e-notebooklm" placeholder="HiNotesやNotebookLMの要約テキストをそのままペースト。なければ空欄でOK"></textarea>
+    </div>
+  </div>
+
+  <button class="btn-primary" onclick="generateEvening()">翌日戦略を生成する</button>
+</div>
+
+<!-- 出力モード -->
+<div id="screen-output" class="screen">
+  <div class="section">
+    <div class="section-title">① ミツメル行動監査サマリー</div>
+    <div class="loading-text" id="output-loading">Claude が分析中です...</div>
+    <div class="output-box" id="output-markdown"></div>
+    <button class="btn-secondary" onclick="copyOutput('output-markdown')" style="margin-top:10px;">Markdownをコピー（NotebookLM用）</button>
+    <button class="btn-secondary" onclick="downloadMarkdown()" style="margin-top:4px;">Markdownをダウンロード（テキスト保存）</button>
+    <button class="btn-secondary" onclick="downloadHTML()" style="margin-top:4px;color:var(--green);border-color:var(--green);">📄 HTML記録をダウンロード（画像＋テキスト保存）</button>
+  </div>
+
+  <div class="section">
+    <div class="section-title">② 明日のカレンダーCSV</div>
+    <div class="output-box" id="output-csv"></div>
+    <button class="btn-secondary" onclick="downloadCSV('calendar')" style="margin-top:10px;">カレンダーCSVをダウンロード</button>
+  </div>
+
+  <div class="section">
+    <div class="section-title">③ 先送りカレンダーCSV</div>
+    <div class="output-box" id="output-delay-csv"></div>
+    <button class="btn-secondary" onclick="downloadCSV('delay')" style="margin-top:10px;">先送りCSVをダウンロード</button>
+  </div>
+</div>
+
+<script>
+let counts = { noise: 0, pomo: 0, try100: 0, 'memo-pomo': 0 };
+let debugScores = { d1: '', d2: '', d3: '', d4: '', d5: '' };
+let calendarCSV = '';
+let delayCSV = '';
+let memos = [];
+let selectedTag = 'HP';
+let apiKey = sessionStorage.getItem('mitsumeru_api_key') || '';
+
+function getApiKey() {
+  if (apiKey) return apiKey;
+  const key = prompt('AnthropicのAPIキーを入力してください：\n\n取得方法：console.anthropic.com → API Keys → Create Key');
+  if (key && key.trim().startsWith('sk-')) {
+    apiKey = key.trim();
+    sessionStorage.setItem('mitsumeru_api_key', apiKey);
+    return apiKey;
+  } else if (key) {
+    alert('APIキーは「sk-」から始まる文字列です。もう一度確認してください。');
+    return null;
+  }
+  return null;
+}
+
+function callClaude(prompt, onSuccess, onError) {
+  const key = getApiKey();
+  if (!key) { onError('APIキーが設定されていません。'); return; }
+  fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },    body: JSON.stringify({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1000,
+      messages: [{ role: 'user', content: prompt }]
+    })
+  }).then(r => r.json()).then(data => {
+    if (data.error) { onError(data.error.message); return; }
+    const text = data.content?.map(c => c.text || '').join('') || 'エラーが発生しました';
+    onSuccess(text);
+  }).catch(e => onError(e.message));
+}
+
+const courseData = {
+  1: { name: '超甘口', desc: '寝てるだけでOK', bg: '#e8f0fe', color: '#1a5a9a' },
+  2: { name: '甘口', desc: 'D-block・2分タスクのみ', bg: '#fff3cd', color: '#8a6a00' },
+  3: { name: '中辛', desc: 'いつもより少なめで動く', bg: '#e8f5ee', color: '#1a7a52' },
+  4: { name: '辛口', desc: '通常モード', bg: '#fff0e8', color: '#c05a00' },
+  5: { name: '激辛', desc: '全力モード', bg: '#fde8e8', color: '#c0392b' },
+  6: { name: '地獄', desc: '締め切り・本番前', bg: '#2a1a1a', color: '#ff6644' },
+};
+
+function updateCourse(val) {
+  const c = courseData[val];
+  const badge = document.getElementById('course-badge');
+  badge.textContent = `コース${val} — ${c.name}：${c.desc}`;
+  badge.style.background = c.bg;
+  badge.style.color = c.color;
+  badge.style.borderColor = c.color + '44';
+}
+
+function setDates() {
+  const now = new Date();
+  const fmt = d => `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${'日月火水木金土'[d.getDay()]}）`;
+  const isoDate = now.toISOString().split('T')[0];
+  document.getElementById('morning-date').textContent = fmt(now);
+  document.getElementById('evening-date').textContent = fmt(now);
+  document.getElementById('memo-date').textContent = fmt(now);
+  document.getElementById('m-date').value = isoDate;
+  document.getElementById('e-date').value = isoDate;
+  setNowTime();
+}
+setDates();
+if (apiKey) {
+  const btn = document.getElementById('api-btn');
+  if (btn) btn.style.color = '#4caf82';
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.mode-tab').forEach((t,i) => {
+    t.classList.toggle('active', ['morning','memo','evening','output'][i] === tab);
+  });
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-'+tab).classList.add('active');
+}
+
+function selectTag(btn, tag) {
+  selectedTag = tag;
+  const tagColors = { HP: '#e8f0fe', P: '#e8f5ee', V: '#fde8e8', G: '#fff3cd' };
+  document.querySelectorAll('.tag-btn').forEach(b => {
+    b.style.background = 'var(--bg)';
+    b.style.fontWeight = '400';
+  });
+  btn.style.background = tagColors[tag];
+  btn.style.fontWeight = '500';
+  document.getElementById('memo-pomo-field').style.display = tag === 'P' ? 'block' : 'none';
+}
+
+function setNowTime() {
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2,'0');
+  const m = String(now.getMinutes()).padStart(2,'0');
+  document.getElementById('memo-time').value = `${h}:${m}`;
+}
+
+function openImgPreview(src) {
+  const overlay = document.getElementById('img-preview-overlay');
+  document.getElementById('img-preview-large').src = src;
+  overlay.style.display = 'flex';
+}
+
+function closeImgPreview() {
+  document.getElementById('img-preview-overlay').style.display = 'none';
+}
+
+function setApiKey() {
+  const key = prompt('AnthropicのAPIキーを入力してください（sk-ant-...）：\n\n取得方法：console.anthropic.com → API Keys → Create Key\n\n現在のキー：' + (apiKey ? apiKey.substring(0,10)+'...' : '未設定'));
+  if (key && key.trim().startsWith('sk-')) {
+    apiKey = key.trim();
+    sessionStorage.setItem('mitsumeru_api_key', apiKey);
+    document.getElementById('api-btn').style.color = '#4caf82';
+    alert('APIキーを設定しました！');
+  } else if (key === '') {
+    apiKey = '';
+    sessionStorage.removeItem('mitsumeru_api_key');
+    document.getElementById('api-btn').style.color = 'var(--bg)';
+    alert('APIキーをクリアしました。');
+  }
+}
+
+function toggleHelp() {
+  const overlay = document.getElementById('help-overlay');
+  overlay.style.display = overlay.style.display === 'none' ? 'block' : 'none';
+}
+
+const tagIcons = { HP: '🛡️', P: '⚡', V: '🌊', G: '💡' };
+
+function calcAutoCount() {
+  const noiseCount = memos.filter(m => m.tag === 'V').length;
+  const pomoTotal = memos.filter(m => m.tag === 'P').reduce((sum, m) => sum + (m.pomos || 0), 0);
+  const lv = pomoTotal * 10;
+  const n = document.getElementById('auto-noise-count');
+  const p = document.getElementById('auto-pomo-count');
+  const l = document.getElementById('auto-lv');
+  if (n) n.textContent = noiseCount;
+  if (p) p.textContent = pomoTotal;
+  if (l) l.textContent = lv;
+  counts.noise = noiseCount;
+  counts.pomo = pomoTotal;
+}
+
+function previewMemoImage(input) {
+  if (input.files && input.files[0]) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      document.getElementById('memo-image-thumb').src = e.target.result;
+      document.getElementById('memo-image-preview').style.display = 'block';
+    };
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+
+function clearMemoImage() {
+  document.getElementById('memo-image-input').value = '';
+  document.getElementById('memo-image-thumb').src = '';
+  document.getElementById('memo-image-preview').style.display = 'none';
+}
+
+function addMemo() {
+  const time = document.getElementById('memo-time').value;
+  const content = document.getElementById('memo-content').value.trim();
+  if (!content) return;
+  const pomos = selectedTag === 'P' ? counts['memo-pomo'] : null;
+  const timeStr = time ? time.replace(':','') : '';
+  const imgSrc = document.getElementById('memo-image-thumb').src || null;
+  memos.push({ tag: selectedTag, time: timeStr, pomos, content, image: imgSrc && imgSrc.startsWith('data:') ? imgSrc : null });
+  renderMemos();
+  updateEveningMemoPreview();
+  calcAutoCount();
+  document.getElementById('memo-content').value = '';
+  counts['memo-pomo'] = 0;
+  document.getElementById('memo-pomo-count').textContent = '0';
+  clearMemoImage();
+  setNowTime();
+}
+
+function updateEveningMemoPreview() {
+  const preview = document.getElementById('evening-memo-preview');
+  if (!preview) return;
+  if (memos.length === 0) {
+    preview.innerHTML = '<span style="color:var(--text3);font-size:12px;">随時メモがありません。随時メモタブから追加してください。</span>';
+    return;
+  }
+  const tagColors = { HP: '#1a5a9a', P: '#1a7a52', V: '#c0392b', G: '#b8860b' };
+  preview.innerHTML = memos.map(m => `
+    <div style="display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:0.5px solid var(--border);">
+      <span style="color:${tagColors[m.tag]};font-weight:500;min-width:44px;font-size:12px;">${tagIcons[m.tag]}#${m.tag}</span>
+      <span style="color:var(--text3);min-width:38px;font-size:12px;">${m.time||'--:--'}</span>
+      ${m.pomos!==null?`<span style="color:var(--accent);min-width:36px;font-size:12px;">${m.pomos}ポモ</span>`:'<span style="min-width:36px;"></span>'}
+      <div style="flex:1;">
+        <span style="font-size:13px;">${m.content}</span>
+        ${m.image ? `<div style="margin-top:4px;"><img src="${m.image}" style="max-width:120px;max-height:80px;border-radius:4px;border:0.5px solid var(--border);cursor:pointer;" onclick="openImgPreview(this.src)"></div>` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderMemos() {
+  const list = document.getElementById('memo-list');
+  if (memos.length === 0) {
+    list.innerHTML = '<span style="color:var(--text3);font-size:12px;">まだメモがありません</span>';
+    return;
+  }
+  const tagColors = { HP: '#1a5a9a', P: '#1a7a52', V: '#c0392b', G: '#b8860b' };
+  list.innerHTML = memos.map((m, i) => `
+    <div style="display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:0.5px solid var(--border);">
+      <span style="color:${tagColors[m.tag]};font-weight:500;min-width:44px;font-size:12px;">${tagIcons[m.tag]}#${m.tag}</span>
+      <span style="color:var(--text3);min-width:38px;font-size:12px;">${m.time||'--:--'}</span>
+      ${m.pomos!==null?`<span style="color:var(--accent);min-width:36px;font-size:12px;">${m.pomos}ポモ</span>`:'<span style="min-width:36px;"></span>'}
+      <div style="flex:1;">
+        <span style="font-size:13px;line-height:1.6;">${m.content}</span>
+        ${m.image ? `<div style="margin-top:4px;"><img src="${m.image}" style="max-width:120px;max-height:80px;border-radius:4px;border:0.5px solid var(--border);cursor:pointer;" onclick="openImgPreview(this.src)"></div>` : ''}
+      </div>
+      <button onclick="editMemo(${i})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:0 4px;flex-shrink:0;">✏️</button>
+      <button onclick="deleteMemo(${i})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;padding:0 4px;flex-shrink:0;">×</button>
+    </div>
+  `).join('');
+  updateEveningMemoPreview();
+}
+
+function editMemo(i) {
+  const m = memos[i];
+  // タグを選択状態に
+  selectedTag = m.tag;
+  document.querySelectorAll('.tag-btn').forEach(b => {
+    b.style.background = 'var(--bg)';
+    b.style.fontWeight = '400';
+  });
+  const tagBg = { HP: '#e8f0fe', P: '#e8f5ee', V: '#fde8e8', G: '#fff3cd' };
+  const tagBtns = document.querySelectorAll('.tag-btn');
+  const tagOrder = ['HP','P','V','G'];
+  tagBtns.forEach((b,idx) => {
+    if(tagOrder[idx] === m.tag) {
+      b.style.background = tagBg[m.tag];
+      b.style.fontWeight = '500';
+    }
+  });
+  // 時刻・内容・ポモをフォームにセット
+  const timeFormatted = m.time ? m.time.substring(0,2)+':'+m.time.substring(2,4) : '';
+  document.getElementById('memo-time').value = timeFormatted;
+  document.getElementById('memo-content').value = m.content;
+  if(m.pomos !== null) {
+    counts['memo-pomo'] = m.pomos;
+    document.getElementById('memo-pomo-count').textContent = m.pomos;
+    document.getElementById('memo-pomo-field').style.display = 'block';
+  } else {
+    document.getElementById('memo-pomo-field').style.display = 'none';
+  }
+  // 元のメモを削除
+  memos.splice(i, 1);
+  renderMemos();
+  calcAutoCount();
+  // フォームにスクロール
+  document.getElementById('memo-content').scrollIntoView({ behavior: 'smooth' });
+  document.getElementById('memo-content').focus();
+}
+
+function deleteMemo(i) {
+  memos.splice(i, 1);
+  renderMemos();
+  calcAutoCount();
+}
+
+function clearMemos() {
+  if (confirm('本日のメモをリセットしますか？')) {
+    memos = [];
+    renderMemos();
+    calcAutoCount();
+  }
+}
+
+function getMemoSummary() {
+  if (memos.length === 0) return 'なし';
+  return memos.map(m => {
+    const pomoStr = m.pomos !== null ? ` ${m.pomos}ポモ` : '';
+    return `#${m.tag} ${m.time}${pomoStr} ${m.content}`;
+  }).join('\n');
+}
+
+function toggleCheck(el, event) {
+  if (event) event.preventDefault();
+  el.classList.toggle('checked');
+}
+
+function changeCount(key, delta) {
+  counts[key] = Math.max(0, counts[key] + delta);
+  document.getElementById(key+'-count').textContent = counts[key];
+  if (key === 'pomo') {
+    document.getElementById('lv-preview').textContent = counts.pomo * 10;
+  }
+}
+
+function selectDebug(btn, key, val) {
+  const parent = btn.closest('.debug-item');
+  parent.querySelectorAll('.debug-btn').forEach(b => {
+    b.classList.remove('selected-maru','selected-sankaku','selected-batsu');
+  });
+  btn.classList.add('selected-'+val);
+  debugScores[key] = val === 'maru' ? '〇' : val === 'sankaku' ? '△' : '✕';
+}
+
+function calcSleepHP() {
+  const sleep = document.getElementById('m-sleep').value;
+  const wake = document.getElementById('m-wake').value;
+  if (!sleep || !wake) return 70;
+  const [sh, sm] = sleep.split(':').map(Number);
+  const [wh, wm] = wake.split(':').map(Number);
+  let sleepMins = (wh * 60 + wm) - (sh * 60 + sm);
+  if (sleepMins < 0) sleepMins += 24 * 60;
+  const hours = sleepMins / 60;
+  return Math.min(100, Math.round(hours / 8 * 100));
+}
+
+function calcMorning() {
+  const hp = calcSleepHP();
+  const body = parseInt(document.getElementById('m-body').value);
+  const mood = parseInt(document.getElementById('m-mood').value);
+  const mp = Math.round((mood / 5) * 100);
+  const hpAdj = Math.round(hp * (body / 5));
+
+  document.getElementById('hp-val').textContent = hpAdj;
+  document.getElementById('mp-val').textContent = mp;
+
+  let mode, modeClass, modeText;
+  const avg = (body + mood) / 2;
+  if (avg >= 3.5) { mode = 'normal'; modeText = '通常モード — 今日は動けます'; modeClass = 'mode-normal'; }
+  else if (avg >= 2.5) { mode = 'dblock'; modeText = 'D-blockモード — 最小限に絞りましょう'; modeClass = 'mode-dblock'; }
+  else { mode = '2min'; modeText = '2分タスクモード — 小さいことだけ'; modeClass = 'mode-2min'; }
+
+  const badge = document.getElementById('mode-badge');
+  badge.textContent = modeText;
+  badge.className = 'mode-badge ' + modeClass;
+
+  document.getElementById('morning-result').style.display = 'block';
+
+  const noises = Array.from(document.querySelectorAll('#m-noise-group .checked input')).map(i => i.value);
+  const noiseDetail = document.getElementById('m-noise-detail').value;
+  const want = document.getElementById('m-want').value;
+  const courseVal = document.getElementById('m-course').value;
+  const course = courseData[courseVal];
+
+  const prompt = `あなたはFusion Partners代表・柴山靖章の「SuccessOS 統合経営参謀」です。
+今朝の状態確認データ：
+HP: ${hpAdj}/100、MP: ${mp}/100
+モード判定: ${modeText}
+本日のタスクコース: コース${courseVal}（${course.name}：${course.desc}）
+ノイズ: ${noises.join('、') || 'なし'}
+具体的なノイズ: ${noiseDetail || 'なし'}
+今日の一言: ${want || 'なし'}
+
+上記データをもとに、今日の「参謀からの一言アドバイス」を3〜4文で出力してください。
+D-blockモードや2分タスクモードの場合は、全部キャンセルではなく「これだけやろう」という具体的な最小行動を提案してください。
+過保護にならず、一緒に動く伴走感を大切にしてください。`;
+
+  const loading = document.getElementById('morning-loading');
+  const advice = document.getElementById('morning-advice');
+  loading.style.display = 'block';
+  advice.classList.remove('visible');
+
+  callClaude(prompt,
+    text => {
+      loading.style.display = 'none';
+      advice.textContent = text;
+      advice.classList.add('visible');
+    },
+    err => {
+      loading.style.display = 'none';
+      advice.textContent = 'エラー：' + err;
+      advice.classList.add('visible');
+    }
+  );
+}
+
+function parseSchedule(text) {
+  const lines = text.split('\n').filter(l => l.trim());
+  const events = [];
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const dateStr = `${tomorrow.getFullYear()}/${String(tomorrow.getMonth()+1).padStart(2,'0')}/${String(tomorrow.getDate()).padStart(2,'0')}`;
+
+  for (const line of lines) {
+    const m = line.match(/^(\d{4})\s+(\d+)\s*ポモ?\s+(.+)/);
+    if (m) {
+      const startH = Math.floor(parseInt(m[1]) / 100);
+      const startM = parseInt(m[1]) % 100;
+      const pomos = parseInt(m[2]);
+      const totalMins = pomos * 30;
+      const endH = Math.floor((startH * 60 + startM + totalMins) / 60);
+      const endM = (startH * 60 + startM + totalMins) % 60;
+      const startTime = `${String(startH).padStart(2,'0')}:${String(startM).padStart(2,'0')}`;
+      const endTime = `${String(endH).padStart(2,'0')}:${String(endM).padStart(2,'0')}`;
+      events.push({ date: dateStr, start: startTime, end: endTime, title: m[3].trim(), pomos });
+    }
+  }
+  return { events, dateStr };
+}
+
+function generateEvening() {
+  const supplement = document.getElementById('e-supplement').value;
+  const tomorrow = document.getElementById('e-tomorrow').value;
+  const delay = document.getElementById('e-delay').value;
+  const try100 = document.getElementById('e-try100').value;
+  const feedback = document.getElementById('e-feedback').value;
+  const notebooklm = document.getElementById('e-notebooklm').value;
+
+  const debugText = `役割:${debugScores.d1}、委譲:${debugScores.d2}、動機:${debugScores.d3}、資産:${debugScores.d4}、余白:${debugScores.d5}`;
+  const lv = counts.pomo * 10;
+  const now = new Date();
+  const dateStr = `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日`;
+
+  const tomorrow2 = new Date();
+  tomorrow2.setDate(tomorrow2.getDate() + 2);
+  const delayDateStr = `${tomorrow2.getFullYear()}/${String(tomorrow2.getMonth()+1).padStart(2,'0')}/${String(tomorrow2.getDate()).padStart(2,'0')}`;
+
+  const tomorrowDate = new Date();
+  tomorrowDate.setDate(tomorrowDate.getDate() + 1);
+  const tomorrowDateStr = `${tomorrowDate.getFullYear()}/${String(tomorrowDate.getMonth()+1).padStart(2,'0')}/${String(tomorrowDate.getDate()).padStart(2,'0')}`;
+
+  const { events } = parseSchedule(tomorrow);
+
+  let csvRows = ['Subject,Start Date,Start Time,End Date,End Time,All Day Event,Description'];
+  events.forEach(e => {
+    csvRows.push(`"【急重度①】${e.title}（${e.pomos}ポモ）",${e.date},${e.start},${e.date},${e.end},False,"【目的内容】${e.title}"`);
+  });
+  calendarCSV = csvRows.join('\n');
+
+  let delayRows = ['Subject,Start Date,Start Time,End Date,End Time,All Day Event,Description'];
+  if (delay.trim()) {
+    delay.split('\n').filter(l => l.trim()).forEach(line => {
+      delayRows.push(`"【先送り・急重度②】${line.trim()}",${delayDateStr},,,, True,"【目的】${line.trim()} ／ 【遅延理由】本日未完了"`);
+    });
+  }
+  delayCSV = delayRows.join('\n');
+
+  const prompt = `あなたはFusion Partners代表・柴山靖章の「SuccessOS 統合経営参謀」です。
+指定日：${dateStr}
+
+【随時メモ（当日の記録）】
+${getMemoSummary()}
+
+【補足・追記】
+${supplement || 'なし'}
+
+【本日のデータ】
+P（事実）：${p}
+V（ノイズ）：${v}
+G（気づき）：${g}
+ノイズ回数：${counts.noise}回
+ポモドーロ数：${counts.pomo}ポモ
+Try100達成数：${counts.try100}個
+LV：${lv}/100
+
+【5つのデバッグ】
+${debugText}
+役割の理由：${document.getElementById('d1-reason').value}
+委譲の理由：${document.getElementById('d2-reason').value}
+動機の理由：${document.getElementById('d3-reason').value}
+資産の理由：${document.getElementById('d4-reason').value}
+余白の理由：${document.getElementById('d5-reason').value}
+
+【明日の予定】
+${tomorrow}
+
+【遅延タスク】
+${delay || 'なし'}
+
+【明日のTry100・参考情報】
+${try100 || 'なし'}
+
+【SuccessOSフィードバック】
+${feedback || 'なし'}
+
+【NotebookLMコメント】
+${notebooklm || 'なし'}
+
+上記データをもとに、以下のMarkdown形式で出力してください。
+
+# ミツメル行動監査サマリー｜${dateStr}
+
+## 【明日の戦略スローガン】
+（翌朝の最重要指針・総ポモドーロ数を明記）
+
+## 【本日のステータス】
+HP（X/100） / MP（X/100） / LV（${lv}/100）と根拠
+
+## 【因果関係の看破】
+P・V・Gの連動性をロジカルに解説
+
+## 【音声解説用シナリオ】
+NotebookLM音声対話用のナラティブ（物語調）
+
+## 【インフォグラフィック構成案】
+図解・可視化のための視覚的構成イメージ
+
+## 【明日につながる参謀の前向きなアドバイス】
+本日の葛藤や行動をファクトに基づいてポジティブに肯定する一言`;
+
+  switchTab('output');
+
+  const loading = document.getElementById('output-loading');
+  const mdBox = document.getElementById('output-markdown');
+  const csvBox = document.getElementById('output-csv');
+  const delayCsvBox = document.getElementById('output-delay-csv');
+
+  loading.style.display = 'block';
+  mdBox.classList.remove('visible');
+  csvBox.classList.remove('visible');
+  delayCsvBox.classList.remove('visible');
+
+  csvBox.textContent = calendarCSV;
+  csvBox.classList.add('visible');
+  delayCsvBox.textContent = delayCSV;
+  delayCsvBox.classList.add('visible');
+
+  callClaude(prompt,
+    text => {
+      loading.style.display = 'none';
+      mdBox.textContent = text;
+      mdBox.classList.add('visible');
+    },
+    err => {
+      loading.style.display = 'none';
+      mdBox.textContent = 'エラー：' + err;
+      mdBox.classList.add('visible');
+    }
+  );
+}
+
+function copyOutput(id) {
+  const text = document.getElementById(id).textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    alert('コピーしました！');
+  });
+}
+
+function downloadHTML() {
+  const now = new Date();
+  const dateStr = `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日`;
+  const fileDate = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+  const tagColors = { HP: '#1a5a9a', P: '#1a7a52', V: '#c0392b', G: '#b8860b' };
+  const tagBg = { HP: '#e8f0fe', P: '#e8f5ee', V: '#fde8e8', G: '#fff3cd' };
+
+  const memoHTML = memos.length === 0
+    ? '<p style="color:#999;font-size:13px;">記録なし</p>'
+    : memos.map(m => `
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid #e8e4dc;">
+        <span style="background:${tagBg[m.tag]};color:${tagColors[m.tag]};font-weight:600;font-size:12px;padding:3px 8px;border-radius:12px;white-space:nowrap;">#${m.tag}</span>
+        <span style="color:#9a8a7a;font-size:12px;min-width:40px;">${m.time||'--:--'}</span>
+        ${m.pomos!==null?`<span style="color:#8a7a6a;font-size:12px;min-width:40px;">${m.pomos}ポモ</span>`:''}
+        <div style="flex:1;">
+          <p style="margin:0;font-size:14px;line-height:1.7;color:#3a3028;">${m.content}</p>
+          ${m.image?`<img src="${m.image}" style="margin-top:8px;max-width:100%;max-height:300px;border-radius:6px;border:1px solid #e8e4dc;">`: ''}
+        </div>
+      </div>
+    `).join('');
+
+  const summary = document.getElementById('output-markdown').textContent || '（まだ生成されていません）';
+
+  const html = `<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>ミツメル記録 ${dateStr}</title>
+<style>
+  body{font-family:'Hiragino Sans',sans-serif;background:#f5f1ea;color:#3a3028;max-width:720px;margin:0 auto;padding:24px 16px;}
+  h1{font-size:18px;font-weight:400;letter-spacing:3px;color:#3a3028;border-bottom:1px solid #c8b89a;padding-bottom:12px;margin-bottom:20px;}
+  h2{font-size:13px;letter-spacing:2px;color:#9a8a7a;margin:20px 0 10px;text-transform:uppercase;}
+  .card{background:#faf7f2;border:0.5px solid #c8b89a;border-radius:8px;padding:16px;margin-bottom:16px;}
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;}
+  .stat{background:#ede8df;border-radius:6px;padding:10px;text-align:center;}
+  .stat-label{font-size:11px;color:#9a8a7a;margin-bottom:4px;}
+  .stat-val{font-size:24px;font-weight:500;}
+  pre{white-space:pre-wrap;font-family:inherit;font-size:13px;line-height:1.8;color:#6a5a4a;}
+</style>
+</head>
+<body>
+<h1>ミツメル記録｜${dateStr}</h1>
+
+<h2>本日のステータス</h2>
+<div class="stats">
+  <div class="stat"><div class="stat-label">ノイズ回数</div><div class="stat-val" style="color:#c0392b;">${counts.noise}</div></div>
+  <div class="stat"><div class="stat-label">ポモ合計</div><div class="stat-val" style="color:#1a7a52;">${counts.pomo}</div></div>
+  <div class="stat"><div class="stat-label">LV</div><div class="stat-val" style="color:#8a6a1a;">${counts.pomo*10}</div></div>
+</div>
+
+<h2>随時メモ（画像含む）</h2>
+<div class="card">${memoHTML}</div>
+
+<h2>行動監査サマリー</h2>
+<div class="card"><pre>${summary}</pre></div>
+
+<p style="font-size:11px;color:#9a8a7a;text-align:center;margin-top:24px;">Fusion Partners — ミツメル ${dateStr}</p>
+</body>
+</html>`;
+
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `mitsumeru_${fileDate}.html`;
+  link.click();
+}
+
+function downloadMarkdown() {
+  const text = document.getElementById('output-markdown').textContent;
+  if (!text || text === 'エラーが発生しました。もう一度お試しください。') return;
+  const now = new Date();
+  const dateStr = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+  const blob = new Blob([text], { type: 'text/markdown;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `mitsumeru_${dateStr}.md`;
+  link.click();
+}
+
+function downloadCSV(type) {
+  const content = type === 'calendar' ? calendarCSV : delayCSV;
+  const filename = type === 'calendar' ? 'tomorrow_calendar.csv' : 'delay_calendar.csv';
+  const blob = new Blob(['\uFEFF' + content], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  link.click();
+}
+</script>
+</body>
+</html>
