@@ -631,6 +631,7 @@
       <div class="section-title">参謀からの一言</div>
       <div class="loading-text" id="morning-loading">分析中...</div>
       <div class="output-box" id="morning-advice"></div>
+      <button class="btn-secondary" onclick="copyMorningAdvice()" style="margin-top:10px;">アドバイスをコピー（NotebookLM用）</button>
     </div>
   </div>
 </div>
@@ -923,6 +924,30 @@ function setApiKey() {
     document.getElementById('api-btn').style.color = 'var(--bg)';
     alert('APIキーをクリアしました。');
   }
+}
+
+function copyMorningAdvice() {
+  const hp = document.getElementById('hp-val').textContent;
+  const mp = document.getElementById('mp-val').textContent;
+  const mode = document.getElementById('mode-badge').textContent;
+  const advice = document.getElementById('morning-advice').textContent;
+  const now = new Date();
+  const dateStr = `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日`;
+  const courseVal = document.getElementById('m-course').value;
+  const course = courseData[courseVal];
+  const text = `# ミツメル朝の確認｜${dateStr}
+
+## ステータス
+- HP: ${hp}/100
+- MP: ${mp}/100
+- タスクコース: コース${courseVal}（${course.name}：${course.desc}）
+- モード: ${mode}
+
+## 参謀からの一言
+${advice}`;
+  navigator.clipboard.writeText(text).then(() => {
+    alert('コピーしました！NotebookLMに貼り付けてください。');
+  });
 }
 
 function toggleHelp() {
