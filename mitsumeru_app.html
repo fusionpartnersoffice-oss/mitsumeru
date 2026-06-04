@@ -467,6 +467,7 @@
   <button class="mode-tab" onclick="switchTab('memo')">随時メモ</button>
   <button class="mode-tab" onclick="switchTab('evening')">夜</button>
   <button class="mode-tab" onclick="switchTab('output')">出力</button>
+  <button class="mode-tab" onclick="switchTab('profile')">設定</button>
 </div>
 
 <!-- 随時メモ -->
@@ -532,6 +533,145 @@
     </div>
     <button class="btn-secondary" onclick="clearMemos()" style="margin-top:12px;color:var(--red);border-color:var(--red);">メモをリセット</button>
   </div>
+</div>
+
+<!-- 設定モード -->
+<div id="screen-profile" class="screen">
+  <div class="date-display">ミツメルスキャン — あなたの基礎ステータス</div>
+
+  <div class="section">
+    <div class="section-title">👤 基本情報</div>
+    <div class="field">
+      <label>名前</label>
+      <input type="text" id="p-name" placeholder="例：柴山 靖章">
+    </div>
+    <div class="field">
+      <label>役割・ポジション</label>
+      <input type="text" id="p-role" placeholder="例：代表 / 組織再設計アーキテクト">
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">⚔️ LSRP（サイコパシー判定）</div>
+    <div class="field">
+      <label>判定結果</label>
+      <select id="p-lsrp">
+        <option value="">選択してください</option>
+        <option value="安全圏：適合ピース">★☆☆ 安全圏：適合ピース</option>
+        <option value="要注意：観察対象">★★☆ 要注意：観察対象</option>
+        <option value="危険：組織の猛毒">★★★ 危険：組織の猛毒</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">🔰 RC判定（組織適応）</div>
+    <div class="field">
+      <label>判定結果</label>
+      <select id="p-rc">
+        <option value="">選択してください</option>
+        <option value="安全（凪）">★☆☆ 安全（凪）✅</option>
+        <option value="注意（I-U-）">★★☆ 注意（I-U-）他者否定</option>
+        <option value="依存（I-U+）">★★☆ 依存（I-U+）自律欠如</option>
+        <option value="危険（I+U-）">★★★ 危険（I+U-）組織破壊</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">🧠 エゴグラム（心理状態）</div>
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px;">
+      <div style="text-align:center;">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:4px;">CP</div>
+        <input type="number" id="p-cp" min="0" max="10" value="8" style="width:100%;text-align:center;padding:6px 4px;">
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:4px;">NP</div>
+        <input type="number" id="p-np" min="0" max="10" value="2" style="width:100%;text-align:center;padding:6px 4px;">
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:4px;">A</div>
+        <input type="number" id="p-a" min="0" max="10" value="3" style="width:100%;text-align:center;padding:6px 4px;">
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:4px;">FC</div>
+        <input type="number" id="p-fc" min="0" max="10" value="5" style="width:100%;text-align:center;padding:6px 4px;">
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:4px;">AC</div>
+        <input type="number" id="p-ac" min="0" max="10" value="8" style="width:100%;text-align:center;padding:6px 4px;">
+      </div>
+    </div>
+    <div id="ego-bar" style="font-size:12px;color:var(--text2);line-height:2;background:var(--bg2);border-radius:6px;padding:10px;font-family:monospace;"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">🎭 エニアグラム（キャラクタークラス）</div>
+    <div class="field">
+      <label>第1位</label>
+      <select id="p-enea1">
+        <option value="">選択してください</option>
+        <option value="001(完全主義者)">001 完全主義者</option>
+        <option value="002(献身家)">002 献身家</option>
+        <option value="003(達成者)" selected>003 達成者</option>
+        <option value="004(個人主義者)">004 個人主義者</option>
+        <option value="005(研究者)">005 研究者</option>
+        <option value="006(忠実家)">006 忠実家</option>
+        <option value="007(楽天家)">007 楽天家</option>
+        <option value="008(挑戦者)">008 挑戦者</option>
+        <option value="009(調停者)">009 調停者</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>第2位</label>
+      <select id="p-enea2">
+        <option value="">選択してください</option>
+        <option value="001(完全主義者)">001 完全主義者</option>
+        <option value="002(献身家)">002 献身家</option>
+        <option value="003(達成者)">003 達成者</option>
+        <option value="004(個人主義者)">004 個人主義者</option>
+        <option value="005(研究者)">005 研究者</option>
+        <option value="006(忠実家)">006 忠実家</option>
+        <option value="007(楽天家)">007 楽天家</option>
+        <option value="008(挑戦者)">008 挑戦者</option>
+        <option value="009(調停者)" selected>009 調停者</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>第3位</label>
+      <select id="p-enea3">
+        <option value="">選択してください</option>
+        <option value="001(完全主義者)">001 完全主義者</option>
+        <option value="002(献身家)">002 献身家</option>
+        <option value="003(達成者)">003 達成者</option>
+        <option value="004(個人主義者)">004 個人主義者</option>
+        <option value="005(研究者)">005 研究者</option>
+        <option value="006(忠実家)">006 忠実家</option>
+        <option value="007(楽天家)">007 楽天家</option>
+        <option value="008(挑戦者)">008 挑戦者</option>
+        <option value="009(調停者)">009 調停者</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">📝 キャリアアンカー・強み・弱み</div>
+    <div class="field">
+      <label>キャリアアンカー（何があっても譲れないもの）</label>
+      <textarea id="p-anchor" placeholder="例：専門職能、管理職能、安全安定など" style="min-height:60px;"></textarea>
+    </div>
+    <div class="field">
+      <label>MUST（好きなこと・得意なこと）</label>
+      <textarea id="p-must" placeholder="例：組織設計、数値分析、人材育成" style="min-height:60px;"></textarea>
+    </div>
+    <div class="field">
+      <label>NEVER（嫌いなこと・苦手なこと）</label>
+      <textarea id="p-never" placeholder="例：精神論、穴埋め作業、優先順位づけ" style="min-height:60px;"></textarea>
+    </div>
+  </div>
+
+  <button class="btn-primary" onclick="saveProfile()">プロファイルを保存する</button>
+  <div id="profile-saved" style="display:none;text-align:center;color:var(--green);font-size:13px;margin-top:10px;">✓ 保存しました。以降のアドバイスに反映されます。</div>
 </div>
 
 <!-- 朝モード -->
@@ -869,17 +1009,96 @@ function setDates() {
   setNowTime();
 }
 setDates();
+loadProfile();
 if (apiKey) {
   const btn = document.getElementById('api-btn');
   if (btn) btn.style.color = '#4caf82';
 }
 
+function saveProfile() {
+  const profile = {
+    name: document.getElementById('p-name').value,
+    role: document.getElementById('p-role').value,
+    lsrp: document.getElementById('p-lsrp').value,
+    rc: document.getElementById('p-rc').value,
+    ego: {
+      cp: document.getElementById('p-cp').value,
+      np: document.getElementById('p-np').value,
+      a: document.getElementById('p-a').value,
+      fc: document.getElementById('p-fc').value,
+      ac: document.getElementById('p-ac').value,
+    },
+    enea: [
+      document.getElementById('p-enea1').value,
+      document.getElementById('p-enea2').value,
+      document.getElementById('p-enea3').value,
+    ],
+    anchor: document.getElementById('p-anchor').value,
+    must: document.getElementById('p-must').value,
+    never: document.getElementById('p-never').value,
+  };
+  sessionStorage.setItem('mitsumeru_profile', JSON.stringify(profile));
+  updateEgoBar();
+  document.getElementById('profile-saved').style.display = 'block';
+  setTimeout(() => document.getElementById('profile-saved').style.display = 'none', 3000);
+}
+
+function loadProfile() {
+  const saved = sessionStorage.getItem('mitsumeru_profile');
+  if (!saved) return;
+  const p = JSON.parse(saved);
+  if (p.name) document.getElementById('p-name').value = p.name;
+  if (p.role) document.getElementById('p-role').value = p.role;
+  if (p.lsrp) document.getElementById('p-lsrp').value = p.lsrp;
+  if (p.rc) document.getElementById('p-rc').value = p.rc;
+  if (p.ego) {
+    document.getElementById('p-cp').value = p.ego.cp;
+    document.getElementById('p-np').value = p.ego.np;
+    document.getElementById('p-a').value = p.ego.a;
+    document.getElementById('p-fc').value = p.ego.fc;
+    document.getElementById('p-ac').value = p.ego.ac;
+  }
+  if (p.enea) {
+    if (p.enea[0]) document.getElementById('p-enea1').value = p.enea[0];
+    if (p.enea[1]) document.getElementById('p-enea2').value = p.enea[1];
+    if (p.enea[2]) document.getElementById('p-enea3').value = p.enea[2];
+  }
+  if (p.anchor) document.getElementById('p-anchor').value = p.anchor;
+  if (p.must) document.getElementById('p-must').value = p.must;
+  if (p.never) document.getElementById('p-never').value = p.never;
+  updateEgoBar();
+}
+
+function updateEgoBar() {
+  const cp = document.getElementById('p-cp').value;
+  const np = document.getElementById('p-np').value;
+  const a = document.getElementById('p-a').value;
+  const fc = document.getElementById('p-fc').value;
+  const ac = document.getElementById('p-ac').value;
+  const bar = (val) => '■'.repeat(parseInt(val)) + '□'.repeat(10 - parseInt(val));
+  document.getElementById('ego-bar').innerHTML =
+    `CP: ${bar(cp)} (${cp})<br>NP: ${bar(np)} (${np})<br>A : ${bar(a)} (${a})<br>FC: ${bar(fc)} (${fc})<br>AC: ${bar(ac)} (${ac})`;
+}
+
+function getProfileText() {
+  const saved = sessionStorage.getItem('mitsumeru_profile');
+  if (!saved) return 'プロファイル未設定';
+  const p = JSON.parse(saved);
+  return `名前:${p.name} 役割:${p.role}
+LSRP:${p.lsrp} RC:${p.rc}
+エゴグラム CP:${p.ego?.cp} NP:${p.ego?.np} A:${p.ego?.a} FC:${p.ego?.fc} AC:${p.ego?.ac}
+エニアグラム 第1位:${p.enea?.[0]} 第2位:${p.enea?.[1]} 第3位:${p.enea?.[2]}
+MUST:${p.must} NEVER:${p.never}
+キャリアアンカー:${p.anchor}`;
+}
+
 function switchTab(tab) {
   document.querySelectorAll('.mode-tab').forEach((t,i) => {
-    t.classList.toggle('active', ['morning','memo','evening','output'][i] === tab);
+    t.classList.toggle('active', ['morning','memo','evening','output','profile'][i] === tab);
   });
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-'+tab).classList.add('active');
+  if (tab === 'profile') updateEgoBar();
 }
 
 function selectTag(btn, tag) {
@@ -1172,6 +1391,9 @@ function calcMorning() {
   const course = courseData[courseVal];
 
   const prompt = `あなたはFusion Partners代表・柴山靖章の「SuccessOS 統合経営参謀」です。
+【ユーザープロファイル】
+${getProfileText()}
+
 今朝の状態確認データ：
 HP: ${hpAdj}/100、MP: ${mp}/100
 モード判定: ${modeText}
