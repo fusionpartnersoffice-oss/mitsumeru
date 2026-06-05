@@ -984,8 +984,12 @@ async function cloudLoad(type) {
 // データ保存関数（localStorage + クラウド）
 function saveMemos() {
   localStorage.setItem('mitsumeru_memos', JSON.stringify(memos));
-  // 画像も含めてクラウド同期（圧縮済みなのでKVに収まる）
-  cloudSave('memos', memos);
+  // テキストと画像を分けてクラウド同期
+  const textData = memos.map(m => ({...m, image: null}));
+  cloudSave('memos', textData);
+  // 画像だけ別キーで保存（インデックスと画像データのペア）
+  const imageData = memos.map((m, i) => ({ i, image: m.image || null })).filter(m => m.image);
+  if (imageData.length > 0) cloudSave('images', imageData);
 }
 function saveEvening() {
   const data = {};
@@ -1161,6 +1165,13 @@ window.addEventListener('DOMContentLoaded', async function() {
     const cloudMemos = await cloudLoad('memos');
     if (cloudMemos && cloudMemos.length > 0) {
       memos = cloudMemos;
+      // 画像を別キーから取得してマージ
+      const cloudImages = await cloudLoad('images');
+      if (cloudImages && cloudImages.length > 0) {
+        cloudImages.forEach(({ i, image }) => {
+          if (memos[i]) memos[i].image = image;
+        });
+      }
       localStorage.setItem('mitsumeru_memos', JSON.stringify(memos));
       if (typeof calcAutoCount === 'function') calcAutoCount();
       if (typeof renderMemos === 'function') renderMemos();
