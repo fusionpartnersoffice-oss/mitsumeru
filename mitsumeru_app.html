@@ -689,11 +689,11 @@
     <div class="section-title">睡眠</div>
     <div class="field">
       <label>就寝時間（昨夜）</label>
-      <input type="time" id="m-sleep" value="23:00">
+      <input type="time" id="m-sleep" onchange="saveMorning()" value="23:00">
     </div>
     <div class="field">
       <label>起床時間（今朝）</label>
-      <input type="time" id="m-wake" value="07:00">
+      <input type="time" id="m-wake" onchange="saveMorning()" value="07:00">
     </div>
   </div>
 
@@ -754,7 +754,7 @@
     </div>
     <div class="field">
       <label>今日の一言（任意）</label>
-      <textarea id="m-want" placeholder="面接前で緊張している、など。なければ空欄でOK" style="min-height:60px;"></textarea>
+      <textarea id="m-want" oninput="saveMorning()" placeholder="面接前で緊張している、など。なければ空欄でOK" style="min-height:60px;"></textarea>
     </div>
   </div>
 
@@ -794,7 +794,7 @@
     </div>
     <div class="field" style="margin-top:12px;">
       <label>補足・追記（随時メモに書ききれなかったこと）</label>
-      <textarea id="e-supplement" placeholder="随時メモで拾えなかった出来事や気づきがあれば追記してください。なければ空欄でOK" style="min-height:60px;"></textarea>
+      <textarea id="e-supplement" oninput="saveEvening()" placeholder="随時メモで拾えなかった出来事や気づきがあれば追記してください。なければ空欄でOK" style="min-height:60px;"></textarea>
     </div>
   </div>
 
@@ -888,15 +888,15 @@
     <div class="section-title">明日の設計</div>
     <div class="field">
       <label>明日の確定アポ（時刻4桁・ポモ数・内容）</label>
-      <textarea id="e-tomorrow" class="tall" placeholder="例：0900 2 Claude壁打ち ミツメルアプリ開発&#10;1400 2 LITALICO面接準備"></textarea>
+      <textarea id="e-tomorrow" class="tall" oninput="saveEvening()" placeholder="例：0900 2 Claude壁打ち ミツメルアプリ開発&#10;1400 2 LITALICO面接準備"></textarea>
     </div>
     <div class="field">
       <label>遅延イベント（先送りタスク）</label>
-      <textarea id="e-delay" placeholder="先送りしたタスクを記録"></textarea>
+      <textarea id="e-delay" oninput="saveEvening()" placeholder="先送りしたタスクを記録"></textarea>
     </div>
     <div class="field">
       <label>明日のTry100・読む本・参考URL</label>
-      <textarea id="e-try100" placeholder="明日やりたいこと、読みたい本、NotebookLMに入れたい資料など箇条書きで"></textarea>
+      <textarea id="e-try100" oninput="saveEvening()" placeholder="明日やりたいこと、読みたい本、NotebookLMに入れたい資料など箇条書きで"></textarea>
     </div>
   </div>
 
@@ -904,11 +904,11 @@
     <div class="section-title">フィードバック</div>
     <div class="field">
       <label>SuccessOSへのフィードバック</label>
-      <textarea id="e-feedback" placeholder="システムへの気づき・改善点"></textarea>
+      <textarea id="e-feedback" oninput="saveEvening()" placeholder="システムへの気づき・改善点"></textarea>
     </div>
     <div class="field">
       <label>NotebookLMのまとめコメント（あれば貼り付け）</label>
-      <textarea id="e-notebooklm" placeholder="HiNotesやNotebookLMの要約テキストをそのままペースト。なければ空欄でOK"></textarea>
+      <textarea id="e-notebooklm" oninput="saveEvening()" placeholder="HiNotesやNotebookLMの要約テキストをそのままペースト。なければ空欄でOK"></textarea>
     </div>
   </div>
 
@@ -944,16 +944,73 @@ let counts = { noise: 0, pomo: 0, try100: 0, 'memo-pomo': 0 };
 let debugScores = { d1: '', d2: '', d3: '', d4: '', d5: '' };
 let calendarCSV = '';
 let delayCSV = '';
+
+// localStorageで当日データを復元（日付が変わったらリセット）
+const _today = new Date().toDateString();
+const _savedDay = localStorage.getItem('mitsumeru_day');
 let memos = [];
+if (_savedDay === _today) {
+  try { memos = JSON.parse(localStorage.getItem('mitsumeru_memos') || '[]'); } catch(e) { memos = []; }
+} else {
+  localStorage.removeItem('mitsumeru_memos');
+  localStorage.removeItem('mitsumeru_morning');
+  localStorage.removeItem('mitsumeru_evening');
+  localStorage.setItem('mitsumeru_day', _today);
+}
+
 let selectedTag = 'HP';
-let apiKey = sessionStorage.getItem('mitsumeru_api_key') || '';
+let apiKey = localStorage.getItem('mitsumeru_api_key') || '';
+
+// データ保存関数
+function saveMemos() {
+  localStorage.setItem('mitsumeru_memos', JSON.stringify(memos.map(m => ({...m, image: null}))));
+}
+function saveEvening() {
+  const data = {};
+  ['e-supplement','e-tomorrow','e-delay','e-try100','e-feedback','e-notebooklm'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) data[id] = el.value;
+  });
+  localStorage.setItem('mitsumeru_evening', JSON.stringify(data));
+}
+function saveMorning() {
+  const data = {};
+  ['m-sleep','m-wake','m-condition','m-mood','m-noise-detail','m-want','m-course'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) data[id] = el.value;
+  });
+  localStorage.setItem('mitsumeru_morning', JSON.stringify(data));
+}
+
+// 起動時にデータ復元
+window.addEventListener('DOMContentLoaded', function() {
+  setTimeout(function() {
+    // 朝の入力を復元
+    const morning = JSON.parse(localStorage.getItem('mitsumeru_morning') || '{}');
+    ['m-sleep','m-wake','m-condition','m-mood','m-noise-detail','m-want','m-course'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el && morning[id] !== undefined) {
+        el.value = morning[id];
+        el.dispatchEvent(new Event('input'));
+      }
+    });
+    // 夜の入力を復元
+    const evening = JSON.parse(localStorage.getItem('mitsumeru_evening') || '{}');
+    ['e-supplement','e-tomorrow','e-delay','e-try100','e-feedback','e-notebooklm'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el && evening[id] !== undefined) el.value = evening[id];
+    });
+    if (typeof calcAutoCount === 'function') calcAutoCount();
+    if (typeof renderMemos === 'function') renderMemos();
+  }, 500);
+});
 
 function getApiKey() {
   if (apiKey) return apiKey;
   const key = prompt('AnthropicのAPIキーを入力してください：\n\n取得方法：console.anthropic.com → API Keys → Create Key');
   if (key && key.trim().startsWith('sk-')) {
     apiKey = key.trim();
-    sessionStorage.setItem('mitsumeru_api_key', apiKey);
+    localStorage.setItem('mitsumeru_api_key', apiKey);
     return apiKey;
   } else if (key) {
     alert('APIキーは「sk-」から始まる文字列です。もう一度確認してください。');
@@ -1037,14 +1094,14 @@ function saveProfile() {
     must: document.getElementById('p-must').value,
     never: document.getElementById('p-never').value,
   };
-  sessionStorage.setItem('mitsumeru_profile', JSON.stringify(profile));
+  localStorage.setItem('mitsumeru_profile', JSON.stringify(profile));
   updateEgoBar();
   document.getElementById('profile-saved').style.display = 'block';
   setTimeout(() => document.getElementById('profile-saved').style.display = 'none', 3000);
 }
 
 function loadProfile() {
-  const saved = sessionStorage.getItem('mitsumeru_profile');
+  const saved = localStorage.getItem('mitsumeru_profile');
   if (!saved) return;
   const p = JSON.parse(saved);
   if (p.name) document.getElementById('p-name').value = p.name;
@@ -1081,7 +1138,7 @@ function updateEgoBar() {
 }
 
 function getProfileText() {
-  const saved = sessionStorage.getItem('mitsumeru_profile');
+  const saved = localStorage.getItem('mitsumeru_profile');
   if (!saved) return 'プロファイル未設定';
   const p = JSON.parse(saved);
   return `名前:${p.name} 役割:${p.role}
@@ -1134,12 +1191,12 @@ function setApiKey() {
   const key = prompt('AnthropicのAPIキーを入力してください（sk-ant-...）：\n\n取得方法：console.anthropic.com → API Keys → Create Key\n\n現在のキー：' + (apiKey ? apiKey.substring(0,10)+'...' : '未設定'));
   if (key && key.trim().startsWith('sk-')) {
     apiKey = key.trim();
-    sessionStorage.setItem('mitsumeru_api_key', apiKey);
+    localStorage.setItem('mitsumeru_api_key', apiKey);
     document.getElementById('api-btn').style.color = '#4caf82';
     alert('APIキーを設定しました！');
   } else if (key === '') {
     apiKey = '';
-    sessionStorage.removeItem('mitsumeru_api_key');
+    localStorage.removeItem('mitsumeru_api_key');
     document.getElementById('api-btn').style.color = 'var(--bg)';
     alert('APIキーをクリアしました。');
   }
@@ -1215,6 +1272,7 @@ function addMemo() {
   const timeStr = time ? time.replace(':','') : '';
   const imgSrc = document.getElementById('memo-image-thumb').src || null;
   memos.push({ tag: selectedTag, time: timeStr, pomos, content, image: imgSrc && imgSrc.startsWith('data:') ? imgSrc : null });
+  saveMemos();
   renderMemos();
   updateEveningMemoPreview();
   calcAutoCount();
@@ -1308,6 +1366,7 @@ function editMemo(i) {
 
 function deleteMemo(i) {
   memos.splice(i, 1);
+  saveMemos();
   renderMemos();
   calcAutoCount();
 }
@@ -1315,6 +1374,7 @@ function deleteMemo(i) {
 function clearMemos() {
   if (confirm('本日のメモをリセットしますか？')) {
     memos = [];
+    saveMemos();
     renderMemos();
     calcAutoCount();
   }
@@ -1433,7 +1493,7 @@ function parseSchedule(text) {
   const dateStr = `${tomorrow.getFullYear()}/${String(tomorrow.getMonth()+1).padStart(2,'0')}/${String(tomorrow.getDate()).padStart(2,'0')}`;
 
   for (const line of lines) {
-    const m = line.match(/^(\d{4})\s+(\d+)\s*ポモ?\s+(.+)/);
+    const m = line.match(/^(\d{4})\s+(\d+)\s*ポモ?\s*(.+)/);
     if (m) {
       const startH = Math.floor(parseInt(m[1]) / 100);
       const startM = parseInt(m[1]) % 100;
@@ -1450,12 +1510,17 @@ function parseSchedule(text) {
 }
 
 function generateEvening() {
+  saveEvening();
   const supplement = document.getElementById('e-supplement').value;
   const tomorrow = document.getElementById('e-tomorrow').value;
   const delay = document.getElementById('e-delay').value;
   const try100 = document.getElementById('e-try100').value;
   const feedback = document.getElementById('e-feedback').value;
   const notebooklm = document.getElementById('e-notebooklm').value;
+
+  const p = memos.filter(m => m.tag === 'P').map(m => m.content).join(' / ') || 'なし';
+  const v = memos.filter(m => m.tag === 'V').map(m => m.content).join(' / ') || 'なし';
+  const g = memos.filter(m => m.tag === 'G').map(m => m.content).join(' / ') || 'なし';
 
   const debugText = `役割:${debugScores.d1}、委譲:${debugScores.d2}、動機:${debugScores.d3}、資産:${debugScores.d4}、余白:${debugScores.d5}`;
   const lv = counts.pomo * 10;
