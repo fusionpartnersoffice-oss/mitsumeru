@@ -1663,6 +1663,7 @@ function calcMorning() {
   badge.className = 'mode-badge ' + modeClass;
 
   document.getElementById('morning-result').style.display = 'block';
+  saveMorning(); // HP/MP/モード/表示状態をここで即保存（Claude待ち不要）
 
   const noises = Array.from(document.querySelectorAll('#m-noise-group .checked input')).map(i => i.value);
   const noiseDetail = document.getElementById('m-noise-detail').value;
