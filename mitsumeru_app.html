@@ -712,7 +712,7 @@
       <label>気分・精神状態（直感で）</label>
       <div class="score-row">
         <span style="font-size:11px;color:var(--text3)">最悪</span>
-        <input type="range" min="1" max="5" value="3" id="m-mood" oninput="document.getElementById('m-mood-val').textContent=this.value">
+        <input type="range" min="1" max="5" value="3" id="m-mood" oninput="document.getElementById('m-mood-val').textContent=this.value; saveMorning()">
         <span style="font-size:11px;color:var(--text3)">最高</span>
         <span class="score-val" id="m-mood-val">3</span>
       </div>
@@ -745,7 +745,7 @@
       <label>本日のタスクコース</label>
       <div class="score-row">
         <span style="font-size:11px;color:var(--text3)">超甘口</span>
-        <input type="range" min="1" max="6" value="3" id="m-course" oninput="updateCourse(this.value)">
+        <input type="range" min="1" max="6" value="3" id="m-course" oninput="updateCourse(this.value); saveMorning()">
         <span style="font-size:11px;color:var(--text3)">地獄</span>
       </div>
       <div id="course-badge" style="margin-top:10px;text-align:center;padding:8px;border-radius:6px;font-size:13px;font-weight:500;background:var(--bg2);border:0.5px solid var(--border);">
@@ -1006,6 +1006,17 @@ function saveMorning() {
     const el = document.getElementById(id);
     if (el) data[id] = el.value;
   });
+  // ノイズチェックボックスの状態を保存
+  const noises = [];
+  document.querySelectorAll('#m-noise-group .checkbox-item').forEach(label => {
+    if (label.classList.contains('checked')) {
+      noises.push(label.querySelector('input').value);
+    }
+  });
+  data['noises'] = noises;
+  // 朝のアドバイスも保存
+  const advice = document.getElementById('morning-advice');
+  if (advice) data['morning-advice'] = advice.textContent;
   localStorage.setItem('mitsumeru_morning', JSON.stringify(data));
   cloudSave('morning', data);
 }
@@ -1022,6 +1033,27 @@ window.addEventListener('DOMContentLoaded', async function() {
         el.dispatchEvent(new Event('input'));
       }
     });
+    // ノイズチェックボックスを復元
+    if (morning.noises && morning.noises.length > 0) {
+      document.querySelectorAll('#m-noise-group .checkbox-item').forEach(label => {
+        const val = label.querySelector('input').value;
+        if (morning.noises.includes(val)) label.classList.add('checked');
+      });
+    }
+    // 朝のアドバイスを復元
+    if (morning['morning-advice']) {
+      const adviceEl = document.getElementById('morning-advice');
+      if (adviceEl) {
+        adviceEl.textContent = morning['morning-advice'];
+        adviceEl.classList.add('visible');
+      }
+    }
+    // 出力サマリーを復元
+    const savedOutput = localStorage.getItem('mitsumeru_output');
+    if (savedOutput) {
+      const mdBox = document.getElementById('output-markdown');
+      if (mdBox) mdBox.textContent = savedOutput;
+    }
     const evening = JSON.parse(localStorage.getItem('mitsumeru_evening') || '{}');
     ['e-supplement','e-tomorrow','e-delay','e-try100','e-feedback','e-notebooklm',
      'd1-reason','d2-reason','d3-reason','d4-reason','d5-reason'].forEach(id => {
@@ -1453,6 +1485,7 @@ function getMemoSummary() {
 function toggleCheck(el, event) {
   if (event) event.preventDefault();
   el.classList.toggle('checked');
+  saveMorning();
 }
 
 function changeCount(key, delta) {
@@ -1699,6 +1732,7 @@ NotebookLM音声対話用のナラティブ（物語調）
       loading.style.display = 'none';
       mdBox.textContent = text;
       mdBox.classList.add('visible');
+      localStorage.setItem('mitsumeru_output', text);
     },
     err => {
       loading.style.display = 'none';
