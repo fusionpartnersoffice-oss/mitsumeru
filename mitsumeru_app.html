@@ -1553,10 +1553,10 @@ function previewMemoImage(input) {
   if (input.files && input.files[0]) {
     const reader = new FileReader();
     reader.onload = e => {
-      // Canvasで自動リサイズ圧縮（長辺800px・JPEG品質0.7）
+      // Canvasで自動リサイズ圧縮（長辺400px・JPEG品質0.6）
       const img = new Image();
       img.onload = () => {
-        const MAX = 800;
+        const MAX = 400;
         let w = img.width, h = img.height;
         if (w > MAX || h > MAX) {
           if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
@@ -1565,7 +1565,7 @@ function previewMemoImage(input) {
         const canvas = document.createElement('canvas');
         canvas.width = w; canvas.height = h;
         canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-        const compressed = canvas.toDataURL('image/jpeg', 0.7);
+        const compressed = canvas.toDataURL('image/jpeg', 0.6);
         document.getElementById('memo-image-thumb').src = compressed;
         document.getElementById('memo-image-preview').style.display = 'block';
       };
