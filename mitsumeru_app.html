@@ -1272,12 +1272,10 @@ function updateCourse(val) {
 
 function changeTargetDate(newDate) {
   const currentDay = localStorage.getItem('mitsumeru_day');
-  if (newDate === currentDay) return; // 同じ日付なら何もしない
+  if (newDate === currentDay) return;
 
-  // 前日データが存在するか確認
   const hasMorning = !!localStorage.getItem('mitsumeru_morning');
-  const hasMemos = memos.length > 0;
-  const hasData = hasMorning || hasMemos;
+  const hasData = hasMorning || memos.length > 0;
 
   function doReset() {
     memos = [];
@@ -1325,38 +1323,36 @@ function changeTargetDate(newDate) {
   }
 
   if (!hasData) {
-    // データがない場合はそのままリセット
     doReset();
     return;
   }
 
-  // 2段階ダイアログ
-  const choice = confirm(
-    `【対象日の変更】\n\n` +
+  // ダイアログ①：前日データあり
+  const goGenerate = confirm(
     `前日（${currentDay}）のデータが残っています。\n\n` +
-    `OK　→ 翌日戦略を生成してからリセット\n` +
-    `キャンセル　→ 次の選択へ`
+    `OK　→ 夜タブへ移動（先に翻日戦略を生成してください）\n` +
+    `キャンセル　→ そのままリセットするか選択へ`
   );
 
-  if (choice) {
-    // ① 生成してからリセット
+  if (goGenerate) {
+    // 元の日付に戻してから夜タブへ誘導（リセットはしない）
+    document.getElementById('m-date').value = currentDay;
     switchTab('evening');
-    setTimeout(() => {
-      generateEvening(doReset); // コールバックでリセット
-    }, 300);
+    alert('前日の「翌日戦略を生成する」を実行してください。\nコピー・ダウンロード後に対象日を変更するとリセットされます。');
+    return;
+  }
+
+  // ダイアログ②：そのままリセットするか
+  const skip = confirm(
+    `前日データをリセットしますか？\n\n` +
+    `OK　→ そのままリセット\n` +
+    `キャンセル　→ 対象日変更をやめる`
+  );
+
+  if (skip) {
+    doReset();
   } else {
-    // ② そのままリセット or キャンセル
-    const skip = confirm(
-      `前日データをリセットしますか？\n\n` +
-      `OK　→ そのままリセット\n` +
-      `キャンセル　→ 対象日変更をやめる`
-    );
-    if (skip) {
-      doReset();
-    } else {
-      // 元の日付に戻す
-      document.getElementById('m-date').value = currentDay;
-    }
+    document.getElementById('m-date').value = currentDay;
   }
 }
 
@@ -1819,7 +1815,7 @@ function parseSchedule(text) {
   return { events, dateStr };
 }
 
-function generateEvening(onComplete) {
+function generateEvening() {
   saveEvening();
   const supplement = document.getElementById('e-supplement').value;
   const tomorrow = document.getElementById('e-tomorrow').value;
@@ -1949,16 +1945,11 @@ NotebookLM音声対話用のナラティブ（物語調）
       mdBox.textContent = text;
       mdBox.classList.add('visible');
       localStorage.setItem('mitsumeru_output', text);
-      if (typeof onComplete === 'function') onComplete(); // リセットを実行
     },
     err => {
       loading.style.display = 'none';
       mdBox.textContent = 'エラー：' + err;
       mdBox.classList.add('visible');
-      if (typeof onComplete === 'function') {
-        if (confirm('生成でエラーが発生しました。それでもリセットしますか？')) onComplete();
-        else document.getElementById('m-date').value = localStorage.getItem('mitsumeru_day');
-      }
     }
   );
 }
