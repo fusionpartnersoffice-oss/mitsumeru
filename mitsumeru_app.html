@@ -681,7 +681,7 @@
   <div class="section">
     <div class="section-title">対象日（宵越し・遅延入力の場合は変更）</div>
     <div class="field">
-      <input type="date" id="m-date">
+      <input type="date" id="m-date" onchange="changeTargetDate(this.value)">
     </div>
   </div>
 
@@ -945,25 +945,23 @@ let debugScores = { d1: '', d2: '', d3: '', d4: '', d5: '' };
 let calendarCSV = '';
 let delayCSV = '';
 
-// localStorageで当日データを復元（日付が変わったらリセット）
-const _today = new Date().toDateString();
-const _savedDay = localStorage.getItem('mitsumeru_day');
+// 対象日ベースでデータを管理（起動時はlocalStorageの対象日を引き継ぐ）
+const _today = new Date().toISOString().split('T')[0]; // 例: 2026-06-05
+const _savedDay = localStorage.getItem('mitsumeru_day') || _today;
 let memos = [];
-if (_savedDay === _today) {
+// 保存済み対象日と今日が同じ、またはまだ対象日が設定されていない場合はデータを引き継ぐ
+if (localStorage.getItem('mitsumeru_day')) {
   try { memos = JSON.parse(localStorage.getItem('mitsumeru_memos') || '[]'); } catch(e) { memos = []; }
 } else {
-  localStorage.removeItem('mitsumeru_memos');
-  localStorage.removeItem('mitsumeru_morning');
-  localStorage.removeItem('mitsumeru_evening');
   localStorage.setItem('mitsumeru_day', _today);
 }
 
 let selectedTag = 'HP';
 let apiKey = localStorage.getItem('mitsumeru_api_key') || '';
 
-// クラウド同期設定
+// クラウド同期設定（SYNC_KEYは対象日に連動して動的に変わる）
 const SYNC_URL = 'https://mitsumeru-sync.fusion-partners-office.workers.dev';
-const SYNC_KEY = new Date().toISOString().split('T')[0]; // 例: 2026-06-05
+let SYNC_KEY = _savedDay; // 対象日と連動
 
 async function cloudSave(type, data) {
   try {
@@ -1272,15 +1270,105 @@ function updateCourse(val) {
   badge.style.borderColor = c.color + '44';
 }
 
+function changeTargetDate(newDate) {
+  const currentDay = localStorage.getItem('mitsumeru_day');
+  if (newDate === currentDay) return; // 同じ日付なら何もしない
+
+  // 前日データが存在するか確認
+  const hasMorning = !!localStorage.getItem('mitsumeru_morning');
+  const hasMemos = memos.length > 0;
+  const hasData = hasMorning || hasMemos;
+
+  function doReset() {
+    memos = [];
+    counts = { noise: 0, pomo: 0, try100: 0, 'memo-pomo': 0 };
+    debugScores = { d1: '', d2: '', d3: '', d4: '', d5: '' };
+
+    localStorage.removeItem('mitsumeru_memos');
+    localStorage.removeItem('mitsumeru_morning');
+    localStorage.removeItem('mitsumeru_evening');
+    localStorage.setItem('mitsumeru_day', newDate);
+    SYNC_KEY = newDate;
+
+    const eDate = document.getElementById('e-date');
+    if (eDate) eDate.value = newDate;
+
+    if (typeof renderMemos === 'function') renderMemos();
+    if (typeof calcAutoCount === 'function') calcAutoCount();
+
+    const bodyEl = document.getElementById('m-body');
+    const moodEl = document.getElementById('m-mood');
+    const courseEl = document.getElementById('m-course');
+    if (bodyEl) { bodyEl.value = 3; document.getElementById('m-body-val').textContent = 3; }
+    if (moodEl) { moodEl.value = 3; document.getElementById('m-mood-val').textContent = 3; }
+    if (courseEl) { courseEl.value = 3; updateCourse(3); }
+
+    const resultEl = document.getElementById('morning-result');
+    if (resultEl) resultEl.style.display = 'none';
+
+    ['m-sleep','m-wake','m-noise-detail','m-want'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = id === 'm-sleep' ? '23:00' : id === 'm-wake' ? '07:00' : '';
+    });
+
+    document.querySelectorAll('#m-noise-group .checkbox-item').forEach(l => l.classList.remove('checked'));
+
+    ['e-supplement','e-tomorrow','e-delay','e-try100','e-feedback','e-notebooklm',
+     'd1-reason','d2-reason','d3-reason','d4-reason','d5-reason'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+
+    document.querySelectorAll('.debug-btn').forEach(b => {
+      b.classList.remove('selected-maru','selected-sankaku','selected-batsu');
+    });
+  }
+
+  if (!hasData) {
+    // データがない場合はそのままリセット
+    doReset();
+    return;
+  }
+
+  // 2段階ダイアログ
+  const choice = confirm(
+    `【対象日の変更】\n\n` +
+    `前日（${currentDay}）のデータが残っています。\n\n` +
+    `OK　→ 翌日戦略を生成してからリセット\n` +
+    `キャンセル　→ 次の選択へ`
+  );
+
+  if (choice) {
+    // ① 生成してからリセット
+    switchTab('evening');
+    setTimeout(() => {
+      generateEvening(doReset); // コールバックでリセット
+    }, 300);
+  } else {
+    // ② そのままリセット or キャンセル
+    const skip = confirm(
+      `前日データをリセットしますか？\n\n` +
+      `OK　→ そのままリセット\n` +
+      `キャンセル　→ 対象日変更をやめる`
+    );
+    if (skip) {
+      doReset();
+    } else {
+      // 元の日付に戻す
+      document.getElementById('m-date').value = currentDay;
+    }
+  }
+}
+
 function setDates() {
   const now = new Date();
   const fmt = d => `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${'日月火水木金土'[d.getDay()]}）`;
-  const isoDate = now.toISOString().split('T')[0];
   document.getElementById('morning-date').textContent = fmt(now);
   document.getElementById('evening-date').textContent = fmt(now);
   document.getElementById('memo-date').textContent = fmt(now);
-  document.getElementById('m-date').value = isoDate;
-  document.getElementById('e-date').value = isoDate;
+  // 対象日はlocalStorageの保存値を使う（なければ今日）
+  document.getElementById('m-date').value = _savedDay;
+  document.getElementById('e-date').value = _savedDay;
   setNowTime();
 }
 setDates();
@@ -1731,7 +1819,7 @@ function parseSchedule(text) {
   return { events, dateStr };
 }
 
-function generateEvening() {
+function generateEvening(onComplete) {
   saveEvening();
   const supplement = document.getElementById('e-supplement').value;
   const tomorrow = document.getElementById('e-tomorrow').value;
@@ -1861,11 +1949,16 @@ NotebookLM音声対話用のナラティブ（物語調）
       mdBox.textContent = text;
       mdBox.classList.add('visible');
       localStorage.setItem('mitsumeru_output', text);
+      if (typeof onComplete === 'function') onComplete(); // リセットを実行
     },
     err => {
       loading.style.display = 'none';
       mdBox.textContent = 'エラー：' + err;
       mdBox.classList.add('visible');
+      if (typeof onComplete === 'function') {
+        if (confirm('生成でエラーが発生しました。それでもリセットしますか？')) onComplete();
+        else document.getElementById('m-date').value = localStorage.getItem('mitsumeru_day');
+      }
     }
   );
 }
