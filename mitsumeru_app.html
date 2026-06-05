@@ -991,10 +991,12 @@ function saveMemos() {
 }
 function saveEvening() {
   const data = {};
-  ['e-supplement','e-tomorrow','e-delay','e-try100','e-feedback','e-notebooklm'].forEach(id => {
+  ['e-supplement','e-tomorrow','e-delay','e-try100','e-feedback','e-notebooklm',
+   'd1-reason','d2-reason','d3-reason','d4-reason','d5-reason'].forEach(id => {
     const el = document.getElementById(id);
     if (el) data[id] = el.value;
   });
+  data['debugScores'] = debugScores;
   localStorage.setItem('mitsumeru_evening', JSON.stringify(data));
   cloudSave('evening', data);
 }
@@ -1021,10 +1023,14 @@ window.addEventListener('DOMContentLoaded', async function() {
       }
     });
     const evening = JSON.parse(localStorage.getItem('mitsumeru_evening') || '{}');
-    ['e-supplement','e-tomorrow','e-delay','e-try100','e-feedback','e-notebooklm'].forEach(id => {
+    ['e-supplement','e-tomorrow','e-delay','e-try100','e-feedback','e-notebooklm',
+     'd1-reason','d2-reason','d3-reason','d4-reason','d5-reason'].forEach(id => {
       const el = document.getElementById(id);
       if (el && evening[id] !== undefined) el.value = evening[id];
     });
+    if (evening.debugScores) {
+      debugScores = evening.debugScores;
+    }
     if (typeof calcAutoCount === 'function') calcAutoCount();
     if (typeof renderMemos === 'function') renderMemos();
     if (typeof loadProfile === 'function') loadProfile();
@@ -1464,6 +1470,7 @@ function selectDebug(btn, key, val) {
   });
   btn.classList.add('selected-'+val);
   debugScores[key] = val === 'maru' ? '〇' : val === 'sankaku' ? '△' : '✕';
+  saveEvening();
 }
 
 function calcSleepHP() {
