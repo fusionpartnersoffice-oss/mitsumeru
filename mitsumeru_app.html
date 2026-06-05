@@ -703,18 +703,18 @@
       <label>体調（直感で）</label>
       <div class="score-row">
         <span style="font-size:11px;color:var(--text3)">最悪</span>
-        <input type="range" min="1" max="5" value="3" id="m-body" oninput="document.getElementById('m-body-val').textContent=this.value; saveMorning()">
+        <input type="range" min="1" max="5" id="m-body" oninput="document.getElementById('m-body-val').textContent=this.value; saveMorning()">
         <span style="font-size:11px;color:var(--text3)">最高</span>
-        <span class="score-val" id="m-body-val">3</span>
+        <span class="score-val" id="m-body-val">—</span>
       </div>
     </div>
     <div class="field">
       <label>気分・精神状態（直感で）</label>
       <div class="score-row">
         <span style="font-size:11px;color:var(--text3)">最悪</span>
-        <input type="range" min="1" max="5" value="3" id="m-mood" oninput="document.getElementById('m-mood-val').textContent=this.value; saveMorning()">
+        <input type="range" min="1" max="5" id="m-mood" oninput="document.getElementById('m-mood-val').textContent=this.value; saveMorning()">
         <span style="font-size:11px;color:var(--text3)">最高</span>
-        <span class="score-val" id="m-mood-val">3</span>
+        <span class="score-val" id="m-mood-val">—</span>
       </div>
     </div>
   </div>
@@ -745,7 +745,7 @@
       <label>本日のタスクコース</label>
       <div class="score-row">
         <span style="font-size:11px;color:var(--text3)">超甘口</span>
-        <input type="range" min="1" max="6" value="3" id="m-course" oninput="updateCourse(this.value); saveMorning()">
+        <input type="range" min="1" max="6" id="m-course" oninput="updateCourse(this.value); saveMorning()">
         <span style="font-size:11px;color:var(--text3)">地獄</span>
       </div>
       <div id="course-badge" style="margin-top:10px;text-align:center;padding:8px;border-radius:6px;font-size:13px;font-weight:500;background:var(--bg2);border:0.5px solid var(--border);">
@@ -1017,33 +1017,45 @@ function saveMorning() {
   // 朝のアドバイスも保存
   const advice = document.getElementById('morning-advice');
   if (advice) data['morning-advice'] = advice.textContent;
+  // 判定結果を保存
+  const hpVal = document.getElementById('hp-val');
+  const mpVal = document.getElementById('mp-val');
+  const modeBadge = document.getElementById('mode-badge');
+  const morningResult = document.getElementById('morning-result');
+  if (hpVal) data['hp-val'] = hpVal.textContent;
+  if (mpVal) data['mp-val'] = mpVal.textContent;
+  if (modeBadge) { data['mode-badge-text'] = modeBadge.textContent; data['mode-badge-class'] = modeBadge.className; }
+  if (morningResult) data['morning-result-visible'] = morningResult.style.display !== 'none';
   localStorage.setItem('mitsumeru_morning', JSON.stringify(data));
   cloudSave('morning', data);
 }
 
 // 起動時にデータ復元（クラウド優先、なければlocalStorage）
 window.addEventListener('DOMContentLoaded', async function() {
-  // localStorageで復元（1秒待ってDOMが確実に準備できてから）
-  setTimeout(function() {
+  // localStorageで即時復元（timeoutなし）
+  (function restoreFromLocal() {
     const morning = JSON.parse(localStorage.getItem('mitsumeru_morning') || '{}');
 
-    // スライダー類を復元
+    // スライダー類を復元（保存値があれば復元、なければデフォルト3を設定）
     const bodyEl = document.getElementById('m-body');
-    if (bodyEl && morning['m-body'] !== undefined) {
-      bodyEl.value = morning['m-body'];
-      const bodyVal = document.getElementById('m-body-val');
-      if (bodyVal) bodyVal.textContent = morning['m-body'];
+    if (bodyEl) {
+      const val = morning['m-body'] !== undefined ? morning['m-body'] : '3';
+      bodyEl.value = val;
+      const bodyValEl = document.getElementById('m-body-val');
+      if (bodyValEl) bodyValEl.textContent = val;
     }
     const moodEl = document.getElementById('m-mood');
-    if (moodEl && morning['m-mood'] !== undefined) {
-      moodEl.value = morning['m-mood'];
-      const moodVal = document.getElementById('m-mood-val');
-      if (moodVal) moodVal.textContent = morning['m-mood'];
+    if (moodEl) {
+      const val = morning['m-mood'] !== undefined ? morning['m-mood'] : '3';
+      moodEl.value = val;
+      const moodValEl = document.getElementById('m-mood-val');
+      if (moodValEl) moodValEl.textContent = val;
     }
     const courseEl = document.getElementById('m-course');
-    if (courseEl && morning['m-course'] !== undefined) {
-      courseEl.value = morning['m-course'];
-      if (typeof updateCourse === 'function') updateCourse(morning['m-course']);
+    if (courseEl) {
+      const val = morning['m-course'] !== undefined ? morning['m-course'] : '3';
+      courseEl.value = val;
+      if (typeof updateCourse === 'function') updateCourse(val);
     }
 
     // テキスト入力を復元
@@ -1067,6 +1079,27 @@ window.addEventListener('DOMContentLoaded', async function() {
         adviceEl.textContent = morning['morning-advice'];
         adviceEl.classList.add('visible');
       }
+    }
+
+    // 判定結果を復元（HP/MP/モード/morning-result表示）
+    if (morning['hp-val'] && morning['hp-val'] !== '—') {
+      const hpEl = document.getElementById('hp-val');
+      if (hpEl) hpEl.textContent = morning['hp-val'];
+    }
+    if (morning['mp-val'] && morning['mp-val'] !== '—') {
+      const mpEl = document.getElementById('mp-val');
+      if (mpEl) mpEl.textContent = morning['mp-val'];
+    }
+    if (morning['mode-badge-text']) {
+      const badge = document.getElementById('mode-badge');
+      if (badge) {
+        badge.textContent = morning['mode-badge-text'];
+        if (morning['mode-badge-class']) badge.className = morning['mode-badge-class'];
+      }
+    }
+    if (morning['morning-result-visible']) {
+      const resultEl = document.getElementById('morning-result');
+      if (resultEl) resultEl.style.display = 'block';
     }
 
     // 出力サマリーを復元
@@ -1102,12 +1135,28 @@ window.addEventListener('DOMContentLoaded', async function() {
     });
     if (evening.debugScores) {
       debugScores = evening.debugScores;
+      // デバッグボタンの選択状態を視覚的に復元
+      ['d1','d2','d3','d4','d5'].forEach(key => {
+        const score = debugScores[key];
+        if (!score) return;
+        const valMap = { '〇': 'maru', '△': 'sankaku', '✕': 'batsu' };
+        const cls = valMap[score];
+        if (!cls) return;
+        const items = document.querySelectorAll('.debug-item');
+        const idx = parseInt(key[1]) - 1;
+        if (items[idx]) {
+          const btns = items[idx].querySelectorAll('.debug-btn');
+          btns.forEach(b => b.classList.remove('selected-maru','selected-sankaku','selected-batsu'));
+          const btnMap = { 'maru': 0, 'sankaku': 1, 'batsu': 2 };
+          if (btns[btnMap[cls]]) btns[btnMap[cls]].classList.add('selected-' + cls);
+        }
+      });
     }
 
     if (typeof calcAutoCount === 'function') calcAutoCount();
     if (typeof renderMemos === 'function') renderMemos();
     if (typeof loadProfile === 'function') loadProfile();
-  }, 1000);
+  })();
 
   // クラウドから最新データを取得して上書き
   setTimeout(async function() {
@@ -1127,6 +1176,40 @@ window.addEventListener('DOMContentLoaded', async function() {
           el.dispatchEvent(new Event('input'));
         }
       });
+      // スライダー表示値も更新
+      if (cloudMorning['m-body'] !== undefined) {
+        const bodyEl = document.getElementById('m-body');
+        if (bodyEl) { bodyEl.value = cloudMorning['m-body']; document.getElementById('m-body-val').textContent = cloudMorning['m-body']; }
+      }
+      if (cloudMorning['m-mood'] !== undefined) {
+        const moodEl = document.getElementById('m-mood');
+        if (moodEl) { moodEl.value = cloudMorning['m-mood']; document.getElementById('m-mood-val').textContent = cloudMorning['m-mood']; }
+      }
+      if (cloudMorning['m-course'] !== undefined) {
+        const courseEl = document.getElementById('m-course');
+        if (courseEl) { courseEl.value = cloudMorning['m-course']; if (typeof updateCourse === 'function') updateCourse(cloudMorning['m-course']); }
+      }
+      // 判定結果を復元
+      if (cloudMorning['hp-val'] && cloudMorning['hp-val'] !== '—') {
+        const hpEl = document.getElementById('hp-val');
+        if (hpEl) hpEl.textContent = cloudMorning['hp-val'];
+      }
+      if (cloudMorning['mp-val'] && cloudMorning['mp-val'] !== '—') {
+        const mpEl = document.getElementById('mp-val');
+        if (mpEl) mpEl.textContent = cloudMorning['mp-val'];
+      }
+      if (cloudMorning['mode-badge-text']) {
+        const badge = document.getElementById('mode-badge');
+        if (badge) { badge.textContent = cloudMorning['mode-badge-text']; if (cloudMorning['mode-badge-class']) badge.className = cloudMorning['mode-badge-class']; }
+      }
+      if (cloudMorning['morning-result-visible']) {
+        const resultEl = document.getElementById('morning-result');
+        if (resultEl) resultEl.style.display = 'block';
+      }
+      if (cloudMorning['morning-advice']) {
+        const adviceEl = document.getElementById('morning-advice');
+        if (adviceEl && cloudMorning['morning-advice'].trim()) { adviceEl.textContent = cloudMorning['morning-advice']; adviceEl.classList.add('visible'); }
+      }
       localStorage.setItem('mitsumeru_morning', JSON.stringify(cloudMorning));
     }
     const cloudEvening = await cloudLoad('evening');
@@ -1613,6 +1696,7 @@ D-blockモードや2分タスクモードの場合は、全部キャンセルで
       loading.style.display = 'none';
       advice.textContent = text;
       advice.classList.add('visible');
+      saveMorning(); // 判定結果＋アドバイスを保存
     },
     err => {
       loading.style.display = 'none';
