@@ -703,7 +703,7 @@
       <label>体調（直感で）</label>
       <div class="score-row">
         <span style="font-size:11px;color:var(--text3)">最悪</span>
-        <input type="range" min="1" max="5" value="3" id="m-body" oninput="document.getElementById('m-body-val').textContent=this.value">
+        <input type="range" min="1" max="5" value="3" id="m-body" oninput="document.getElementById('m-body-val').textContent=this.value; saveMorning()">
         <span style="font-size:11px;color:var(--text3)">最高</span>
         <span class="score-val" id="m-body-val">3</span>
       </div>
@@ -1002,7 +1002,7 @@ function saveEvening() {
 }
 function saveMorning() {
   const data = {};
-  ['m-sleep','m-wake','m-condition','m-mood','m-noise-detail','m-want','m-course'].forEach(id => {
+  ['m-sleep','m-wake','m-body','m-mood','m-noise-detail','m-want','m-course'].forEach(id => {
     const el = document.getElementById(id);
     if (el) data[id] = el.value;
   });
@@ -1028,6 +1028,12 @@ window.addEventListener('DOMContentLoaded', async function() {
     const morning = JSON.parse(localStorage.getItem('mitsumeru_morning') || '{}');
 
     // スライダー類を復元
+    const bodyEl = document.getElementById('m-body');
+    if (bodyEl && morning['m-body'] !== undefined) {
+      bodyEl.value = morning['m-body'];
+      const bodyVal = document.getElementById('m-body-val');
+      if (bodyVal) bodyVal.textContent = morning['m-body'];
+    }
     const moodEl = document.getElementById('m-mood');
     if (moodEl && morning['m-mood'] !== undefined) {
       moodEl.value = morning['m-mood'];
@@ -1041,7 +1047,7 @@ window.addEventListener('DOMContentLoaded', async function() {
     }
 
     // テキスト入力を復元
-    ['m-sleep','m-wake','m-condition','m-noise-detail','m-want'].forEach(id => {
+    ['m-sleep','m-wake','m-noise-detail','m-want'].forEach(id => {
       const el = document.getElementById(id);
       if (el && morning[id] !== undefined) el.value = morning[id];
     });
