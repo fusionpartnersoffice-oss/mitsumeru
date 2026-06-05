@@ -958,20 +958,24 @@ let SYNC_KEY = _savedDay; // 対象日と連動
 
 async function cloudSave(type, data) {
   try {
-    await fetch(`${SYNC_URL}?key=${type}_${SYNC_KEY}`, {
+    const res = await fetch(`${SYNC_URL}?key=${type}_${SYNC_KEY}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
+    if (!res.ok) console.log('クラウド保存失敗 status:', res.status);
   } catch(e) { console.log('クラウド保存失敗（オフライン？）', e); }
 }
 
 async function cloudLoad(type) {
   try {
     const res = await fetch(`${SYNC_URL}?key=${type}_${SYNC_KEY}`);
+    if (!res.ok) return null;
     const json = await res.json();
-    return json.value ? JSON.parse(json.value) : null;
-  } catch(e) { return null; }
+    if (!json.value) return null;
+    // valueはKVにJSON文字列で保存されているのでパースする
+    return typeof json.value === 'string' ? JSON.parse(json.value) : json.value;
+  } catch(e) { console.log('クラウド読み込み失敗', e); return null; }
 }
 
 // データ保存関数（localStorage + クラウド）
@@ -1148,11 +1152,12 @@ window.addEventListener('DOMContentLoaded', async function() {
     if (typeof loadProfile === 'function') loadProfile();
   })();
 
-  // クラウドから最新データを取得して上書き
+  // クラウドから最新データを取得して上書き（クラウドを常に優先）
   setTimeout(async function() {
     const cloudMemos = await cloudLoad('memos');
-    if (cloudMemos && cloudMemos.length > 0) {
-      memos = cloudMemos;
+    if (cloudMemos !== null) {
+      // クラウドにデータがある場合は常に上書き（空配列も含む）
+      memos = Array.isArray(cloudMemos) ? cloudMemos : [];
       localStorage.setItem('mitsumeru_memos', JSON.stringify(memos));
       if (typeof calcAutoCount === 'function') calcAutoCount();
       if (typeof renderMemos === 'function') renderMemos();
