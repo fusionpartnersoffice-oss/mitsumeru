@@ -1549,7 +1549,7 @@ function parseSchedule(text) {
   const dateStr = `${tomorrow.getFullYear()}/${String(tomorrow.getMonth()+1).padStart(2,'0')}/${String(tomorrow.getDate()).padStart(2,'0')}`;
 
   for (const line of lines) {
-    const m = line.match(/^(\d{4})\s+(\d+)\s*ポモ?\s*(.+)/);
+    const m = line.match(/^(\d{4})\s+(\d+)\s*(?:ポモ)?\s+(.+)/) || line.match(/^(\d{4})\s+(\d+)\s*(?:ポモ)?(.+)/);
     if (m) {
       const startH = Math.floor(parseInt(m[1]) / 100);
       const startM = parseInt(m[1]) % 100;
