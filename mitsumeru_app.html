@@ -512,14 +512,8 @@
 
     <div class="field">
       <label>画像URL（任意）— GoogleフォトなどのURLを貼り付け</label>
-      <div id="memo-image-preview" style="display:none;margin-bottom:8px;">
-        <img id="memo-image-thumb" style="max-width:100%;max-height:200px;border-radius:4px;border:0.5px solid var(--border);cursor:pointer;" onclick="openImgPreview(this.src)">
-        <button onclick="clearMemoImage()" style="display:block;margin-top:6px;background:none;border:none;color:var(--red);font-size:12px;cursor:pointer;">画像URLを削除</button>
-      </div>
-      <div style="display:flex;gap:8px;">
-        <input type="url" id="memo-image-url" placeholder="https://photos.google.com/..." style="flex:1;padding:9px 12px;font-size:13px;font-family:'Noto Sans JP',sans-serif;background:var(--bg);border:0.5px solid var(--border);border-radius:4px;color:var(--text);outline:none;">
-        <button onclick="previewMemoImageUrl()" style="padding:9px 14px;background:var(--accent);color:var(--bg);border:none;border-radius:4px;font-size:12px;cursor:pointer;white-space:nowrap;">表示</button>
-      </div>
+      <input type="url" id="memo-image-url" placeholder="https://photos.google.com/..." style="width:100%;padding:9px 12px;font-size:13px;font-family:'Noto Sans JP',sans-serif;background:var(--bg);border:0.5px solid var(--border);border-radius:4px;color:var(--text);outline:none;">
+      <div style="font-size:11px;color:var(--text3);margin-top:4px;">追加後はメモ一覧のリンクをタップして確認できます</div>
     </div>
 
     <button class="btn-primary" onclick="addMemo()">追加する</button>
@@ -1566,8 +1560,8 @@ function addMemo() {
   if (!content) return;
   const pomos = selectedTag === 'P' ? counts['memo-pomo'] : null;
   const timeStr = time ? time.replace(':','') : '';
-  const imgSrc = document.getElementById('memo-image-thumb').src || null;
-  memos.push({ tag: selectedTag, time: timeStr, pomos, content, image: imgSrc && imgSrc.startsWith('data:') ? imgSrc : null });
+  const imgUrl = document.getElementById('memo-image-url').value.trim() || null;
+  memos.push({ tag: selectedTag, time: timeStr, pomos, content, image: imgUrl });
   saveMemos();
   renderMemos();
   updateEveningMemoPreview();
@@ -1576,7 +1570,6 @@ function addMemo() {
   counts['memo-pomo'] = 0;
   document.getElementById('memo-pomo-count').textContent = '0';
   document.getElementById('memo-image-url').value = '';
-  clearMemoImage();
   setNowTime();
 }
 
@@ -1595,7 +1588,7 @@ function updateEveningMemoPreview() {
       ${m.pomos!==null?`<span style="color:var(--accent);min-width:36px;font-size:12px;">${m.pomos}ポモ</span>`:'<span style="min-width:36px;"></span>'}
       <div style="flex:1;">
         <span style="font-size:13px;">${m.content}</span>
-        ${m.image ? `<div style="margin-top:4px;"><img src="${m.image}" style="max-width:120px;max-height:80px;border-radius:4px;border:0.5px solid var(--border);cursor:pointer;" onclick="openImgPreview(this.src)"></div>` : ''}
+        ${m.image ? `<div style="margin-top:4px;"><a href="${m.image}" target="_blank" style="font-size:12px;color:var(--accent);text-decoration:none;">📷 画像を開く →</a></div>` : ''}
       </div>
     </div>
   `).join('');
@@ -1615,7 +1608,7 @@ function renderMemos() {
       ${m.pomos!==null?`<span style="color:var(--accent);min-width:36px;font-size:12px;">${m.pomos}ポモ</span>`:'<span style="min-width:36px;"></span>'}
       <div style="flex:1;">
         <span style="font-size:13px;line-height:1.6;">${m.content}</span>
-        ${m.image ? `<div style="margin-top:4px;"><img src="${m.image}" style="max-width:120px;max-height:80px;border-radius:4px;border:0.5px solid var(--border);cursor:pointer;" onclick="openImgPreview(this.src)"></div>` : ''}
+        ${m.image ? `<div style="margin-top:4px;"><a href="${m.image}" target="_blank" style="font-size:12px;color:var(--accent);text-decoration:none;">📷 画像を開く →</a></div>` : ''}
       </div>
       <button onclick="editMemo(${i})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:0 4px;flex-shrink:0;">✏️</button>
       <button onclick="deleteMemo(${i})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;padding:0 4px;flex-shrink:0;">×</button>
