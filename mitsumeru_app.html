@@ -961,9 +961,33 @@ if (_savedDay === _today) {
 let selectedTag = 'HP';
 let apiKey = localStorage.getItem('mitsumeru_api_key') || '';
 
-// データ保存関数
+// クラウド同期設定
+const SYNC_URL = 'https://mitsumeru-sync.fusion-partners-office.workers.dev';
+const SYNC_KEY = new Date().toISOString().split('T')[0]; // 例: 2026-06-05
+
+async function cloudSave(type, data) {
+  try {
+    await fetch(`${SYNC_URL}?key=${type}_${SYNC_KEY}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+  } catch(e) { console.log('クラウド保存失敗（オフライン？）', e); }
+}
+
+async function cloudLoad(type) {
+  try {
+    const res = await fetch(`${SYNC_URL}?key=${type}_${SYNC_KEY}`);
+    const json = await res.json();
+    return json.value ? JSON.parse(json.value) : null;
+  } catch(e) { return null; }
+}
+
+// データ保存関数（localStorage + クラウド）
 function saveMemos() {
-  localStorage.setItem('mitsumeru_memos', JSON.stringify(memos.map(m => ({...m, image: null}))));
+  const data = memos.map(m => ({...m, image: null}));
+  localStorage.setItem('mitsumeru_memos', JSON.stringify(data));
+  cloudSave('memos', data);
 }
 function saveEvening() {
   const data = {};
@@ -972,6 +996,7 @@ function saveEvening() {
     if (el) data[id] = el.value;
   });
   localStorage.setItem('mitsumeru_evening', JSON.stringify(data));
+  cloudSave('evening', data);
 }
 function saveMorning() {
   const data = {};
@@ -980,12 +1005,13 @@ function saveMorning() {
     if (el) data[id] = el.value;
   });
   localStorage.setItem('mitsumeru_morning', JSON.stringify(data));
+  cloudSave('morning', data);
 }
 
-// 起動時にデータ復元
-window.addEventListener('DOMContentLoaded', function() {
+// 起動時にデータ復元（クラウド優先、なければlocalStorage）
+window.addEventListener('DOMContentLoaded', async function() {
+  // まずlocalStorageで即時復元
   setTimeout(function() {
-    // 朝の入力を復元
     const morning = JSON.parse(localStorage.getItem('mitsumeru_morning') || '{}');
     ['m-sleep','m-wake','m-condition','m-mood','m-noise-detail','m-want','m-course'].forEach(id => {
       const el = document.getElementById(id);
@@ -994,7 +1020,6 @@ window.addEventListener('DOMContentLoaded', function() {
         el.dispatchEvent(new Event('input'));
       }
     });
-    // 夜の入力を復元
     const evening = JSON.parse(localStorage.getItem('mitsumeru_evening') || '{}');
     ['e-supplement','e-tomorrow','e-delay','e-try100','e-feedback','e-notebooklm'].forEach(id => {
       const el = document.getElementById(id);
@@ -1003,7 +1028,37 @@ window.addEventListener('DOMContentLoaded', function() {
     if (typeof calcAutoCount === 'function') calcAutoCount();
     if (typeof renderMemos === 'function') renderMemos();
     if (typeof loadProfile === 'function') loadProfile();
-  }, 500);
+  }, 300);
+
+  // クラウドから最新データを取得して上書き
+  setTimeout(async function() {
+    const cloudMemos = await cloudLoad('memos');
+    if (cloudMemos && cloudMemos.length > 0) {
+      memos = cloudMemos;
+      localStorage.setItem('mitsumeru_memos', JSON.stringify(memos));
+      if (typeof calcAutoCount === 'function') calcAutoCount();
+      if (typeof renderMemos === 'function') renderMemos();
+    }
+    const cloudMorning = await cloudLoad('morning');
+    if (cloudMorning) {
+      ['m-sleep','m-wake','m-condition','m-mood','m-noise-detail','m-want','m-course'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el && cloudMorning[id] !== undefined) {
+          el.value = cloudMorning[id];
+          el.dispatchEvent(new Event('input'));
+        }
+      });
+      localStorage.setItem('mitsumeru_morning', JSON.stringify(cloudMorning));
+    }
+    const cloudEvening = await cloudLoad('evening');
+    if (cloudEvening) {
+      ['e-supplement','e-tomorrow','e-delay','e-try100','e-feedback','e-notebooklm'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el && cloudEvening[id] !== undefined) el.value = cloudEvening[id];
+      });
+      localStorage.setItem('mitsumeru_evening', JSON.stringify(cloudEvening));
+    }
+  }, 1500);
 });
 
 function getApiKey() {
