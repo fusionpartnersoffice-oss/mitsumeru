@@ -1023,16 +1023,29 @@ function saveMorning() {
 
 // 起動時にデータ復元（クラウド優先、なければlocalStorage）
 window.addEventListener('DOMContentLoaded', async function() {
-  // まずlocalStorageで即時復元
+  // localStorageで復元（1秒待ってDOMが確実に準備できてから）
   setTimeout(function() {
     const morning = JSON.parse(localStorage.getItem('mitsumeru_morning') || '{}');
-    ['m-sleep','m-wake','m-condition','m-mood','m-noise-detail','m-want','m-course'].forEach(id => {
+
+    // スライダー類を復元
+    const moodEl = document.getElementById('m-mood');
+    if (moodEl && morning['m-mood'] !== undefined) {
+      moodEl.value = morning['m-mood'];
+      const moodVal = document.getElementById('m-mood-val');
+      if (moodVal) moodVal.textContent = morning['m-mood'];
+    }
+    const courseEl = document.getElementById('m-course');
+    if (courseEl && morning['m-course'] !== undefined) {
+      courseEl.value = morning['m-course'];
+      if (typeof updateCourse === 'function') updateCourse(morning['m-course']);
+    }
+
+    // テキスト入力を復元
+    ['m-sleep','m-wake','m-condition','m-noise-detail','m-want'].forEach(id => {
       const el = document.getElementById(id);
-      if (el && morning[id] !== undefined) {
-        el.value = morning[id];
-        el.dispatchEvent(new Event('input'));
-      }
+      if (el && morning[id] !== undefined) el.value = morning[id];
     });
+
     // ノイズチェックボックスを復元
     if (morning.noises && morning.noises.length > 0) {
       document.querySelectorAll('#m-noise-group .checkbox-item').forEach(label => {
@@ -1040,20 +1053,41 @@ window.addEventListener('DOMContentLoaded', async function() {
         if (morning.noises.includes(val)) label.classList.add('checked');
       });
     }
+
     // 朝のアドバイスを復元
     if (morning['morning-advice']) {
       const adviceEl = document.getElementById('morning-advice');
-      if (adviceEl) {
+      if (adviceEl && morning['morning-advice'].trim()) {
         adviceEl.textContent = morning['morning-advice'];
         adviceEl.classList.add('visible');
       }
     }
+
     // 出力サマリーを復元
     const savedOutput = localStorage.getItem('mitsumeru_output');
     if (savedOutput) {
       const mdBox = document.getElementById('output-markdown');
-      if (mdBox) mdBox.textContent = savedOutput;
+      if (mdBox) {
+        mdBox.textContent = savedOutput;
+        mdBox.classList.add('visible');
+      }
     }
+
+    // カレンダーCSVを復元
+    const savedCalendar = localStorage.getItem('mitsumeru_calendar');
+    if (savedCalendar) {
+      calendarCSV = savedCalendar;
+      const csvBox = document.getElementById('output-csv');
+      if (csvBox) { csvBox.textContent = calendarCSV; csvBox.classList.add('visible'); }
+    }
+    const savedDelay = localStorage.getItem('mitsumeru_delay');
+    if (savedDelay) {
+      delayCSV = savedDelay;
+      const delayCsvBox = document.getElementById('output-delay-csv');
+      if (delayCsvBox) { delayCsvBox.textContent = delayCSV; delayCsvBox.classList.add('visible'); }
+    }
+
+    // 夜の入力を復元
     const evening = JSON.parse(localStorage.getItem('mitsumeru_evening') || '{}');
     ['e-supplement','e-tomorrow','e-delay','e-try100','e-feedback','e-notebooklm',
      'd1-reason','d2-reason','d3-reason','d4-reason','d5-reason'].forEach(id => {
@@ -1063,10 +1097,11 @@ window.addEventListener('DOMContentLoaded', async function() {
     if (evening.debugScores) {
       debugScores = evening.debugScores;
     }
+
     if (typeof calcAutoCount === 'function') calcAutoCount();
     if (typeof renderMemos === 'function') renderMemos();
     if (typeof loadProfile === 'function') loadProfile();
-  }, 300);
+  }, 1000);
 
   // クラウドから最新データを取得して上書き
   setTimeout(async function() {
@@ -1638,6 +1673,7 @@ function generateEvening() {
     csvRows.push(`"【急重度①】${e.title}（${e.pomos}ポモ）",${e.date},${e.start},${e.date},${e.end},False,"【目的内容】${e.title}"`);
   });
   calendarCSV = csvRows.join('\n');
+  localStorage.setItem('mitsumeru_calendar', calendarCSV);
 
   let delayRows = ['Subject,Start Date,Start Time,End Date,End Time,All Day Event,Description'];
   if (delay.trim()) {
@@ -1646,6 +1682,7 @@ function generateEvening() {
     });
   }
   delayCSV = delayRows.join('\n');
+  localStorage.setItem('mitsumeru_delay', delayCSV);
 
   const prompt = `あなたはFusion Partners代表・柴山靖章の「SuccessOS 統合経営参謀」です。
 指定日：${dateStr}
