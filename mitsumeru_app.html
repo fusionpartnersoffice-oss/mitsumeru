@@ -983,9 +983,9 @@ async function cloudLoad(type) {
 
 // データ保存関数（localStorage + クラウド）
 function saveMemos() {
-  const data = memos.map(m => ({...m, image: null}));
-  localStorage.setItem('mitsumeru_memos', JSON.stringify(data));
-  cloudSave('memos', data);
+  localStorage.setItem('mitsumeru_memos', JSON.stringify(memos));
+  // 画像も含めてクラウド同期（圧縮済みなのでKVに収まる）
+  cloudSave('memos', memos);
 }
 function saveEvening() {
   const data = {};
