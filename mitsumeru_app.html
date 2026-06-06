@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>ミツメル — Fusion Partners</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%233a3028'/><polygon points='16,3 27,9.5 27,22.5 16,29 5,22.5 5,9.5' fill='none' stroke='%23c8b89a' stroke-width='1.2'/><polygon points='9,10 15,14 9,22' fill='%238a7a6a'/><polygon points='23,10 17,14 23,22' fill='%238a7a6a'/><circle cx='16' cy='16' r='3.5' fill='%23c8b89a'/></svg>">
 <style>
@@ -367,7 +370,7 @@
     <circle cx="16" cy="16" r="4" fill="#c8b89a"/>
   </svg>
   <h1>ミツメル</h1>
-  <span>FUSION PARTNERS</span>
+  <span>FUSION PARTNERS</span><span style="font-size:10px;color:#8a7a6a;margin-left:auto;margin-right:8px;">v4</span>
   <button onclick="toggleHelp()" style="margin-left:auto;background:none;border:0.5px solid var(--border);color:var(--bg);border-radius:20px;padding:4px 12px;font-size:11px;cursor:pointer;letter-spacing:1px;">？ ヘルプ</button>
   <button onclick="setApiKey()" style="margin-left:8px;background:none;border:0.5px solid var(--border);color:var(--bg);border-radius:20px;padding:4px 12px;font-size:11px;cursor:pointer;letter-spacing:1px;" id="api-btn">🔑 API</button>
 </div>
@@ -1214,7 +1217,6 @@ window.addEventListener('DOMContentLoaded', async function() {
         const el = document.getElementById(id);
         if (el && cloudEvening[id] !== undefined) el.value = cloudEvening[id];
       });
-      // 出力データを復元
       if (cloudEvening['_output_md']) {
         const mdBox = document.getElementById('output-markdown');
         if (mdBox) { mdBox.textContent = cloudEvening['_output_md']; mdBox.classList.add('visible'); }
@@ -1971,7 +1973,6 @@ HHMM ポモ数 タスク内容
       mdBox.textContent = text;
       mdBox.classList.add('visible');
       localStorage.setItem('mitsumeru_output', text);
-      // 出力データをeveningに含めてクラウド同期（evening同期は確実に動くため）
       const _ev = JSON.parse(localStorage.getItem('mitsumeru_evening') || '{}');
       _ev['_output_md'] = text;
       _ev['_calendar_csv'] = calendarCSV;
