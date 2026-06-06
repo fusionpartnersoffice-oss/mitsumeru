@@ -958,7 +958,8 @@ let SYNC_KEY = _savedDay; // 対象日と連動
 
 async function cloudSave(type, data) {
   try {
-    const res = await fetch(`${SYNC_URL}?key=${type}_${SYNC_KEY}`, {
+    const safeKey = encodeURIComponent(type + '_' + SYNC_KEY);
+    const res = await fetch(`${SYNC_URL}?key=${safeKey}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
@@ -969,11 +970,11 @@ async function cloudSave(type, data) {
 
 async function cloudLoad(type) {
   try {
-    const res = await fetch(`${SYNC_URL}?key=${type}_${SYNC_KEY}`);
+    const safeKey = encodeURIComponent(type + '_' + SYNC_KEY);
+    const res = await fetch(`${SYNC_URL}?key=${safeKey}`);
     if (!res.ok) return null;
     const json = await res.json();
     if (!json.value) return null;
-    // valueはKVにJSON文字列で保存されているのでパースする
     return typeof json.value === 'string' ? JSON.parse(json.value) : json.value;
   } catch(e) { console.log('クラウド読み込み失敗', e); return null; }
 }
