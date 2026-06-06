@@ -1216,6 +1216,27 @@ window.addEventListener('DOMContentLoaded', async function() {
       });
       localStorage.setItem('mitsumeru_evening', JSON.stringify(cloudEvening));
     }
+    const cloudOutput = await cloudLoad('output');
+    if (cloudOutput !== null) {
+      const text = typeof cloudOutput === 'string' ? cloudOutput : JSON.stringify(cloudOutput);
+      localStorage.setItem('mitsumeru_output', text);
+      const mdBox = document.getElementById('output-markdown');
+      if (mdBox) { mdBox.textContent = text; mdBox.classList.add('visible'); }
+    }
+    const cloudCalendar = await cloudLoad('calendar');
+    if (cloudCalendar !== null) {
+      calendarCSV = typeof cloudCalendar === 'string' ? cloudCalendar : JSON.stringify(cloudCalendar);
+      localStorage.setItem('mitsumeru_calendar', calendarCSV);
+      const csvBox = document.getElementById('output-csv');
+      if (csvBox) { csvBox.textContent = calendarCSV; csvBox.classList.add('visible'); }
+    }
+    const cloudDelay = await cloudLoad('delay');
+    if (cloudDelay !== null) {
+      delayCSV = typeof cloudDelay === 'string' ? cloudDelay : JSON.stringify(cloudDelay);
+      localStorage.setItem('mitsumeru_delay', delayCSV);
+      const delayCsvBox = document.getElementById('output-delay-csv');
+      if (delayCsvBox) { delayCsvBox.textContent = delayCSV; delayCsvBox.classList.add('visible'); }
+    }
   }, 1500);
 });
 
@@ -1849,6 +1870,7 @@ function generateEvening() {
   });
   calendarCSV = csvRows.join('\n');
   localStorage.setItem('mitsumeru_calendar', calendarCSV);
+  cloudSave('calendar', calendarCSV);
 
   let delayRows = ['Subject,Start Date,Start Time,End Date,End Time,All Day Event,Description'];
   if (delay.trim()) {
@@ -1858,6 +1880,7 @@ function generateEvening() {
   }
   delayCSV = delayRows.join('\n');
   localStorage.setItem('mitsumeru_delay', delayCSV);
+  cloudSave('delay', delayCSV);
 
   const prompt = `あなたはFusion Partners代表・柴山靖章の「SuccessOS 統合経営参謀」です。
 指定日：${dateStr}
@@ -1953,6 +1976,7 @@ HHMM ポモ数 タスク内容
       mdBox.textContent = text;
       mdBox.classList.add('visible');
       localStorage.setItem('mitsumeru_output', text);
+      cloudSave('output', text);
     },
     err => {
       loading.style.display = 'none';
