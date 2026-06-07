@@ -543,23 +543,19 @@ function scoreLSRP() {
 }
 
 function scoreEgogram() {
-  // 重み付きスコア: あてはまる=2, やや=1, あまり=0, あてはまらない=0 (負の値は0でクリップ)
-  // 各カテゴリ4問 × 最大2pt = 8pt → ×1.25 で 0〜10スケール
   const raw = { CP: 0, NP: 0, A: 0, FC: 0, AC: 0 };
   let rcRaw = 0;
   EGOGRAM_QUESTIONS.forEach((q, idx) => {
     const val = answers.egogram[idx];
     if (val === null) return;
     if (q.cat === 'RC') { if (val >= 1) rcRaw++; return; }
-    raw[q.cat] += Math.max(0, val); // 0〜2の重み付き
+    raw[q.cat] += Math.max(0, val);
   });
   const ego = {};
   ['CP','NP','A','FC','AC'].forEach(k => { ego[k] = Math.round(raw[k] * 1.25); });
 
   const I = ego.CP + ego.FC, U = ego.NP + ego.AC;
   let rc, rcClass, rcShort;
-  // RC閾値：重み付きスコア（あてはまる=2, やや=1）対応版
-  // 各カテゴリ0〜10、I/U は0〜20スケール。やや=1ptで4問全答だと5点なので"高"は7以上で設定
   if      (I > 9 && U < 5) { rc = '🚨 冷徹（I+U−）他者否定・独善OS'; rcClass = 'rc-cold'; rcShort = '冷徹'; }
   else if (I > 7 && U < 5) { rc = '🚨 危険（要注意）'; rcClass = 'rc-danger'; rcShort = '危険'; }
   else if (I < 5 && U < 5) { rc = '⚠️ 停滞（自律性欠如・停滞OS）'; rcClass = 'rc-stagnant'; rcShort = '停滞'; }
@@ -608,7 +604,6 @@ function showResults() {
   const ego  = scoreEgogram();
   const enn  = scoreEnneagram();
 
-  // LSRP
   document.getElementById('lsrp-result').innerHTML = `
     <div class="lsrp-badge ${lsrp.cls}">${lsrp.level}</div>
     <div style="margin-top:8px;font-size:0.82rem;color:var(--sub);">
@@ -619,7 +614,6 @@ function showResults() {
     ${lsrp.cause ? `<div style="margin-top:8px;font-size:0.85rem;color:var(--warn);">${lsrp.cause}</div>` : ''}
     <div class="annotation">★★★(≥16): 高リスク　★★☆(≥11): 要警戒　★☆☆(&lt;11): 安全圏</div>`;
 
-  // エゴグラム（重み付きスコア表示）
   const bars = [
     { key:'CP', label:'CP（批判的親）', cls:'bar-cp' },
     { key:'NP', label:'NP（養護的親）', cls:'bar-np' },
@@ -637,13 +631,11 @@ function showResults() {
     </div>
     <div class="annotation" style="margin-top:8px;">採点方式：あてはまる=2pt, ややあてはまる=1pt, あまり/あてはまらない=0pt（各カテゴリ4問×最大2pt → 0〜10スケール）</div>`;
 
-  // RC
   document.getElementById('rc-result').innerHTML = `
     <div style="margin-bottom:10px;"><span class="rc-badge ${ego.rcClass}">${ego.rc}</span></div>
     <div style="font-size:0.82rem;color:var(--sub);">組織適応リスク指標：${ego.rcRisk}</div>
     <div class="annotation">🚨冷徹: I>9 AND U&lt;5　🚨危険: I>7 AND U&lt;5　⚠️停滞: I&lt;5 AND U&lt;5　⚠️衝動: FC>6 AND I&lt;5<br>RC指標 = 組織適応10問中の高リスク反応数（重み付きスコア基準）</div>`;
 
-  // エニアグラム
   const top3 = enn.sorted.slice(0, 3);
   document.getElementById('enneagram-result').innerHTML =
     `<div class="enneagram-top">${top3.map(([t,s],r) => `
@@ -655,7 +647,6 @@ function showResults() {
       </div>`).join('')}</div>
     <div style="font-size:0.78rem;color:var(--sub);">${enn.sorted.map(([t,s])=>`<span style="margin-right:10px;">T${t}: ${s}</span>`).join('')}</div>`;
 
-  // エクスポートJSON
   const exportData = {
     sei, mei, seiKana, meiKana, name, corp, office,
     date: new Date().toISOString().split('T')[0],
@@ -669,7 +660,6 @@ function showResults() {
   };
   document.getElementById('export-text').textContent = JSON.stringify(exportData, null, 2);
 
-  // 最後の結果を保存
   lastResult = {
     ...exportData,
     lsrpLevelShort: lsrp.levelShort,
@@ -683,7 +673,6 @@ function showResults() {
   };
 
   goTo(4);
-  // 自動保存（手動保存忘れ防止）
   autoSaveToRoster();
 }
 
@@ -701,7 +690,6 @@ function loadRoster() {
 function autoSaveToRoster() {
   if (!lastResult) return;
   const roster = loadRoster();
-  // 同じsavedAtのエントリが既にあれば重複しない
   if (roster.some(r => r.savedAt === lastResult.savedAt)) return;
   roster.unshift(lastResult);
   localStorage.setItem(ROSTER_KEY, JSON.stringify(roster));
@@ -756,9 +744,9 @@ function renderRoster() {
       <td style="text-align:center;">${r.egogram?.A ?? ''}</td>
       <td style="text-align:center;">${r.egogram?.FC ?? ''}</td>
       <td style="text-align:center;">${r.egogram?.AC ?? ''}</td>
-      <td>${r.ennTop1 || ''}</td>
-      <td>${r.ennTop2 || ''}</td>
-      <td>${r.ennTop3 || ''}</td>
+      <td>${r.ennTop1 || r.enneagram?.top3?.[0]?.name?.split('｜')?.[1] || ''}</td>
+      <td>${r.ennTop2 || r.enneagram?.top3?.[1]?.name?.split('｜')?.[1] || ''}</td>
+      <td>${r.ennTop3 || r.enneagram?.top3?.[2]?.name?.split('｜')?.[1] || ''}</td>
       <td><button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteEntry(${globalIdx})">削除</button></td>
     </tr>`;
   }).join('');
@@ -789,9 +777,9 @@ function exportCSV() {
     r.egogram?.CP, r.egogram?.NP, r.egogram?.A, r.egogram?.FC, r.egogram?.AC,
     r.egogram?.I, r.egogram?.U,
     r.rcShort, r.rcRaw,
-    r.enneagram?.top3?.[0]?.name?.replace('タイプ.|｜',''),
-    r.enneagram?.top3?.[1]?.name?.replace('タイプ.|｜',''),
-    r.enneagram?.top3?.[2]?.name?.replace('タイプ.|｜',''),
+    r.enneagram?.top3?.[0]?.name?.split('｜')?.[1] || r.ennTop1,
+    r.enneagram?.top3?.[1]?.name?.split('｜')?.[1] || r.ennTop2,
+    r.enneagram?.top3?.[2]?.name?.split('｜')?.[1] || r.ennTop3,
   ]);
   const csv = [header, ...rows].map(r => r.map(v => `"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\n');
   const blob = new Blob(['﻿'+csv], { type: 'text/csv;charset=utf-8;' });
@@ -866,11 +854,76 @@ function viewRosterEntry(idx) {
       <div style="font-size:0.75rem;color:var(--sub);margin-bottom:8px;">エニアグラム Top3</div>
       ${top3.slice(0,3).map((t,i) => `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><span style="background:var(--accent);color:#000;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;flex-shrink:0;">${i+1}</span><span style="font-weight:600;">${t.name || ''}</span><span style="color:var(--sub);font-size:0.8rem;margin-left:auto;">${t.score}点</span></div>`).join('') || '<div style="color:var(--sub);">-</div>'}
     </div>
-    <div style="margin-top:20px;text-align:right;">
+    <div style="margin-top:20px;display:flex;gap:8px;flex-wrap:wrap;justify-content:space-between;">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-primary btn-sm" onclick="copyRosterEntryJSON(${idx})">📋 ミツメルにコピー</button>
+        <button class="btn btn-print btn-sm" onclick="printRosterEntry(${idx})">🖨️ 印刷</button>
+      </div>
       <button class="btn btn-danger btn-sm" onclick="deleteFromDetail(${idx})">🗑 削除</button>
     </div>
   `;
   document.getElementById('roster-detail-overlay').style.display = 'block';
+}
+
+function copyRosterEntryJSON(idx) {
+  const roster = loadRoster();
+  const r = roster[idx];
+  if (!r) return;
+  const exportData = {
+    sei: r.sei, mei: r.mei, seiKana: r.seiKana, meiKana: r.meiKana,
+    name: r.name, corp: r.corp, office: r.office, date: r.date,
+    lsrp: r.lsrp, egogram: r.egogram, rc: r.rc, enneagram: r.enneagram
+  };
+  navigator.clipboard.writeText(JSON.stringify(exportData, null, 2)).then(() => {
+    alert('JSONをコピーしました。\nミツメルの設定タブ「📥 スキャン結果をインポート」に貼り付けてください。');
+  }).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = JSON.stringify(exportData, null, 2);
+    document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    alert('JSONをコピーしました。\nミツメルの設定タブ「📥 スキャン結果をインポート」に貼り付けてください。');
+  });
+}
+
+function printRosterEntry(idx) {
+  const roster = loadRoster();
+  const r = roster[idx];
+  if (!r) return;
+  const ego = r.egogram || {};
+  const top3 = r.enneagram?.top3 || [];
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${r.name} 診断結果</title>
+<style>
+  body{font-family:'Hiragino Kaku Gothic Pro','Meiryo',sans-serif;padding:24px;color:#111;font-size:13px;}
+  h1{font-size:1.3rem;margin-bottom:4px;}
+  h2{font-size:1rem;border-left:4px solid #0277bd;padding-left:8px;margin:20px 0 8px;color:#0277bd;}
+  .meta{color:#555;font-size:0.85rem;margin-bottom:16px;}
+  .box{border:1px solid #ccc;border-radius:8px;padding:12px;margin-bottom:8px;}
+  table{border-collapse:collapse;width:100%;margin-top:8px;}
+  td,th{border:1px solid #ccc;padding:8px;text-align:center;}
+  th{background:#f0f0f0;font-size:0.82rem;}
+  .enn-item{margin:6px 0;display:flex;align-items:center;gap:8px;}
+  .enn-rank{background:#0277bd;color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;flex-shrink:0;}
+  @media print{button{display:none;} body{padding:0;}}
+</style>
+</head><body>
+<h1>📋 ${r.name} 様 診断結果</h1>
+<p class="meta">${r.nameKana ? r.nameKana + '　' : ''}${r.corp} ${r.office} ／ ${r.date}</p>
+<h2>🧠 LSRP ── 対人行動リスク評価</h2>
+<div class="box"><div style="font-size:1.1rem;font-weight:700;">${r.lsrp?.level || r.lsrpLevelShort || '-'}</div>
+<div style="margin-top:6px;font-size:0.82rem;color:#555;">一次: ${r.lsrp?.primary ?? '-'}/16　二次: ${r.lsrp?.secondary ?? '-'}/10　合計: ${r.lsrp?.total ?? '-'}/26</div>
+${r.lsrp?.cause ? `<div style="margin-top:4px;color:#e65100;">${r.lsrp.cause}</div>` : ''}</div>
+<h2>🧩 エゴグラム</h2>
+<table><tr><th>CP</th><th>NP</th><th>A</th><th>FC</th><th>AC</th><th>I(自己肯定)</th><th>U(他者肯定)</th></tr>
+<tr><td>${ego.CP ?? '-'}</td><td>${ego.NP ?? '-'}</td><td>${ego.A ?? '-'}</td><td>${ego.FC ?? '-'}</td><td>${ego.AC ?? '-'}</td><td>${ego.I ?? '-'}</td><td>${ego.U ?? '-'}</td></tr></table>
+<h2>⚠️ RC判定</h2>
+<div class="box"><div style="font-size:1.1rem;font-weight:700;">${r.rcShort || '-'}</div><div style="font-size:0.82rem;color:#555;margin-top:4px;">RC指標: ${r.rcRaw ?? '-'}/10</div></div>
+<h2>🌐 エニアグラム Top3</h2>
+<div class="box">${top3.slice(0,3).map((t,i) => `<div class="enn-item"><span class="enn-rank">${i+1}</span><span style="font-weight:600;">${t.name}</span><span style="color:#777;margin-left:auto;">${t.score}点</span></div>`).join('') || '-'}</div>
+<br><button onclick="window.print()" style="padding:8px 20px;background:#0277bd;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:0.9rem;">🖨️ 印刷 / PDF保存</button>
+</body></html>`;
+  const w = window.open('', '_blank', 'width=700,height=800');
+  w.document.write(html);
+  w.document.close();
 }
 
 function closeRosterDetail() {
