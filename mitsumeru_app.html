@@ -2032,97 +2032,6 @@ function downloadHTML() {
 
 <p style="font-size:11px;color:#9a8a7a;text-align:center;margin-top:24px;">Fusion Partners — ミツメル ${dateStr}</p>
 
-<!-- スキャンインポートモーダル -->
-<div id="scan-import-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:300;align-items:center;justify-content:center;padding:20px;">
-  <div style="background:var(--card);border-radius:12px;max-width:560px;width:100%;padding:24px;">
-    <div style="font-family:'Noto Serif JP',serif;font-size:16px;margin-bottom:12px;">📥 スキャン結果をインポート</div>
-    <p style="font-size:12px;color:var(--text2);margin-bottom:10px;">ミツメルスキャンの「結果をコピー（JSON）」ボタンで取得したJSONをここに貼り付けてください。</p>
-    <textarea id="scan-import-json" rows="10" style="width:100%;font-size:11px;font-family:monospace;padding:10px;border:0.5px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);resize:vertical;" placeholder='{"lsrp":{"primary":...}}\'></textarea>
-    <div style="display:flex;gap:10px;margin-top:14px;">
-      <button class="btn-primary" onclick="importScanResult()" style="flex:1;">フィールドに反映する</button>
-      <button class="btn-secondary" onclick="closeScanImport()" style="flex:1;">キャンセル</button>
-    </div>
-  </div>
-</div>
-
-<script>
-function openScanImport() {
-  const el = document.getElementById('scan-import-overlay');
-  el.style.display = 'flex';
-}
-function closeScanImport() {
-  const el = document.getElementById('scan-import-overlay');
-  el.style.display = 'none';
-  document.getElementById('scan-import-json').value = '';
-}
-function importScanResult() {
-  const raw = document.getElementById('scan-import-json').value.trim();
-  let data;
-  try { data = JSON.parse(raw); } catch(e) { alert('JSONの形式が正しくありません。'); return; }
-
-  // Enneagram type mapping: T1-T9 → ミツメル option values
-  const ennMap = {
-    'T1':'001(完全主義者)','T2':'002(献身家)','T3':'003(達成者)',
-    'T4':'004(個人主義者)','T5':'005(研究者)','T6':'006(忠実家)',
-    'T7':'007(楽天家)','T8':'008(挑戦者)','T9':'009(調停者)'
-  };
-  // LSRP mapping
-  const lsrpMap = {
-    '安全':'安全圏：適合ピース','警戒':'要注意：観察対象','危険':'危険：組織の猛毒'
-  };
-  // RC mapping
-  const rcMap = {
-    '凪':'安全（凪）',
-    '冷徹':'危険（I+U-）組織破壊',
-    '危険':'危険（I+U-）組織破壊',
-    '停滞':'依存（I-U+）自律欠如',
-    '衝動':'注意（I-U-）他者否定'
-  };
-
-  // LSRP
-  if (data.lsrp && data.lsrp.primaryLabel) {
-    const lEl = document.getElementById('p-lsrp');
-    if (lEl) {
-      const mapped = lsrpMap[data.lsrp.primaryLabel] || '';
-      for (let o of lEl.options) { if (o.value === mapped) { lEl.value = mapped; break; } }
-    }
-  }
-  // RC
-  if (data.egogram && data.egogram.rcShort) {
-    const rEl = document.getElementById('p-rc');
-    if (rEl) {
-      const mapped = rcMap[data.egogram.rcShort] || '';
-      for (let o of rEl.options) { if (o.value === mapped) { rEl.value = mapped; break; } }
-    }
-  }
-  // Egogram scores
-  if (data.egogram && data.egogram.scores) {
-    const s = data.egogram.scores;
-    const fields = {CP:'p-cp', NP:'p-np', A:'p-a', FC:'p-fc', AC:'p-ac'};
-    for (const [k,id] of Object.entries(fields)) {
-      const el = document.getElementById(id);
-      if (el && s[k] !== undefined) el.value = s[k];
-    }
-  }
-  // Enneagram top3
-  if (data.enneagram && data.enneagram.ranking) {
-    const top3 = data.enneagram.ranking.slice(0,3);
-    const ennFields = ['p-enea1','p-enea2','p-enea3'];
-    top3.forEach((item, i) => {
-      const el = document.getElementById(ennFields[i]);
-      if (!el) return;
-      const typeKey = item.type || item;
-      const mapped = ennMap[typeKey] || '';
-      for (let o of el.options) { if (o.value === mapped) { el.value = mapped; break; } }
-    });
-  }
-
-  alert('スキャン結果をフィールドに反映しました。\n内容を確認して「保存する」ボタンを押してください。');
-  closeScanImport();
-}
-</script>
-
-</body>
 </html>`;
 
   const blob = new Blob([html], { type: 'text/html;charset=utf-8;' });
@@ -2154,5 +2063,61 @@ function downloadCSV(type) {
   link.click();
 }
 </script>
+
+<!-- スキャンインポートモーダル -->
+<div id="scan-import-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:300;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--card);border-radius:12px;max-width:560px;width:100%;padding:24px;">
+    <div style="font-family:'Noto Serif JP',serif;font-size:16px;margin-bottom:12px;">📥 スキャン結果をインポート</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:10px;">ミツメルスキャンの「結果をコピー（JSON）」ボタンで取得したJSONをここに貼り付けてください。</p>
+    <textarea id="scan-import-json" rows="10" style="width:100%;font-size:11px;font-family:monospace;padding:10px;border:0.5px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);resize:vertical;" placeholder='{"lsrp":{...}}'></textarea>
+    <div style="display:flex;gap:10px;margin-top:14px;">
+      <button class="btn-primary" onclick="importScanResult()" style="flex:1;">フィールドに反映する</button>
+      <button class="btn-secondary" onclick="closeScanImport()" style="flex:1;">キャンセル</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function openScanImport() {
+  document.getElementById('scan-import-overlay').style.display = 'flex';
+}
+function closeScanImport() {
+  document.getElementById('scan-import-overlay').style.display = 'none';
+  document.getElementById('scan-import-json').value = '';
+}
+function importScanResult() {
+  const raw = document.getElementById('scan-import-json').value.trim();
+  let data;
+  try { data = JSON.parse(raw); } catch(e) { alert('JSONの形式が正しくありません。'); return; }
+  const ennMap = {'T1':'001(完全主義者)','T2':'002(献身家)','T3':'003(達成者)','T4':'004(個人主義者)','T5':'005(研究者)','T6':'006(忠実家)','T7':'007(楽天家)','T8':'008(挑戦者)','T9':'009(調停者)'};
+  const lsrpMap = {'安全':'安全圏：適合ピース','警戒':'要注意：観察対象','危険':'危険：組織の猛毒'};
+  const rcMap = {'凪':'安全（凪）','冷徹':'危険（I+U-）組織破壊','危険':'危険（I+U-）組織破壊','停滞':'依存（I-U+）自律欠如','衝動':'注意（I-U-）他者否定'};
+  if (data.lsrp && data.lsrp.primaryLabel) {
+    const lEl = document.getElementById('p-lsrp');
+    if (lEl) { const mapped = lsrpMap[data.lsrp.primaryLabel] || ''; for (let o of lEl.options) { if (o.value === mapped) { lEl.value = mapped; break; } } }
+  }
+  if (data.egogram && data.egogram.rcShort) {
+    const rEl = document.getElementById('p-rc');
+    if (rEl) { const mapped = rcMap[data.egogram.rcShort] || ''; for (let o of rEl.options) { if (o.value === mapped) { rEl.value = mapped; break; } } }
+  }
+  if (data.egogram && data.egogram.scores) {
+    const s = data.egogram.scores;
+    ['CP','NP','A','FC','AC'].forEach(k => { const el = document.getElementById('p-'+k.toLowerCase()); if(el && s[k]!==undefined) el.value=s[k]; });
+    const aEl = document.getElementById('p-a'); if(aEl && s['A']!==undefined) aEl.value=s['A'];
+  }
+  if (data.enneagram && data.enneagram.ranking) {
+    data.enneagram.ranking.slice(0,3).forEach((item,i) => {
+      const el = document.getElementById(['p-enea1','p-enea2','p-enea3'][i]);
+      if (!el) return;
+      const mapped = ennMap[item.type||item] || '';
+      for (let o of el.options) { if (o.value === mapped) { el.value = mapped; break; } }
+    });
+  }
+  alert('スキャン結果をフィールドに反映しました。
+内容を確認して「保存する」ボタンを押してください。');
+  closeScanImport();
+}
+</script>
+
 </body>
 </html>
