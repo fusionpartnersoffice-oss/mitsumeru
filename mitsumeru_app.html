@@ -3,9 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta http-equiv="Pragma" content="no-cache">
-<meta http-equiv="Expires" content="0">
 <title>ミツメル — Fusion Partners</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%233a3028'/><polygon points='16,3 27,9.5 27,22.5 16,29 5,22.5 5,9.5' fill='none' stroke='%23c8b89a' stroke-width='1.2'/><polygon points='9,10 15,14 9,22' fill='%238a7a6a'/><polygon points='23,10 17,14 23,22' fill='%238a7a6a'/><circle cx='16' cy='16' r='3.5' fill='%23c8b89a'/></svg>">
 <style>
@@ -370,9 +367,10 @@
     <circle cx="16" cy="16" r="4" fill="#c8b89a"/>
   </svg>
   <h1>ミツメル</h1>
-  <span>FUSION PARTNERS</span><span style="font-size:10px;color:#8a7a6a;margin-left:auto;margin-right:8px;">v4</span>
+  <span>FUSION PARTNERS</span>
   <button onclick="toggleHelp()" style="margin-left:auto;background:none;border:0.5px solid var(--border);color:var(--bg);border-radius:20px;padding:4px 12px;font-size:11px;cursor:pointer;letter-spacing:1px;">？ ヘルプ</button>
   <button onclick="setApiKey()" style="margin-left:8px;background:none;border:0.5px solid var(--border);color:var(--bg);border-radius:20px;padding:4px 12px;font-size:11px;cursor:pointer;letter-spacing:1px;" id="api-btn">🔑 API</button>
+  <a href="./mitsumeru_scan.html" target="_blank" style="margin-left:8px;background:none;border:0.5px solid #4fc3f7;color:#4fc3f7;border-radius:20px;padding:4px 12px;font-size:11px;cursor:pointer;letter-spacing:1px;text-decoration:none;">🔍 スキャン</a>
 </div>
 
 <!-- 画像プレビューモーダル -->
@@ -666,7 +664,8 @@
     </div>
   </div>
 
-  <button class="btn-primary" onclick="saveProfile()">プロファイルを保存する</button>
+  <button class="btn-secondary" onclick="openScanImport()" style="margin-bottom:10px;width:100%;">📥 スキャン結果をインポート（JSONを貼り付け）</button>
+    <button class="btn-primary" onclick="saveProfile()">プロファイルを保存する</button>
   <div id="profile-saved" style="display:none;text-align:center;color:var(--green);font-size:13px;margin-top:10px;">✓ 保存しました。以降のアドバイスに反映されます。</div>
 </div>
 
@@ -1217,23 +1216,6 @@ window.addEventListener('DOMContentLoaded', async function() {
         const el = document.getElementById(id);
         if (el && cloudEvening[id] !== undefined) el.value = cloudEvening[id];
       });
-      if (cloudEvening['_output_md']) {
-        const mdBox = document.getElementById('output-markdown');
-        if (mdBox) { mdBox.textContent = cloudEvening['_output_md']; mdBox.classList.add('visible'); }
-        localStorage.setItem('mitsumeru_output', cloudEvening['_output_md']);
-      }
-      if (cloudEvening['_calendar_csv']) {
-        calendarCSV = cloudEvening['_calendar_csv'];
-        const csvBox = document.getElementById('output-csv');
-        if (csvBox) { csvBox.textContent = calendarCSV; csvBox.classList.add('visible'); }
-        localStorage.setItem('mitsumeru_calendar', calendarCSV);
-      }
-      if (cloudEvening['_delay_csv']) {
-        delayCSV = cloudEvening['_delay_csv'];
-        const delayCsvBox = document.getElementById('output-delay-csv');
-        if (delayCsvBox) { delayCsvBox.textContent = delayCSV; delayCsvBox.classList.add('visible'); }
-        localStorage.setItem('mitsumeru_delay', delayCSV);
-      }
       localStorage.setItem('mitsumeru_evening', JSON.stringify(cloudEvening));
     }
   }, 1500);
@@ -1791,6 +1773,7 @@ HP: ${hpAdj}/100、MP: ${mp}/100
 HP・MPとタスクコースをもとに、今日「これだけはやる」タスクを3つ、優先順位順に箇条書きで出力してください。
 D-blockモードは「最小限の具体的行動」を、通常モード以上は「積極的に詰め込んで」ください。
 私の代わりに決断し、迷いなく動けるリストにしてください。`;
+
   const loading = document.getElementById('morning-loading');
   const advice = document.getElementById('morning-advice');
   loading.style.display = 'block';
@@ -1950,6 +1933,7 @@ NotebookLM音声対話用のナラティブ（物語調）
 HHMM ポモ数 タスク内容
 例：0900 2 ミーティング資料作成
 例：1300 1 メール返信まとめ`;
+
   switchTab('output');
 
   const loading = document.getElementById('output-loading');
@@ -1973,12 +1957,6 @@ HHMM ポモ数 タスク内容
       mdBox.textContent = text;
       mdBox.classList.add('visible');
       localStorage.setItem('mitsumeru_output', text);
-      const _ev = JSON.parse(localStorage.getItem('mitsumeru_evening') || '{}');
-      _ev['_output_md'] = text;
-      _ev['_calendar_csv'] = calendarCSV;
-      _ev['_delay_csv'] = delayCSV;
-      localStorage.setItem('mitsumeru_evening', JSON.stringify(_ev));
-      cloudSave('evening', _ev);
     },
     err => {
       loading.style.display = 'none';
@@ -2053,6 +2031,97 @@ function downloadHTML() {
 <div class="card"><pre>${summary}</pre></div>
 
 <p style="font-size:11px;color:#9a8a7a;text-align:center;margin-top:24px;">Fusion Partners — ミツメル ${dateStr}</p>
+
+<!-- スキャンインポートモーダル -->
+<div id="scan-import-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:300;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--card);border-radius:12px;max-width:560px;width:100%;padding:24px;">
+    <div style="font-family:'Noto Serif JP',serif;font-size:16px;margin-bottom:12px;">📥 スキャン結果をインポート</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:10px;">ミツメルスキャンの「結果をコピー（JSON）」ボタンで取得したJSONをここに貼り付けてください。</p>
+    <textarea id="scan-import-json" rows="10" style="width:100%;font-size:11px;font-family:monospace;padding:10px;border:0.5px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);resize:vertical;" placeholder='{"lsrp":{"primary":...}}\'></textarea>
+    <div style="display:flex;gap:10px;margin-top:14px;">
+      <button class="btn-primary" onclick="importScanResult()" style="flex:1;">フィールドに反映する</button>
+      <button class="btn-secondary" onclick="closeScanImport()" style="flex:1;">キャンセル</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function openScanImport() {
+  const el = document.getElementById('scan-import-overlay');
+  el.style.display = 'flex';
+}
+function closeScanImport() {
+  const el = document.getElementById('scan-import-overlay');
+  el.style.display = 'none';
+  document.getElementById('scan-import-json').value = '';
+}
+function importScanResult() {
+  const raw = document.getElementById('scan-import-json').value.trim();
+  let data;
+  try { data = JSON.parse(raw); } catch(e) { alert('JSONの形式が正しくありません。'); return; }
+
+  // Enneagram type mapping: T1-T9 → ミツメル option values
+  const ennMap = {
+    'T1':'001(完全主義者)','T2':'002(献身家)','T3':'003(達成者)',
+    'T4':'004(個人主義者)','T5':'005(研究者)','T6':'006(忠実家)',
+    'T7':'007(楽天家)','T8':'008(挑戦者)','T9':'009(調停者)'
+  };
+  // LSRP mapping
+  const lsrpMap = {
+    '安全':'安全圏：適合ピース','警戒':'要注意：観察対象','危険':'危険：組織の猛毒'
+  };
+  // RC mapping
+  const rcMap = {
+    '凪':'安全（凪）',
+    '冷徹':'危険（I+U-）組織破壊',
+    '危険':'危険（I+U-）組織破壊',
+    '停滞':'依存（I-U+）自律欠如',
+    '衝動':'注意（I-U-）他者否定'
+  };
+
+  // LSRP
+  if (data.lsrp && data.lsrp.primaryLabel) {
+    const lEl = document.getElementById('p-lsrp');
+    if (lEl) {
+      const mapped = lsrpMap[data.lsrp.primaryLabel] || '';
+      for (let o of lEl.options) { if (o.value === mapped) { lEl.value = mapped; break; } }
+    }
+  }
+  // RC
+  if (data.egogram && data.egogram.rcShort) {
+    const rEl = document.getElementById('p-rc');
+    if (rEl) {
+      const mapped = rcMap[data.egogram.rcShort] || '';
+      for (let o of rEl.options) { if (o.value === mapped) { rEl.value = mapped; break; } }
+    }
+  }
+  // Egogram scores
+  if (data.egogram && data.egogram.scores) {
+    const s = data.egogram.scores;
+    const fields = {CP:'p-cp', NP:'p-np', A:'p-a', FC:'p-fc', AC:'p-ac'};
+    for (const [k,id] of Object.entries(fields)) {
+      const el = document.getElementById(id);
+      if (el && s[k] !== undefined) el.value = s[k];
+    }
+  }
+  // Enneagram top3
+  if (data.enneagram && data.enneagram.ranking) {
+    const top3 = data.enneagram.ranking.slice(0,3);
+    const ennFields = ['p-enea1','p-enea2','p-enea3'];
+    top3.forEach((item, i) => {
+      const el = document.getElementById(ennFields[i]);
+      if (!el) return;
+      const typeKey = item.type || item;
+      const mapped = ennMap[typeKey] || '';
+      for (let o of el.options) { if (o.value === mapped) { el.value = mapped; break; } }
+    });
+  }
+
+  alert('スキャン結果をフィールドに反映しました。\n内容を確認して「保存する」ボタンを押してください。');
+  closeScanImport();
+}
+</script>
+
 </body>
 </html>`;
 

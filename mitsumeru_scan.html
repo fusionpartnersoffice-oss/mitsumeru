@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ミツメルスキャン | Fusion Partners</title>
+<style>
+  :root {
+    --bg: #0f1923; --surface: #1a2634; --card: #223044;
+    --accent: #4fc3f7; --accent2: #81c784; --accent3: #ffb74d; --accent4: #f06292;
+    --danger: #ef5350; --warn: #ffa726; --text: #e8eaf0; --sub: #8fa3b8;
+    --border: #2e4460; --radius: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Hiragino Kaku Gothic Pro', 'Meiryo', sans-serif; min-height: 100vh; }
+
+  header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 12px 20px; display: flex; align-items: center; gap: 10px; }
+  header h1 { font-size: 1.1rem; font-weight: 700; color: var(--accent); flex: 1; }
+  .header-nav-btn { background: var(--card); border: 1px solid var(--border); color: var(--sub); border-radius: 6px; padding: 5px 12px; font-size: 0.78rem; cursor: pointer; }
+  .header-nav-btn:hover { color: var(--text); border-color: var(--sub); }
+
+  .progress-wrap { background: var(--surface); border-bottom: 1px solid var(--border); padding: 10px 20px; }
+  .progress-steps { display: flex; gap: 8px; margin-bottom: 6px; }
+  .step-dot { flex: 1; height: 4px; border-radius: 2px; background: var(--border); transition: background 0.3s; }
+  .step-dot.done { background: var(--accent2); }
+  .step-dot.active { background: var(--accent); }
+  .progress-label { font-size: 0.75rem; color: var(--sub); }
+
+  main { max-width: 720px; margin: 0 auto; padding: 20px 16px 60px; }
+
+  .section-header { margin-bottom: 20px; }
+  .section-header h2 { font-size: 1.1rem; color: var(--accent); margin-bottom: 4px; }
+  .section-header p { font-size: 0.82rem; color: var(--sub); }
+  .section-badge { display: inline-block; background: var(--accent); color: #000; font-size: 0.68rem; font-weight: 700; padding: 2px 8px; border-radius: 20px; margin-bottom: 8px; }
+
+  .info-form { display: flex; flex-direction: column; gap: 14px; }
+  .info-form label { font-size: 0.85rem; color: var(--sub); display: block; margin-bottom: 4px; }
+  .info-form input { width: 100%; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text); padding: 10px 14px; font-size: 0.95rem; outline: none; }
+  .info-form input:focus { border-color: var(--accent); }
+
+  .q-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 10px; }
+  .q-num { font-size: 0.7rem; color: var(--sub); margin-bottom: 4px; }
+  .q-text { font-size: 0.9rem; line-height: 1.6; margin-bottom: 12px; }
+  .q-options { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .q-option { cursor: pointer; }
+  .q-option input { display: none; }
+  .q-option span { display: block; padding: 7px 10px; border-radius: 6px; border: 1px solid var(--border); font-size: 0.78rem; text-align: center; transition: all 0.15s; color: var(--sub); }
+  .q-option input:checked + span { border-color: var(--accent); background: rgba(79,195,247,0.12); color: var(--accent); font-weight: 600; }
+  .q-option:hover span { border-color: var(--accent); color: var(--text); }
+
+  .nav-btns { display: flex; gap: 10px; justify-content: space-between; margin-top: 24px; }
+  .btn { padding: 11px 24px; border-radius: 8px; border: none; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+  .btn-primary { background: var(--accent); color: #000; }
+  .btn-primary:hover { background: #29b6f6; }
+  .btn-secondary { background: var(--card); color: var(--sub); border: 1px solid var(--border); }
+  .btn-secondary:hover { color: var(--text); border-color: var(--sub); }
+  .btn-success { background: var(--accent2); color: #000; }
+  .btn-success:hover { background: #66bb6a; }
+  .btn-print { background: var(--card); color: var(--accent3); border: 1px solid var(--accent3); }
+  .btn-print:hover { background: rgba(255,183,77,0.1); }
+  .btn-danger { background: rgba(239,83,80,0.15); color: var(--danger); border: 1px solid var(--danger); }
+  .btn-sm { padding: 6px 14px; font-size: 0.78rem; }
+
+  /* 結果ページ */
+  .result-section { margin-bottom: 24px; }
+  .result-section h3 { font-size: 0.9rem; color: var(--accent); margin-bottom: 12px; border-left: 3px solid var(--accent); padding-left: 10px; }
+  .result-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 10px; }
+
+  .lsrp-badge { font-size: 1.2rem; font-weight: 700; margin-bottom: 6px; }
+  .lsrp-safe { color: var(--accent2); }
+  .lsrp-warn { color: var(--warn); }
+  .lsrp-danger { color: var(--danger); }
+
+  .ego-bar-wrap { margin-bottom: 10px; }
+  .ego-bar-label { display: flex; justify-content: space-between; font-size: 0.78rem; margin-bottom: 4px; }
+  .ego-bar-label .name { color: var(--sub); }
+  .ego-bar-label .score { color: var(--text); font-weight: 600; }
+  .ego-bar-track { height: 10px; background: var(--border); border-radius: 5px; overflow: hidden; }
+  .ego-bar-fill { height: 100%; border-radius: 5px; transition: width 0.8s ease; }
+  .bar-cp { background: var(--danger); }
+  .bar-np { background: var(--accent2); }
+  .bar-a  { background: var(--accent); }
+  .bar-fc { background: var(--accent3); }
+  .bar-ac { background: var(--accent4); }
+
+  .rc-badge { display: inline-block; padding: 6px 16px; border-radius: 20px; font-size: 0.88rem; font-weight: 700; }
+  .rc-nagi    { background: rgba(129,199,132,0.2); color: var(--accent2); border: 1px solid var(--accent2); }
+  .rc-cold    { background: rgba(239,83,80,0.2); color: var(--danger); border: 1px solid var(--danger); }
+  .rc-impulse { background: rgba(255,167,38,0.2); color: var(--warn); border: 1px solid var(--warn); }
+  .rc-stagnant{ background: rgba(143,163,184,0.2); color: var(--sub); border: 1px solid var(--sub); }
+  .rc-danger  { background: rgba(239,83,80,0.3); color: var(--danger); border: 2px solid var(--danger); }
+
+  .enneagram-top { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+  .enn-type-card { flex: 1; min-width: 140px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; text-align: center; }
+  .enn-rank { font-size: 0.68rem; color: var(--sub); }
+  .enn-type-name { font-size: 1rem; font-weight: 700; color: var(--accent); margin: 4px 0; }
+  .enn-score { font-size: 0.8rem; color: var(--text); }
+  .enn-type-card.rank1 { border-color: var(--accent); }
+
+  .export-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; font-size: 0.75rem; font-family: monospace; white-space: pre-wrap; word-break: break-all; color: var(--sub); max-height: 180px; overflow-y: auto; margin-bottom: 10px; }
+
+  .annotation { background: rgba(79,195,247,0.06); border-left: 3px solid var(--accent); border-radius: 0 6px 6px 0; padding: 8px 12px; font-size: 0.78rem; color: var(--sub); margin-top: 8px; }
+
+  /* ── 受検者リスト ── */
+  .roster-filter { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .roster-filter select, .roster-filter input { background: var(--card); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 7px 10px; font-size: 0.82rem; outline: none; }
+  .roster-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+  .roster-table th { background: var(--surface); color: var(--sub); padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  .roster-table td { padding: 9px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  .roster-table tr:hover td { background: rgba(79,195,247,0.04); }
+  .roster-wrap { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.7rem; font-weight: 600; }
+  .tag-safe { background: rgba(129,199,132,0.2); color: var(--accent2); }
+  .tag-warn { background: rgba(255,167,38,0.2); color: var(--warn); }
+  .tag-danger { background: rgba(239,83,80,0.2); color: var(--danger); }
+  .tag-nagi { background: rgba(129,199,132,0.15); color: var(--accent2); }
+  .tag-rc-warn { background: rgba(255,167,38,0.15); color: var(--warn); }
+  .tag-rc-danger { background: rgba(239,83,80,0.15); color: var(--danger); }
+  .empty-state { text-align: center; color: var(--sub); padding: 40px 20px; font-size: 0.85rem; }
+
+  .page { display: none; }
+  .page.active { display: block; animation: fadeIn 0.2s ease; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+
+  /* ── 印刷スタイル ── */
+  @media print {
+    :root { --bg: #fff; --surface: #f5f5f5; --card: #fafafa; --text: #111; --sub: #555; --border: #ccc; --accent: #0277bd; --accent2: #2e7d32; --accent3: #e65100; --accent4: #880e4f; --danger: #c62828; --warn: #e65100; }
+    header .header-nav-btn, .progress-wrap, .nav-btns, .export-box, #copy-ok, .btn-print, .annotation { display: none !important; }
+    body { background: #fff; color: #111; font-size: 11pt; }
+    main { max-width: 100%; padding: 0; }
+    header { border-bottom: 2px solid #333; padding: 10px 0; background: #fff; }
+    header h1 { color: #0277bd; font-size: 14pt; }
+    .result-card { border: 1px solid #ccc; background: #fafafa; }
+    .result-section h3 { color: #0277bd; border-left-color: #0277bd; }
+    .page#page-4 { display: block !important; }
+    .enneagram-top { flex-wrap: wrap; }
+    .enn-type-card { border: 1px solid #ccc; }
+    .ego-bar-track { background: #ddd; }
+    .lsrp-safe { color: #2e7d32; }
+    .lsrp-warn { color: #e65100; }
+    .lsrp-danger { color: #c62828; }
+    @page { margin: 15mm; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div style="width:28px;height:28px;background:linear-gradient(135deg,#4fc3f7,#1565c0);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">🔍</div>
+  <h1>ミツメルスキャン <span style="font-size:0.68rem;font-weight:400;color:var(--sub);">v0.3 | Fusion Partners</span></h1>
+  <button class="header-nav-btn" onclick="showRoster()">📋 受検者一覧</button>
+</header>
+
+<div class="progress-wrap" id="progress-wrap">
+  <div class="progress-steps">
+    <div class="step-dot active" id="dot0"></div>
+    <div class="step-dot" id="dot1"></div>
+    <div class="step-dot" id="dot2"></div>
+    <div class="step-dot" id="dot3"></div>
+    <div class="step-dot" id="dot4"></div>
+  </div>
+  <div class="progress-label" id="progress-label">Step 1 / 5 ── 基本情報</div>
+</div>
+
+<main>
+
+<!-- PAGE 0: 基本情報 -->
+<div class="page active" id="page-0">
+  <div class="section-header">
+    <div class="section-badge">基本情報</div>
+    <h2>受検者情報を入力してください</h2>
+    <p>採用選考または内部アセスメントに使用します</p>
+  </div>
+  <div class="info-form">
+    <div><label>所属法人名 <span style="color:var(--danger)">*</span></label><input type="text" id="corp-name" placeholder="例：Fusion Partners"></div>
+    <div><label>事業所名 <span style="color:var(--danger)">*</span></label><input type="text" id="office-name" placeholder="例：FusionOS Labo"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div><label>姓 <span style="color:var(--danger)">*</span></label><input type="text" id="name-sei" placeholder="例：柴山"></div>
+      <div><label>名 <span style="color:var(--danger)">*</span></label><input type="text" id="name-mei" placeholder="例：靖章"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div><label>フリガナ（姓）</label><input type="text" id="name-sei-kana" placeholder="例：シバヤマ"></div>
+      <div><label>フリガナ（名）</label><input type="text" id="name-mei-kana" placeholder="例：ヤスアキ"></div>
+    </div>
+  </div>
+  <div class="nav-btns"><div></div><button class="btn btn-primary" onclick="goTo(1)">次へ → LSRP調査</button></div>
+</div>
+
+<!-- PAGE 1: LSRP -->
+<div class="page" id="page-1">
+  <div class="section-header">
+    <div class="section-badge">Section 2 ── LSRP</div>
+    <h2>ワークスタイル・アプローチ調査</h2>
+    <p>各質問に正直にお答えください。全26問</p>
+  </div>
+  <div id="lsrp-questions"></div>
+  <div class="nav-btns">
+    <button class="btn btn-secondary" onclick="goTo(0)">← 戻る</button>
+    <button class="btn btn-primary" onclick="goTo(2)">次へ → コミュニケーション調査</button>
+  </div>
+</div>
+
+<!-- PAGE 2: エゴグラム + RC -->
+<div class="page" id="page-2">
+  <div class="section-header">
+    <div class="section-badge">Section 3 ── エゴグラム / RC</div>
+    <h2>チーム・コミュニケーション適応テスト</h2>
+    <p>各質問に正直にお答えください。全30問</p>
+  </div>
+  <div id="egogram-questions"></div>
+  <div class="nav-btns">
+    <button class="btn btn-secondary" onclick="goTo(1)">← 戻る</button>
+    <button class="btn btn-primary" onclick="goTo(3)">次へ → エニアグラム調査</button>
+  </div>
+</div>
+
+<!-- PAGE 3: エニアグラム -->
+<div class="page" id="page-3">
+  <div class="section-header">
+    <div class="section-badge">Section 4 ── エニアグラム</div>
+    <h2>ワークスタイル・プリファレンス調査</h2>
+    <p>各質問に正直にお答えください。全90問</p>
+  </div>
+  <div id="enneagram-questions"></div>
+  <div class="nav-btns">
+    <button class="btn btn-secondary" onclick="goTo(2)">← 戻る</button>
+    <button class="btn btn-success" onclick="showResults()">✓ 結果を表示</button>
+  </div>
+</div>
+
+<!-- PAGE 4: 結果 -->
+<div class="page" id="page-4">
+  <div class="section-header">
+    <div class="section-badge">診断結果</div>
+    <h2 id="result-name">診断結果</h2>
+    <p id="result-date" style="color:var(--sub);font-size:0.82rem;margin-top:4px;"></p>
+  </div>
+
+  <div class="result-section">
+    <h3>🧠 LSRP ── 対人行動リスク評価</h3>
+    <div class="result-card" id="lsrp-result"></div>
+  </div>
+  <div class="result-section">
+    <h3>🧩 エゴグラム ── 交流分析（TA）</h3>
+    <div class="result-card" id="egogram-result"></div>
+  </div>
+  <div class="result-section">
+    <h3>⚠️ RC判定 ── 組織適応リスク</h3>
+    <div class="result-card" id="rc-result"></div>
+  </div>
+  <div class="result-section">
+    <h3>🌐 エニアグラム ── タイプ分析</h3>
+    <div class="result-card" id="enneagram-result"></div>
+  </div>
+
+  <div class="result-section">
+    <h3>📋 凪システム連携用データ</h3>
+    <div class="export-box" id="export-text"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn btn-primary btn-sm" onclick="copyExport()">📋 コピー</button>
+      <button class="btn btn-success btn-sm" onclick="saveToRoster()">💾 受検者リストに保存</button>
+      <button class="btn btn-print btn-sm" onclick="window.print()">🖨️ 印刷 / PDF保存</button>
+      <span id="copy-ok" style="color:var(--accent2);font-size:0.8rem;align-self:center;display:none;">✓ コピーしました</span>
+      <span id="save-ok" style="color:var(--accent2);font-size:0.8rem;align-self:center;display:none;">✓ 保存しました</span>
+    </div>
+  </div>
+
+  <div class="annotation">⚠️ エニアグラムのタイプマッピングは採点表をもとに暫定設定しています。採点表と照合して修正が必要な場合はご連絡ください。</div>
+
+  <div class="nav-btns" style="margin-top:20px;">
+    <button class="btn btn-secondary" onclick="goTo(3)">← 問題に戻る</button>
+    <button class="btn btn-secondary" onclick="resetAll()">🔄 最初からやり直す</button>
+  </div>
+</div>
+
+<!-- PAGE 5: 受検者一覧 -->
+<div class="page" id="page-5">
+  <div class="section-header">
+    <div class="section-badge">受検者一覧</div>
+    <h2>受検者リスト管理</h2>
+    <p>保存した受検者の診断結果を一覧表示します</p>
+  </div>
+
+  <div class="roster-filter">
+    <input type="text" id="filter-corp" placeholder="法人名で絞込み" oninput="renderRoster()" style="flex:1;min-width:120px;">
+    <input type="text" id="filter-office" placeholder="事業所名で絞込み" oninput="renderRoster()" style="flex:1;min-width:120px;">
+    <select id="filter-lsrp" onchange="renderRoster()">
+      <option value="">LSRPすべて</option>
+      <option value="安全">安全</option>
+      <option value="警戒">警戒</option>
+      <option value="危険">危険</option>
+    </select>
+    <select id="filter-rc" onchange="renderRoster()">
+      <option value="">RCすべて</option>
+      <option value="凪">凪</option>
+      <option value="冷徹">冷徹</option>
+      <option value="危険">危険</option>
+      <option value="衝動">衝動</option>
+      <option value="停滞">停滞</option>
+    </select>
+  </div>
+
+  <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+    <button class="btn btn-primary btn-sm" onclick="exportCSV()">⬇️ CSVダウンロード</button>
+    <button class="btn btn-danger btn-sm" onclick="clearRoster()">🗑️ 全件削除</button>
+  </div>
+
+  <div class="roster-wrap">
+    <table class="roster-table" id="roster-table">
+      <thead>
+        <tr>
+          <th>日付</th><th>法人名</th><th>事業所</th><th>氏名</th>
+          <th>LSRP</th><th>RC判定</th><th>RC指標</th>
+          <th>エニアTop1</th><th>操作</th>
+        </tr>
+      </thead>
+      <tbody id="roster-body"></tbody>
+    </table>
+  </div>
+  <div id="roster-empty" class="empty-state" style="display:none;">
+    保存されたデータがありません。<br>診断結果ページで「受検者リストに保存」ボタンを押してください。
+  </div>
+
+  <div class="nav-btns" style="margin-top:20px;">
+    <button class="btn btn-secondary" onclick="backFromRoster()">← 戻る</button>
+    <button class="btn btn-primary" onclick="resetAll()">＋ 新規診断を開始</button>
+  </div>
+</div>
+
+</main>
+
+<script>
+// ═══════════════════════════════════════════════
+// データ定義
+// ═══════════════════════════════════════════════
+
+const OPTIONS = [
+  { label: 'あてはまる',         value: 2 },
+  { label: 'ややあてはまる',     value: 1 },
+  { label: 'あまりあてはまらない', value: 0 },
+  { label: 'あてはまらない',     value: -1 }
+];
+
+const LSRP_QUESTIONS = [
+  { text: '目標達成のためなら、周囲の感情を多少切り捨てるのも合理的な判断だ。', type: 'c', dir: 'fwd' },
+  { text: '他人が不運に遭ったり落ち込んだりしているのを見ると、自分ごとのように胸が痛む。', type: 'c', dir: 'rev' },
+  { text: '自分の利益のためなら、多少のルール違反や抜け道を使っても大きな問題ではない。', type: 'c', dir: 'fwd' },
+  { text: '誰かを騙して自分が得をすることなど、道義的に絶対に考えられない。', type: 'c', dir: 'rev' },
+  { text: '他人がどうなろうと、自分の目標さえ達成できればそれで満足だ。', type: 'c', dir: 'fwd' },
+  { text: '他人からどう思われるかを気にして、自分の行動を制限することはほとんどない。', type: 'c', dir: 'fwd' },
+  { text: '困っている人がいるとき、その人が自分に何かをもたらしてくれる可能性があるか考えてしまう。', type: 'c', dir: 'fwd' },
+  { text: '私は、どんな状況でも他人の心情を深く理解し、寄り添うことができると自信がある。', type: 'c', dir: 'rev' },
+  { text: '自分の目標を達成するために、周囲を味方に引き入れる技術は重要だ。', type: 'c', dir: 'fwd' },
+  { text: '他人の不幸を聞くと、心からその人を助けたいという衝動に駆られる。', type: 'c', dir: 'rev' },
+  { text: '自分の成果を上げるために、他人の評価や手柄をうまく利用するのは当然の戦略だ。', type: 'c', dir: 'fwd' },
+  { text: '周囲の人が困難に直面している姿を見ると、正直なところ「自分に関係なくてよかった」と感じる。', type: 'c', dir: 'fwd' },
+  { text: 'どんなに厳しい状況であっても、他人の立場になって物事を考える努力を怠らない。', type: 'c', dir: 'rev' },
+  { text: '仕事上でトラブルが起きたとき、それが自分以外の誰かの責任であれば、はっきりとそう指摘する。', type: 'c', dir: 'fwd' },
+  { text: '他人が大切にしているものや価値観を尊重し、それを傷つけないように配慮している。', type: 'c', dir: 'rev' },
+  { text: 'チームや組織の目的達成のためなら、多少の犠牲は避けられないと割り切っている。', type: 'c', dir: 'fwd' },
+  { text: '長期的なキャリア戦略よりも、目の前のチャンスや直感を優先して動くことが多い。', type: 'i', dir: 'fwd' },
+  { text: '仕事中に「このままではまずい」と分かっていても、突発的な行動を抑えられないことがある。', type: 'i', dir: 'fwd' },
+  { text: 'プロジェクトの方針や個人の約束であっても、状況が変わり次第、すぐに変更しても問題ないと考えている。', type: 'i', dir: 'fwd' },
+  { text: '決められたマニュアルや手順書を忠実に守り、一貫した行動をとることが得意だ。', type: 'i', dir: 'rev' },
+  { text: 'その場の勢いで決断し、後から「もっと慎重に考えるべきだった」と後悔することがある。', type: 'i', dir: 'fwd' },
+  { text: '突発的に何かを変えたい、あるいは新しい刺激が欲しいと強く感じることがある。', type: 'i', dir: 'fwd' },
+  { text: '私は、どんなトラブルが起きても、あらかじめ決めた計画通りに冷静に対処できる。', type: 'i', dir: 'rev' },
+  { text: '長期的な目標を達成するために、目先の楽しみを我慢することに抵抗はない。', type: 'i', dir: 'rev' },
+  { text: '自分が正しいと思った判断なら、組織のルールや慣習を無視しても進めるべきだ。', type: 'i', dir: 'fwd' },
+  { text: '私は、自分の衝動をコントロールし、社会的なルールや期待に応える努力を惜しまない。', type: 'i', dir: 'rev' }
+];
+
+const EGOGRAM_QUESTIONS = [
+  { text: '挨拶や礼儀ができていない人を見ると腹が立つ。', cat: 'CP' },
+  { text: '相手の気持ちを察して、先回りして行動する。', cat: 'NP' },
+  { text: '感情を抑え、数字やデータで話し合う。', cat: 'A' },
+  { text: '冗談を言ったり、場を盛り上げるのが得意だ。', cat: 'FC' },
+  { text: '会議では、まず周囲の意見を聞いてから発言する。', cat: 'AC' },
+  { text: '不正や不公平なことには、厳しく対処すべきだ。', cat: 'CP' },
+  { text: '困っている人がいると、自分の仕事を後回しにしても助ける。', cat: 'NP' },
+  { text: '効率の悪いやり方を見ると、すぐに改善案を考えたくなる。', cat: 'A' },
+  { text: '好奇心のままに新しいことに挑戦するのが好きだ。', cat: 'FC' },
+  { text: '上司の機嫌を損ねないように振る舞うことが多い。', cat: 'AC' },
+  // RC リスク指標 (index 10〜19)
+  { text: '上司の指示でも、自分が納得できなければ従う必要はないと思う。', cat: 'RC' },
+  { text: '効率のためなら、既存のルールを一時的に無視しても良い。', cat: 'RC' },
+  { text: '正論であれば、相手が誰であっても論破すべきだ。', cat: 'RC' },
+  { text: '「昔からの慣習」は、無意味な束縛だと感じて不快になる。', cat: 'RC' },
+  { text: '自分の直感や経験の方が、マニュアルより正しいと信じている。', cat: 'RC' },
+  { text: '新しい組織のやり方には、まず疑いから入ってしまう。', cat: 'RC' },
+  { text: '自分の手法を他人に細かく可視化されるのは苦痛だ。', cat: 'RC' },
+  { text: '改善案を出すよりも先に、不満を同僚に漏らしてしまう。', cat: 'RC' },
+  { text: '自分がミスした原因は、主に「仕組みの悪さ」にあると思う。', cat: 'RC' },
+  { text: '「チームワーク」という言葉に、同調圧力のような抵抗を感じる。', cat: 'RC' },
+  // エゴグラム続き (index 20〜29)
+  { text: '責任ある立場に立たされると、やる気が湧く。', cat: 'CP' },
+  { text: '面倒見が良いと周りから言われる。', cat: 'NP' },
+  { text: '常に冷静で、パニックになることはない。', cat: 'A' },
+  { text: '喜怒哀楽がはっきりしているほうだ。', cat: 'FC' },
+  { text: '頼まれたら嫌と言えない性格だ。', cat: 'AC' },
+  { text: '規律やマナーを何より重んじる。', cat: 'CP' },
+  { text: '人からどう見られているか常に意識している。', cat: 'NP' },
+  { text: '難しい問題ほど、解いてやろうと燃える。', cat: 'A' },
+  { text: 'ユーモアを忘れず、人を笑わせるのが好きだ。', cat: 'FC' },
+  { text: '周囲との調和を保つために、自分を殺すことがある。', cat: 'AC' }
+];
+
+const ENN_TYPE_MAP = {
+  1: [4,13,21,30,45,54,61,62,71,80],
+  2: [1,3,14,31,37,46,55,63,72,81],
+  3: [6,22,23,44,47,50,56,64,73,82],
+  4: [7,15,24,32,40,48,57,65,74,83],
+  5: [8,16,25,33,41,49,58,66,75,84],
+  6: [2,9,17,26,34,42,59,67,76,85],
+  7: [0,10,18,27,35,43,51,60,68,77],
+  8: [5,11,19,28,36,52,69,78,86,87],
+  9: [12,20,29,38,39,53,70,79,88,89]
+};
+const ENN_NAMES  = { 1:'タイプ1｜完璧主義', 2:'タイプ2｜献身家', 3:'タイプ3｜達成者', 4:'タイプ4｜芸術家', 5:'タイプ5｜研究者', 6:'タイプ6｜堅実家', 7:'タイプ7｜楽天家', 8:'タイプ8｜統率者', 9:'タイプ9｜調停者' };
+const ENN_NAMES_SHORT = { 1:'完璧主義', 2:'献身家', 3:'達成者', 4:'芸術家', 5:'研究者', 6:'堅実家', 7:'楽天家', 8:'統率者', 9:'調停者' };
+const ENN_DESC   = { 1:'正義感・完璧主義・向上心が高い', 2:'人の役に立つことに生きがいを感じる', 3:'成功・実績・評価を重視する行動派', 4:'独自の感性と感情の深さを持つ個性派', 5:'知識探求・観察・論理を好む分析家', 6:'慎重・忠実・安全を重視する堅実タイプ', 7:'好奇心旺盛・楽観的・行動的な楽天家', 8:'エネルギッシュで決断力があるリーダー', 9:'穏やかで協調性が高い調和の人' };
+
+const ENNEAGRAM_QUESTIONS = [
+  '好奇心旺盛で、新しいものが好き。','頼られたら助けずにはいられない。','慎重で控えめなほうである。','「おせっかいだ」と言われることがある。',
+  '「ちゃんと」していないと、なんだか落ち着かない。','エネルギーに満ちている。','自分は、人から好かれていると思う。','「個性的だ」「変わっている」と言われるのが、実は嬉しい。',
+  '知識を蓄えることに喜びを感じる。','石橋を叩いて渡るタイプだ。','楽天的で、なんとかなると思うほうだ。','リーダーシップを発揮するのが得意だ。',
+  '争いごとは避けたい。','完璧主義なところがある。','人の役に立つことが自分の生きがいだ。','感情が豊かで、涙もろい。',
+  '一人の時間がないとストレスが溜まる。','組織やルールの枠組みの中にいると安心する。','楽しい計画を立てるのが好きだ。','自分の意見をはっきり言うほうだ。',
+  '周囲の意見に合わせてしまうことが多い。','間違ったことを見過ごせない。','他人の評価が気になる。','効率的に物事を進めるのが得意だ。',
+  '感受性が強く、芸術的なものに惹かれる。','分析したり、深く考えたりするのが好きだ。','最悪の事態を想定して行動する。','嫌なことがあってもすぐに切り替えられる。',
+  '負けず嫌いである。','平和主義で、穏やかな環境を好む。','細かいミスが許せない。','感謝されると、もっと頑張ろうと思う。',
+  '自分は特別な存在だという意識がある。','感情に振り回されず、客観的に判断したい。','信頼できるリーダーについていきたい。','じっとしているのが苦手だ。',
+  '正論で相手を黙らせてしまうことがある。','他人の微妙な変化に敏感だ。','ルーチンワークを正確にこなすのが得意だ。','人を喜ばせるためのサプライズが好きだ。',
+  '自分のスタイル（流儀）を崩したくない。','データや事実を何より重視する。','不安を感じやすいほうだ。','新しいアイデアが次々と湧いてくる。',
+  '集団の中で中心的な存在になることが多い。','自分を律して、やるべきことを優先する。','困っている人には、そっと寄り添いたい。','自分の能力を最大限に発揮して成功したい。',
+  '人とは違う、独自の感性を大切にしたい。','専門的なスキルを磨くことに没頭できる。','周囲の期待に応えるために努力する。','多趣味で、やりたいことがたくさんある。',
+  '自分の信念を曲げるくらいなら、ぶつかっても良い。','穏やかで、波風の立たない毎日が理想だ。','「もっと良くできるはずだ」と常に考えている。','人から感謝されないと、虚しさを感じることがある。',
+  '自分の実績を正当に評価してほしい。','孤独であることをどこかで楽しんでいる。','考える時間は十分にある方が良い。','規則やルールは、集団を守るために必要不可欠だ。',
+  '深刻な状況でも、明るい側面を見つけようとする。','正義感が強く、曲がったことが大嫌いだ。','「まあいいか」と妥協するのが苦手だ。','自分のことは後回しにしてでも、誰かの力になりたい。',
+  '競争で一番になることにこだわる。','自分の内面にある「深い感情」を大切にしたい。','客観的なデータがない意見には納得しにくい。','頼りになるリーダーがいると、全幅の信頼を寄せる。',
+  '人を楽しませるアイデアを考えるのが得意だ。','自分の弱みを見せるのは、負けだと思っている。','誰とでも仲良く、公平に接したい。','理想が高く、自分にも他人にも厳しい。',
+  '相手が望む自分を、無意識に演じてしまうことがある。','目標を達成するためなら、多少の犠牲は仕方ない。','どこか浮世離れしていると言われることがある。','無駄な会議や雑談は、時間の無駄だと感じる。',
+  '伝統や格式のあるものに惹かれる。','好奇心が旺盛で、じっとしていられない。','相手に指図されると、反射的に反発したくなる。','争うくらいなら、自分が我慢すれば良いと思う。',
+  '「こうあるべき」という倫理観を大切にしている。','お礼や手紙などをマメに書くほうだ。','効率を追求し、最短距離で結果を出したい。','人から理解されない寂しさを、時に感じる。',
+  '複雑な問題を論理的に解き明かすのが好きだ。','周囲の顔色を伺って、安心感を得ようとする。','自由を奪われることが何より苦痛だ。','面倒なことは、強引にでも解決してしまいたい。',
+  '全体のバランスを見て、調整役に回ることが多い。','立てた計画通りに物事を進めたい。'
+];
+
+// ═══════════════════════════════════════════════
+// 状態管理
+// ═══════════════════════════════════════════════
+
+let answers = { lsrp: new Array(26).fill(null), egogram: new Array(30).fill(null), enneagram: new Array(90).fill(null) };
+let currentPage = 0;
+let prevPage = 0;
+let lastResult = null;
+
+// ═══════════════════════════════════════════════
+// 質問レンダリング
+// ═══════════════════════════════════════════════
+
+function renderQuestions(containerId, questions, section) {
+  const c = document.getElementById(containerId);
+  c.innerHTML = questions.map((q, i) => {
+    const text = typeof q === 'string' ? q : q.text;
+    return `<div class="q-card">
+      <div class="q-num">Q${i + 1}</div>
+      <div class="q-text">${text}</div>
+      <div class="q-options">${OPTIONS.map(opt => `
+        <label class="q-option">
+          <input type="radio" name="${section}_${i}" value="${opt.value}" onchange="setAnswer('${section}',${i},${opt.value})">
+          <span>${opt.label}</span>
+        </label>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function setAnswer(section, idx, value) { answers[section][idx] = value; }
+
+// ═══════════════════════════════════════════════
+// ページ遷移
+// ═══════════════════════════════════════════════
+
+const PAGE_LABELS = [
+  'Step 1 / 5 ── 基本情報',
+  'Step 2 / 5 ── LSRP調査 (26問)',
+  'Step 3 / 5 ── エゴグラム / RC (30問)',
+  'Step 4 / 5 ── エニアグラム (90問)',
+  'Step 5 / 5 ── 診断結果',
+  '受検者一覧'
+];
+
+function goTo(n) {
+  if (n === 1 && !document.getElementById('name-sei').value.trim()) {
+    alert('姓を入力してください。'); return;
+  }
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(`page-${n}`).classList.add('active');
+  const pw = document.getElementById('progress-wrap');
+  if (n === 5) { pw.style.display = 'none'; }
+  else {
+    pw.style.display = '';
+    for (let i = 0; i <= 4; i++) {
+      const d = document.getElementById(`dot${i}`);
+      d.className = 'step-dot' + (i < n ? ' done' : '') + (i === n ? ' active' : '');
+    }
+    document.getElementById('progress-label').textContent = PAGE_LABELS[n];
+  }
+  currentPage = n;
+  window.scrollTo(0, 0);
+}
+
+function showRoster() { prevPage = currentPage; renderRoster(); goTo(5); }
+function backFromRoster() { goTo(prevPage || 0); }
+
+// ═══════════════════════════════════════════════
+// スコアリング
+// ═══════════════════════════════════════════════
+
+function scoreLSRP() {
+  let c = 0, i = 0;
+  LSRP_QUESTIONS.forEach((q, idx) => {
+    const val = answers.lsrp[idx];
+    if (val === null) return;
+    const positive = val >= 1;
+    const negative = val < 0;
+    let score = q.dir === 'fwd' ? (positive ? 1 : 0) : (negative ? 1 : 0);
+    if (q.type === 'c') c += score; else i += score;
+  });
+  const total = c + i;
+  let level, cls, levelShort;
+  if (total >= 16) { level = '★★★ 危険（防衛過剰）'; levelShort = '危険'; cls = 'lsrp-danger'; }
+  else if (total >= 11) { level = '★★☆ 要警戒（要確認フラグ）'; levelShort = '警戒'; cls = 'lsrp-warn'; }
+  else { level = '★☆☆ 安全圏（適合ピース）'; levelShort = '安全'; cls = 'lsrp-safe'; }
+  let cause = '';
+  if (total >= 11) {
+    const cr = c/16, ir = i/10;
+    cause = cr > ir ? '➔ 【冷酷さ・利己的さに注意】' : ir > cr ? '➔ 【衝動的・社会不適応さに注意】' : '➔ 【冷酷・衝動の複合リスク】';
+  }
+  return { c, i, total, level, levelShort, cls, cause };
+}
+
+function scoreEgogram() {
+  // 重み付きスコア: あてはまる=2, やや=1, あまり=0, あてはまらない=0 (負の値は0でクリップ)
+  // 各カテゴリ4問 × 最大2pt = 8pt → ×1.25 で 0〜10スケール
+  const raw = { CP: 0, NP: 0, A: 0, FC: 0, AC: 0 };
+  let rcRaw = 0;
+  EGOGRAM_QUESTIONS.forEach((q, idx) => {
+    const val = answers.egogram[idx];
+    if (val === null) return;
+    if (q.cat === 'RC') { if (val >= 1) rcRaw++; return; }
+    raw[q.cat] += Math.max(0, val); // 0〜2の重み付き
+  });
+  const ego = {};
+  ['CP','NP','A','FC','AC'].forEach(k => { ego[k] = Math.round(raw[k] * 1.25); });
+
+  const I = ego.CP + ego.FC, U = ego.NP + ego.AC;
+  let rc, rcClass, rcShort;
+  // RC閾値：重み付きスコア（あてはまる=2, やや=1）対応版
+  // 各カテゴリ0〜10、I/U は0〜20スケール。やや=1ptで4問全答だと5点なので"高"は7以上で設定
+  if      (I > 9 && U < 5) { rc = '🚨 冷徹（I+U−）他者否定・独善OS'; rcClass = 'rc-cold'; rcShort = '冷徹'; }
+  else if (I > 7 && U < 5) { rc = '🚨 危険（要注意）'; rcClass = 'rc-danger'; rcShort = '危険'; }
+  else if (I < 5 && U < 5) { rc = '⚠️ 停滞（自律性欠如・停滞OS）'; rcClass = 'rc-stagnant'; rcShort = '停滞'; }
+  else if (ego.FC > 6 && I < 5) { rc = '⚠️ 衝動（FC過剰）'; rcClass = 'rc-impulse'; rcShort = '衝動'; }
+  else                     { rc = '✅ 凪（バランス良好）'; rcClass = 'rc-nagi'; rcShort = '凪'; }
+
+  let rcRisk = rcRaw >= 7 ? '高（'+rcRaw+'/10）' : rcRaw >= 4 ? '中（'+rcRaw+'/10）' : '低（'+rcRaw+'/10）';
+  return { ego, rc, rcClass, rcShort, I, U, rcRaw, rcRisk };
+}
+
+function scoreEnneagram() {
+  const scores = {};
+  for (let t = 1; t <= 9; t++) {
+    scores[t] = 0;
+    ENN_TYPE_MAP[t].forEach(idx => { const v = answers.enneagram[idx]; if (v !== null) scores[t] += v; });
+  }
+  const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+  return { scores, sorted };
+}
+
+// ═══════════════════════════════════════════════
+// 結果表示
+// ═══════════════════════════════════════════════
+
+function showResults() {
+  const lsrpMiss = answers.lsrp.filter(v=>v===null).length;
+  const egoMiss  = answers.egogram.filter(v=>v===null).length;
+  const ennMiss  = answers.enneagram.filter(v=>v===null).length;
+  if (lsrpMiss + egoMiss + ennMiss > 0) {
+    if (!confirm(`未回答があります（LSRP:${lsrpMiss}問 エゴグラム:${egoMiss}問 エニアグラム:${ennMiss}問）。\nこのまま結果を表示しますか？`)) return;
+  }
+
+  const sei      = document.getElementById('name-sei').value.trim()     || '（未入力）';
+  const mei      = document.getElementById('name-mei').value.trim()     || '';
+  const seiKana  = document.getElementById('name-sei-kana').value.trim() || '';
+  const meiKana  = document.getElementById('name-mei-kana').value.trim() || '';
+  const name     = sei + (mei ? ' ' + mei : '');
+  const nameKana = seiKana + (meiKana ? ' ' + meiKana : '');
+  const corp   = document.getElementById('corp-name').value   || '';
+  const office = document.getElementById('office-name').value || '';
+  document.getElementById('result-name').textContent = name + ' 様の診断結果';
+  document.getElementById('result-date').textContent =
+    (nameKana ? nameKana + '　' : '') + corp + ' ' + office + ' ／ ' + new Date().toLocaleDateString('ja-JP');
+
+  const lsrp = scoreLSRP();
+  const ego  = scoreEgogram();
+  const enn  = scoreEnneagram();
+
+  // LSRP
+  document.getElementById('lsrp-result').innerHTML = `
+    <div class="lsrp-badge ${lsrp.cls}">${lsrp.level}</div>
+    <div style="margin-top:8px;font-size:0.82rem;color:var(--sub);">
+      一次（冷酷・利己）: <strong>${lsrp.c}</strong> / 16
+      二次（衝動・反社会）: <strong>${lsrp.i}</strong> / 10
+      合計: <strong>${lsrp.total}</strong> / 26
+    </div>
+    ${lsrp.cause ? `<div style="margin-top:8px;font-size:0.85rem;color:var(--warn);">${lsrp.cause}</div>` : ''}
+    <div class="annotation">★★★(≥16): 高リスク　★★☆(≥11): 要警戒　★☆☆(&lt;11): 安全圏</div>`;
+
+  // エゴグラム（重み付きスコア表示）
+  const bars = [
+    { key:'CP', label:'CP（批判的親）', cls:'bar-cp' },
+    { key:'NP', label:'NP（養護的親）', cls:'bar-np' },
+    { key:'A',  label:'A（成人）',      cls:'bar-a'  },
+    { key:'FC', label:'FC（自由な子）', cls:'bar-fc' },
+    { key:'AC', label:'AC（順応した子）',cls:'bar-ac' }
+  ];
+  document.getElementById('egogram-result').innerHTML =
+    bars.map(b => `<div class="ego-bar-wrap">
+      <div class="ego-bar-label"><span class="name">${b.label}</span><span class="score">${ego.ego[b.key]} / 10</span></div>
+      <div class="ego-bar-track"><div class="ego-bar-fill ${b.cls}" style="width:${ego.ego[b.key]*10}%"></div></div>
+    </div>`).join('') +
+    `<div style="margin-top:12px;font-size:0.8rem;color:var(--sub);">
+      I（自己肯定）= CP+FC = <strong>${ego.I}</strong>　／　U（他者肯定）= NP+AC = <strong>${ego.U}</strong>
+    </div>
+    <div class="annotation" style="margin-top:8px;">採点方式：あてはまる=2pt, ややあてはまる=1pt, あまり/あてはまらない=0pt（各カテゴリ4問×最大2pt → 0〜10スケール）</div>`;
+
+  // RC
+  document.getElementById('rc-result').innerHTML = `
+    <div style="margin-bottom:10px;"><span class="rc-badge ${ego.rcClass}">${ego.rc}</span></div>
+    <div style="font-size:0.82rem;color:var(--sub);">組織適応リスク指標：${ego.rcRisk}</div>
+    <div class="annotation">🚨冷徹: I>9 AND U&lt;5　🚨危険: I>7 AND U&lt;5　⚠️停滞: I&lt;5 AND U&lt;5　⚠️衝動: FC>6 AND I&lt;5<br>RC指標 = 組織適応10問中の高リスク反応数（重み付きスコア基準）</div>`;
+
+  // エニアグラム
+  const top3 = enn.sorted.slice(0, 3);
+  document.getElementById('enneagram-result').innerHTML =
+    `<div class="enneagram-top">${top3.map(([t,s],r) => `
+      <div class="enn-type-card ${r===0?'rank1':''}">
+        <div class="enn-rank">${['第1位','第2位','第3位'][r]}</div>
+        <div class="enn-type-name">${ENN_NAMES[t]}</div>
+        <div class="enn-score">${s}点 / 20点満点</div>
+        <div style="font-size:0.72rem;color:var(--sub);margin-top:4px;">${ENN_DESC[t]}</div>
+      </div>`).join('')}</div>
+    <div style="font-size:0.78rem;color:var(--sub);">${enn.sorted.map(([t,s])=>`<span style="margin-right:10px;">T${t}: ${s}</span>`).join('')}</div>`;
+
+  // エクスポートJSON
+  const exportData = {
+    sei, mei, seiKana, meiKana, name, corp, office,
+    date: new Date().toISOString().split('T')[0],
+    lsrp: { primary:lsrp.c, secondary:lsrp.i, total:lsrp.total, level:lsrp.level, cause:lsrp.cause },
+    egogram: { CP:ego.ego.CP, NP:ego.ego.NP, A:ego.ego.A, FC:ego.ego.FC, AC:ego.ego.AC, I:ego.I, U:ego.U },
+    rc: { 判定:ego.rcShort, RCリスク指標:ego.rcRaw, 補助判定:'組織適応リスク：'+ego.rcRisk },
+    enneagram: {
+      top3: top3.map(([t,s]) => ({ type:`T${t}`, name:ENN_NAMES[t], score:s })),
+      allScores: Object.fromEntries(enn.sorted.map(([t,s]) => [`T${t}`,s]))
+    }
+  };
+  document.getElementById('export-text').textContent = JSON.stringify(exportData, null, 2);
+
+  // 最後の結果を保存
+  lastResult = {
+    ...exportData,
+    lsrpLevelShort: lsrp.levelShort,
+    rcShort: ego.rcShort,
+    rcRaw: ego.rcRaw,
+    ennTop1: ENN_NAMES_SHORT[top3[0][0]],
+    nameKana,
+    savedAt: new Date().toISOString()
+  };
+
+  goTo(4);
+}
+
+// ═══════════════════════════════════════════════
+// 受検者リスト管理
+// ═══════════════════════════════════════════════
+
+const ROSTER_KEY = 'mitsumeru_scan_roster';
+
+function loadRoster() {
+  try { return JSON.parse(localStorage.getItem(ROSTER_KEY) || '[]'); }
+  catch { return []; }
+}
+
+function saveToRoster() {
+  if (!lastResult) { alert('先に診断を完了してください。'); return; }
+  const roster = loadRoster();
+  roster.unshift(lastResult);
+  localStorage.setItem(ROSTER_KEY, JSON.stringify(roster));
+  const ok = document.getElementById('save-ok');
+  ok.style.display = 'inline';
+  setTimeout(() => { ok.style.display = 'none'; }, 2000);
+}
+
+function renderRoster() {
+  const roster = loadRoster();
+  const fc = (document.getElementById('filter-corp')?.value || '').toLowerCase();
+  const fo = (document.getElementById('filter-office')?.value || '').toLowerCase();
+  const fl = (document.getElementById('filter-lsrp')?.value || '');
+  const fr = (document.getElementById('filter-rc')?.value || '');
+
+  const filtered = roster.filter(r => {
+    if (fc && !r.corp.toLowerCase().includes(fc)) return false;
+    if (fo && !r.office.toLowerCase().includes(fo)) return false;
+    if (fl && !r.lsrpLevelShort?.includes(fl)) return false;
+    if (fr && !r.rcShort?.includes(fr)) return false;
+    return true;
+  });
+
+  const tbody = document.getElementById('roster-body');
+  const empty = document.getElementById('roster-empty');
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  tbody.innerHTML = filtered.map((r, i) => {
+    const lsrpClass = r.lsrpLevelShort === '危険' ? 'tag-danger' : r.lsrpLevelShort === '警戒' ? 'tag-warn' : 'tag-safe';
+    const rcClass   = (r.rcShort === '冷徹' || r.rcShort === '危険') ? 'tag-rc-danger' : (r.rcShort === '停滞' || r.rcShort === '衝動') ? 'tag-rc-warn' : 'tag-nagi';
+    const globalIdx = roster.indexOf(r);
+    return `<tr>
+      <td>${r.date || ''}</td>
+      <td>${r.corp || ''}</td>
+      <td>${r.office || ''}</td>
+      <td style="font-weight:600;">${r.name || ''}<br><span style="font-size:0.7rem;color:var(--sub);font-weight:400;">${r.nameKana || ''}</span></td>
+      <td><span class="tag ${lsrpClass}">${r.lsrpLevelShort || ''}</span></td>
+      <td><span class="tag ${rcClass}">${r.rcShort || ''}</span></td>
+      <td>${r.rcRaw ?? ''}</td>
+      <td>${r.ennTop1 || ''}</td>
+      <td><button class="btn btn-danger btn-sm" onclick="deleteEntry(${globalIdx})">削除</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function deleteEntry(idx) {
+  if (!confirm('この受検者のデータを削除しますか？')) return;
+  const roster = loadRoster();
+  roster.splice(idx, 1);
+  localStorage.setItem(ROSTER_KEY, JSON.stringify(roster));
+  renderRoster();
+}
+
+function clearRoster() {
+  if (!confirm('全件のデータを削除しますか？この操作は元に戻せません。')) return;
+  localStorage.removeItem(ROSTER_KEY);
+  renderRoster();
+}
+
+function exportCSV() {
+  const roster = loadRoster();
+  if (roster.length === 0) { alert('保存されたデータがありません。'); return; }
+  const header = ['日付','法人名','事業所','姓','名','フリガナ（姓）','フリガナ（名）','LSRP合計','LSRP判定','一次','二次','CP','NP','A','FC','AC','I','U','RC判定','RC指標','エニアTop1','エニアTop2','エニアTop3'];
+  const rows = roster.map(r => [
+    r.date, r.corp, r.office, r.sei||r.name, r.mei||'', r.seiKana||'', r.meiKana||'',
+    r.lsrp?.total, r.lsrpLevelShort,
+    r.lsrp?.primary, r.lsrp?.secondary,
+    r.egogram?.CP, r.egogram?.NP, r.egogram?.A, r.egogram?.FC, r.egogram?.AC,
+    r.egogram?.I, r.egogram?.U,
+    r.rcShort, r.rcRaw,
+    r.enneagram?.top3?.[0]?.name?.replace('タイプ.|｜',''),
+    r.enneagram?.top3?.[1]?.name?.replace('タイプ.|｜',''),
+    r.enneagram?.top3?.[2]?.name?.replace('タイプ.|｜',''),
+  ]);
+  const csv = [header, ...rows].map(r => r.map(v => `"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob(['﻿'+csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'mitsumeru_scan_' + new Date().toISOString().split('T')[0] + '.csv';
+  a.click();
+}
+
+// ═══════════════════════════════════════════════
+// ユーティリティ
+// ═══════════════════════════════════════════════
+
+function copyExport() {
+  navigator.clipboard.writeText(document.getElementById('export-text').textContent).then(() => {
+    const ok = document.getElementById('copy-ok');
+    ok.style.display = 'inline';
+    setTimeout(() => { ok.style.display = 'none'; }, 2000);
+  });
+}
+
+function resetAll() {
+  if (!confirm('回答をリセットして最初からやり直しますか？')) return;
+  answers = { lsrp: new Array(26).fill(null), egogram: new Array(30).fill(null), enneagram: new Array(90).fill(null) };
+  document.querySelectorAll('input[type=radio]').forEach(r => r.checked = false);
+  ['corp-name','office-name','name-sei','name-mei','name-sei-kana','name-mei-kana'].forEach(id => document.getElementById(id).value = '');
+  lastResult = null;
+  goTo(0);
+}
+
+// ── 起動 ──
+(function() {
+  renderQuestions('lsrp-questions', LSRP_QUESTIONS, 'lsrp');
+  renderQuestions('egogram-questions', EGOGRAM_QUESTIONS, 'egogram');
+  renderQuestions('enneagram-questions', ENNEAGRAM_QUESTIONS, 'enneagram');
+})();
+</script>
+</body>
+</html>
