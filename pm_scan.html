@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>PM理論 リーダーシップ診断</title>
+<style>
+:root{
+  --bg:#0f1117;--surface:#1a1d27;--card:#1f2333;
+  --border:#2a2f45;--text:#e8ecf0;--sub:#7a8ba0;
+  --accent:#5b8df6;--accent2:#4caf7d;--warn:#ffa726;--danger:#ef5350;
+  --pm-PM:#4caf7d;--pm-Pm:#ffa726;--pm-pM:#5b8df6;--pm-pm:#7a8ba0;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+
+.header{background:linear-gradient(135deg,#1a1d27 0%,#151825 100%);border-bottom:1px solid var(--border);padding:16px 20px;display:flex;align-items:center;gap:12px;}
+.header-icon{font-size:1.6rem;}
+.header h1{font-size:1rem;font-weight:700;color:var(--text);}
+.header p{font-size:0.72rem;color:var(--sub);margin-top:2px;}
+.header-right{margin-left:auto;display:flex;gap:8px;}
+
+.progress-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 20px;display:flex;gap:6px;align-items:center;overflow-x:auto;}
+.step{display:flex;align-items:center;gap:5px;font-size:0.68rem;color:var(--sub);white-space:nowrap;}
+.step.active{color:var(--accent);}
+.step.done{color:var(--accent2);}
+.step-dot{width:20px;height:20px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:700;}
+.step.active .step-dot{background:var(--accent);color:#fff;}
+.step.done .step-dot{background:var(--accent2);color:#fff;}
+.step-sep{color:var(--border);font-size:0.8rem;}
+
+.container{max-width:720px;margin:0 auto;padding:16px;}
+.page{display:none;}
+.page.active{display:block;}
+
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:14px;}
+.section-badge{display:inline-block;font-size:0.65rem;font-weight:700;letter-spacing:1px;padding:3px 8px;background:rgba(91,141,246,0.15);color:var(--accent);border-radius:20px;margin-bottom:8px;}
+h2{font-size:1.1rem;font-weight:700;margin-bottom:4px;}
+h3{font-size:0.88rem;font-weight:700;margin-bottom:12px;color:var(--text);}
+.sub-text{font-size:0.78rem;color:var(--sub);margin-bottom:16px;line-height:1.6;}
+
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+.form-row.single{grid-template-columns:1fr;}
+label{font-size:0.72rem;color:var(--sub);display:block;margin-bottom:4px;}
+input,select{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);font-size:0.82rem;}
+input:focus,select:focus{outline:none;border-color:var(--accent);}
+
+.q-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:10px;}
+.q-num{font-size:0.65rem;color:var(--sub);margin-bottom:4px;font-weight:700;letter-spacing:1px;}
+.q-text{font-size:0.88rem;line-height:1.6;margin-bottom:12px;}
+
+.scale5{display:flex;gap:6px;flex-wrap:wrap;}
+.scale5-btn{flex:1;min-width:44px;padding:8px 4px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--sub);font-size:0.8rem;font-weight:700;cursor:pointer;text-align:center;transition:all 0.15s;}
+.scale5-btn:hover{border-color:var(--accent);color:var(--accent);}
+.scale5-btn.selected{background:var(--accent);border-color:var(--accent);color:#fff;}
+.scale5-labels{display:flex;justify-content:space-between;font-size:0.6rem;color:var(--sub);margin-top:4px;}
+
+.btn{border:1px solid var(--border);border-radius:8px;padding:10px 18px;font-size:0.82rem;cursor:pointer;font-weight:600;transition:all 0.15s;}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:#fff;}
+.btn-primary:hover{opacity:0.85;}
+.btn-secondary{background:var(--surface);color:var(--sub);}
+.btn-secondary:hover{border-color:var(--accent);color:var(--accent);}
+.btn-sm{padding:6px 12px;font-size:0.75rem;}
+.nav-btns{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;}
+
+/* 結果 */
+.result-hero{text-align:center;padding:24px;margin-bottom:14px;}
+.pm-badge{display:inline-block;font-size:2.4rem;font-weight:900;padding:12px 32px;border-radius:16px;margin-bottom:8px;}
+.pm-PM{background:rgba(76,175,125,0.15);color:var(--pm-PM);border:2px solid var(--pm-PM);}
+.pm-Pm{background:rgba(255,167,38,0.15);color:var(--pm-Pm);border:2px solid var(--pm-Pm);}
+.pm-pM{background:rgba(91,141,246,0.15);color:var(--pm-pM);border:2px solid var(--pm-pM);}
+.pm-pm{background:rgba(122,139,160,0.15);color:var(--pm-pm);border:2px solid var(--pm-pm);}
+
+.score-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
+.score-box{background:var(--surface);border-radius:10px;padding:14px;text-align:center;}
+.score-label{font-size:0.68rem;color:var(--sub);margin-bottom:6px;}
+.score-val{font-size:2rem;font-weight:900;}
+.score-max{font-size:0.72rem;color:var(--sub);}
+.score-bar{height:6px;border-radius:3px;background:var(--border);margin-top:8px;}
+.score-fill{height:100%;border-radius:3px;background:var(--accent);transition:width 0.4s;}
+
+.advice-box{background:var(--surface);border-radius:10px;padding:14px;border-left:3px solid var(--accent);margin-bottom:12px;}
+.advice-label{font-size:0.68rem;color:var(--sub);margin-bottom:4px;}
+.advice-text{font-size:0.85rem;line-height:1.6;}
+.advice-warn{border-left-color:var(--warn);background:rgba(255,167,38,0.05);}
+.advice-danger{border-left-color:var(--danger);background:rgba(239,83,80,0.05);}
+
+/* クロスチャート */
+.cross-wrap{width:100%;max-width:340px;margin:0 auto;}
+
+/* ロスター */
+.roster-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:0.75rem;}
+th{background:var(--surface);padding:8px 6px;text-align:left;font-size:0.65rem;color:var(--sub);white-space:nowrap;border-bottom:1px solid var(--border);}
+td{padding:7px 6px;border-bottom:1px solid var(--border);vertical-align:middle;}
+tr:hover td{background:rgba(91,141,246,0.04);}
+.tag{display:inline-block;padding:2px 7px;border-radius:12px;font-size:0.65rem;font-weight:700;}
+.tag-PM{background:rgba(76,175,125,0.2);color:var(--pm-PM);}
+.tag-Pm{background:rgba(255,167,38,0.2);color:var(--pm-Pm);}
+.tag-pM{background:rgba(91,141,246,0.2);color:var(--pm-pM);}
+.tag-pm{background:rgba(122,139,160,0.2);color:var(--pm-pm);}
+.empty-state{text-align:center;padding:40px;color:var(--sub);font-size:0.82rem;}
+
+.export-box{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px;font-size:0.7rem;font-family:monospace;max-height:180px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;margin-bottom:10px;}
+
+@media(max-width:480px){
+  .form-row{grid-template-columns:1fr;}
+  .score-grid{grid-template-columns:1fr 1fr;}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-icon">🎯</div>
+  <div>
+    <h1>PM理論 リーダーシップ診断</h1>
+    <p>管理者・リーダー向け｜P行動（目標達成）×M行動（集団維持）</p>
+  </div>
+  <div class="header-right">
+    <button class="btn btn-secondary btn-sm" onclick="showRoster()">📋 受検者一覧</button>
+  </div>
+</div>
+
+<div class="progress-bar">
+  <div class="step active" id="step0"><div class="step-dot">1</div>基本情報</div>
+  <div class="step-sep">›</div>
+  <div class="step" id="step1"><div class="step-dot">2</div>P行動</div>
+  <div class="step-sep">›</div>
+  <div class="step" id="step2"><div class="step-dot">3</div>M行動</div>
+  <div class="step-sep">›</div>
+  <div class="step" id="step3"><div class="step-dot">4</div>結果</div>
+</div>
+
+<div class="container">
+
+<!-- PAGE 0: 基本情報 -->
+<div class="page active" id="page-0">
+  <div class="card">
+    <div class="section-badge">STEP 1</div>
+    <h2>基本情報の入力</h2>
+    <p class="sub-text">管理者・リーダーご本人が回答してください。所属情報を入力後、診断を開始します。</p>
+    <div class="form-row">
+      <div><label>姓</label><input id="sei" placeholder="例：田中"></div>
+      <div><label>名</label><input id="mei" placeholder="例：健太"></div>
+    </div>
+    <div class="form-row">
+      <div><label>法人名</label><input id="corp" placeholder="例：Fusion Partners"></div>
+      <div><label>事業所名</label><input id="office" placeholder="例：FusionOS Labo"></div>
+    </div>
+    <div class="form-row">
+      <div>
+        <label>役職</label>
+        <select id="role">
+          <option>管理者クラス</option>
+          <option>リーダークラス</option>
+          <option>サービス提供責任者</option>
+          <option>主任</option>
+          <option>その他管理職</option>
+        </select>
+      </div>
+      <div><label>診断日</label><input type="date" id="diag-date"></div>
+    </div>
+    <div class="nav-btns">
+      <button class="btn btn-primary" onclick="goToP()">P行動の設問へ →</button>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE 1: P行動 -->
+<div class="page" id="page-1">
+  <div class="card">
+    <div class="section-badge">STEP 2</div>
+    <h2>P行動（目標達成・課題解決行動）</h2>
+    <p class="sub-text">各設問について、現在の自分の行動にどの程度当てはまるか選んでください。<br>
+    <strong>1</strong>=まったくしていない　<strong>2</strong>=あまりしていない　<strong>3</strong>=ときどきしている　<strong>4</strong>=よくしている　<strong>5</strong>=とてもよくしている</p>
+    <div id="p-questions"></div>
+    <div class="nav-btns">
+      <button class="btn btn-secondary" onclick="goTo(0)">← 戻る</button>
+      <button class="btn btn-primary" onclick="goToM()">M行動の設問へ →</button>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE 2: M行動 -->
+<div class="page" id="page-2">
+  <div class="card">
+    <div class="section-badge">STEP 3</div>
+    <h2>M行動（集団維持・人間関係行動）</h2>
+    <p class="sub-text">各設問について、現在の自分の行動にどの程度当てはまるか選んでください。<br>
+    <strong>1</strong>=まったくしていない　<strong>2</strong>=あまりしていない　<strong>3</strong>=ときどきしている　<strong>4</strong>=よくしている　<strong>5</strong>=とてもよくしている</p>
+    <div id="m-questions"></div>
+    <div class="nav-btns">
+      <button class="btn btn-secondary" onclick="goTo(1)">← 戻る</button>
+      <button class="btn btn-primary" onclick="showResults()">結果を見る →</button>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE 3: 結果 -->
+<div class="page" id="page-3">
+  <div class="card result-hero">
+    <div class="section-badge">RESULT</div>
+    <div id="name-display" style="font-size:0.82rem;color:var(--sub);margin-bottom:10px;"></div>
+    <div id="pm-badge-display"></div>
+    <div id="pm-type-name" style="font-size:1rem;font-weight:700;margin-bottom:6px;"></div>
+    <div id="pm-short-desc" style="font-size:0.78rem;color:var(--sub);"></div>
+  </div>
+
+  <div class="score-grid">
+    <div class="score-box">
+      <div class="score-label">P行動スコア（目標達成）</div>
+      <div class="score-val" id="p-score">─</div>
+      <div class="score-max">/ 40点</div>
+      <div class="score-bar"><div class="score-fill" id="p-bar" style="width:0%;background:var(--pm-Pm);"></div></div>
+    </div>
+    <div class="score-box">
+      <div class="score-label">M行動スコア（集団維持）</div>
+      <div class="score-val" id="m-score">─</div>
+      <div class="score-max">/ 40点</div>
+      <div class="score-bar"><div class="score-fill" id="m-bar" style="width:0%;background:var(--pm-pM);"></div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>📊 PMチャート</h3>
+    <div class="cross-wrap"><div id="pm-cross-chart"></div></div>
+  </div>
+
+  <div id="pm-advice" style="margin-bottom:14px;"></div>
+
+  <div class="card">
+    <h3>📤 凪システム連携用データ</h3>
+    <div class="export-box" id="export-text"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn btn-primary btn-sm" onclick="copyExport()">📋 コピー</button>
+      <button class="btn btn-secondary btn-sm" onclick="saveToRoster()">💾 受検者リストに保存</button>
+      <span id="copy-ok" style="color:var(--accent2);font-size:0.8rem;align-self:center;display:none;">✓ コピーしました</span>
+      <span id="save-ok" style="color:var(--accent2);font-size:0.8rem;align-self:center;display:none;">✓ 保存しました</span>
+    </div>
+  </div>
+
+  <div class="nav-btns">
+    <button class="btn btn-secondary" onclick="goTo(2)">← 設問に戻る</button>
+    <button class="btn btn-secondary" onclick="resetAll()">🔄 最初からやり直す</button>
+  </div>
+</div>
+
+<!-- PAGE 4: 受検者一覧 -->
+<div class="page" id="page-4">
+  <div class="card">
+    <h2>📋 受検者リスト</h2>
+    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+      <button class="btn btn-primary btn-sm" onclick="exportRosterJSON()">📤 凪システムへ一括エクスポート</button>
+      <button class="btn btn-secondary btn-sm" onclick="goTo(0)">← 新規診断へ</button>
+      <button class="btn btn-secondary btn-sm" onclick="exportCSV()">⬇️ CSV</button>
+      <button class="btn btn-secondary btn-sm" style="color:var(--danger);border-color:var(--danger);" onclick="clearRoster()">🗑️ 全件削除</button>
+    </div>
+    <div class="roster-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>日付</th><th>法人</th><th>事業所</th><th>氏名</th><th>役職</th>
+            <th>P</th><th>M</th><th>PMスタイル</th><th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="roster-body"></tbody>
+      </table>
+    </div>
+    <div id="roster-empty" class="empty-state" style="display:none;">受検者データがありません</div>
+  </div>
+</div>
+
+</div><!-- /container -->
+
+<script>
+// ════════════════════════════════════════════════════
+//  設問データ
+// ════════════════════════════════════════════════════
+
+const P_QUESTIONS = [
+  '組織に必要なことを考え、計画を立て、メンバーに伝えている',
+  '仕事の進捗や状況を定期的に把握している',
+  'メンバーが仕事に支障なく動けるよう、段取りや環境整備をしている',
+  'メンバーに対して仕事の内容・手順・指示を適切に伝えている',
+  '目標の設定と達成のために組織全体の力を高めようとしている',
+  '事業や仕事の目標についてメンバーと話し合い、積極的に関与させている',
+  '仕事の問題点や課題を素早く見つけて、適切に対処している',
+  '月次・年度目標の達成に向けて計画と実施の見直しを継続的に行っている',
+];
+
+const M_QUESTIONS = [
+  '困っているメンバーや部下を支援したり、アドバイスをしたりしている',
+  '新しいメンバーや部下が職場になじめるよう配慮している',
+  'メンバー・部下同士のつながりや仲間意識を育てるよう働きかけている',
+  '職場でメンバーがお互いに信頼できる環境をつくろうとしている',
+  'メンバー・部下が職場でのびのびと能力を発揮できるよう関わっている',
+  'メンバー・部下間のコンフリクト（対立・摩擦）を早めに察知して解決している',
+  '仕事のやり方や状況についてメンバー・部下に積極的に意見を求めている',
+  '良い仕事や成果に対してきちんと評価・承認・賞賛をしている',
+];
+
+const PM_INFO = {
+  PM: {
+    name: 'PM型リーダー',
+    desc: '目標達成と人間関係の両方に高い関心を持つ理想的なリーダー。チームを引っ張りながら、人の心にも寄り添えます。',
+    advice: 'このスタイルを維持しながら、チームの成長段階に応じて比重を調整してください。メンバーのM4段階が増えれば、徐々に委任型（pm方向）へ移行を。',
+    cls: 'pm-PM',
+  },
+  Pm: {
+    name: 'Pm型リーダー（指示・管理重視）',
+    desc: '目標達成・課題解決への意識は高いが、人間関係・メンバーへの配慮がやや不足気味です。',
+    advice: 'メンバーの感情や意見に耳を傾ける機会を意識的に増やしましょう。承認・フィードバックを日常化することで、M行動スコアが改善します。',
+    cls: 'pm-Pm',
+    warn: true,
+  },
+  pM: {
+    name: 'pM型リーダー（支援・関係重視）',
+    desc: '人間関係・メンバーへの配慮は高いが、目標設定・課題解決のP行動がやや弱い傾向があります。',
+    advice: '目標の明確化と進捗管理を強化しましょう。「良い人」で終わらず、成果にコミットする姿勢をチームに示すことが重要です。',
+    cls: 'pm-pM',
+    warn: true,
+  },
+  pm: {
+    name: 'pm型リーダー（委任・放任）',
+    desc: 'P行動・M行動ともに低い状態です。マネジメントの機能が十分に発揮されていない可能性があります。',
+    advice: 'まずP行動（目標設定・進捗管理）から強化することを推奨します。メンバーが高いM4段階であれば委任型として機能しますが、チームTA平均と照合して判断してください。',
+    cls: 'pm-pm',
+    danger: true,
+  },
+};
+
+// ════════════════════════════════════════════════════
+//  状態管理
+// ════════════════════════════════════════════════════
+
+const ROSTER_KEY = 'pm_roster';
+let currentPage = 0;
+let answers = { p: new Array(8).fill(0), m: new Array(8).fill(0) };
+let lastResult = null;
+
+// ════════════════════════════════════════════════════
+//  ナビゲーション
+// ════════════════════════════════════════════════════
+
+function goTo(p){
+  document.getElementById(`page-${currentPage}`).classList.remove('active');
+  document.getElementById(`page-${p}`).classList.add('active');
+  currentPage = p;
+  updateProgress();
+  window.scrollTo(0, 0);
+}
+
+function updateProgress(){
+  for(let i=0;i<=3;i++){
+    const el=document.getElementById(`step${i}`);
+    if(!el) continue;
+    el.classList.remove('active','done');
+    if(i < currentPage) el.classList.add('done');
+    else if(i === currentPage) el.classList.add('active');
+  }
+}
+
+function showRoster(){
+  renderRoster();
+  goTo(4);
+}
+
+function goToP(){
+  const sei=document.getElementById('sei').value.trim();
+  const mei=document.getElementById('mei').value.trim();
+  if(!sei||!mei){ alert('氏名を入力してください'); return; }
+  renderQuestions();
+  goTo(1);
+}
+
+function goToM(){
+  const unanswered=answers.p.findIndex(v=>v===0);
+  if(unanswered>=0){ alert(`P行動 設問${unanswered+1}が未回答です`); return; }
+  renderQuestions();
+  goTo(2);
+}
+
+// ════════════════════════════════════════════════════
+//  設問レンダリング
+// ════════════════════════════════════════════════════
+
+function renderScale5(type, idx){
+  const cur=answers[type][idx];
+  const labels=['まったく\nしていない','あまり\nしていない','ときどき\nしている','よく\nしている','とてもよく\nしている'];
+  const btns=[1,2,3,4,5].map(v=>
+    `<button class="scale5-btn${cur===v?' selected':''}" onclick="setAnswer('${type}',${idx},${v})" title="${labels[v-1]}">${v}</button>`
+  ).join('');
+  return `<div class="scale5">${btns}</div>
+  <div class="scale5-labels"><span>まったくしていない</span><span>とてもよくしている</span></div>`;
+}
+
+function setAnswer(type, idx, val){
+  answers[type][idx]=val;
+  renderQuestions();
+}
+
+function renderQuestions(){
+  const pEl=document.getElementById('p-questions');
+  const mEl=document.getElementById('m-questions');
+  if(pEl){
+    pEl.innerHTML=P_QUESTIONS.map((q,i)=>`
+      <div class="q-card">
+        <div class="q-num">P行動 Q${i+1}</div>
+        <div class="q-text">${q}</div>
+        ${renderScale5('p',i)}
+      </div>`).join('');
+  }
+  if(mEl){
+    mEl.innerHTML=M_QUESTIONS.map((q,i)=>`
+      <div class="q-card">
+        <div class="q-num">M行動 Q${i+1}</div>
+        <div class="q-text">${q}</div>
+        ${renderScale5('m',i)}
+      </div>`).join('');
+  }
+}
+
+// ════════════════════════════════════════════════════
+//  採点・結果表示
+// ════════════════════════════════════════════════════
+
+function showResults(){
+  const unanswered=answers.m.findIndex(v=>v===0);
+  if(unanswered>=0){ alert(`M行動 設問${unanswered+1}が未回答です`); return; }
+
+  const p=answers.p.reduce((a,v)=>a+v,0);
+  const m=answers.m.reduce((a,v)=>a+v,0);
+  const pmKey=p>20&&m>20?'PM':p>20&&m<=20?'Pm':p<=20&&m>20?'pM':'pm';
+  const info=PM_INFO[pmKey];
+
+  const name=document.getElementById('sei').value.trim()+' '+document.getElementById('mei').value.trim();
+  const corp=document.getElementById('corp').value.trim();
+  const office=document.getElementById('office').value.trim();
+  const role=document.getElementById('role').value;
+  const date=document.getElementById('diag-date').value||new Date().toISOString().slice(0,10);
+
+  // ヘッダー
+  document.getElementById('name-display').textContent=`${name}｜${office}（${role}）`;
+  document.getElementById('pm-badge-display').innerHTML=`<div class="pm-badge ${info.cls}">${pmKey}型</div>`;
+  document.getElementById('pm-type-name').textContent=info.name;
+  document.getElementById('pm-short-desc').textContent=info.desc;
+
+  // スコアバー
+  document.getElementById('p-score').textContent=p;
+  document.getElementById('m-score').textContent=m;
+  document.getElementById('p-bar').style.width=(p/40*100)+'%';
+  document.getElementById('m-bar').style.width=(m/40*100)+'%';
+
+  // アドバイス
+  const advCls=info.danger?'advice-danger':info.warn?'advice-warn':'';
+  document.getElementById('pm-advice').innerHTML=`
+    <div class="advice-box ${advCls}">
+      <div class="advice-label">💡 リーダーへのアドバイス</div>
+      <div class="advice-text">${info.advice}</div>
+    </div>
+    <div class="advice-box" style="font-size:0.78rem;color:var(--sub);">
+      <div class="advice-label">📊 SL理論との照合について</div>
+      <div class="advice-text">このPMスタイルと、チームのTA平均から算出されるSL推奨スタイルを<strong>凪システム</strong>で照合することで、「求められているリーダーシップ」と「実際のスタイル」のギャップが可視化されます。</div>
+    </div>`;
+
+  // クロスチャート
+  drawPMCross('pm-cross-chart', p, m, pmKey);
+
+  // エクスポートデータ
+  lastResult={
+    type:'pm_assessment',
+    name, corp, office, role, date,
+    p, m, pmStyle: pmKey,
+    pItems:[...answers.p],
+    mItems:[...answers.m],
+    savedAt:new Date().toISOString(),
+  };
+  document.getElementById('export-text').textContent=JSON.stringify(lastResult,null,2);
+
+  goTo(3);
+  autoSave();
+}
+
+// ════════════════════════════════════════════════════
+//  PMクロスチャート（SVG）
+// ════════════════════════════════════════════════════
+
+function drawPMCross(containerId, pVal, mVal, pmKey){
+  const el=document.getElementById(containerId);
+  if(!el) return;
+  const W=300,H=300,PAD=40,MID=20;
+  const cW=W-PAD*2,cH=H-PAD*2;
+  const px=PAD+pVal/40*cW;
+  const py=PAD+(1-mVal/40)*cH;
+  const mx=PAD+MID/40*cW; // 中央線のx
+  const my=PAD+(1-MID/40)*cH; // 中央線のy
+
+  const quadColors={'PM':'rgba(76,175,125,0.08)','Pm':'rgba(255,167,38,0.08)','pM':'rgba(91,141,246,0.08)','pm':'rgba(122,139,160,0.08)'};
+  const dotCol={'PM':'#4caf7d','Pm':'#ffa726','pM':'#5b8df6','pm':'#7a8ba0'};
+
+  el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:300px;display:block;margin:0 auto;">
+    <!-- 象限背景 -->
+    <rect x="${PAD}" y="${PAD}" width="${mx-PAD}" height="${my-PAD}" fill="${quadColors.pM}"/>
+    <rect x="${mx}" y="${PAD}" width="${PAD+cW-mx}" height="${my-PAD}" fill="${quadColors.PM}"/>
+    <rect x="${PAD}" y="${my}" width="${mx-PAD}" height="${PAD+cH-my}" fill="${quadColors.pm}"/>
+    <rect x="${mx}" y="${my}" width="${PAD+cW-mx}" height="${PAD+cH-my}" fill="${quadColors.Pm}"/>
+    <!-- 軸 -->
+    <line x1="${PAD}" y1="${PAD+cH/2}" x2="${PAD+cW}" y2="${PAD+cH/2}" stroke="#2a2f45" stroke-width="1"/>
+    <line x1="${PAD+cW/2}" y1="${PAD}" x2="${PAD+cW/2}" y2="${PAD+cH}" stroke="#2a2f45" stroke-width="1"/>
+    <!-- 中央線（閾値20） -->
+    <line x1="${mx}" y1="${PAD}" x2="${mx}" y2="${PAD+cH}" stroke="#3a4060" stroke-width="1.5" stroke-dasharray="4,3"/>
+    <line x1="${PAD}" y1="${my}" x2="${PAD+cW}" y2="${my}" stroke="#3a4060" stroke-width="1.5" stroke-dasharray="4,3"/>
+    <!-- ラベル -->
+    <text x="${PAD+cW/2}" y="${H-6}" text-anchor="middle" font-size="10" fill="#7a8ba0">P行動（目標達成）→</text>
+    <text x="12" y="${PAD+cH/2}" text-anchor="middle" font-size="10" fill="#7a8ba0" transform="rotate(-90,12,${PAD+cH/2})">M行動（集団維持）↑</text>
+    <!-- 象限名 -->
+    <text x="${mx-4}" y="${PAD+14}" text-anchor="end" font-size="9" fill="#5b8df6">pM型</text>
+    <text x="${mx+4}" y="${PAD+14}" text-anchor="start" font-size="9" fill="#4caf7d">PM型</text>
+    <text x="${mx-4}" y="${PAD+cH-4}" text-anchor="end" font-size="9" fill="#7a8ba0">pm型</text>
+    <text x="${mx+4}" y="${PAD+cH-4}" text-anchor="start" font-size="9" fill="#ffa726">Pm型</text>
+    <!-- 閾値ラベル -->
+    <text x="${mx}" y="${PAD-4}" text-anchor="middle" font-size="8" fill="#3a4060">P=20</text>
+    <text x="${PAD-4}" y="${my}" text-anchor="end" font-size="8" fill="#3a4060">M=20</text>
+    <!-- プロット点 -->
+    <circle cx="${px}" cy="${py}" r="8" fill="${dotCol[pmKey]}" opacity="0.9"/>
+    <circle cx="${px}" cy="${py}" r="4" fill="#fff"/>
+  </svg>`;
+}
+
+// ════════════════════════════════════════════════════
+//  データ保存・エクスポート
+// ════════════════════════════════════════════════════
+
+function loadRoster(){ try{ return JSON.parse(localStorage.getItem(ROSTER_KEY)||'[]'); }catch(e){ return []; } }
+function saveRoster(r){ localStorage.setItem(ROSTER_KEY,JSON.stringify(r)); }
+
+function autoSave(){
+  if(!lastResult) return;
+  const roster=loadRoster();
+  const dup=roster.findIndex(r=>r.savedAt===lastResult.savedAt);
+  if(dup>=0) roster[dup]=lastResult; else roster.push(lastResult);
+  saveRoster(roster);
+}
+
+function saveToRoster(){
+  if(!lastResult){ alert('結果がありません'); return; }
+  autoSave();
+  const ok=document.getElementById('save-ok');
+  ok.style.display='inline'; setTimeout(()=>ok.style.display='none',2000);
+}
+
+function copyExport(){
+  const text=document.getElementById('export-text').textContent;
+  navigator.clipboard.writeText(text).then(()=>{
+    const ok=document.getElementById('copy-ok');
+    ok.style.display='inline'; setTimeout(()=>ok.style.display='none',2000);
+  }).catch(()=>{
+    const ta=document.createElement('textarea');
+    ta.value=text; document.body.appendChild(ta); ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta);
+    alert('クリップボードにコピーしました');
+  });
+}
+
+function exportRosterJSON(){
+  const roster=loadRoster();
+  if(!roster.length){ alert('エクスポートするデータがありません'); return; }
+  const json=JSON.stringify(roster,null,2);
+  navigator.clipboard.writeText(json).then(()=>{
+    alert(`✅ ${roster.length}件のデータをクリップボードにコピーしました。\n凪システムの「PMスキャン一括インポート」に貼り付けてください。`);
+  }).catch(()=>{
+    const ta=document.createElement('textarea');
+    ta.value=json; document.body.appendChild(ta); ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta);
+    alert(`✅ ${roster.length}件をコピーしました`);
+  });
+}
+
+function exportCSV(){
+  const roster=loadRoster();
+  if(!roster.length){ alert('データがありません'); return; }
+  const header='日付,法人,事業所,氏名,役職,P行動,M行動,PMスタイル';
+  const rows=roster.map(r=>[r.date,r.corp,r.office,r.name,r.role,r.p,r.m,r.pmStyle].join(','));
+  const csv='﻿'+header+'\n'+rows.join('\n');
+  const url=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  const a=document.createElement('a'); a.href=url; a.download='pm_roster.csv'; a.click();
+}
+
+function clearRoster(){
+  if(!confirm('全件削除してよろしいですか？')) return;
+  localStorage.removeItem(ROSTER_KEY);
+  renderRoster();
+}
+
+function deleteEntry(idx){
+  const roster=loadRoster();
+  roster.splice(idx,1);
+  saveRoster(roster);
+  renderRoster();
+}
+
+// ════════════════════════════════════════════════════
+//  受検者一覧
+// ════════════════════════════════════════════════════
+
+function renderRoster(){
+  const roster=loadRoster();
+  const tbody=document.getElementById('roster-body');
+  const empty=document.getElementById('roster-empty');
+  if(!roster.length){ tbody.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  tbody.innerHTML=roster.map((r,i)=>`<tr>
+    <td style="white-space:nowrap;">${r.date||''}</td>
+    <td>${r.corp||''}</td>
+    <td>${r.office||''}</td>
+    <td style="font-weight:600;white-space:nowrap;">${r.name||''}</td>
+    <td style="font-size:0.7rem;">${r.role||''}</td>
+    <td style="text-align:center;">${r.p||0}</td>
+    <td style="text-align:center;">${r.m||0}</td>
+    <td><span class="tag tag-${r.pmStyle||'pm'}">${r.pmStyle||'─'}型</span></td>
+    <td><button class="btn btn-secondary btn-sm" style="color:var(--danger);border-color:var(--danger);font-size:0.65rem;padding:3px 8px;" onclick="deleteEntry(${i})">削除</button></td>
+  </tr>`).join('');
+}
+
+// ════════════════════════════════════════════════════
+//  リセット
+// ════════════════════════════════════════════════════
+
+function resetAll(){
+  answers={p:new Array(8).fill(0), m:new Array(8).fill(0)};
+  lastResult=null;
+  ['sei','mei','corp','office'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('diag-date').value=new Date().toISOString().slice(0,10);
+  goTo(0);
+}
+
+// ════════════════════════════════════════════════════
+//  初期化
+// ════════════════════════════════════════════════════
+
+document.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('diag-date').value=new Date().toISOString().slice(0,10);
+  renderQuestions();
+});
+</script>
+</body>
+</html>
