@@ -1957,6 +1957,75 @@ HHMM ポモ数 タスク内容
       mdBox.textContent = text;
       mdBox.classList.add('visible');
       localStorage.setItem('mitsumeru_output', text);
+
+      // ① Claude生成の【明日のスケジュール提案】をカレンダーCSVに追加
+      const scheduleMatch = text.match(/##\s*【明日のスケジュール提案】[\s\S]*?\n([\s\S]*?)(?=\n##|$)/);
+      if (scheduleMatch) {
+        const { events: claudeEvents } = parseSchedule(scheduleMatch[1]);
+        if (claudeEvents.length > 0) {
+          const existingTimes = new Set(
+            calendarCSV.split('\n').slice(1).filter(r=>r).map(r => r.split(',')[2])
+          );
+          const addRows = claudeEvents
+            .filter(e => !existingTimes.has(e.start))
+            .map(e => `"【参謀提案】${e.title}（${e.pomos}ポモ）",${e.date},${e.start},${e.date},${e.end},False,"【参謀提案】${e.title}"`);
+          if (addRows.length > 0) {
+            calendarCSV = calendarCSV + '\n' + addRows.join('\n');
+            localStorage.setItem('mitsumeru_calendar', calendarCSV);
+            const csvBox = document.getElementById('output-csv');
+            if (csvBox) { csvBox.textContent = calendarCSV; }
+          }
+        }
+      }
+
+      // ② NotebookLMコメントから急重度①→カレンダー、②③→先送りCSVに追加
+      const nbText = document.getElementById('e-notebooklm').value;
+      if (nbText) {
+        const tomorrowDate = new Date(); tomorrowDate.setDate(tomorrowDate.getDate() + 1);
+        const nbDateStr = `${tomorrowDate.getFullYear()}/${String(tomorrowDate.getMonth()+1).padStart(2,'0')}/${String(tomorrowDate.getDate()).padStart(2,'0')}`;
+        const tomorrow2 = new Date(); tomorrow2.setDate(tomorrow2.getDate() + 2);
+        const delayNbDate = `${tomorrow2.getFullYear()}/${String(tomorrow2.getMonth()+1).padStart(2,'0')}/${String(tomorrow2.getDate()).padStart(2,'0')}`;
+
+        // 急重度①（最優先）→ カレンダー全日イベント
+        const pri1Rows = [];
+        const pri1Re = /[*・]\s*最優先タスク（急重度①）[：:](.+?)（(\d+(?:\.\d+)?)ポモ）/g;
+        let m1;
+        while ((m1 = pri1Re.exec(nbText)) !== null) {
+          const title = m1[1].trim();
+          const pomos = parseFloat(m1[2]);
+          pri1Rows.push(`"【NL急重度①】${title}（${pomos}ポモ）",${nbDateStr},,,, True,"${title}"`);
+        }
+        if (pri1Rows.length > 0) {
+          calendarCSV = calendarCSV + '\n' + pri1Rows.join('\n');
+          localStorage.setItem('mitsumeru_calendar', calendarCSV);
+          const csvBox = document.getElementById('output-csv');
+          if (csvBox) { csvBox.textContent = calendarCSV; }
+        }
+
+        // 急重度②③（重要・軽微）→ 先送りCSV
+        const pri23Rows = [];
+        const pri23Re = /[*・]\s*(?:重要タスク（急重度②）|軽微タスク（急重度③）)[：:](.+?)（(\d+(?:\.\d+)?)ポモ）/g;
+        let m23;
+        while ((m23 = pri23Re.exec(nbText)) !== null) {
+          const title = m23[1].trim();
+          const pomos = parseFloat(m23[2]);
+          pri23Rows.push(`"【NL急重度②③】${title}（${pomos}ポモ）",${delayNbDate},,,, True,"${title}"`);
+        }
+        if (pri23Rows.length > 0) {
+          delayCSV = delayCSV + '\n' + pri23Rows.join('\n');
+          localStorage.setItem('mitsumeru_delay', delayCSV);
+          const delayCsvBox = document.getElementById('output-delay-csv');
+          if (delayCsvBox) { delayCsvBox.textContent = delayCSV; }
+        }
+      }
+
+      // evening同期
+      const _ev = JSON.parse(localStorage.getItem('mitsumeru_evening') || '{}');
+      _ev['_output_md'] = text;
+      _ev['_calendar_csv'] = calendarCSV;
+      _ev['_delay_csv'] = delayCSV;
+      localStorage.setItem('mitsumeru_evening', JSON.stringify(_ev));
+      cloudSave('evening', _ev);
     },
     err => {
       loading.style.display = 'none';
