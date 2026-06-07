@@ -1,0 +1,1969 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>凪システム 経営羅針盤 | Fusion Partners</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚓</text></svg>">
+<style>
+:root {
+  --bg:#0f1923; --surface:#1a2634; --card:#223044;
+  --accent:#4fc3f7; --accent2:#81c784; --accent3:#ffb74d; --accent4:#f06292;
+  --danger:#ef5350; --warn:#ffa726; --text:#e8eaf0; --sub:#8fa3b8;
+  --border:#2e4460; --radius:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Hiragino Kaku Gothic Pro','Meiryo',sans-serif;min-height:100vh;font-size:14px;}
+
+/* ── ヘッダー ── */
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;gap:10px;}
+.logo{width:30px;height:30px;background:linear-gradient(135deg,#4fc3f7,#1565c0);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
+header h1{font-size:1rem;font-weight:700;color:var(--accent);flex:1;}
+header h1 span{font-size:0.68rem;font-weight:400;color:var(--sub);}
+
+/* ── セレクタバー ── */
+.selector-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:8px 20px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.selector-bar select{background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 10px;font-size:0.8rem;outline:none;}
+.selector-bar select:focus{border-color:var(--accent);}
+.selector-bar label{font-size:0.78rem;color:var(--sub);}
+
+/* ── ナビタブ ── */
+.nav-tabs{background:var(--surface);border-bottom:1px solid var(--border);display:flex;overflow-x:auto;}
+.nav-tab{padding:9px 16px;font-size:0.8rem;cursor:pointer;color:var(--sub);border-bottom:2px solid transparent;white-space:nowrap;transition:all 0.15s;}
+.nav-tab:hover{color:var(--text);}
+.nav-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+
+/* ── メインコンテンツ ── */
+main{max-width:1200px;margin:0 auto;padding:20px 16px 80px;}
+.page{display:none;}
+.page.active{display:block;animation:fadeIn 0.2s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+
+/* ── グリッド ── */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+.grid-5{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;}
+@media(max-width:760px){.grid-2,.grid-3,.grid-4,.grid-5{grid-template-columns:1fr;}}
+@media(max-width:600px){.grid-2{grid-template-columns:1fr;}}
+
+/* ── カード ── */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;}
+.card-title{font-size:0.75rem;color:var(--sub);margin-bottom:6px;}
+.card-value{font-size:1.5rem;font-weight:700;}
+.card-sub{font-size:0.72rem;color:var(--sub);margin-top:3px;}
+
+/* ── セクション ── */
+.section{margin-bottom:22px;}
+.section-title{font-size:0.85rem;color:var(--accent);margin-bottom:12px;border-left:3px solid var(--accent);padding-left:8px;display:flex;align-items:center;justify-content:space-between;}
+
+/* ── ボタン ── */
+.btn{padding:8px 18px;border-radius:7px;border:none;font-size:0.82rem;font-weight:600;cursor:pointer;transition:all 0.15s;}
+.btn-primary{background:var(--accent);color:#000;}
+.btn-primary:hover{background:#29b6f6;}
+.btn-secondary{background:var(--card);color:var(--sub);border:1px solid var(--border);}
+.btn-secondary:hover{color:var(--text);}
+.btn-danger{background:rgba(239,83,80,0.15);color:var(--danger);border:1px solid var(--danger);}
+.btn-success{background:var(--accent2);color:#000;}
+.btn-warn{background:rgba(255,167,38,0.15);color:var(--warn);border:1px solid var(--warn);}
+.btn-sm{padding:5px 12px;font-size:0.74rem;}
+.btn-xs{padding:3px 8px;font-size:0.68rem;border-radius:4px;}
+
+/* ── バッジ/タグ ── */
+.tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:0.68rem;font-weight:600;}
+.tag-safe{background:rgba(129,199,132,0.2);color:var(--accent2);}
+.tag-warn{background:rgba(255,167,38,0.2);color:var(--warn);}
+.tag-danger{background:rgba(239,83,80,0.2);color:var(--danger);}
+.tag-info{background:rgba(79,195,247,0.2);color:var(--accent);}
+.tag-sub{background:rgba(143,163,184,0.2);color:var(--sub);}
+
+/* ── テーブル ── */
+.table-wrap{overflow-x:auto;border-radius:var(--radius);border:1px solid var(--border);}
+table{width:100%;border-collapse:collapse;font-size:0.74rem;}
+th{background:var(--surface);color:var(--sub);padding:7px 9px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;}
+td{padding:7px 9px;border-bottom:1px solid var(--border);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:rgba(79,195,247,0.03);}
+
+/* ── フォーム ── */
+.form-group{margin-bottom:12px;}
+.form-group label{font-size:0.78rem;color:var(--sub);display:block;margin-bottom:3px;}
+.form-group input,.form-group select,.form-group textarea{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:0.85rem;outline:none;}
+.form-group input:focus,.form-group select:focus{border-color:var(--accent);}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.form-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+.form-row5{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;}
+
+/* ── モーダル ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:9000;overflow-y:auto;padding:20px;}
+.modal-overlay.open{display:flex;align-items:flex-start;justify-content:center;}
+.modal{background:var(--card);border-radius:14px;max-width:640px;width:100%;padding:24px;position:relative;margin:auto;}
+.modal-title{font-size:0.95rem;font-weight:700;margin-bottom:16px;color:var(--accent);}
+.modal-close{position:absolute;top:12px;right:16px;background:none;border:none;font-size:1.4rem;cursor:pointer;color:var(--sub);}
+.modal-close:hover{color:var(--text);}
+
+/* ── 感度バー ── */
+.sens-row{display:flex;align-items:center;gap:8px;margin-bottom:7px;}
+.sens-lbl{width:70px;font-size:0.75rem;color:var(--sub);flex-shrink:0;}
+.sens-track{flex:1;height:7px;background:var(--border);border-radius:4px;overflow:hidden;}
+.sens-fill{height:100%;border-radius:4px;}
+.sens-val{width:52px;text-align:right;font-size:0.75rem;font-weight:600;}
+
+/* ── エゴグラムミニバー ── */
+.ego-mini{display:flex;gap:3px;align-items:flex-end;height:28px;}
+.ego-bar{width:12px;border-radius:2px 2px 0 0;min-height:2px;}
+
+/* ── SLバッジ ── */
+.sl-M1{background:rgba(239,83,80,0.15);color:var(--danger);border:1px solid var(--danger);}
+.sl-M2{background:rgba(255,167,38,0.15);color:var(--warn);border:1px solid var(--warn);}
+.sl-M3{background:rgba(79,195,247,0.15);color:var(--accent);border:1px solid var(--accent);}
+.sl-M4{background:rgba(129,199,132,0.15);color:var(--accent2);border:1px solid var(--accent2);}
+
+/* ── PM バッジ ── */
+.pm-PM{color:var(--accent2);}
+.pm-Pm{color:var(--accent3);}
+.pm-pM{color:var(--accent);}
+.pm-pm{color:var(--sub);}
+
+/* ── 生存格付 ── */
+.fmt-S{color:#00e5ff;} .fmt-A{color:var(--accent2);} .fmt-B{color:#aed581;}
+.fmt-C{color:var(--warn);} .fmt-D{color:var(--danger);} .fmt-E{color:#e040fb;}
+
+/* ── 矢印 ── */
+.up{color:var(--accent2);} .down{color:var(--danger);}
+
+/* ── RC判定 ── */
+.rc-safe{color:var(--accent2);} .rc-danger{color:var(--danger);font-weight:700;}
+.rc-warn{color:var(--warn);} .rc-dep{color:var(--sub);}
+
+/* ── LSRP ── */
+.lsrp-S{color:var(--accent2);} .lsrp-W{color:var(--warn);} .lsrp-D{color:var(--danger);font-weight:700;}
+
+/* ── 空状態 ── */
+.empty{text-align:center;color:var(--sub);padding:40px 20px;font-size:0.82rem;}
+
+/* ── 凡例 ── */
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:0.72rem;color:var(--sub);margin-top:6px;}
+.legend-item{display:flex;align-items:center;gap:4px;}
+.legend-dot{width:9px;height:9px;border-radius:50%;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">⚓</div>
+  <h1>凪システム 経営羅針盤 <span>v1.0 | Fusion Partners</span></h1>
+  <button class="btn btn-secondary btn-sm" onclick="openModal('modal-data')">⚙ データ管理</button>
+  <button class="btn btn-success btn-sm" onclick="openModal('modal-bulk-import')">📥 ミツメルインポート</button>
+  <button class="btn btn-warn btn-sm" onclick="loadSample()">📊 サンプル</button>
+</header>
+
+<div class="selector-bar">
+  <label>法人</label>
+  <select id="sel-corp" onchange="onCorpChange()"><option value="">── 選択 ──</option></select>
+  <label>事業所</label>
+  <select id="sel-office" onchange="onOfficeChange()"><option value="">── 選択 ──</option></select>
+</div>
+
+<div class="nav-tabs">
+  <div class="nav-tab active" onclick="goTab('corp')"   id="tab-corp">📊 法人全体</div>
+  <div class="nav-tab"        onclick="goTab('office')" id="tab-office">🏢 事業所別</div>
+  <div class="nav-tab"        onclick="goTab('staff')"  id="tab-staff">👥 スタッフ一覧</div>
+  <div class="nav-tab"        onclick="goTab('rc')"     id="tab-rc">🚨 RC異常者</div>
+</div>
+
+<main>
+
+<!-- ══════════════════════════════════════
+     PAGE: 法人全体ダッシュボード
+══════════════════════════════════════ -->
+<div class="page active" id="page-corp">
+  <div class="section">
+    <div class="section-title">📈 Corporate Financials（法人全体計数）</div>
+    <div class="grid-4" id="corp-fin-kpis"></div>
+    <div style="margin-top:14px;" id="corp-fin-detail"></div>
+  </div>
+  <div class="grid-2">
+    <div class="section">
+      <div class="section-title">🔀 Corporate Pipeline（NDB動線）</div>
+      <div id="corp-pipeline"></div>
+    </div>
+    <div class="section">
+      <div class="section-title">⚠️ RC リスクサマリー</div>
+      <div id="corp-rc-summary"></div>
+    </div>
+  </div>
+  <div class="grid-2">
+    <div class="section">
+      <div class="section-title">🗺️ TA Distribution Map（組織認識分布）</div>
+      <div id="chart-ta-map" class="card"></div>
+    </div>
+    <div class="section">
+      <div class="section-title">🗺️ PM Distribution Map（管理者分布）</div>
+      <div id="chart-pm-map" class="card"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     PAGE: 事業所別ダッシュボード
+══════════════════════════════════════ -->
+<div class="page" id="page-office">
+  <div class="grid-2">
+    <div class="section">
+      <div class="section-title">💰 Financial Engine（事業所計数）</div>
+      <div id="off-fin"></div>
+    </div>
+    <div class="section">
+      <div class="section-title">🔀 Sales Pipeline（NDB動線）</div>
+      <div id="off-pipe"></div>
+    </div>
+  </div>
+  <div class="grid-2">
+    <div class="section">
+      <div class="section-title">🗺️ Team Index（チームアセスメント × SL理論）</div>
+      <div id="off-team-index"></div>
+    </div>
+    <div class="section">
+      <div class="section-title">👤 Leader Personality（管理者分析）</div>
+      <div id="off-leader"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     PAGE: スタッフ一覧表
+══════════════════════════════════════ -->
+<div class="page" id="page-staff">
+  <div class="section">
+    <div class="section-title">
+      <span>👥 事業所別スタッフ一覧（全カラム表示）</span>
+      <button class="btn btn-primary btn-sm" onclick="openAddStaff()">＋ スタッフ追加</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>事業所</th><th>氏名</th><th>役割</th>
+            <th>Task</th><th>Social</th><th>P行動</th><th>M行動</th><th>PM</th>
+            <th>KSA</th><th>Gap</th>
+            <th>CP</th><th>NP</th><th>A</th><th>FC</th><th>AC</th>
+            <th>エニア Top3</th><th>RC判定</th><th>LSRP</th><th>SL段階</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="staff-tbody"></tbody>
+      </table>
+    </div>
+    <div id="staff-empty" class="empty" style="display:none;">スタッフデータがありません。「スタッフ追加」ボタンで登録してください。</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     PAGE: RC異常者一覧表
+══════════════════════════════════════ -->
+<div class="page" id="page-rc">
+  <div class="section">
+    <div class="section-title">🚨 RC異常者（エゴグラム由来：心理的OS異常）</div>
+    <div class="table-wrap" id="rc-anomaly-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>事業所</th><th>氏名</th><th>役割</th><th>RC判定</th>
+            <th>Task</th><th>Social</th><th>KSA Gap</th>
+            <th>CP</th><th>NP</th><th>A</th><th>FC</th><th>AC</th>
+            <th>エニア Top3</th><th>異常理由・介入指針</th>
+          </tr>
+        </thead>
+        <tbody id="rc-tbody"></tbody>
+      </table>
+    </div>
+    <div id="rc-empty" class="empty" style="display:none;"></div>
+  </div>
+
+  <div class="section" style="margin-top:28px;">
+    <div class="section-title">🧠 LSRP異常者（要警戒以上：★★☆ スコア11〜 / ★★★ スコア16〜）</div>
+    <div class="table-wrap" id="lsrp-anomaly-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>事業所</th><th>氏名</th><th>役割</th><th>LSRP判定</th><th>LSRPスコア</th>
+            <th>RC判定</th><th>Task</th><th>Social</th><th>KSA Gap</th>
+            <th>CP</th><th>NP</th><th>A</th><th>FC</th><th>AC</th>
+            <th>エニア Top3</th><th>リスク概要</th>
+          </tr>
+        </thead>
+        <tbody id="lsrp-tbody"></tbody>
+      </table>
+    </div>
+    <div id="lsrp-empty" class="empty" style="display:none;"></div>
+  </div>
+</div>
+
+</main>
+
+<!-- ══════════════════════════════════════
+     MODAL: データ管理
+══════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-data" onclick="if(event.target===this)closeModal('modal-data')">
+  <div class="modal" style="max-width:700px;">
+    <button class="modal-close" onclick="closeModal('modal-data')">✕</button>
+    <div class="modal-title">⚙ データ管理</div>
+    <div class="nav-tabs" style="border-radius:6px;overflow:hidden;margin-bottom:16px;">
+      <div class="nav-tab active" onclick="switchDataTab('corps')" id="dtab-corps">法人</div>
+      <div class="nav-tab" onclick="switchDataTab('offices')" id="dtab-offices">事業所</div>
+      <div class="nav-tab" onclick="switchDataTab('fin')" id="dtab-fin">財務データ</div>
+      <div class="nav-tab" onclick="switchDataTab('pipe')" id="dtab-pipe">パイプライン</div>
+    </div>
+
+    <!-- 法人管理 -->
+    <div id="data-corps">
+      <div class="form-row" style="margin-bottom:10px;">
+        <input id="new-corp-name" placeholder="法人名を入力" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:0.85rem;outline:none;">
+        <button class="btn btn-primary" onclick="addCorp()">＋ 追加</button>
+      </div>
+      <div id="corps-list"></div>
+    </div>
+
+    <!-- 事業所管理 -->
+    <div id="data-offices" style="display:none;">
+      <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+        <select id="new-office-corp" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:0.82rem;outline:none;flex:1;"></select>
+        <input id="new-office-name" placeholder="事業所名" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:0.85rem;outline:none;flex:2;">
+        <button class="btn btn-primary" onclick="addOffice()">＋ 追加</button>
+      </div>
+      <div id="offices-list"></div>
+    </div>
+
+    <!-- 財務データ -->
+    <div id="data-fin" style="display:none;">
+      <p style="font-size:0.78rem;color:var(--sub);margin-bottom:10px;">事業所を選択して財務数値を入力してください（月次または年次）。</p>
+      <div class="form-group">
+        <label>事業所</label>
+        <select id="fin-office-sel" onchange="loadFinForm()" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:0.82rem;outline:none;width:100%;"></select>
+      </div>
+      <div class="form-row3">
+        <div class="form-group"><label>売上PQ（円）</label><input id="fin-pq" type="number" placeholder="3100000"></div>
+        <div class="form-group"><label>延べ人数Q</label><input id="fin-q" type="number" placeholder="310"></div>
+        <div class="form-group"><label>変動費VQ（円）</label><input id="fin-vq" type="number" placeholder="620000"></div>
+      </div>
+      <div class="form-row3">
+        <div class="form-group"><label>粗利MQ（円）</label><input id="fin-mq" type="number" placeholder="2480000"></div>
+        <div class="form-group"><label>固定費F（円）</label><input id="fin-f" type="number" placeholder="2000000"></div>
+        <div class="form-group"><label>利益G（円）</label><input id="fin-g" type="number" placeholder="480000"></div>
+      </div>
+      <button class="btn btn-primary" onclick="saveFin()">💾 保存</button>
+    </div>
+
+    <!-- パイプライン -->
+    <div id="data-pipe" style="display:none;">
+      <p style="font-size:0.78rem;color:var(--sub);margin-bottom:10px;">NDB動線の実数を入力してください。</p>
+      <div class="form-group">
+        <label>事業所</label>
+        <select id="pipe-office-sel" onchange="loadPipeForm()" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:0.82rem;outline:none;width:100%;"></select>
+      </div>
+      <div class="form-row3">
+        <div class="form-group"><label>アプローチ数</label><input id="pipe-approach" type="number" placeholder="100"></div>
+        <div class="form-group"><label>問い合わせ数</label><input id="pipe-inquiry" type="number" placeholder="10"></div>
+        <div class="form-group"><label>見学数</label><input id="pipe-visit" type="number" placeholder="5"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>成約数</label><input id="pipe-contract" type="number" placeholder="2"></div>
+        <div class="form-group"><label>リピート数</label><input id="pipe-repeat" type="number" placeholder="2"></div>
+      </div>
+      <button class="btn btn-primary" onclick="savePipe()">💾 保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     MODAL: スタッフ追加/編集
+══════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-staff" onclick="if(event.target===this)closeModal('modal-staff')">
+  <div class="modal" style="max-width:700px;">
+    <button class="modal-close" onclick="closeModal('modal-staff')">✕</button>
+    <div class="modal-title" id="modal-staff-title">スタッフ追加</div>
+    <input type="hidden" id="staff-edit-id">
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>法人</label>
+        <select id="staff-corp" onchange="updateStaffOfficeOptions()" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:0.82rem;outline:none;"></select>
+      </div>
+      <div class="form-group">
+        <label>事業所</label>
+        <select id="staff-office" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:0.82rem;outline:none;"></select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>氏名</label><input id="staff-name" placeholder="山田 太郎"></div>
+      <div class="form-group">
+        <label>役割</label>
+        <select id="staff-role" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:0.82rem;outline:none;">
+          <option>管理者クラス</option><option>リーダークラス</option><option>一般職</option>
+        </select>
+      </div>
+    </div>
+
+    <div style="border-top:1px solid var(--border);padding-top:10px;margin-bottom:10px;font-size:0.75rem;color:var(--sub);">● チームアセスメント（各0〜56点）</div>
+    <div class="form-row">
+      <div class="form-group"><label>Task（タスク遂行）</label><input id="staff-task" type="number" min="0" max="56" placeholder="0〜56"></div>
+      <div class="form-group"><label>Social（社会性）</label><input id="staff-social" type="number" min="0" max="56" placeholder="0〜56"></div>
+    </div>
+
+    <div style="border-top:1px solid var(--border);padding-top:10px;margin-bottom:10px;font-size:0.75rem;color:var(--sub);">● PM理論（各0〜40点）</div>
+    <div class="form-row">
+      <div class="form-group"><label>P行動（目標達成）</label><input id="staff-p" type="number" min="0" max="40" placeholder="0〜40"></div>
+      <div class="form-group"><label>M行動（集団維持）</label><input id="staff-m" type="number" min="0" max="40" placeholder="0〜40"></div>
+    </div>
+
+    <div style="border-top:1px solid var(--border);padding-top:10px;margin-bottom:10px;font-size:0.75rem;color:var(--sub);">● KSA（自己評価 0〜80点）</div>
+    <div class="form-group"><input id="staff-ksa" type="number" min="0" max="80" placeholder="0〜80"></div>
+
+    <div style="border-top:1px solid var(--border);padding-top:10px;margin-bottom:10px;font-size:0.75rem;color:var(--sub);">● エゴグラム（各0〜10）</div>
+    <div class="form-row5">
+      <div class="form-group"><label>CP</label><input id="ego-cp" type="number" min="0" max="10" placeholder="0-10"></div>
+      <div class="form-group"><label>NP</label><input id="ego-np" type="number" min="0" max="10" placeholder="0-10"></div>
+      <div class="form-group"><label>A</label><input id="ego-a" type="number" min="0" max="10" placeholder="0-10"></div>
+      <div class="form-group"><label>FC</label><input id="ego-fc" type="number" min="0" max="10" placeholder="0-10"></div>
+      <div class="form-group"><label>AC</label><input id="ego-ac" type="number" min="0" max="10" placeholder="0-10"></div>
+    </div>
+
+    <div style="border-top:1px solid var(--border);padding-top:10px;margin-bottom:10px;font-size:0.75rem;color:var(--sub);">● エニアグラム Top3（例：T1, T2, T3　スコア任意）</div>
+    <div class="form-row3">
+      <div class="form-group"><label>1位 タイプ</label>
+        <select id="enn1" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:0.78rem;outline:none;">
+          <option value="">─</option><option value="T1">T1 完璧主義</option><option value="T2">T2 献身家</option><option value="T3">T3 達成者</option><option value="T4">T4 芸術家</option><option value="T5">T5 研究者</option><option value="T6">T6 堅実家</option><option value="T7">T7 楽天家</option><option value="T8">T8 統率者</option><option value="T9">T9 調停者</option>
+        </select>
+      </div>
+      <div class="form-group"><label>2位 タイプ</label>
+        <select id="enn2" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:0.78rem;outline:none;">
+          <option value="">─</option><option value="T1">T1 完璧主義</option><option value="T2">T2 献身家</option><option value="T3">T3 達成者</option><option value="T4">T4 芸術家</option><option value="T5">T5 研究者</option><option value="T6">T6 堅実家</option><option value="T7">T7 楽天家</option><option value="T8">T8 統率者</option><option value="T9">T9 調停者</option>
+        </select>
+      </div>
+      <div class="form-group"><label>3位 タイプ</label>
+        <select id="enn3" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:0.78rem;outline:none;">
+          <option value="">─</option><option value="T1">T1 完璧主義</option><option value="T2">T2 献身家</option><option value="T3">T3 達成者</option><option value="T4">T4 芸術家</option><option value="T5">T5 研究者</option><option value="T6">T6 堅実家</option><option value="T7">T7 楽天家</option><option value="T8">T8 統率者</option><option value="T9">T9 調停者</option>
+        </select>
+      </div>
+    </div>
+
+    <div style="border-top:1px solid var(--border);padding-top:10px;margin-bottom:10px;font-size:0.75rem;color:var(--sub);">● LSRP（ミツメルスキャンから入力 or JSONインポート）</div>
+    <div class="form-row">
+      <div class="form-group"><label>合計スコア（0〜26）</label><input id="lsrp-total" type="number" min="0" max="26" placeholder="0〜26"></div>
+      <div class="form-group">
+        <label>判定</label>
+        <select id="lsrp-level" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:0.82rem;outline:none;">
+          <option value="">─ 未入力 ─</option>
+          <option value="安全">★☆☆ 安全圏</option>
+          <option value="警戒">★★☆ 要警戒</option>
+          <option value="危険">★★★ 危険</option>
+        </select>
+      </div>
+    </div>
+    <div style="margin-bottom:12px;">
+      <button class="btn btn-secondary btn-sm" onclick="openScanImportForStaff()">📋 スキャンJSONからインポート</button>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-top:4px;">
+      <button class="btn btn-primary" onclick="saveStaff()" style="flex:1;">💾 保存</button>
+      <button class="btn btn-secondary" onclick="closeModal('modal-staff')" style="flex:1;">キャンセル</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     MODAL: スキャンJSONインポート
+══════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-scan-import" onclick="if(event.target===this)closeModal('modal-scan-import')">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-scan-import')">✕</button>
+    <div class="modal-title">📋 スキャンJSON インポート</div>
+    <p style="font-size:0.78rem;color:var(--sub);margin-bottom:10px;">ミツメルスキャンの「📋 コピー」ボタンで取得したJSONを貼り付けてください。</p>
+    <textarea id="scan-import-ta" rows="8" style="width:100%;font-size:0.75rem;font-family:monospace;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);resize:vertical;" placeholder='{"lsrp":{...},"egogram":{...},"enneagram":{...}}'></textarea>
+    <div style="display:flex;gap:10px;margin-top:12px;">
+      <button class="btn btn-primary" onclick="applyScanImport()" style="flex:1;">反映する</button>
+      <button class="btn btn-secondary" onclick="closeModal('modal-scan-import')" style="flex:1;">キャンセル</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     MODAL: ミツメルスキャン 一括インポート
+══════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-bulk-import" onclick="if(event.target===this)closeModal('modal-bulk-import')">
+  <div class="modal" style="max-width:680px;">
+    <button class="modal-close" onclick="closeModal('modal-bulk-import')">✕</button>
+    <div class="modal-title">📥 ミツメルインポート</div>
+    <div class="nav-tabs" style="border-radius:6px;overflow:hidden;margin-bottom:14px;">
+      <div class="nav-tab active" onclick="switchImportTab('mitsumeru')" id="itab-mitsumeru">📋 採用スキャン</div>
+      <div class="nav-tab" onclick="switchImportTab('ta')" id="itab-ta">🧭 TAスキャン</div>
+      <div class="nav-tab" onclick="switchImportTab('pm')" id="itab-pm">🎯 PMスキャン</div>
+    </div>
+
+    <!-- 採用スキャン -->
+    <div id="import-mitsumeru">
+      <p style="font-size:0.78rem;color:var(--sub);margin-bottom:10px;"><a href="./mitsumeru_tekisei_check.html" target="_blank" style="color:var(--accent);">mitsumeru_tekisei_check.html</a> の「📤 凪システムへ一括エクスポート」でコピーしたJSONを貼り付けてください。法人・事業所を自動マッチングし、スタッフを一括登録します。</p>
+      <textarea id="bulk-import-ta" rows="8" style="width:100%;font-size:0.72rem;font-family:monospace;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);resize:vertical;" placeholder='[{"name":"田中 健太","corp":"Fusion Partners","office":"FusionOS Labo","lsrp":{"total":7},...}]'></textarea>
+      <div id="bulk-preview" style="margin-top:8px;font-size:0.78rem;color:var(--sub);"></div>
+      <div style="display:flex;gap:10px;margin-top:10px;">
+        <button class="btn btn-secondary" onclick="previewBulkImport()" style="flex:1;">👁 プレビュー</button>
+        <button class="btn btn-primary" onclick="executeBulkImport()" style="flex:1;">✅ インポート実行</button>
+      </div>
+    </div>
+
+    <!-- PMスキャン -->
+    <div id="import-pm" style="display:none;">
+      <p style="font-size:0.78rem;color:var(--sub);margin-bottom:10px;">pm_scan.html の「📤 凪システムへ一括エクスポート」でコピーしたJSONを貼り付けてください。同名・同事業所の管理者スタッフに P/M スコアを上書き更新します。</p>
+      <textarea id="pm-import-ta" rows="8" style="width:100%;font-size:0.72rem;font-family:monospace;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);resize:vertical;" placeholder='[{"type":"pm_assessment","name":"田中 健太","corp":"Fusion Partners","office":"FusionOS Labo","p":28,"m":24,"pmStyle":"PM",...}]'></textarea>
+      <div id="pm-preview" style="margin-top:8px;font-size:0.78rem;color:var(--sub);"></div>
+      <div style="display:flex;gap:10px;margin-top:10px;">
+        <button class="btn btn-secondary" onclick="previewPMImport()" style="flex:1;">👁 プレビュー</button>
+        <button class="btn btn-primary" onclick="executePMImport()" style="flex:1;">✅ PM更新実行</button>
+      </div>
+    </div>
+
+    <!-- TAスキャン -->
+    <div id="import-ta" style="display:none;">
+      <p style="font-size:0.78rem;color:var(--sub);margin-bottom:10px;">ta_scan.html の「📤 凪システムへ一括エクスポート」でコピーしたJSONを貼り付けてください。同名・同事業所のスタッフに Task/Social/KSA を上書き更新します。</p>
+      <textarea id="ta-import-ta" rows="8" style="width:100%;font-size:0.72rem;font-family:monospace;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);resize:vertical;" placeholder='[{"type":"team_assessment","name":"田中 健太","corp":"Fusion Partners","office":"FusionOS Labo","task":44,"social":42,"ksa":65,...}]'></textarea>
+      <div id="ta-preview" style="margin-top:8px;font-size:0.78rem;color:var(--sub);"></div>
+      <div style="display:flex;gap:10px;margin-top:10px;">
+        <button class="btn btn-secondary" onclick="previewTAImport()" style="flex:1;">👁 プレビュー</button>
+        <button class="btn btn-primary" onclick="executeTAImport()" style="flex:1;">✅ TA更新実行</button>
+      </div>
+    </div>
+
+    <div style="margin-top:10px;">
+      <button class="btn btn-secondary" onclick="closeModal('modal-bulk-import')" style="width:100%;">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════
+//  定数 & ユーティリティ
+// ════════════════════════════════════════════════════
+
+const ENN_NAMES = {T1:'完璧主義',T2:'献身家',T3:'達成者',T4:'芸術家',T5:'研究者',T6:'堅実家',T7:'楽天家',T8:'統率者',T9:'調停者'};
+
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+function load(k){ try{ return JSON.parse(localStorage.getItem(k)||'[]'); }catch{ return []; } }
+function save(k,v){ localStorage.setItem(k,JSON.stringify(v)); }
+function n(v){ return Number(v)||0; }
+function pct(v){ return (v*100).toFixed(1)+'%'; }
+function yen(v){ return '¥'+Number(v).toLocaleString(); }
+function arw(val,mid){ return val>mid ? '<span class="up">'+val+'↑</span>' : '<span class="down">'+val+'↓</span>'; }
+function clamp(v,mn,mx){ return Math.max(mn,Math.min(mx,v)); }
+
+// ════════════════════════════════════════════════════
+//  データアクセス
+// ════════════════════════════════════════════════════
+
+function getCorps(){ return load('nagi_corps'); }
+function getOffices(corpId){ const a=load('nagi_offices'); return corpId?a.filter(o=>o.corpId===corpId):a; }
+function getAllOffices(){ return load('nagi_offices'); }
+function getAllStaff(){ return load('nagi_staff'); }
+function getStaffByOffice(oid){ return load('nagi_staff').filter(s=>s.officeId===oid); }
+function getStaffByCorp(cid){ return load('nagi_staff').filter(s=>s.corpId===cid); }
+function getFin(oid){ return (load('nagi_fin').find(f=>f.officeId===oid))||null; }
+function getPipe(oid){ return (load('nagi_pipe').find(p=>p.officeId===oid))||null; }
+
+// ════════════════════════════════════════════════════
+//  計算ロジック
+// ════════════════════════════════════════════════════
+
+function getRCStatus(ego){
+  if(!ego) return {label:'─',cls:'',reason:''};
+  const cp=n(ego.CP),np=n(ego.NP),fc=n(ego.FC),ac=n(ego.AC);
+  const I=cp+fc, U=np+ac;
+  if(I>=10 && U<10) return {label:'危険★',cls:'rc-danger',reason:'他者否定OS（I+U-）：正論で周囲を裁き、組織の凪を破壊する猛毒。即時介入が必要。'};
+  if(I<10 && U>=10) return {label:'依存',cls:'rc-dep',reason:'自律性欠如OS（I-U+）：指示待ち・現状維持。仕組みの進化を阻害する不純物。'};
+  if(I<10 && U<10)  return {label:'注意',cls:'rc-warn',reason:'自他否定OS（I-U-）：孤立・無気力・離職リスクが高い。継続的な1on1が必要。'};
+  return {label:'安全',cls:'rc-safe',reason:'健全な自他肯定OS。凪を支える人材。'};
+}
+
+function getLSRPLabel(total){
+  const t=n(total);
+  if(t>=16) return {label:'★★★ 危険',cls:'lsrp-D',short:'危険'};
+  if(t>=11) return {label:'★★☆ 要警戒',cls:'lsrp-W',short:'警戒'};
+  return {label:'★☆☆ 安全圏',cls:'lsrp-S',short:'安全'};
+}
+
+function getPMStyle(p,m){
+  const pp=n(p)>20, mm=n(m)>20;
+  if(pp&&mm) return {label:'PM型',cls:'pm-PM',key:'PM'};
+  if(pp&&!mm) return {label:'Pm型',cls:'pm-Pm',key:'Pm'};
+  if(!pp&&mm) return {label:'pM型',cls:'pm-pM',key:'pM'};
+  return {label:'pm型',cls:'pm-pm',key:'pm'};
+}
+
+function getSLStage(task,social){
+  const t=n(task)>32, s=n(social)>32;
+  if(t&&s) return 'M4';
+  if(!t&&s) return 'M2';
+  if(t&&!s) return 'M3';
+  return 'M1';
+}
+
+const SL_INFO = {
+  M1:{label:'M1 指示型',rec:'S1：指示型リーダーシップ',desc:'細かく指示し、手順を明確化。進捗を頻繁に確認してください。',pm:'Pm型（P高・M低）が有効'},
+  M2:{label:'M2 コーチング型',rec:'S2：コーチング型リーダーシップ',desc:'指示と支援を双方向で行い、成功体験を積ませてください。',pm:'PM型（P高・M高）が有効'},
+  M3:{label:'M3 支援型',rec:'S3：支援型リーダーシップ',desc:'目標や意思決定に参加させ、自律性を引き出してください。',pm:'pM型（P低・M高）が有効'},
+  M4:{label:'M4 委任型',rec:'S4：委任型リーダーシップ',desc:'権限移譲を進め、成果にフォーカス。過干渉は禁物です。',pm:'pm型（P低・M低）が有効'},
+};
+
+function getSurvivalRating(fm){
+  const r=fm*100;
+  if(r<60) return {label:'S',cls:'fmt-S'};
+  if(r<70) return {label:'A',cls:'fmt-A'};
+  if(r<80) return {label:'B',cls:'fmt-B'};
+  if(r<90) return {label:'C',cls:'fmt-C'};
+  if(r<100)return {label:'D',cls:'fmt-D'};
+  return {label:'E',cls:'fmt-E'};
+}
+
+function calcSensitivity(pq,mq,vq,f,g){
+  if(!g) return null;
+  return {P:pq/g, Q:mq/g, V:vq/g, F:f/g};
+}
+
+// KSAギャップ = 個人KSA% − 部署平均TA%（部署平均のtask+socialを渡す）
+function getKSAGap(ksa, avgTask, avgSocial){
+  return (n(ksa)/80 - (n(avgTask)+n(avgSocial))/112)*100;
+}
+
+// 事業所の部署平均Task/Social（TA実施済スタッフのみ）
+function getOfficeAvgTA(officeId){
+  const staff=getAllStaff().filter(s=>s.officeId===officeId&&(n(s.task)>0||n(s.social)>0));
+  if(!staff.length) return {avgTask:0,avgSoc:0,count:0};
+  const avgTask=staff.reduce((a,s)=>a+n(s.task),0)/staff.length;
+  const avgSoc=staff.reduce((a,s)=>a+n(s.social),0)/staff.length;
+  return {avgTask,avgSoc,count:staff.length};
+}
+
+function egoBar(ego,k,colors){
+  const v=n(ego?.[k]);
+  const h=Math.max(2,v*2.5);
+  return `<div class="ego-bar" style="height:${h}px;background:${colors[k]||'#4fc3f7'};" title="${k}:${v}"></div>`;
+}
+
+function egoMini(ego){
+  if(!ego) return '─';
+  const c={CP:'#ef5350',NP:'#81c784',A:'#4fc3f7',FC:'#ffb74d',AC:'#f06292'};
+  return `<div class="ego-mini">${['CP','NP','A','FC','AC'].map(k=>egoBar(ego,k,c)).join('')}</div>
+          <div style="font-size:0.62rem;color:var(--sub);text-align:center;white-space:nowrap;">${n(ego.CP)}/${n(ego.NP)}/${n(ego.A)}/${n(ego.FC)}/${n(ego.AC)}</div>`;
+}
+
+function ennLabel(enn){
+  if(!enn||!enn.length) return '─';
+  return enn.slice(0,3).map((e,i)=>`<span style="font-size:0.68rem;color:${i===0?'var(--accent)':'var(--sub)'};">${e.type||''}${ENN_NAMES[e.type]||e.name||''}</span>`).join('<br>');
+}
+
+// ════════════════════════════════════════════════════
+//  SVG 十字グラフ
+// ════════════════════════════════════════════════════
+
+function drawCross(containerId, points, opts){
+  const W=380, H=360, PX=44, PY=30;
+  const xMax=opts.xMax||56, yMax=opts.yMax||56;
+  const xMid=opts.xMid||32, yMid=opts.yMid||32;
+  const cw=W-2*PX, ch=H-2*PY;
+  const sx=x=>PX+x/xMax*cw;
+  const sy=y=>H-PY-y/yMax*ch;
+  const mx=sx(xMid), my=sy(yMid);
+
+  const [q_tl,q_tr,q_bl,q_br]=opts.quad||['左上','右上','左下','右下'];
+  const [c_tl,c_tr,c_bl,c_br]=opts.qcol||['#ffa726','#81c784','#ef5350','#4fc3f7'];
+
+  let s=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;">
+  <rect width="${W}" height="${H}" fill="#1a2634" rx="8"/>
+  <rect x="${PX}" y="${PY}" width="${mx-PX}" height="${my-PY}" fill="${c_tl}11"/>
+  <rect x="${mx}" y="${PY}" width="${W-PX-mx}" height="${my-PY}" fill="${c_tr}11"/>
+  <rect x="${PX}" y="${my}" width="${mx-PX}" height="${H-PY-my}" fill="${c_bl}11"/>
+  <rect x="${mx}" y="${my}" width="${W-PX-mx}" height="${H-PY-my}" fill="${c_br}11"/>
+  <line x1="${mx}" y1="${PY}" x2="${mx}" y2="${H-PY}" stroke="#2e4460" stroke-width="1"/>
+  <line x1="${PX}" y1="${my}" x2="${W-PX}" y2="${my}" stroke="#2e4460" stroke-width="1"/>
+  <line x1="${PX}" y1="${PY}" x2="${W-PX}" y2="${PY}" stroke="#4fc3f7" stroke-width="1" opacity="0.4"/>
+  <line x1="${PX}" y1="${H-PY}" x2="${W-PX}" y2="${H-PY}" stroke="#4fc3f7" stroke-width="1.5"/>
+  <line x1="${PX}" y1="${PY}" x2="${PX}" y2="${H-PY}" stroke="#4fc3f7" stroke-width="1.5"/>
+  <text x="${(PX+mx)/2}" y="${PY+14}" text-anchor="middle" fill="${c_tl}" font-size="10" font-weight="bold">${q_tl}</text>
+  <text x="${(mx+W-PX)/2}" y="${PY+14}" text-anchor="middle" fill="${c_tr}" font-size="10" font-weight="bold">${q_tr}</text>
+  <text x="${(PX+mx)/2}" y="${H-PY-6}" text-anchor="middle" fill="${c_bl}" font-size="10" font-weight="bold">${q_bl}</text>
+  <text x="${(mx+W-PX)/2}" y="${H-PY-6}" text-anchor="middle" fill="${c_br}" font-size="10" font-weight="bold">${q_br}</text>
+  <text x="${W/2}" y="${H-4}" text-anchor="middle" fill="#8fa3b8" font-size="9">${opts.xLabel||'→'}</text>
+  <text x="8" y="${H/2}" text-anchor="middle" fill="#8fa3b8" font-size="9" transform="rotate(-90,8,${H/2})">${opts.yLabel||'↑'}</text>
+  <text x="${mx+3}" y="${PY+9}" fill="#8fa3b8" font-size="8">${xMid}</text>
+  <text x="${PX+2}" y="${my-2}" fill="#8fa3b8" font-size="8">${yMid}</text>`;
+
+  points.forEach(p=>{
+    const px=sx(n(p.x)), py=sy(n(p.y));
+    const col=p.col||'#4fc3f7';
+    s+=`<circle cx="${px}" cy="${py}" r="${p.r||5}" fill="${col}" opacity="0.9" stroke="${col}" stroke-width="1"/>`;
+    if(p.label){
+      const lx=Math.min(Math.max(px,PX+4),W-PX-4);
+      const ly=Math.max(py-8,PY+12);
+      s+=`<text x="${lx}" y="${ly}" text-anchor="middle" fill="#e8eaf0" font-size="8.5">${p.label}</text>`;
+    }
+  });
+
+  s+=`</svg>`;
+  const el=document.getElementById(containerId);
+  if(el) el.innerHTML=s;
+  return s;
+}
+
+// ════════════════════════════════════════════════════
+//  ダッシュボードレンダリング
+// ════════════════════════════════════════════════════
+
+// ── 法人全体 ──
+function renderCorpDashboard(){
+  const corpId=document.getElementById('sel-corp').value;
+  if(!corpId){ document.getElementById('corp-fin-kpis').innerHTML='<p class="empty">法人を選択してください</p>'; return; }
+  const offices=getOffices(corpId);
+  const staff=getStaffByCorp(corpId);
+
+  // 財務合計
+  let tPQ=0,tQ=0,tVQ=0,tMQ=0,tF=0,tG=0;
+  offices.forEach(o=>{const f=getFin(o.id);if(f){tPQ+=n(f.pq);tQ+=n(f.q);tVQ+=n(f.vq);tMQ+=n(f.mq);tF+=n(f.f);tG+=n(f.g);}});
+
+  const fm=tMQ?tF/tMQ:0;
+  const sr=getSurvivalRating(fm);
+  const sens=calcSensitivity(tPQ,tMQ,tVQ,tF,tG);
+
+  document.getElementById('corp-fin-kpis').innerHTML=`
+    <div class="card"><div class="card-title">売上 PQ</div><div class="card-value" style="font-size:1.2rem;">${yen(tPQ)}</div><div class="card-sub">延べ人数 ${tQ.toLocaleString()}</div></div>
+    <div class="card"><div class="card-title">粗利 MQ</div><div class="card-value" style="font-size:1.2rem;color:var(--accent2);">${yen(tMQ)}</div></div>
+    <div class="card"><div class="card-title">利益 G</div><div class="card-value" style="font-size:1.2rem;color:var(--accent3);">${yen(tG)}</div></div>
+    <div class="card"><div class="card-title">f/m比率 ／ 生存格付</div><div class="card-value"><span class="${sr.cls}" style="font-size:1.4rem;">${sr.label}</span></div><div class="card-sub">${(fm*100).toFixed(1)}% (F:${yen(tF)})</div></div>
+  `;
+
+  // 利益感度
+  let sensHTML='<div class="card">';
+  if(sens){
+    const vals={P:sens.P,Q:sens.Q,V:sens.V,F:sens.F};
+    const min=Math.min(...Object.values(vals));
+    const max=Math.max(...Object.values(vals));
+    const cols={P:'#4fc3f7',Q:'#81c784',V:'#f06292',F:'#ffb74d'};
+    sensHTML+=`<div style="font-size:0.75rem;color:var(--sub);margin-bottom:8px;">利益感度（各要素を1%改善した時の利益増加率）</div>`;
+    ['P','Q','V','F'].forEach(k=>{
+      const pv=vals[k];
+      const star=pv===min?'<span style="color:var(--warn);margin-left:4px;">★最鈍感</span>':'';
+      const w=max?Math.max(4,pv/max*100):4;
+      sensHTML+=`<div class="sens-row"><div class="sens-lbl">${k}（${k==='P'?'単価':k==='Q'?'数量':k==='V'?'変動費':'固定費'}）</div>
+        <div class="sens-track"><div class="sens-fill" style="width:${w}%;background:${cols[k]};"></div></div>
+        <div class="sens-val" style="color:${cols[k]};">${(pv*100).toFixed(1)}%${star}</div></div>`;
+    });
+  } else { sensHTML+='<div class="empty" style="padding:12px;">財務データを入力してください</div>'; }
+  sensHTML+='</div>';
+  document.getElementById('corp-fin-detail').innerHTML=sensHTML;
+
+  // パイプライン
+  let best=null,bestRate=Infinity;
+  const pipeRows=offices.map(o=>{
+    const p=getPipe(o.id);
+    if(!p) return null;
+    const rate=p.visit?n(p.contract)/n(p.visit):null;
+    if(rate!==null&&rate<bestRate){bestRate=rate;best=o.name+'（'+(rate*100).toFixed(1)+'%）';}
+    return {name:o.name,p};
+  }).filter(Boolean);
+  let pipeHTML=`<div class="card"><div style="font-size:0.72rem;color:var(--sub);margin-bottom:8px;">成約率ワースト事業所：<span style="color:var(--danger);">${best||'データなし'}</span></div>`;
+  pipeRows.forEach(({name,p})=>{
+    const rates=[
+      {label:'アプローチ',v:n(p.approach),r:null},
+      {label:'問い合わせ',v:n(p.inquiry),r:p.approach?n(p.inquiry)/n(p.approach):null},
+      {label:'見学',v:n(p.visit),r:p.approach?n(p.visit)/n(p.approach):null},
+      {label:'成約',v:n(p.contract),r:p.visit?n(p.contract)/n(p.visit):null},
+      {label:'リピート',v:n(p.repeat),r:p.contract?n(p.repeat)/n(p.contract):null},
+    ];
+    pipeHTML+=`<div style="font-size:0.72rem;color:var(--sub);margin-bottom:2px;">${name}</div>`;
+    pipeHTML+=`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">`;
+    rates.forEach(r=>{
+      const rStr=r.r!==null?`<span style="color:var(--accent3);font-size:0.65rem;">${(r.r*100).toFixed(0)}%</span>`:'';
+      pipeHTML+=`<div style="background:var(--surface);border-radius:6px;padding:4px 8px;font-size:0.72rem;text-align:center;"><div style="color:var(--sub);">${r.label}</div><div style="font-weight:700;">${r.v}${rStr}</div></div>`;
+    });
+    pipeHTML+='</div>';
+  });
+  if(!pipeRows.length) pipeHTML+='<div class="empty" style="padding:12px;">パイプラインデータなし</div>';
+  pipeHTML+='</div>';
+  document.getElementById('corp-pipeline').innerHTML=pipeHTML;
+
+  // RC サマリー
+  const rcCounts={safe:0,danger:0,caution:0,dep:0};
+  const lsrpCounts={warn:0,danger:0};
+  const mgrsRC=[];
+  staff.forEach(s=>{
+    const rc=getRCStatus(s.ego);
+    if(rc.label==='危険★') rcCounts.danger++;
+    else if(rc.label==='注意') rcCounts.caution++;
+    else if(rc.label==='依存') rcCounts.dep++;
+    else rcCounts.safe++;
+    const lt=n(s.lsrp?.total);
+    if(lt>=16) lsrpCounts.danger++;
+    else if(lt>=11) lsrpCounts.warn++;
+    if(s.role==='管理者クラス'||s.role==='リーダークラス'){
+      mgrsRC.push({name:s.name,rc,office:getAllOffices().find(o=>o.id===s.officeId)?.name||''});
+    }
+  });
+  document.getElementById('corp-rc-summary').innerHTML=`
+    <div class="card">
+      <div class="grid-4" style="margin-bottom:12px;">
+        <div><div class="card-title">RC 危険★</div><div class="card-value" style="color:var(--danger);">${rcCounts.danger}<span style="font-size:0.75rem;">名</span></div></div>
+        <div><div class="card-title">RC 注意</div><div class="card-value" style="color:var(--warn);">${rcCounts.caution}<span style="font-size:0.75rem;">名</span></div></div>
+        <div><div class="card-title">LSRP ★★★</div><div class="card-value" style="color:var(--danger);">${lsrpCounts.danger}<span style="font-size:0.75rem;">名</span></div></div>
+        <div><div class="card-title">LSRP ★★☆</div><div class="card-value" style="color:var(--warn);">${lsrpCounts.warn}<span style="font-size:0.75rem;">名</span></div></div>
+      </div>
+      <div style="font-size:0.75rem;color:var(--sub);margin-bottom:6px;">管理者・リーダーRC一覧</div>
+      ${mgrsRC.map(m=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:0.78rem;"><span style="color:var(--sub);width:80px;overflow:hidden;text-overflow:ellipsis;">${m.office}</span><span>${m.name}</span><span class="${m.rc.cls}" style="margin-left:auto;font-weight:700;">${m.rc.label}</span></div>`).join('')}
+      ${!mgrsRC.length?'<div style="color:var(--sub);font-size:0.75rem;">管理者・リーダーデータなし</div>':''}
+    </div>`;
+
+  // TAマップ（全事業所を散布）
+  const taPts=offices.map(o=>{
+    const st=getStaffByOffice(o.id);
+    if(!st.length) return null;
+    const avgTask=st.reduce((a,s)=>a+n(s.task),0)/st.length;
+    const avgSoc=st.reduce((a,s)=>a+n(s.social),0)/st.length;
+    return {x:avgTask,y:avgSoc,label:o.name,col:'#4fc3f7'};
+  }).filter(Boolean);
+  drawCross('chart-ta-map',taPts,{
+    xLabel:'Task（タスク）→',yLabel:'Social（社会性）↑',
+    quad:['自己満足\nM2','弾力的\nM4','機能不全\nM1','駆り立てられた\nM3'],
+    qcol:['#ffa726','#81c784','#ef5350','#4fc3f7'],
+  });
+
+  // PMマップ（全管理者を散布）
+  const mgrs=staff.filter(s=>s.role==='管理者クラス'||s.role==='リーダークラス');
+  const pmPts=mgrs.map(s=>({x:n(s.p),y:n(s.m),label:s.name.split(' ')[0],col:'#ffb74d'}));
+  drawCross('chart-pm-map',pmPts,{
+    xLabel:'P行動 →',yLabel:'M行動 ↑',
+    xMax:40,yMax:40,xMid:20,yMid:20,
+    quad:['pM型','PM型','pm型','Pm型'],
+    qcol:['#4fc3f7','#81c784','#8fa3b8','#ffa726'],
+  });
+}
+
+// ── 事業所別 ──
+function renderOfficeDashboard(){
+  const oid=document.getElementById('sel-office').value;
+  if(!oid){ document.getElementById('off-fin').innerHTML='<p class="empty">事業所を選択してください</p>'; return; }
+  const staff=getStaffByOffice(oid);
+  const fin=getFin(oid);
+  const pipe=getPipe(oid);
+
+  // 財務
+  let finHTML='<div class="card">';
+  if(fin){
+    const pq=n(fin.pq),q=n(fin.q),vq=n(fin.vq),mq=n(fin.mq),f=n(fin.f),g=n(fin.g);
+    const fm=mq?f/mq:0;
+    const sr=getSurvivalRating(fm);
+    const sens=calcSensitivity(pq,mq,vq,f,g);
+    finHTML+=`
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;">
+        <span style="font-size:0.78rem;color:var(--sub);">f/m比率</span>
+        <span style="font-size:1.4rem;font-weight:700;" class="${sr.cls}">${sr.label}</span>
+        <span style="font-size:0.82rem;color:var(--sub);">${(fm*100).toFixed(1)}%</span>
+      </div>
+      <div class="grid-3" style="margin-bottom:10px;">
+        ${[['PQ',pq,''],['MQ',mq,'color:var(--accent2)'],['G',g,'color:var(--accent3)']].map(([l,v,c])=>`<div><div style="font-size:0.68rem;color:var(--sub);">${l}</div><div style="font-weight:700;font-size:0.9rem;${c}">${yen(v)}</div></div>`).join('')}
+      </div>
+      <div class="grid-3" style="margin-bottom:10px;">
+        ${[['Q(人数)',q,''],['VQ',vq,''],['F',f,'']].map(([l,v,c])=>`<div><div style="font-size:0.68rem;color:var(--sub);">${l}</div><div style="font-weight:700;font-size:0.82rem;${c}">${typeof v==='number'&&l!=='Q(人数)'?yen(v):v.toLocaleString()}</div></div>`).join('')}
+      </div>`;
+    if(sens){
+      const vals={P:sens.P,Q:sens.Q,V:sens.V,F:sens.F};
+      const min=Math.min(...Object.values(vals));
+      const max=Math.max(...Object.values(vals));
+      const cols={P:'#4fc3f7',Q:'#81c784',V:'#f06292',F:'#ffb74d'};
+      finHTML+=`<div style="font-size:0.68rem;color:var(--sub);margin-bottom:6px;">利益感度分析</div>`;
+      ['P','Q','V','F'].forEach(k=>{
+        const pv=vals[k];
+        const star=pv===min?'★':'';
+        const w=max?Math.max(4,pv/max*100):4;
+        finHTML+=`<div class="sens-row"><div class="sens-lbl" style="width:80px;font-size:0.7rem;">${k}（${k==='P'?'単価':k==='Q'?'数量':k==='V'?'変動費':'固定費'}）</div>
+          <div class="sens-track"><div class="sens-fill" style="width:${w}%;background:${cols[k]};"></div></div>
+          <div class="sens-val" style="color:${cols[k]};">${(pv*100).toFixed(1)}%${star?'<span style="color:var(--warn);">'+star+'</span>':''}</div></div>`;
+      });
+    }
+  } else {
+    finHTML+='<div class="empty" style="padding:12px;">財務データを入力してください（⚙ データ管理 → 財務データ）</div>';
+  }
+  finHTML+='</div>';
+  document.getElementById('off-fin').innerHTML=finHTML;
+
+  // パイプライン
+  let pipeHTML='<div class="card">';
+  if(pipe){
+    const steps=[
+      {label:'アプローチ',key:'approach',den:null},
+      {label:'問い合わせ',key:'inquiry',den:'approach'},
+      {label:'見学',key:'visit',den:'approach'},
+      {label:'成約',key:'contract',den:'visit'},
+      {label:'リピート',key:'repeat',den:'contract'},
+    ];
+    steps.forEach(s=>{
+      const v=n(pipe[s.key]);
+      const r=s.den?pipe[s.den]?v/n(pipe[s.den]):null:null;
+      const pct=r!==null?(r*100).toFixed(1)+'%':'';
+      const col=r!==null&&r<0.3?'var(--danger)':r<0.6?'var(--warn)':'var(--accent2)';
+      pipeHTML+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:0.8rem;">
+        <span style="width:72px;color:var(--sub);">${s.label}</span>
+        <span style="font-weight:700;">${v.toLocaleString()}</span>
+        ${pct?`<span style="color:${col};">${pct}</span>`:''}
+        ${r!==null&&r<0.4?'<span style="color:var(--danger);font-size:0.7rem;">🚨 ボトルネック</span>':''}
+      </div>`;
+    });
+  } else {
+    pipeHTML+='<div class="empty" style="padding:12px;">パイプラインデータを入力してください</div>';
+  }
+  pipeHTML+='</div>';
+  document.getElementById('off-pipe').innerHTML=pipeHTML;
+
+  // Team Index (TA + SL) → チームSLステージと平均値をリーダー分析に渡す
+  const teamInfo=renderTeamIndex(oid, staff);
+
+  // リーダー分析（PM vs 推奨SL照合、KSAギャップは部署平均ベース）
+  renderLeaderAnalysis(oid, staff, teamInfo.stage, teamInfo.avgTask, teamInfo.avgSoc);
+}
+
+function renderTeamIndex(oid, staff){
+  // TA実施済スタッフのみで平均算出（全スタッフがTA対象）
+  const taStaff=staff.filter(s=>n(s.task)>0||n(s.social)>0);
+  const totalStaff=staff.length;
+  const taCount=taStaff.length;
+  const avgTask=taCount?taStaff.reduce((a,s)=>a+n(s.task),0)/taCount:0;
+  const avgSoc=taCount?taStaff.reduce((a,s)=>a+n(s.social),0)/taCount:0;
+
+  // KSA平均ギャップ（TA実施済かつKSAあるメンバーのみ）
+  const ksaStaff=taStaff.filter(s=>n(s.ksa)>0);
+  let avgKsaGap=null;
+  if(ksaStaff.length){
+    avgKsaGap=ksaStaff.reduce((a,s)=>a+getKSAGap(s.ksa,s.task,s.social),0)/ksaStaff.length;
+  }
+
+  // SLステージ集計（TA実施済のみ）
+  const stageCnt={M1:0,M2:0,M3:0,M4:0};
+  taStaff.forEach(s=>{ stageCnt[getSLStage(s.task,s.social)]++; });
+  // チーム全体の平均SLステージ（平均値から判定）
+  const teamStage=taCount?getSLStage(avgTask,avgSoc):'M1';
+  const slRec=SL_INFO[teamStage];
+  const majorStage=teamStage; // 返り値として使う
+
+  // 十字グラフ点
+  const pts=taStaff.map(s=>({
+    x:n(s.task), y:n(s.social),
+    label:s.name.split(/[\s　]/)[0],
+    col:getSLStage(s.task,s.social)==='M4'?'#81c784':getSLStage(s.task,s.social)==='M1'?'#ef5350':getSLStage(s.task,s.social)==='M2'?'#ffa726':'#4fc3f7',
+  }));
+  if(taCount) pts.push({x:avgTask,y:avgSoc,label:'★平均',col:'#ffffff',r:6});
+
+  // KSAギャップ表示
+  let ksaGapHTML='';
+  if(avgKsaGap!==null){
+    const gc=avgKsaGap>=20?'var(--danger)':avgKsaGap>=10?'var(--warn)':'var(--accent2)';
+    const gi=avgKsaGap>=20?'🚨 裸の王様リスク':avgKsaGap>=10?'⚠️ 要モニタリング':'✅ 正常範囲';
+    ksaGapHTML=`<div style="margin-top:8px;font-size:0.78rem;">
+      KSAギャップ平均: <span style="color:${gc};font-weight:700;">${avgKsaGap>0?'+':''}${avgKsaGap.toFixed(1)}%</span>
+      <span style="color:${gc};margin-left:6px;">${gi}</span>
+      <span style="font-size:0.68rem;color:var(--sub);margin-left:6px;">（KSA実施: ${ksaStaff.length}名）</span>
+    </div>`;
+  }
+
+  let html=`<div class="card">`;
+  // TA実施率バナー
+  html+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+    <span style="font-size:0.72rem;color:var(--sub);">TA実施済:</span>
+    <span style="font-weight:700;color:${taCount===totalStaff?'var(--accent2)':'var(--warn)'};">${taCount}名 / 全${totalStaff}名</span>
+    ${taCount===0?'<span style="font-size:0.72rem;color:var(--danger);">⚠ TAデータがありません</span>':''}
+    <span style="font-size:0.72rem;color:var(--sub);margin-left:auto;">平均 Task:${avgTask.toFixed(1)} / Social:${avgSoc.toFixed(1)}</span>
+  </div>`;
+  html+=`<div id="chart-team-index"></div>`;
+  html+=`<div class="legend" style="margin-top:6px;">
+    <div class="legend-item"><div class="legend-dot" style="background:#81c784;"></div>M4</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#4fc3f7;"></div>M3</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ffa726;"></div>M2</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ef5350;"></div>M1</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#fff;"></div>★平均</div>
+  </div>
+  <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
+    ${Object.entries(stageCnt).map(([k,v])=>`<span class="tag sl-${k}" style="font-size:0.72rem;">${k}: ${v}名</span>`).join('')}
+  </div>
+  ${ksaGapHTML}
+  <div style="margin-top:12px;background:var(--surface);border-radius:8px;padding:12px;border-left:3px solid var(--accent);">
+    <div style="font-size:0.72rem;color:var(--sub);margin-bottom:4px;">🎯 リーダーへの推奨スタイル（チーム平均: ${teamStage}）</div>
+    <div style="font-size:0.88rem;font-weight:700;color:var(--accent);margin-bottom:4px;">${slRec.rec}</div>
+    <div style="font-size:0.78rem;color:var(--text);margin-bottom:6px;">${slRec.desc}</div>
+    <div style="font-size:0.72rem;padding:6px 8px;background:rgba(255,255,255,0.05);border-radius:6px;">
+      推奨PMスタイル: <strong>${slRec.pm}</strong>
+      <span style="color:var(--sub);margin-left:6px;">— リーダー分析タブで実際のPMスタイルと照合できます</span>
+    </div>
+  </div>
+  </div>`;
+  document.getElementById('off-team-index').innerHTML=html;
+  drawCross('chart-team-index', pts, {
+    xLabel:'Task（タスク遂行）→', yLabel:'Social（社会性）↑',
+    quad:['自己満足\nM2 S2コーチ','弾力的\nM4 S4委任','機能不全\nM1 S1指示','駆り立てられた\nM3 S3支援'],
+    qcol:['#ffa726','#81c784','#ef5350','#4fc3f7'],
+  });
+
+  return {stage: majorStage, avgTask, avgSoc}; // リーダー分析で参照
+}
+
+function renderLeaderAnalysis(oid, staff, teamStage, avgTask, avgSoc){
+  avgTask=avgTask||0; avgSoc=avgSoc||0;
+  // PM理論は管理者・リーダーのみ対象
+  const leaders=staff.filter(s=>s.role==='管理者クラス'||s.role==='リーダークラス');
+  if(!leaders.length){
+    document.getElementById('off-leader').innerHTML=`<div class="card">
+      <div class="empty">管理者・リーダーのスタッフデータなし</div>
+      <div style="font-size:0.72rem;color:var(--sub);text-align:center;margin-top:6px;">スタッフ編集で役職を「管理者クラス」または「リーダークラス」に設定してください</div>
+    </div>`;
+    return;
+  }
+
+  // チームSLから推奨PMスタイルを取得
+  const recSL=SL_INFO[teamStage||'M1'];
+  // 推奨PMスタイル文字列 → 判定キー（"Pm型（…）が有効" → "Pm"）
+  const recPMKey=(recSL.pm||'').match(/^(PM|Pm|pM|pm)/)?.[1]||'';
+
+  let html='';
+  // チームSL → 推奨ヘッダー
+  html+=`<div class="card" style="margin-bottom:12px;border-left:3px solid var(--accent);">
+    <div style="font-size:0.72rem;color:var(--sub);margin-bottom:4px;">📊 チームTA平均 → SL理論による推奨スタイル</div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <span class="tag sl-${teamStage||'M1'}" style="font-size:0.82rem;">${teamStage||'─'}</span>
+      <span style="font-size:0.88rem;font-weight:700;color:var(--accent);">${recSL.rec}</span>
+      <span style="font-size:0.72rem;padding:4px 8px;background:rgba(255,183,77,0.15);border-radius:6px;color:#ffb74d;">推奨PM: ${recSL.pm}</span>
+    </div>
+    <div style="font-size:0.72rem;color:var(--sub);margin-top:6px;">${recSL.desc}</div>
+  </div>`;
+
+  leaders.forEach(s=>{
+    const pm=getPMStyle(s.p,s.m);
+    const rc=getRCStatus(s.ego);
+    const gap=getKSAGap(s.ksa,s.task,s.social);
+    const gapCls=gap>20?'gap-high':gap>10?'gap-mid':'';
+    const lsrp=getLSRPLabel(s.lsrp?.total||0);
+    const hasPM=n(s.p)>0||n(s.m)>0;
+
+    // PM vs 推奨SLの一致チェック
+    let alignHTML='';
+    if(hasPM && teamStage){
+      const match=pm.key===recPMKey;
+      const alignCol=match?'var(--accent2)':'var(--warn)';
+      const alignIcon=match?'✅':'⚠️';
+      alignHTML=`<div style="margin-top:10px;padding:8px 12px;background:var(--surface);border-radius:8px;border-left:3px solid ${alignCol};">
+        <div style="font-size:0.72rem;color:var(--sub);margin-bottom:3px;">🔍 スタイル一致チェック</div>
+        <div style="font-size:0.82rem;">
+          ${alignIcon} 推奨: <strong style="color:var(--accent);">${recSL.pm}</strong>
+          　実際: <strong class="tag ${pm.cls}" style="font-size:0.78rem;">${pm.label}</strong>
+        </div>
+        ${!match?`<div style="font-size:0.72rem;color:var(--warn);margin-top:4px;">
+          チームは ${recSL.rec} を必要としていますが、リーダーの傾向は ${pm.label} です。バイアスに注意してください。
+        </div>`:''}
+      </div>`;
+    } else if(!hasPM){
+      alignHTML=`<div style="margin-top:8px;font-size:0.72rem;color:var(--sub);padding:6px 10px;background:var(--surface);border-radius:6px;">
+        💡 PMスコア未入力 — PM理論アセスメント後にスタイル照合が表示されます
+      </div>`;
+    }
+
+    html+=`<div class="card" style="margin-bottom:12px;">
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap;">
+        <span style="font-weight:700;">${s.name}</span>
+        <span class="tag tag-sub">${s.role}</span>
+        <span class="${rc.cls}" style="font-weight:700;margin-left:auto;">${rc.label}</span>
+        <span class="${lsrp.cls}" style="font-size:0.72rem;">${lsrp.label}</span>
+      </div>
+      <div class="grid-3">
+        <div>
+          <div style="font-size:0.68rem;color:var(--sub);">自身のTA（参考）</div>
+          <div style="font-size:0.82rem;margin-top:2px;">Task: ${arw(n(s.task),32)} / Social: ${arw(n(s.social),32)}</div>
+          <div style="font-size:0.68rem;color:var(--sub);margin-top:3px;">※TA平均はチーム全体で算出</div>
+        </div>
+        <div>
+          <div style="font-size:0.68rem;color:var(--sub);">PM理論（リーダー自身）</div>
+          ${hasPM?`<div style="font-size:0.82rem;margin-top:2px;">P: ${arw(n(s.p),20)} / M: ${arw(n(s.m),20)}</div>
+          <div class="tag ${pm.cls}" style="margin-top:3px;">${pm.label}</div>`
+          :`<div style="font-size:0.72rem;color:var(--sub);margin-top:4px;">未入力</div>`}
+        </div>
+        <div>
+          <div style="font-size:0.68rem;color:var(--sub);">KSA / ギャップ</div>
+          <div style="font-size:0.82rem;margin-top:2px;">${n(s.ksa)}点 <span class="${gapCls}" style="font-size:0.72rem;">${n(s.ksa)>0?`(${gap>0?'+':''}${gap.toFixed(1)}%)`:''}</span></div>
+          <div style="font-size:0.72rem;color:var(--sub);margin-top:3px;">個人SL: <span class="tag sl-${getSLStage(s.task,s.social)}" style="font-size:0.65rem;">${getSLStage(s.task,s.social)}</span></div>
+        </div>
+      </div>
+      ${alignHTML}
+      ${hasPM?`<div id="pm-chart-${s.id}" style="margin-top:10px;"></div>`:''}
+    </div>`;
+  });
+
+  document.getElementById('off-leader').innerHTML=html;
+
+  leaders.forEach(s=>{
+    if(!(n(s.p)>0||n(s.m)>0)) return;
+    const pmPts=[{x:n(s.p),y:n(s.m),label:s.name.split(/[\s　]/)[0],col:'#ffb74d'}];
+    drawCross(`pm-chart-${s.id}`, pmPts, {
+      xLabel:'P行動 →', yLabel:'M行動 ↑',
+      xMax:40, yMax:40, xMid:20, yMid:20,
+      quad:['pM型\nS3支援','PM型\nS2コーチ','pm型\nS4委任','Pm型\nS1指示'],
+      qcol:['#4fc3f7','#81c784','#8fa3b8','#ffa726'],
+    });
+  });
+}
+
+// ── スタッフ一覧 ──
+function renderStaffList(){
+  const corpId=document.getElementById('sel-corp').value;
+  const oid=document.getElementById('sel-office').value;
+  const allStaff=oid ? getStaffByOffice(oid) : corpId ? getStaffByCorp(corpId) : getAllStaff();
+  const tbody=document.getElementById('staff-tbody');
+  const empty=document.getElementById('staff-empty');
+  if(!allStaff.length){ tbody.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  const offices=getAllOffices();
+  // 部署平均キャッシュ（officeId → {avgTask, avgSoc}）
+  const offAvgCache={};
+  tbody.innerHTML=allStaff.map(s=>{
+    const off=offices.find(o=>o.id===s.officeId);
+    const pm=getPMStyle(s.p,s.m);
+    const rc=getRCStatus(s.ego);
+    if(!offAvgCache[s.officeId]) offAvgCache[s.officeId]=getOfficeAvgTA(s.officeId);
+    const {avgTask:oAvgT,avgSoc:oAvgS}=offAvgCache[s.officeId];
+    const gap=getKSAGap(s.ksa, oAvgT, oAvgS);
+    const gapCls=gap>20?'color:var(--danger)':gap>10?'color:var(--warn)':'color:var(--accent2)';
+    const lsrpL=getLSRPLabel(s.lsrp?.total||0);
+    const slStage=getSLStage(s.task,s.social);
+    const ego=s.ego||{};
+    const enn=s.enn||[];
+    return `<tr>
+      <td>${off?.name||'─'}</td>
+      <td style="font-weight:600;white-space:nowrap;">${s.name}</td>
+      <td><span class="tag tag-sub" style="font-size:0.65rem;">${s.role}</span></td>
+      <td>${arw(n(s.task),32)}</td>
+      <td>${arw(n(s.social),32)}</td>
+      <td>${arw(n(s.p),20)}</td>
+      <td>${arw(n(s.m),20)}</td>
+      <td><span class="${pm.cls}" style="font-weight:700;">${pm.label}</span></td>
+      <td>${n(s.ksa)}</td>
+      <td><span style="${gapCls}">${gap>0?'+':''}${gap.toFixed(1)}%${gap>0?'↑':'↓'}</span></td>
+      <td>${n(ego.CP)}</td><td>${n(ego.NP)}</td><td>${n(ego.A)}</td><td>${n(ego.FC)}</td><td>${n(ego.AC)}</td>
+      <td>${ennLabel(enn)}</td>
+      <td class="${rc.cls}" style="font-weight:600;white-space:nowrap;">${rc.label}</td>
+      <td class="${lsrpL.cls}" style="white-space:nowrap;">${lsrpL.label}</td>
+      <td><span class="tag sl-${slStage}">${slStage}</span></td>
+      <td style="white-space:nowrap;">
+        <button class="btn btn-secondary btn-xs" onclick="openEditStaff('${s.id}')">編集</button>
+        <button class="btn btn-danger btn-xs" onclick="deleteStaff('${s.id}')">削除</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── RC異常者一覧 ──
+function renderRCList(){
+  const corpId=document.getElementById('sel-corp').value;
+  const oid=document.getElementById('sel-office').value;
+  const allStaff=oid ? getStaffByOffice(oid) : corpId ? getStaffByCorp(corpId) : getAllStaff();
+  const offices=getAllOffices();
+
+  // 部署平均キャッシュ
+  const rcAvgCache={};
+  const getOffAvg=(oid)=>{ if(!rcAvgCache[oid]) rcAvgCache[oid]=getOfficeAvgTA(oid); return rcAvgCache[oid]; };
+
+  // RC異常者
+  const rcAnomalies=allStaff.filter(s=>{
+    const rc=getRCStatus(s.ego);
+    const {avgTask,avgSoc}=getOffAvg(s.officeId);
+    const gap=getKSAGap(s.ksa, avgTask, avgSoc);
+    return rc.label!=='安全' || gap>=20;
+  });
+
+  const rcTbody=document.getElementById('rc-tbody');
+  const rcEmpty=document.getElementById('rc-empty');
+  if(!rcAnomalies.length){
+    rcTbody.innerHTML='';
+    rcEmpty.style.display='block';
+    rcEmpty.innerHTML='RC異常者は検出されていません ✅';
+  } else {
+    rcEmpty.style.display='none';
+    rcTbody.innerHTML=rcAnomalies.map(s=>{
+      const off=offices.find(o=>o.id===s.officeId);
+      const rc=getRCStatus(s.ego);
+      const {avgTask,avgSoc}=getOffAvg(s.officeId);
+      const gap=getKSAGap(s.ksa, avgTask, avgSoc);
+      const gapStr=gap>=20?`<span style="color:var(--danger);">+${gap.toFixed(1)}%↑ 🚨KSA乖離</span>`:`${gap>0?'+':''}${gap.toFixed(1)}%`;
+      const ego=s.ego||{};
+      const enn=s.enn||[];
+      // 理由
+      let reason=rc.reason;
+      if(gap>=20) reason+=(reason?' / ':'')+`KSA乖離：自己評価が客観評価を${gap.toFixed(1)}%上回っており「裸の王様」リスク。`;
+      return `<tr>
+        <td>${off?.name||'─'}</td>
+        <td style="font-weight:600;white-space:nowrap;">${s.name}</td>
+        <td><span class="tag tag-sub" style="font-size:0.65rem;">${s.role}</span></td>
+        <td class="${rc.cls}" style="font-weight:700;white-space:nowrap;">${rc.label}</td>
+        <td>${arw(n(s.task),32)}</td>
+        <td>${arw(n(s.social),32)}</td>
+        <td>${gapStr}</td>
+        <td>${n(ego.CP)}</td><td>${n(ego.NP)}</td><td>${n(ego.A)}</td><td>${n(ego.FC)}</td><td>${n(ego.AC)}</td>
+        <td>${ennLabel(enn)}</td>
+        <td style="font-size:0.72rem;color:var(--sub);max-width:200px;">${reason}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  // LSRP異常者（★★☆=11以上）
+  const lsrpAnomalies=allStaff.filter(s=>n(s.lsrp?.total)>=11);
+  const lsrpTbody=document.getElementById('lsrp-tbody');
+  const lsrpEmpty=document.getElementById('lsrp-empty');
+  if(!lsrpAnomalies.length){
+    lsrpTbody.innerHTML='';
+    lsrpEmpty.style.display='block';
+    lsrpEmpty.innerHTML='LSRP要警戒以上の人物は検出されていません ✅';
+  } else {
+    lsrpEmpty.style.display='none';
+    lsrpTbody.innerHTML=lsrpAnomalies.map(s=>{
+      const off=offices.find(o=>o.id===s.officeId);
+      const lsrp=getLSRPLabel(s.lsrp?.total||0);
+      const rc=getRCStatus(s.ego);
+      const {avgTask:lAvgT,avgSoc:lAvgS}=getOffAvg(s.officeId);
+      const gap=getKSAGap(s.ksa, lAvgT, lAvgS);
+      const ego=s.ego||{};
+      const enn=s.enn||[];
+      const total=n(s.lsrp?.total);
+      const isDanger=total>=16;
+      const riskStr=isDanger?
+        '★★★ 高リスク：目標達成のために他者を犠牲にする傾向あり。衝動制御困難。採用・登用を慎重に検討。':
+        '★★☆ 要警戒：一部の冷徹・衝動的傾向が確認。モニタリングとフォロー体制を構築。';
+      return `<tr>
+        <td>${off?.name||'─'}</td>
+        <td style="font-weight:600;white-space:nowrap;">${s.name}</td>
+        <td><span class="tag tag-sub" style="font-size:0.65rem;">${s.role}</span></td>
+        <td class="${lsrp.cls}" style="font-weight:700;white-space:nowrap;">${lsrp.label}</td>
+        <td class="${lsrp.cls}" style="font-weight:700;">${total}</td>
+        <td class="${rc.cls}" style="font-weight:600;">${rc.label}</td>
+        <td>${arw(n(s.task),32)}</td>
+        <td>${arw(n(s.social),32)}</td>
+        <td>${gap>0?'+':''}${gap.toFixed(1)}%</td>
+        <td>${n(ego.CP)}</td><td>${n(ego.NP)}</td><td>${n(ego.A)}</td><td>${n(ego.FC)}</td><td>${n(ego.AC)}</td>
+        <td>${ennLabel(enn)}</td>
+        <td style="font-size:0.72rem;color:${isDanger?'var(--danger)':'var(--warn)'};max-width:200px;">${riskStr}</td>
+      </tr>`;
+    }).join('');
+  }
+}
+
+// ════════════════════════════════════════════════════
+//  ナビゲーション
+// ════════════════════════════════════════════════════
+
+let currentTab='corp';
+
+function goTab(tab){
+  currentTab=tab;
+  ['corp','office','staff','rc'].forEach(t=>{
+    document.getElementById(`page-${t}`).classList.toggle('active',t===tab);
+    document.getElementById(`tab-${t}`).classList.toggle('active',t===tab);
+  });
+  renderCurrentTab();
+}
+
+function renderCurrentTab(){
+  if(currentTab==='corp') renderCorpDashboard();
+  else if(currentTab==='office') renderOfficeDashboard();
+  else if(currentTab==='staff') renderStaffList();
+  else if(currentTab==='rc') renderRCList();
+}
+
+function onCorpChange(){
+  const corpId=document.getElementById('sel-corp').value;
+  const offSel=document.getElementById('sel-office');
+  offSel.innerHTML='<option value="">── 全事業所 ──</option>';
+  getOffices(corpId).forEach(o=>{
+    offSel.innerHTML+=`<option value="${o.id}">${o.name}</option>`;
+  });
+  renderCurrentTab();
+}
+
+function onOfficeChange(){ renderCurrentTab(); }
+
+// ════════════════════════════════════════════════════
+//  CRUD: 法人
+// ════════════════════════════════════════════════════
+
+function refreshCorpSelector(){
+  const sel=document.getElementById('sel-corp');
+  const cur=sel.value;
+  sel.innerHTML='<option value="">── 法人を選択 ──</option>';
+  getCorps().forEach(c=>sel.innerHTML+=`<option value="${c.id}"${c.id===cur?' selected':''}>${c.name}</option>`);
+}
+
+function addCorp(){
+  const name=document.getElementById('new-corp-name').value.trim();
+  if(!name){ alert('法人名を入力してください'); return; }
+  const corps=getCorps();
+  corps.push({id:uid(),name});
+  save('nagi_corps',corps);
+  document.getElementById('new-corp-name').value='';
+  renderCorpsList();
+  refreshCorpSelector();
+}
+
+function deleteCorp(id){
+  if(!confirm('この法人と紐づく全データを削除しますか？')) return;
+  save('nagi_corps',getCorps().filter(c=>c.id!==id));
+  const offices=getAllOffices().filter(o=>o.corpId!==id);
+  save('nagi_offices',offices);
+  save('nagi_staff',getAllStaff().filter(s=>s.corpId!==id));
+  renderCorpsList();
+  refreshCorpSelector();
+}
+
+function renderCorpsList(){
+  document.getElementById('corps-list').innerHTML=getCorps().map(c=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);">
+      <span style="flex:1;font-size:0.85rem;">${c.name}</span>
+      <button class="btn btn-danger btn-xs" onclick="deleteCorp('${c.id}')">削除</button>
+    </div>`).join('')||'<div class="empty" style="padding:12px;">法人なし</div>';
+}
+
+// ════════════════════════════════════════════════════
+//  CRUD: 事業所
+// ════════════════════════════════════════════════════
+
+function refreshOfficeSelectors(){
+  const corps=getCorps();
+  ['new-office-corp','fin-office-sel','pipe-office-sel'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el) return;
+    const cur=el.value;
+    el.innerHTML='<option value="">── 法人を選択 ──</option>';
+    if(id==='new-office-corp'){
+      corps.forEach(c=>el.innerHTML+=`<option value="${c.id}">${c.name}</option>`);
+    } else {
+      getAllOffices().forEach(o=>{
+        const c=corps.find(cc=>cc.id===o.corpId);
+        el.innerHTML+=`<option value="${o.id}">${c?.name||''} / ${o.name}</option>`;
+      });
+      if(cur) el.value=cur;
+    }
+  });
+  const mainSel=document.getElementById('sel-office');
+  if(mainSel){
+    const corpId=document.getElementById('sel-corp').value;
+    const cur=mainSel.value;
+    mainSel.innerHTML='<option value="">── 全事業所 ──</option>';
+    getOffices(corpId).forEach(o=>mainSel.innerHTML+=`<option value="${o.id}"${o.id===cur?' selected':''}>${o.name}</option>`);
+  }
+}
+
+function addOffice(){
+  const corpId=document.getElementById('new-office-corp').value;
+  const name=document.getElementById('new-office-name').value.trim();
+  if(!corpId||!name){ alert('法人と事業所名を入力してください'); return; }
+  const offices=getAllOffices();
+  offices.push({id:uid(),corpId,name});
+  save('nagi_offices',offices);
+  document.getElementById('new-office-name').value='';
+  renderOfficesList();
+  refreshOfficeSelectors();
+}
+
+function deleteOffice(id){
+  if(!confirm('この事業所のデータを削除しますか？')) return;
+  save('nagi_offices',getAllOffices().filter(o=>o.id!==id));
+  save('nagi_staff',getAllStaff().filter(s=>s.officeId!==id));
+  save('nagi_fin',load('nagi_fin').filter(f=>f.officeId!==id));
+  save('nagi_pipe',load('nagi_pipe').filter(p=>p.officeId!==id));
+  renderOfficesList();
+  refreshOfficeSelectors();
+}
+
+function renderOfficesList(){
+  const corps=getCorps();
+  document.getElementById('offices-list').innerHTML=getAllOffices().map(o=>{
+    const c=corps.find(cc=>cc.id===o.corpId);
+    return `<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);">
+      <span style="color:var(--sub);font-size:0.72rem;width:80px;">${c?.name||''}</span>
+      <span style="flex:1;font-size:0.85rem;">${o.name}</span>
+      <button class="btn btn-danger btn-xs" onclick="deleteOffice('${o.id}')">削除</button>
+    </div>`;
+  }).join('')||'<div class="empty" style="padding:12px;">事業所なし</div>';
+}
+
+// ════════════════════════════════════════════════════
+//  CRUD: 財務・パイプライン
+// ════════════════════════════════════════════════════
+
+function loadFinForm(){
+  const oid=document.getElementById('fin-office-sel').value;
+  if(!oid) return;
+  const f=getFin(oid);
+  if(f){
+    ['pq','q','vq','mq','f','g'].forEach(k=>{ const el=document.getElementById('fin-'+k); if(el) el.value=f[k]||''; });
+  } else {
+    ['pq','q','vq','mq','f','g'].forEach(k=>{ const el=document.getElementById('fin-'+k); if(el) el.value=''; });
+  }
+}
+
+function saveFin(){
+  const oid=document.getElementById('fin-office-sel').value;
+  if(!oid){ alert('事業所を選択してください'); return; }
+  const data=load('nagi_fin').filter(f=>f.officeId!==oid);
+  data.push({
+    officeId:oid,
+    pq:n(document.getElementById('fin-pq').value),
+    q:n(document.getElementById('fin-q').value),
+    vq:n(document.getElementById('fin-vq').value),
+    mq:n(document.getElementById('fin-mq').value),
+    f:n(document.getElementById('fin-f').value),
+    g:n(document.getElementById('fin-g').value),
+  });
+  save('nagi_fin',data);
+  alert('財務データを保存しました。');
+  renderCurrentTab();
+}
+
+function loadPipeForm(){
+  const oid=document.getElementById('pipe-office-sel').value;
+  if(!oid) return;
+  const p=getPipe(oid);
+  if(p){
+    ['approach','inquiry','visit','contract','repeat'].forEach(k=>{ const el=document.getElementById('pipe-'+k); if(el) el.value=p[k]||''; });
+  } else {
+    ['approach','inquiry','visit','contract','repeat'].forEach(k=>{ const el=document.getElementById('pipe-'+k); if(el) el.value=''; });
+  }
+}
+
+function savePipe(){
+  const oid=document.getElementById('pipe-office-sel').value;
+  if(!oid){ alert('事業所を選択してください'); return; }
+  const data=load('nagi_pipe').filter(p=>p.officeId!==oid);
+  data.push({
+    officeId:oid,
+    approach:n(document.getElementById('pipe-approach').value),
+    inquiry:n(document.getElementById('pipe-inquiry').value),
+    visit:n(document.getElementById('pipe-visit').value),
+    contract:n(document.getElementById('pipe-contract').value),
+    repeat:n(document.getElementById('pipe-repeat').value),
+  });
+  save('nagi_pipe',data);
+  alert('パイプラインデータを保存しました。');
+  renderCurrentTab();
+}
+
+// ════════════════════════════════════════════════════
+//  CRUD: スタッフ
+// ════════════════════════════════════════════════════
+
+function openAddStaff(){
+  document.getElementById('modal-staff-title').textContent='スタッフ追加';
+  document.getElementById('staff-edit-id').value='';
+  // コープ選択肢
+  const cSel=document.getElementById('staff-corp');
+  cSel.innerHTML='<option value="">法人を選択</option>';
+  getCorps().forEach(c=>cSel.innerHTML+=`<option value="${c.id}">${c.name}</option>`);
+  const curCorp=document.getElementById('sel-corp').value;
+  if(curCorp) cSel.value=curCorp;
+  updateStaffOfficeOptions();
+  // フィールドクリア
+  ['staff-name','staff-task','staff-social','staff-p','staff-m','staff-ksa',
+   'ego-cp','ego-np','ego-a','ego-fc','ego-ac','lsrp-total'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  ['enn1','enn2','enn3','lsrp-level'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('staff-role').value='一般職';
+  openModal('modal-staff');
+}
+
+function openEditStaff(id){
+  const s=getAllStaff().find(x=>x.id===id);
+  if(!s) return;
+  document.getElementById('modal-staff-title').textContent='スタッフ編集';
+  document.getElementById('staff-edit-id').value=id;
+  const cSel=document.getElementById('staff-corp');
+  cSel.innerHTML='<option value="">法人を選択</option>';
+  getCorps().forEach(c=>cSel.innerHTML+=`<option value="${c.id}">${c.name}</option>`);
+  cSel.value=s.corpId||'';
+  updateStaffOfficeOptions();
+  document.getElementById('staff-office').value=s.officeId||'';
+  document.getElementById('staff-name').value=s.name||'';
+  document.getElementById('staff-role').value=s.role||'一般職';
+  document.getElementById('staff-task').value=s.task||'';
+  document.getElementById('staff-social').value=s.social||'';
+  document.getElementById('staff-p').value=s.p||'';
+  document.getElementById('staff-m').value=s.m||'';
+  document.getElementById('staff-ksa').value=s.ksa||'';
+  const ego=s.ego||{};
+  ['cp','np','a','fc','ac'].forEach(k=>{ const el=document.getElementById('ego-'+k); if(el) el.value=ego[k.toUpperCase()]??''; });
+  const enn=s.enn||[];
+  ['enn1','enn2','enn3'].forEach((id,i)=>{ const el=document.getElementById(id); if(el) el.value=enn[i]?.type||''; });
+  document.getElementById('lsrp-total').value=s.lsrp?.total||'';
+  document.getElementById('lsrp-level').value=s.lsrp?.levelShort||'';
+  openModal('modal-staff');
+}
+
+function updateStaffOfficeOptions(){
+  const corpId=document.getElementById('staff-corp').value;
+  const oSel=document.getElementById('staff-office');
+  oSel.innerHTML='<option value="">事業所を選択</option>';
+  getOffices(corpId).forEach(o=>oSel.innerHTML+=`<option value="${o.id}">${o.name}</option>`);
+  const curOff=document.getElementById('sel-office').value;
+  if(curOff) oSel.value=curOff;
+}
+
+function saveStaff(){
+  const editId=document.getElementById('staff-edit-id').value;
+  const corpId=document.getElementById('staff-corp').value;
+  const officeId=document.getElementById('staff-office').value;
+  const name=document.getElementById('staff-name').value.trim();
+  if(!officeId||!name){ alert('事業所と氏名は必須です'); return; }
+
+  const task=clamp(n(document.getElementById('staff-task').value),0,56);
+  const social=clamp(n(document.getElementById('staff-social').value),0,56);
+  const p=clamp(n(document.getElementById('staff-p').value),0,40);
+  const m=clamp(n(document.getElementById('staff-m').value),0,40);
+  const ksa=clamp(n(document.getElementById('staff-ksa').value),0,80);
+
+  const ego={
+    CP:clamp(n(document.getElementById('ego-cp').value),0,10),
+    NP:clamp(n(document.getElementById('ego-np').value),0,10),
+    A:clamp(n(document.getElementById('ego-a').value),0,10),
+    FC:clamp(n(document.getElementById('ego-fc').value),0,10),
+    AC:clamp(n(document.getElementById('ego-ac').value),0,10),
+  };
+
+  const enn=[];
+  ['enn1','enn2','enn3'].forEach((id,i)=>{
+    const t=document.getElementById(id).value;
+    if(t) enn.push({type:t,name:ENN_NAMES[t]||'',score:0});
+  });
+
+  const lsrpTotal=n(document.getElementById('lsrp-total').value);
+  const lsrpLevelShort=document.getElementById('lsrp-level').value||getLSRPLabel(lsrpTotal).short;
+  const lsrp=lsrpTotal>0?{total:lsrpTotal,levelShort:lsrpLevelShort}:null;
+
+  const rec={
+    id:editId||uid(), corpId, officeId,
+    name, role:document.getElementById('staff-role').value,
+    task, social, p, m, ksa, ego, enn, lsrp,
+    updatedAt:new Date().toISOString()
+  };
+
+  const all=getAllStaff();
+  if(editId){ const idx=all.findIndex(s=>s.id===editId); if(idx>=0) all[idx]=rec; else all.push(rec); }
+  else all.push(rec);
+  save('nagi_staff',all);
+  closeModal('modal-staff');
+  renderCurrentTab();
+}
+
+function deleteStaff(id){
+  if(!confirm('このスタッフデータを削除しますか？')) return;
+  save('nagi_staff',getAllStaff().filter(s=>s.id!==id));
+  renderCurrentTab();
+}
+
+// ════════════════════════════════════════════════════
+//  スキャンJSONインポート（スタッフ入力補助）
+// ════════════════════════════════════════════════════
+
+function openScanImportForStaff(){
+  document.getElementById('scan-import-ta').value='';
+  openModal('modal-scan-import');
+}
+
+function applyScanImport(){
+  const raw=document.getElementById('scan-import-ta').value.trim();
+  let data;
+  try{ data=JSON.parse(raw); }catch(e){ alert('JSONの形式が正しくありません'); return; }
+
+  // エゴグラム
+  if(data.egogram){
+    const eg=data.egogram;
+    ['cp','np','a','fc','ac'].forEach(k=>{
+      const el=document.getElementById('ego-'+k);
+      if(el&&eg[k.toUpperCase()]!==undefined) el.value=eg[k.toUpperCase()];
+    });
+  }
+  // エニアグラム
+  if(data.enneagram?.top3){
+    data.enneagram.top3.slice(0,3).forEach((item,i)=>{
+      const el=document.getElementById(['enn1','enn2','enn3'][i]);
+      if(el) el.value=item.type||'';
+    });
+  }
+  // LSRP
+  if(data.lsrp){
+    const total=n(data.lsrp.total);
+    const el=document.getElementById('lsrp-total');
+    if(el) el.value=total;
+    const lv=document.getElementById('lsrp-level');
+    if(lv){
+      const lvl=data.lsrp.level||'';
+      if(lvl.includes('危険')) lv.value='危険';
+      else if(lvl.includes('警戒')) lv.value='警戒';
+      else lv.value='安全';
+    }
+  }
+  // 名前（あれば）
+  if(data.name){ const el=document.getElementById('staff-name'); if(el&&!el.value) el.value=data.name; }
+
+  closeModal('modal-scan-import');
+  alert('スキャンデータを反映しました。');
+}
+
+// ════════════════════════════════════════════════════
+//  一括インポート（ミツメルスキャン roster）
+// ════════════════════════════════════════════════════
+
+function parseBulkImportJSON(){
+  const raw=document.getElementById('bulk-import-ta').value.trim();
+  let arr;
+  try{ arr=JSON.parse(raw); }catch(e){ return null; }
+  if(!Array.isArray(arr)) arr=[arr]; // 単体JSONにも対応
+  return arr;
+}
+
+function previewBulkImport(){
+  const arr=parseBulkImportJSON();
+  if(!arr){ document.getElementById('bulk-preview').innerHTML='<span style="color:var(--danger);">❌ JSONの形式が正しくありません</span>'; return; }
+  const corps=new Set(), offices=new Set();
+  arr.forEach(r=>{ if(r.corp) corps.add(r.corp); if(r.office) offices.add(r.office); });
+  document.getElementById('bulk-preview').innerHTML=`
+    <div style="background:var(--surface);border-radius:6px;padding:10px;border:1px solid var(--border);">
+      <div style="margin-bottom:6px;"><span style="color:var(--accent2);">✅ ${arr.length}件</span> のデータを検出しました</div>
+      <div style="font-size:0.72rem;color:var(--sub);">法人（自動登録）: ${[...corps].join('、')||'─'}</div>
+      <div style="font-size:0.72rem;color:var(--sub);">事業所（自動登録）: ${[...offices].join('、')||'─'}</div>
+      <div style="font-size:0.72rem;color:var(--warn);margin-top:6px;">⚠️ 同名スタッフが既存の場合はスキップします（重複防止）</div>
+    </div>`;
+}
+
+function findOrCreateCorp(name){
+  if(!name) return null;
+  const corps=getCorps();
+  const found=corps.find(c=>c.name===name);
+  if(found) return found.id;
+  const id=uid();
+  corps.push({id,name});
+  save('nagi_corps',corps);
+  return id;
+}
+
+function findOrCreateOffice(corpId,officeName){
+  if(!corpId||!officeName) return null;
+  const offices=getAllOffices();
+  const found=offices.find(o=>o.corpId===corpId&&o.name===officeName);
+  if(found) return found.id;
+  const id=uid();
+  offices.push({id,corpId,name:officeName});
+  save('nagi_offices',offices);
+  return id;
+}
+
+// ennShortName（例: "完璧主義"） → type（"T1"）
+const ENN_SHORT_TO_TYPE = {
+  '完璧主義':'T1','完全主義':'T1','献身家':'T2','達成者':'T3','個人主義者':'T4','芸術家':'T4',
+  '研究者':'T5','堅実家':'T6','忠実家':'T6','楽天家':'T7','統率者':'T8','挑戦者':'T8','調停者':'T9'
+};
+
+function mapEnnType(entry){
+  // enneagram.top3 [{type:"T1", ...}] または ennTop1/2/3 (short string)
+  const enn=[];
+  if(entry.enneagram?.top3?.length){
+    entry.enneagram.top3.slice(0,3).forEach(e=>{
+      const t=e.type||(ENN_SHORT_TO_TYPE[e.name?.split('｜')?.[1]])||null;
+      if(t) enn.push({type:t,name:ENN_NAMES[t]||'',score:e.score||0});
+    });
+  } else {
+    [entry.ennTop1,entry.ennTop2,entry.ennTop3].forEach(s=>{
+      if(!s) return;
+      const t=ENN_SHORT_TO_TYPE[s.split('｜').pop()?.trim()]||null;
+      if(t) enn.push({type:t,name:ENN_NAMES[t]||'',score:0});
+    });
+  }
+  return enn;
+}
+
+function executeBulkImport(){
+  const arr=parseBulkImportJSON();
+  if(!arr){ alert('JSONの形式が正しくありません'); return; }
+  if(!confirm(`${arr.length}件のデータをインポートします。よろしいですか？`)) return;
+
+  const allStaff=getAllStaff();
+  let created=0, skipped=0;
+
+  arr.forEach(r=>{
+    const name=(r.name||'').trim();
+    if(!name){ skipped++; return; }
+    const corpId=findOrCreateCorp(r.corp||'');
+    const officeId=findOrCreateOffice(corpId,r.office||'');
+    if(!officeId){ skipped++; return; }
+
+    // 同名・同事業所が既存ならスキップ
+    const dup=allStaff.find(s=>s.name===name&&s.officeId===officeId);
+    if(dup){ skipped++; return; }
+
+    const ego=r.egogram||{};
+    const enn=mapEnnType(r);
+    const lsrpTotal=n(r.lsrp?.total);
+    const lsrpShort=r.lsrpLevelShort||getLSRPLabel(lsrpTotal).short;
+
+    const rec={
+      id:uid(), corpId, officeId, name,
+      role:'一般職',
+      task:0, social:0, p:0, m:0, ksa:0,
+      ego:{
+        CP:n(ego.CP),NP:n(ego.NP),A:n(ego.A),FC:n(ego.FC),AC:n(ego.AC)
+      },
+      enn,
+      lsrp:lsrpTotal>0?{total:lsrpTotal,levelShort:lsrpShort}:null,
+      importedFrom:'mitsumeru_scan',
+      importedAt:new Date().toISOString()
+    };
+    allStaff.push(rec);
+    created++;
+  });
+
+  save('nagi_staff',allStaff);
+  refreshCorpSelector();
+  refreshOfficeSelectors();
+  renderCurrentTab();
+  closeModal('modal-bulk-import');
+  alert(`✅ インポート完了\n新規登録: ${created}件\nスキップ（重複）: ${skipped}件\n\nTask/Social/PM/KSAはスタッフ編集から補完してください。`);
+}
+
+// ════════════════════════════════════════════════════
+//  インポートモーダル タブ切替
+// ════════════════════════════════════════════════════
+
+function switchImportTab(tab){
+  ['mitsumeru','pm','ta'].forEach(t=>{
+    document.getElementById(`import-${t}`).style.display=t===tab?'block':'none';
+    document.getElementById(`itab-${t}`).classList.toggle('active',t===tab);
+  });
+}
+
+// ════════════════════════════════════════════════════
+//  PMスキャン インポート
+// ════════════════════════════════════════════════════
+
+function parsePMImportJSON(){
+  const raw=(document.getElementById('pm-import-ta').value||'').trim();
+  if(!raw) return null;
+  try{ const d=JSON.parse(raw); return Array.isArray(d)?d:null; }catch(e){ return null; }
+}
+
+function previewPMImport(){
+  const arr=parsePMImportJSON();
+  const el=document.getElementById('pm-preview');
+  if(!arr){ el.innerHTML='<span style="color:var(--danger);">❌ JSONの形式が正しくありません</span>'; return; }
+  const pmItems=arr.filter(r=>r.type==='pm_assessment'||r.p!=null);
+  const offices=new Set(pmItems.map(r=>r.office).filter(Boolean));
+  el.innerHTML=`<div style="background:var(--surface);border-radius:6px;padding:10px;border:1px solid var(--border);">
+    <div style="margin-bottom:6px;"><span style="color:var(--accent2);">✅ ${pmItems.length}件</span> のPM結果を検出しました</div>
+    <div style="font-size:0.72rem;color:var(--sub);">事業所: ${[...offices].join('、')||'─'}</div>
+    <div style="font-size:0.72rem;color:var(--warn);margin-top:6px;">⚠️ 名前＋事業所でマッチング。管理者・リーダーのスタッフレコードに P/M を上書きします。</div>
+  </div>`;
+}
+
+function executePMImport(){
+  const arr=parsePMImportJSON();
+  if(!arr){ alert('JSONの形式が正しくありません'); return; }
+  const pmItems=arr.filter(r=>r.type==='pm_assessment'||r.p!=null);
+  if(!pmItems.length){ alert('PMスキャンのデータが見つかりません'); return; }
+  if(!confirm(`${pmItems.length}件のPM結果でスタッフを更新します。よろしいですか？`)) return;
+
+  const allStaff=getAllStaff();
+  const allOffices=getAllOffices();
+  let updated=0, notFound=0;
+
+  pmItems.forEach(r=>{
+    const name=(r.name||'').trim();
+    if(!name){ notFound++; return; }
+    let targetOffice=null;
+    if(r.office) targetOffice=allOffices.find(o=>o.name===r.office)||null;
+    let staff=null;
+    if(targetOffice) staff=allStaff.find(s=>s.name===name&&s.officeId===targetOffice.id);
+    if(!staff){
+      const candidates=allStaff.filter(s=>s.name===name);
+      if(candidates.length===1) staff=candidates[0];
+    }
+    if(!staff){ notFound++; return; }
+    if(r.p!=null) staff.p=Number(r.p)||0;
+    if(r.m!=null) staff.m=Number(r.m)||0;
+    if(r.pmStyle) staff.pmStyle=r.pmStyle;
+    staff.pmImportedAt=new Date().toISOString();
+    // 役職が一般職のままなら管理者クラスに昇格
+    if(staff.role==='一般職') staff.role='管理者クラス';
+    updated++;
+  });
+
+  save('nagi_staff',allStaff);
+  renderCurrentTab();
+  closeModal('modal-bulk-import');
+  alert(`✅ PMインポート完了\n更新: ${updated}件\nスキップ（未マッチ）: ${notFound}件`);
+}
+
+// ════════════════════════════════════════════════════
+//  TAスキャン インポート
+// ════════════════════════════════════════════════════
+
+function parseTAImportJSON(){
+  const raw=(document.getElementById('ta-import-ta').value||'').trim();
+  if(!raw) return null;
+  try{ const d=JSON.parse(raw); return Array.isArray(d)?d:null; }catch(e){ return null; }
+}
+
+function previewTAImport(){
+  const arr=parseTAImportJSON();
+  const el=document.getElementById('ta-preview');
+  if(!arr){ el.innerHTML='<span style="color:var(--danger);">❌ JSONの形式が正しくありません</span>'; return; }
+  const taItems=arr.filter(r=>r.type==='team_assessment'||r.task!=null);
+  const offices=new Set(taItems.map(r=>r.office).filter(Boolean));
+  el.innerHTML=`
+    <div style="background:var(--surface);border-radius:6px;padding:10px;border:1px solid var(--border);">
+      <div style="margin-bottom:6px;"><span style="color:var(--accent2);">✅ ${taItems.length}件</span> のTA結果を検出しました</div>
+      <div style="font-size:0.72rem;color:var(--sub);">事業所: ${[...offices].join('、')||'─'}</div>
+      <div style="font-size:0.72rem;color:var(--warn);margin-top:6px;">⚠️ 名前＋事業所でマッチング。一致しない場合はスキップします。</div>
+    </div>`;
+}
+
+function executeTAImport(){
+  const arr=parseTAImportJSON();
+  if(!arr){ alert('JSONの形式が正しくありません'); return; }
+  const taItems=arr.filter(r=>r.type==='team_assessment'||r.task!=null);
+  if(!taItems.length){ alert('TAスキャンのデータが見つかりません'); return; }
+  if(!confirm(`${taItems.length}件のTA結果でスタッフを更新します。よろしいですか？`)) return;
+
+  const allStaff=getAllStaff();
+  const allOffices=getAllOffices();
+  let updated=0, notFound=0;
+
+  taItems.forEach(r=>{
+    const name=(r.name||'').trim();
+    if(!name){ notFound++; return; }
+
+    // 事業所を名前で探す
+    let targetOffice=null;
+    if(r.office){
+      targetOffice=allOffices.find(o=>o.name===r.office)||null;
+    }
+
+    let staff=null;
+    if(targetOffice){
+      staff=allStaff.find(s=>s.name===name&&s.officeId===targetOffice.id);
+    }
+    // 事業所不明なら名前だけでマッチ（1件のみ）
+    if(!staff){
+      const candidates=allStaff.filter(s=>s.name===name);
+      if(candidates.length===1) staff=candidates[0];
+    }
+
+    if(!staff){ notFound++; return; }
+
+    // Task/Social/KSA を上書き
+    if(r.task!=null)   staff.task=Number(r.task)||0;
+    if(r.social!=null) staff.social=Number(r.social)||0;
+    if(r.ksa!=null)    staff.ksa=Number(r.ksa)||0;
+    if(r.slStage)      staff.slStage=r.slStage;
+    if(r.ksaGap!=null) staff.ksaGap=parseFloat(r.ksaGap)||0;
+    staff.taImportedAt=new Date().toISOString();
+    updated++;
+  });
+
+  save('nagi_staff',allStaff);
+  renderCurrentTab();
+  closeModal('modal-bulk-import');
+  alert(`✅ TAインポート完了\n更新: ${updated}件\nスキップ（未マッチ）: ${notFound}件`);
+}
+
+// ════════════════════════════════════════════════════
+//  データ管理タブ切替
+// ════════════════════════════════════════════════════
+
+function switchDataTab(tab){
+  ['corps','offices','fin','pipe'].forEach(t=>{
+    document.getElementById(`data-${t}`).style.display=t===tab?'block':'none';
+    document.getElementById(`dtab-${t}`).classList.toggle('active',t===tab);
+  });
+  if(tab==='corps') renderCorpsList();
+  else if(tab==='offices') renderOfficesList();
+  else if(tab==='fin'||tab==='pipe') refreshOfficeSelectors();
+}
+
+// ════════════════════════════════════════════════════
+//  モーダル
+// ════════════════════════════════════════════════════
+
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+
+// ════════════════════════════════════════════════════
+//  サンプルデータ
+// ════════════════════════════════════════════════════
+
+function loadSample(){
+  if(!confirm('サンプルデータを読み込みますか？\n（既存データは上書きされます）')) return;
+  const c1=uid(),c2=uid();
+  const o1=uid(),o2=uid(),o3=uid();
+  save('nagi_corps',[{id:c1,name:'Fusion Partners株式会社'},{id:c2,name:'B法人'}]);
+  save('nagi_offices',[
+    {id:o1,corpId:c1,name:'FusionOS Labo'},
+    {id:o2,corpId:c1,name:'ケアホームα'},
+    {id:o3,corpId:c1,name:'ケアホームβ'},
+  ]);
+  save('nagi_fin',[
+    {officeId:o1,pq:4200000,q:420,vq:840000,mq:3360000,f:2500000,g:860000},
+    {officeId:o2,pq:3100000,q:310,vq:620000,mq:2480000,f:2000000,g:480000},
+    {officeId:o3,pq:5150000,q:515,vq:990000,mq:4120000,f:3300000,g:820000},
+  ]);
+  save('nagi_pipe',[
+    {officeId:o1,approach:150,inquiry:20,visit:12,contract:7,repeat:6},
+    {officeId:o2,approach:100,inquiry:10,visit:5,contract:2,repeat:2},
+    {officeId:o3,approach:80,inquiry:8,visit:4,contract:1,repeat:1},
+  ]);
+  const s1=uid(),s2=uid(),s3=uid(),s4=uid(),s5=uid(),s6=uid();
+  save('nagi_staff',[
+    {id:s1,corpId:c1,officeId:o1,name:'田中 健太',role:'管理者クラス',task:44,social:42,p:32,m:28,ksa:75,
+     ego:{CP:6,NP:8,A:8,FC:7,AC:6},enn:[{type:'T3',name:'達成者',score:42},{type:'T1',name:'完璧主義',score:35},{type:'T8',name:'統率者',score:28}],
+     lsrp:{total:7,levelShort:'安全'}},
+    {id:s2,corpId:c1,officeId:o1,name:'鈴木 陽子',role:'リーダークラス',task:38,social:40,p:22,m:30,ksa:72,
+     ego:{CP:7,NP:9,A:7,FC:6,AC:5},enn:[{type:'T2',name:'献身家',score:40},{type:'T6',name:'堅実家',score:35},{type:'T9',name:'調停者',score:28}],
+     lsrp:{total:5,levelShort:'安全'}},
+    {id:s3,corpId:c1,officeId:o1,name:'中村 大輔',role:'一般職',task:26,social:30,p:14,m:18,ksa:52,
+     ego:{CP:5,NP:6,A:5,FC:7,AC:8},enn:[{type:'T7',name:'楽天家',score:38},{type:'T2',name:'献身家',score:30},{type:'T9',name:'調停者',score:22}],
+     lsrp:{total:4,levelShort:'安全'}},
+    {id:s4,corpId:c1,officeId:o2,name:'佐藤 誠',role:'管理者クラス',task:35,social:28,p:15,m:22,ksa:65,
+     ego:{CP:8,NP:6,A:7,FC:5,AC:4},enn:[{type:'T8',name:'統率者',score:35},{type:'T3',name:'達成者',score:28},{type:'T1',name:'完璧主義',score:22}],
+     lsrp:{total:12,levelShort:'警戒'}},
+    {id:s5,corpId:c1,officeId:o2,name:'田中 真由美',role:'一般職',task:28,social:15,p:12,m:10,ksa:45,
+     ego:{CP:10,NP:4,A:4,FC:5,AC:3},enn:[{type:'T4',name:'芸術家',score:38},{type:'T5',name:'研究者',score:30},{type:'T9',name:'調停者',score:25}],
+     lsrp:{total:18,levelShort:'危険'}},
+    {id:s6,corpId:c1,officeId:o3,name:'伊藤 淳',role:'管理者クラス',task:30,social:28,p:18,m:15,ksa:55,
+     ego:{CP:3,NP:8,A:5,FC:4,AC:9},enn:[{type:'T9',name:'調停者',score:35},{type:'T6',name:'堅実家',score:28},{type:'T2',name:'献身家',score:22}],
+     lsrp:{total:14,levelShort:'警戒'}},
+  ]);
+  refreshCorpSelector();
+  document.getElementById('sel-corp').value=c1;
+  onCorpChange();
+  renderCurrentTab();
+  alert('サンプルデータを読み込みました！\n法人「Fusion Partners株式会社」を選択して各ダッシュボードを確認してください。');
+}
+
+// ════════════════════════════════════════════════════
+//  初期化
+// ════════════════════════════════════════════════════
+
+function init(){
+  refreshCorpSelector();
+  refreshOfficeSelectors();
+  renderCorpsList();
+  renderOfficesList();
+  renderCurrentTab();
+}
+
+init();
+</script>
+</body>
+</html>
