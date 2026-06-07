@@ -2092,24 +2092,29 @@ function importScanResult() {
   const ennMap = {'T1':'001(完全主義者)','T2':'002(献身家)','T3':'003(達成者)','T4':'004(個人主義者)','T5':'005(研究者)','T6':'006(忠実家)','T7':'007(楽天家)','T8':'008(挑戦者)','T9':'009(調停者)'};
   const lsrpMap = {'安全':'安全圏：適合ピース','警戒':'要注意：観察対象','危険':'危険：組織の猛毒'};
   const rcMap = {'凪':'安全（凪）','冷徹':'危険（I+U-）組織破壊','危険':'危険（I+U-）組織破壊','停滞':'依存（I-U+）自律欠如','衝動':'注意（I-U-）他者否定'};
-  if (data.lsrp && data.lsrp.primaryLabel) {
+  // LSRP: level文字列に「危険」「警戒」「安全」が含まれるかチェック
+  if (data.lsrp) {
+    const level = data.lsrp.level || '';
+    const key = level.includes('危険') ? '危険' : level.includes('警戒') ? '警戒' : '安全';
     const lEl = document.getElementById('p-lsrp');
-    if (lEl) { const mapped = lsrpMap[data.lsrp.primaryLabel] || ''; for (let o of lEl.options) { if (o.value === mapped) { lEl.value = mapped; break; } } }
+    if (lEl) { const mapped = lsrpMap[key] || ''; for (let o of lEl.options) { if (o.value === mapped) { lEl.value = mapped; break; } } }
   }
-  if (data.egogram && data.egogram.rcShort) {
+  // RC: rc["判定"] を使用
+  if (data.rc) {
     const rEl = document.getElementById('p-rc');
-    if (rEl) { const mapped = rcMap[data.egogram.rcShort] || ''; for (let o of rEl.options) { if (o.value === mapped) { rEl.value = mapped; break; } } }
+    if (rEl) { const mapped = rcMap[data.rc['判定']] || ''; for (let o of rEl.options) { if (o.value === mapped) { rEl.value = mapped; break; } } }
   }
-  if (data.egogram && data.egogram.scores) {
-    const s = data.egogram.scores;
+  // エゴグラム: data.egogram直下にCP/NP/A/FC/ACがフラットにある
+  if (data.egogram) {
+    const s = data.egogram;
     ['CP','NP','A','FC','AC'].forEach(k => { const el = document.getElementById('p-'+k.toLowerCase()); if(el && s[k]!==undefined) el.value=s[k]; });
-    const aEl = document.getElementById('p-a'); if(aEl && s['A']!==undefined) aEl.value=s['A'];
   }
-  if (data.enneagram && data.enneagram.ranking) {
-    data.enneagram.ranking.slice(0,3).forEach((item,i) => {
+  // エニアグラム: data.enneagram.top3 を使用
+  if (data.enneagram && data.enneagram.top3) {
+    data.enneagram.top3.slice(0,3).forEach((item,i) => {
       const el = document.getElementById(['p-enea1','p-enea2','p-enea3'][i]);
       if (!el) return;
-      const mapped = ennMap[item.type||item] || '';
+      const mapped = ennMap[item.type] || '';
       for (let o of el.options) { if (o.value === mapped) { el.value = mapped; break; } }
     });
   }

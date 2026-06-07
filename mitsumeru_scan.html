@@ -310,8 +310,9 @@
       <thead>
         <tr>
           <th>日付</th><th>法人名</th><th>事業所</th><th>氏名</th>
-          <th>LSRP</th><th>RC判定</th><th>RC指標</th>
-          <th>エニアTop1</th><th>操作</th>
+          <th>LSRP</th><th>RC判定</th>
+          <th>CP</th><th>NP</th><th>A</th><th>FC</th><th>AC</th>
+          <th>エニア1位</th><th>エニア2位</th><th>エニア3位</th><th>操作</th>
         </tr>
       </thead>
       <tbody id="roster-body"></tbody>
@@ -675,11 +676,15 @@ function showResults() {
     rcShort: ego.rcShort,
     rcRaw: ego.rcRaw,
     ennTop1: ENN_NAMES_SHORT[top3[0][0]],
+    ennTop2: top3[1] ? ENN_NAMES_SHORT[top3[1][0]] : '',
+    ennTop3: top3[2] ? ENN_NAMES_SHORT[top3[2][0]] : '',
     nameKana,
     savedAt: new Date().toISOString()
   };
 
   goTo(4);
+  // 自動保存（手動保存忘れ防止）
+  autoSaveToRoster();
 }
 
 // ═══════════════════════════════════════════════
@@ -693,11 +698,18 @@ function loadRoster() {
   catch { return []; }
 }
 
-function saveToRoster() {
-  if (!lastResult) { alert('先に診断を完了してください。'); return; }
+function autoSaveToRoster() {
+  if (!lastResult) return;
   const roster = loadRoster();
+  // 同じsavedAtのエントリが既にあれば重複しない
+  if (roster.some(r => r.savedAt === lastResult.savedAt)) return;
   roster.unshift(lastResult);
   localStorage.setItem(ROSTER_KEY, JSON.stringify(roster));
+}
+
+function saveToRoster() {
+  if (!lastResult) { alert('先に診断を完了してください。'); return; }
+  autoSaveToRoster();
   const ok = document.getElementById('save-ok');
   ok.style.display = 'inline';
   setTimeout(() => { ok.style.display = 'none'; }, 2000);
@@ -732,16 +744,22 @@ function renderRoster() {
     const lsrpClass = r.lsrpLevelShort === '危険' ? 'tag-danger' : r.lsrpLevelShort === '警戒' ? 'tag-warn' : 'tag-safe';
     const rcClass   = (r.rcShort === '冷徹' || r.rcShort === '危険') ? 'tag-rc-danger' : (r.rcShort === '停滞' || r.rcShort === '衝動') ? 'tag-rc-warn' : 'tag-nagi';
     const globalIdx = roster.indexOf(r);
-    return `<tr>
+    return `<tr style="cursor:pointer;" onclick="viewRosterEntry(${globalIdx})">
       <td>${r.date || ''}</td>
       <td>${r.corp || ''}</td>
       <td>${r.office || ''}</td>
       <td style="font-weight:600;">${r.name || ''}<br><span style="font-size:0.7rem;color:var(--sub);font-weight:400;">${r.nameKana || ''}</span></td>
       <td><span class="tag ${lsrpClass}">${r.lsrpLevelShort || ''}</span></td>
       <td><span class="tag ${rcClass}">${r.rcShort || ''}</span></td>
-      <td>${r.rcRaw ?? ''}</td>
+      <td style="text-align:center;">${r.egogram?.CP ?? ''}</td>
+      <td style="text-align:center;">${r.egogram?.NP ?? ''}</td>
+      <td style="text-align:center;">${r.egogram?.A ?? ''}</td>
+      <td style="text-align:center;">${r.egogram?.FC ?? ''}</td>
+      <td style="text-align:center;">${r.egogram?.AC ?? ''}</td>
       <td>${r.ennTop1 || ''}</td>
-      <td><button class="btn btn-danger btn-sm" onclick="deleteEntry(${globalIdx})">削除</button></td>
+      <td>${r.ennTop2 || ''}</td>
+      <td>${r.ennTop3 || ''}</td>
+      <td><button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteEntry(${globalIdx})">削除</button></td>
     </tr>`;
   }).join('');
 }
@@ -810,6 +828,71 @@ function resetAll() {
   renderQuestions('egogram-questions', EGOGRAM_QUESTIONS, 'egogram');
   renderQuestions('enneagram-questions', ENNEAGRAM_QUESTIONS, 'enneagram');
 })();
+
+// ═══════════════════════════════════════════════
+// 受検者詳細表示
+// ═══════════════════════════════════════════════
+function viewRosterEntry(idx) {
+  const roster = loadRoster();
+  const r = roster[idx];
+  if (!r) return;
+  const lsrpClass = r.lsrpLevelShort === '危険' ? 'color:#e53935;' : r.lsrpLevelShort === '警戒' ? 'color:#f57c00;' : 'color:#2e7d32;';
+  const rcClass = (r.rcShort === '冷徹' || r.rcShort === '危険') ? 'color:#e53935;' : (r.rcShort === '停滞' || r.rcShort === '衝動') ? 'color:#f57c00;' : 'color:#2e7d32;';
+  const top3 = r.enneagram?.top3 || [];
+  const ego = r.egogram || {};
+  document.getElementById('roster-detail-content').innerHTML = `
+    <h2 style="margin:0 0 4px;font-size:1.3rem;">${r.name || ''}</h2>
+    <p style="margin:0 0 16px;color:var(--sub);font-size:0.85rem;">${r.nameKana || ''} ／ ${r.corp || ''} ${r.office || ''} ／ ${r.date || ''}</p>
+    <hr style="margin-bottom:16px;border-color:var(--border);">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+      <div style="background:var(--bg);border-radius:10px;padding:14px;">
+        <div style="font-size:0.75rem;color:var(--sub);margin-bottom:4px;">LSRP判定</div>
+        <div style="font-size:1.1rem;font-weight:700;${lsrpClass}">${r.lsrpLevelShort || '-'}</div>
+        <div style="font-size:0.75rem;color:var(--sub);margin-top:4px;">${r.lsrp?.level || ''}</div>
+      </div>
+      <div style="background:var(--bg);border-radius:10px;padding:14px;">
+        <div style="font-size:0.75rem;color:var(--sub);margin-bottom:4px;">RC判定</div>
+        <div style="font-size:1.1rem;font-weight:700;${rcClass}">${r.rcShort || '-'}</div>
+        <div style="font-size:0.75rem;color:var(--sub);margin-top:4px;">RC指標: ${r.rcRaw ?? '-'}</div>
+      </div>
+    </div>
+    <div style="background:var(--bg);border-radius:10px;padding:14px;margin-bottom:12px;">
+      <div style="font-size:0.75rem;color:var(--sub);margin-bottom:8px;">エゴグラム</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        ${['CP','NP','A','FC','AC'].map(k => `<div style="text-align:center;flex:1;min-width:44px;"><div style="font-size:0.7rem;color:var(--sub);">${k}</div><div style="font-size:1.2rem;font-weight:700;">${ego[k] ?? '-'}</div></div>`).join('')}
+      </div>
+    </div>
+    <div style="background:var(--bg);border-radius:10px;padding:14px;">
+      <div style="font-size:0.75rem;color:var(--sub);margin-bottom:8px;">エニアグラム Top3</div>
+      ${top3.slice(0,3).map((t,i) => `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><span style="background:var(--accent);color:#000;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;flex-shrink:0;">${i+1}</span><span style="font-weight:600;">${t.name || ''}</span><span style="color:var(--sub);font-size:0.8rem;margin-left:auto;">${t.score}点</span></div>`).join('') || '<div style="color:var(--sub);">-</div>'}
+    </div>
+    <div style="margin-top:20px;text-align:right;">
+      <button class="btn btn-danger btn-sm" onclick="deleteFromDetail(${idx})">🗑 削除</button>
+    </div>
+  `;
+  document.getElementById('roster-detail-overlay').style.display = 'block';
+}
+
+function closeRosterDetail() {
+  document.getElementById('roster-detail-overlay').style.display = 'none';
+}
+
+function deleteFromDetail(idx) {
+  if (!confirm('この受検者のデータを削除しますか？')) return;
+  const roster = loadRoster();
+  roster.splice(idx, 1);
+  localStorage.setItem(ROSTER_KEY, JSON.stringify(roster));
+  closeRosterDetail();
+  renderRoster();
+}
 </script>
+
+<!-- 受検者詳細モーダル -->
+<div id="roster-detail-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9000;overflow-y:auto;padding:20px 10px;" onclick="if(event.target===this)closeRosterDetail()">
+  <div style="max-width:600px;margin:0 auto;background:var(--card);border-radius:16px;padding:28px 24px;position:relative;">
+    <button onclick="closeRosterDetail()" style="position:absolute;top:16px;right:16px;background:none;border:none;font-size:1.4rem;cursor:pointer;color:var(--sub);">✕</button>
+    <div id="roster-detail-content"></div>
+  </div>
+</div>
 </body>
 </html>
