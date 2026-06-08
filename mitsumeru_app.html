@@ -974,7 +974,7 @@ async function cloudSave(type, data) {
 }
 
 
-// v7: グローバル同期（累積LV用・日付に依存しない）
+// v7: グローバル同期（累積LV・プロフィール用）
 async function cloudSaveGlobal(type, data) {
   try {
     const safeKey = encodeURIComponent(type + '_global');
@@ -993,7 +993,7 @@ async function cloudLoadGlobal(type) {
     const json = await res.json();
     if (!json.value) return null;
     return typeof json.value === 'string' ? JSON.parse(json.value) : json.value;
-  } catch(e) { console.log('グローバル読込失敗', e); return null; }
+  } catch(e) { return null; }
 }
 function formatLV(totalPoints) {
   const level = Math.floor(totalPoints / 100) + 1;
@@ -1243,6 +1243,17 @@ window.addEventListener('DOMContentLoaded', async function() {
       }
       localStorage.setItem('mitsumeru_morning', JSON.stringify(cloudMorning));
     }
+    // v7: プロファイルをクラウドから同期
+    const cloudProfile = await cloudLoadGlobal('profile');
+    if (cloudProfile && cloudProfile.name) {
+      const localRaw = localStorage.getItem('mitsumeru_profile');
+      const localProfile = localRaw ? JSON.parse(localRaw) : null;
+      if (!localProfile || !localProfile.name) {
+        localStorage.setItem('mitsumeru_profile', JSON.stringify(cloudProfile));
+        loadProfile();
+      }
+    }
+    // v7: 累積LVをクラウドから同期
     const cloudLV = await cloudLoadGlobal('lv');
     if (cloudLV && cloudLV.total !== undefined) {
       if (cloudLV.total > getLVBase()) {
@@ -1250,30 +1261,12 @@ window.addEventListener('DOMContentLoaded', async function() {
         if (typeof calcAutoCount === 'function') calcAutoCount();
       }
     }
-
     const cloudEvening = await cloudLoad('evening');
     if (cloudEvening) {
       ['e-supplement','e-tomorrow','e-delay','e-try100','e-feedback','e-notebooklm'].forEach(id => {
         const el = document.getElementById(id);
         if (el && cloudEvening[id] !== undefined) el.value = cloudEvening[id];
       });
-      if (cloudEvening['_output_md']) {
-        const mdBox = document.getElementById('output-markdown');
-        if (mdBox) { mdBox.textContent = cloudEvening['_output_md']; mdBox.classList.add('visible'); }
-        localStorage.setItem('mitsumeru_output', cloudEvening['_output_md']);
-      }
-      if (cloudEvening['_calendar_csv']) {
-        calendarCSV = cloudEvening['_calendar_csv'];
-        const csvBox = document.getElementById('output-csv');
-        if (csvBox) { csvBox.textContent = calendarCSV; csvBox.classList.add('visible'); }
-        localStorage.setItem('mitsumeru_calendar', calendarCSV);
-      }
-      if (cloudEvening['_delay_csv']) {
-        delayCSV = cloudEvening['_delay_csv'];
-        const delayCsvBox = document.getElementById('output-delay-csv');
-        if (delayCsvBox) { delayCsvBox.textContent = delayCSV; delayCsvBox.classList.add('visible'); }
-        localStorage.setItem('mitsumeru_delay', delayCSV);
-      }
       localStorage.setItem('mitsumeru_evening', JSON.stringify(cloudEvening));
     }
   }, 1500);
@@ -1338,7 +1331,6 @@ function changeTargetDate(newDate) {
   const _lvNew = getLVBase() + counts.pomo * 10;
   localStorage.setItem('mitsumeru_lv_total', _lvNew);
   cloudSaveGlobal('lv', { total: _lvNew });
-
   function doReset() {
     memos = [];
     counts = { noise: 0, pomo: 0, try100: 0, 'memo-pomo': 0 };
@@ -1459,6 +1451,7 @@ function saveProfile() {
     never: document.getElementById('p-never').value,
   };
   localStorage.setItem('mitsumeru_profile', JSON.stringify(profile));
+  cloudSaveGlobal('profile', profile);
   updateEgoBar();
   document.getElementById('profile-saved').style.display = 'block';
   setTimeout(() => document.getElementById('profile-saved').style.display = 'none', 3000);
@@ -1788,18 +1781,16 @@ function calcMorning() {
   const sleepScore = calcSleepHP();
   const body = parseInt(document.getElementById('m-body').value);
   const mood = parseInt(document.getElementById('m-mood').value);
-
-  // HP: 睡眠×(体調/4)  4=基準×1.0
   const hpAdj = Math.min(100, Math.round(sleepScore * (body / 4)));
 
-  // ノイズ情報（一度だけ取得 — プロンプトでも共用）
+  // ノイズ・コース（プロンプトでも共用）
   const noises = Array.from(document.querySelectorAll('#m-noise-group .checked input')).map(i => i.value);
   const noiseDetail = document.getElementById('m-noise-detail').value || '';
   const want = document.getElementById('m-want').value;
   const courseVal = document.getElementById('m-course').value;
   const course = courseData[courseVal];
 
-  // MP: 気分スライダー4=100、ノイズ・コース文脈で調整
+  // MP計算: 気分4=100、ノイズ・コースで調整
   const mpBase = Math.round((mood / 4) * 100);
   const noiseCheckPenalty = noises.length * 10;
   let noiseTextPenalty = 0;
@@ -1816,7 +1807,6 @@ function calcMorning() {
   const lvValEl = document.getElementById('lv-val');
   if (lvValEl) lvValEl.textContent = formatLV(getLVBase());
 
-  // モード判定
   let mode, modeClass, modeText;
   if (hpAdj >= 60 && mp >= 60) { mode = 'normal'; modeText = '通常モード — 今日は動けます'; modeClass = 'mode-normal'; }
   else if (hpAdj >= 40 || mp >= 40) { mode = 'dblock'; modeText = 'D-blockモード — 最小限に絞りましょう'; modeClass = 'mode-dblock'; }
@@ -1829,9 +1819,9 @@ function calcMorning() {
   document.getElementById('morning-result').style.display = 'block';
   saveMorning();
 
-  // ↓ noises / noiseDetail / want / courseVal / course は上で既に宣言済み
+  // noises/noiseDetail/want/courseVal/course は上で宣言済み
 
-  const prompt = `あなたはFusion Partners代表・柴山靖章の「SuccessOS 統合経営参謀」です。
+  const prompt = `あなたはFusion Partners代表の「SuccessOS 統合経営参謀」です。
 【ユーザープロファイル】
 ${getProfileText()}
 
@@ -1898,20 +1888,6 @@ function parseSchedule(text) {
   return { events, dateStr };
 }
 
-function parseNLText(nlText, calCSV, delCSV, tmrDateStr, delDateStr) {
-  if (!nlText || !nlText.trim()) return { calCSV, delCSV };
-  const cRows = calCSV ? calCSV.split('\n') : ['Subject,Start Date,Start Time,End Date,End Time,All Day Event,Description'];
-  const dRows = delCSV ? delCSV.split('\n') : ['Subject,Start Date,Start Time,End Date,End Time,All Day Event,Description'];
-  const re1 = /[*・]\s*最優先タスク（急重度①）[：:](.+?)（(\d+(?:\.\d+)?)ポモ）/g;
-  const re23 = /[*・]\s*(?:重要タスク（急重度②）|軽微タスク（急重度③）)[：:](.+?)（(\d+(?:\.\d+)?)ポモ）/g;
-  let m;
-  while ((m = re1.exec(nlText)) !== null)
-    cRows.push('"【NL①】' + m[1].trim() + '（' + m[2] + 'ポモ）",' + tmrDateStr + ',,' + tmrDateStr + ',,False,"' + m[1].trim() + '"');
-  while ((m = re23.exec(nlText)) !== null)
-    dRows.push('"【NL②③】' + m[1].trim() + '（' + m[2] + 'ポモ）",' + delDateStr + ',,,,True,"' + m[1].trim() + '"');
-  return { calCSV: cRows.join('\n'), delCSV: dRows.join('\n') };
-}
-
 function generateEvening() {
   saveEvening();
   const supplement = document.getElementById('e-supplement').value;
@@ -1921,17 +1897,12 @@ function generateEvening() {
   const feedback = document.getElementById('e-feedback').value;
   const notebooklm = document.getElementById('e-notebooklm').value;
 
-  const morningData = JSON.parse(localStorage.getItem('mitsumeru_morning') || '{}');
-  const baseHP = morningData['hp-val'] && morningData['hp-val'] !== '—' ? parseInt(morningData['hp-val']) : 70;
-  const baseMP = morningData['mp-val'] && morningData['mp-val'] !== '—' ? parseInt(morningData['mp-val']) : 70;
-
   const p = memos.filter(m => m.tag === 'P').map(m => m.content).join(' / ') || 'なし';
   const v = memos.filter(m => m.tag === 'V').map(m => m.content).join(' / ') || 'なし';
   const g = memos.filter(m => m.tag === 'G').map(m => m.content).join(' / ') || 'なし';
 
   const debugText = `役割:${debugScores.d1}、委譲:${debugScores.d2}、動機:${debugScores.d3}、資産:${debugScores.d4}、余白:${debugScores.d5}`;
-  const lvGrandTotal = getLVBase() + counts.pomo * 10;
-  const lvDisplay = formatLV(lvGrandTotal);
+  const lv = counts.pomo * 10;
   const now = new Date();
   const dateStr = `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日`;
 
@@ -1950,6 +1921,7 @@ function generateEvening() {
     csvRows.push(`"【急重度①】${e.title}（${e.pomos}ポモ）",${e.date},${e.start},${e.date},${e.end},False,"【目的内容】${e.title}"`);
   });
   calendarCSV = csvRows.join('\n');
+  localStorage.setItem('mitsumeru_calendar', calendarCSV);
 
   let delayRows = ['Subject,Start Date,Start Time,End Date,End Time,All Day Event,Description'];
   if (delay.trim()) {
@@ -1958,16 +1930,13 @@ function generateEvening() {
     });
   }
   delayCSV = delayRows.join('\n');
-
-  const nlR = parseNLText(notebooklm, calendarCSV, delayCSV, tomorrowDateStr, delayDateStr);
-  calendarCSV = nlR.calCSV;
-  delayCSV = nlR.delCSV;
-
-  localStorage.setItem('mitsumeru_calendar', calendarCSV);
   localStorage.setItem('mitsumeru_delay', delayCSV);
 
-  const prompt = `あなたはFusion Partners代表・柴山靖章の「SuccessOS 統合経営参謀」です。
+  const prompt = `あなたはFusion Partners代表の「SuccessOS 統合経営参謀」です。
 指定日：${dateStr}
+
+【ユーザープロファイル】
+${getProfileText()}
 
 【随時メモ（当日の記録）】
 ${getMemoSummary()}
@@ -1982,7 +1951,7 @@ G（気づき）：${g}
 ノイズ回数：${counts.noise}回
 ポモドーロ数：${counts.pomo}ポモ
 Try100達成数：${counts.try100}個
-LV累積：${lvDisplay}
+LV：${lv}/100
 
 【5つのデバッグ】
 ${debugText}
@@ -2007,11 +1976,6 @@ ${feedback || 'なし'}
 【NotebookLMコメント】
 ${notebooklm || 'なし'}
 
-【HP・MP・LV計算ルール（必ず遵守）】
-■ HP最終値：ベース${baseHP}。#HPメモに休息系内容 +5〜10。#Gに余暇系 +3〜5。10ポモ超は超過1ポモ×-3。範囲0〜100。
-■ MP最終値：ベース${baseMP}。#V1件×-5。#Gにアイデア系 +5〜10。範囲0〜110。
-■ LV：累積形式で表示（例: LV2/30）
-
 上記データをもとに、以下のMarkdown形式で出力してください。
 
 # ミツメル行動監査サマリー｜${dateStr}
@@ -2020,7 +1984,7 @@ ${notebooklm || 'なし'}
 （翌朝の最重要指針・総ポモドーロ数を明記）
 
 ## 【本日のステータス】
-HP（X/100） / MP（X/100） / LV（${lvDisplay}）と根拠
+HP（X/100） / MP（X/100） / LV（${lv}/100）と根拠
 
 ## 【因果関係の看破】
 P・V・Gの連動性をロジカルに解説
@@ -2066,25 +2030,6 @@ HHMM ポモ数 タスク内容
       mdBox.textContent = text;
       mdBox.classList.add('visible');
       localStorage.setItem('mitsumeru_output', text);
-
-      const schedMatch = text.match(/##\s*【明日のスケジュール提案】[\s\S]*?\n([\s\S]*?)(?=\n##|$)/);
-      if (schedMatch) {
-        const { events: sEv } = parseSchedule(schedMatch[1]);
-        if (sEv.length > 0) {
-          calendarCSV += '\n' + sEv.map(e =>
-            '"【参謀提案】' + e.title + '（' + e.pomos + 'ポモ）",' + e.date + ',' + e.start + ',' + e.date + ',' + e.end + ',False,"' + e.title + '"'
-          ).join('\n');
-          if (csvBox) csvBox.textContent = calendarCSV;
-          localStorage.setItem('mitsumeru_calendar', calendarCSV);
-        }
-      }
-
-      const _ev = JSON.parse(localStorage.getItem('mitsumeru_evening') || '{}');
-      _ev['_output_md'] = text;
-      _ev['_calendar_csv'] = calendarCSV;
-      _ev['_delay_csv'] = delayCSV;
-      localStorage.setItem('mitsumeru_evening', JSON.stringify(_ev));
-      cloudSave('evening', _ev);
     },
     err => {
       loading.style.display = 'none';
