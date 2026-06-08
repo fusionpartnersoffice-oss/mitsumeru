@@ -1246,12 +1246,8 @@ window.addEventListener('DOMContentLoaded', async function() {
     // v7: プロファイルをクラウドから同期
     const cloudProfile = await cloudLoadGlobal('profile');
     if (cloudProfile && cloudProfile.name) {
-      const localRaw = localStorage.getItem('mitsumeru_profile');
-      const localProfile = localRaw ? JSON.parse(localRaw) : null;
-      if (!localProfile || !localProfile.name) {
-        localStorage.setItem('mitsumeru_profile', JSON.stringify(cloudProfile));
-        loadProfile();
-      }
+      localStorage.setItem('mitsumeru_profile', JSON.stringify(cloudProfile));
+      loadProfile();
     }
     // v7: 累積LVをクラウドから同期
     const cloudLV = await cloudLoadGlobal('lv');
