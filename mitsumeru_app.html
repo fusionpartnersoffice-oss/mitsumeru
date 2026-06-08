@@ -974,13 +974,12 @@ async function cloudSave(type, data) {
 }
 
 
-// v8: グローバルデータ同期（日付に依存しない累積データ用）
+// v7: グローバル同期（累積LV用・日付に依存しない）
 async function cloudSaveGlobal(type, data) {
   try {
     const safeKey = encodeURIComponent(type + '_global');
     const res = await fetch(`${SYNC_URL}?key=${safeKey}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
     if (!res.ok) console.log('グローバル保存失敗:', res.status);
@@ -994,10 +993,8 @@ async function cloudLoadGlobal(type) {
     const json = await res.json();
     if (!json.value) return null;
     return typeof json.value === 'string' ? JSON.parse(json.value) : json.value;
-  } catch(e) { console.log('グローバル読み込み失敗', e); return null; }
+  } catch(e) { console.log('グローバル読込失敗', e); return null; }
 }
-
-// LVフォーマット: 累積ポイントをLVn/xx形式に変換
 function formatLV(totalPoints) {
   const level = Math.floor(totalPoints / 100) + 1;
   const pts = totalPoints % 100;
@@ -1246,12 +1243,9 @@ window.addEventListener('DOMContentLoaded', async function() {
       }
       localStorage.setItem('mitsumeru_morning', JSON.stringify(cloudMorning));
     }
-    // v8: 累積LV をクラウドから同期
     const cloudLV = await cloudLoadGlobal('lv');
     if (cloudLV && cloudLV.total !== undefined) {
-      const localLV = parseInt(localStorage.getItem('mitsumeru_lv_total') || '0');
-      // クラウドの値が大きければ上書き（累積は減らない）
-      if (cloudLV.total > localLV) {
+      if (cloudLV.total > getLVBase()) {
         localStorage.setItem('mitsumeru_lv_total', cloudLV.total);
         if (typeof calcAutoCount === 'function') calcAutoCount();
       }
@@ -1263,7 +1257,6 @@ window.addEventListener('DOMContentLoaded', async function() {
         const el = document.getElementById(id);
         if (el && cloudEvening[id] !== undefined) el.value = cloudEvening[id];
       });
-      // v7: 出力データをクラウドから復元
       if (cloudEvening['_output_md']) {
         const mdBox = document.getElementById('output-markdown');
         if (mdBox) { mdBox.textContent = cloudEvening['_output_md']; mdBox.classList.add('visible'); }
@@ -1342,9 +1335,7 @@ function changeTargetDate(newDate) {
   const hasMorning = !!localStorage.getItem('mitsumeru_morning');
   const hasData = hasMorning || memos.length > 0;
 
-  // v8: 日付変更前に本日のポモドーロをLV累積に加算
-  const _lvBase = getLVBase();
-  const _lvNew = _lvBase + counts.pomo * 10;
+  const _lvNew = getLVBase() + counts.pomo * 10;
   localStorage.setItem('mitsumeru_lv_total', _lvNew);
   cloudSaveGlobal('lv', { total: _lvNew });
 
@@ -1614,7 +1605,6 @@ function calcAutoCount() {
   const l = document.getElementById('auto-lv');
   if (n) n.textContent = noiseCount;
   if (p) p.textContent = pomoTotal;
-  // v8: 累積LV = 前日までの合計 + 本日ポモ×10
   if (l) l.textContent = formatLV(getLVBase() + pomoTotal * 10);
   counts.noise = noiseCount;
   counts.pomo = pomoTotal;
@@ -1790,46 +1780,43 @@ function calcSleepHP() {
   let sleepMins = (wh * 60 + wm) - (sh * 60 + sm);
   if (sleepMins < 0) sleepMins += 24 * 60;
   const hours = sleepMins / 60;
-  return Math.min(100, Math.round(hours / 7 * 100)); // v7: 7h=100%
+  return Math.min(100, Math.round(hours / 7 * 100));
 }
 
 function calcMorning() {
-  // v7スコアルール: スライダー4=基準(100)、睡眠7h=100%
-  const sleepScore = calcSleepHP(); // 7h=100%, capped at 100
+  // v7: スライダー4=基準(100)、睡眠7h=100%
+  const sleepScore = calcSleepHP();
   const body = parseInt(document.getElementById('m-body').value);
   const mood = parseInt(document.getElementById('m-mood').value);
 
-  // ① HP: 睡眠スコア × (体調/4)  ← 4が基準(×1.0)
+  // HP: 睡眠×(体調/4)  4=基準×1.0
   const hpAdj = Math.min(100, Math.round(sleepScore * (body / 4)));
 
-  // ① MP基礎: 気分スライダー4=100
-  const mpBase = Math.round((mood / 4) * 100);
-
-  // ③ ノイズチェック数 × -10
-  const noiseCheckedCount = document.querySelectorAll('#m-noise-group .checked').length;
-  const noiseCheckPenalty = noiseCheckedCount * 10;
-
-  // ③ ノイズ詳細テキストの文脈（長さ＋ネガティブキーワード）
+  // ノイズ情報（一度だけ取得 — プロンプトでも共用）
+  const noises = Array.from(document.querySelectorAll('#m-noise-group .checked input')).map(i => i.value);
   const noiseDetail = document.getElementById('m-noise-detail').value || '';
+  const want = document.getElementById('m-want').value;
+  const courseVal = document.getElementById('m-course').value;
+  const course = courseData[courseVal];
+
+  // MP: 気分スライダー4=100、ノイズ・コース文脈で調整
+  const mpBase = Math.round((mood / 4) * 100);
+  const noiseCheckPenalty = noises.length * 10;
   let noiseTextPenalty = 0;
-  if (noiseDetail.length > 0 && noiseDetail.length <= 40)       noiseTextPenalty = 5;
+  if (noiseDetail.length > 0 && noiseDetail.length <= 40) noiseTextPenalty = 5;
   else if (noiseDetail.length > 40 && noiseDetail.length <= 100) noiseTextPenalty = 10;
-  else if (noiseDetail.length > 100)                             noiseTextPenalty = 15;
-  if (/怒|激怒|叫|罵|最悪|消耗|ひどい|きつい|苦し|辛い|傷|暴言|八つ当たり|憂鬱|不安/.test(noiseDetail)) noiseTextPenalty += 5;
-
-  // ④ タスクコース文脈によるMP調整
-  const courseVal = parseInt(document.getElementById('m-course').value);
-  const courseAdj = { 1: -10, 2: -5, 3: -3, 4: 0, 5: 5, 6: 8 }[courseVal] || 0;
-
+  else if (noiseDetail.length > 100) noiseTextPenalty = 15;
+  if (/[怒叫罵悪消耗苦辛傷暴鬱不安]/.test(noiseDetail)) noiseTextPenalty += 5;
+  const courseAdjMap = {'1':-10,'2':-5,'3':-3,'4':0,'5':5,'6':8};
+  const courseAdj = courseAdjMap[courseVal] !== undefined ? courseAdjMap[courseVal] : 0;
   const mp = Math.min(110, Math.max(0, mpBase - noiseCheckPenalty - noiseTextPenalty + courseAdj));
 
   document.getElementById('hp-val').textContent = hpAdj;
   document.getElementById('mp-val').textContent = mp;
-  // v8: 累積LV表示
   const lvValEl = document.getElementById('lv-val');
   if (lvValEl) lvValEl.textContent = formatLV(getLVBase());
 
-  // モード判定: HP/MPベースで判断
+  // モード判定
   let mode, modeClass, modeText;
   if (hpAdj >= 60 && mp >= 60) { mode = 'normal'; modeText = '通常モード — 今日は動けます'; modeClass = 'mode-normal'; }
   else if (hpAdj >= 40 || mp >= 40) { mode = 'dblock'; modeText = 'D-blockモード — 最小限に絞りましょう'; modeClass = 'mode-dblock'; }
@@ -1840,13 +1827,9 @@ function calcMorning() {
   badge.className = 'mode-badge ' + modeClass;
 
   document.getElementById('morning-result').style.display = 'block';
-  saveMorning(); // HP/MP/モード/表示状態をここで即保存（Claude待ち不要）
+  saveMorning();
 
-  const noises = Array.from(document.querySelectorAll('#m-noise-group .checked input')).map(i => i.value);
-  const noiseDetail = document.getElementById('m-noise-detail').value;
-  const want = document.getElementById('m-want').value;
-  const courseVal = document.getElementById('m-course').value;
-  const course = courseData[courseVal];
+  // ↓ noises / noiseDetail / want / courseVal / course は上で既に宣言済み
 
   const prompt = `あなたはFusion Partners代表・柴山靖章の「SuccessOS 統合経営参謀」です。
 【ユーザープロファイル】
@@ -1915,23 +1898,18 @@ function parseSchedule(text) {
   return { events, dateStr };
 }
 
-function parseNLText(nlText, calendarCSV, delayCSV, tomorrowDateStr, delayDateStr) {
-  // NotebookLMテキストから急重度①②③タスクを抽出してCSVに追加
-  if (!nlText || !nlText.trim()) return { calendarCSV, delayCSV };
-  const pri1Re = /[*・]\s*最優先タスク（急重度①）[：:](.+?)（(\d+(?:\.\d+)?)ポモ）/g;
-  const pri23Re = /[*・]\s*(?:重要タスク（急重度②）|軽微タスク（急重度③）)[：:](.+?)（(\d+(?:\.\d+)?)ポモ）/g;
+function parseNLText(nlText, calCSV, delCSV, tmrDateStr, delDateStr) {
+  if (!nlText || !nlText.trim()) return { calCSV, delCSV };
+  const cRows = calCSV ? calCSV.split('\n') : ['Subject,Start Date,Start Time,End Date,End Time,All Day Event,Description'];
+  const dRows = delCSV ? delCSV.split('\n') : ['Subject,Start Date,Start Time,End Date,End Time,All Day Event,Description'];
+  const re1 = /[*・]\s*最優先タスク（急重度①）[：:](.+?)（(\d+(?:\.\d+)?)ポモ）/g;
+  const re23 = /[*・]\s*(?:重要タスク（急重度②）|軽微タスク（急重度③）)[：:](.+?)（(\d+(?:\.\d+)?)ポモ）/g;
   let m;
-  const calRows = calendarCSV ? calendarCSV.split('\n') : ['Subject,Start Date,Start Time,End Date,End Time,All Day Event,Description'];
-  const delRows = delayCSV ? delayCSV.split('\n') : ['Subject,Start Date,Start Time,End Date,End Time,All Day Event,Description'];
-  while ((m = pri1Re.exec(nlText)) !== null) {
-    const title = m[1].trim(), pomos = m[2];
-    calRows.push(`"【NL急重度①】${title}（${pomos}ポモ）",${tomorrowDateStr},,${tomorrowDateStr},,False,"【NotebookLM抽出】${title}"`);
-  }
-  while ((m = pri23Re.exec(nlText)) !== null) {
-    const title = m[1].trim(), pomos = m[2];
-    delRows.push(`"【NL先送り②③】${title}（${pomos}ポモ）",${delayDateStr},,,,True,"【NotebookLM抽出】${title}"`);
-  }
-  return { calendarCSV: calRows.join('\n'), delayCSV: delRows.join('\n') };
+  while ((m = re1.exec(nlText)) !== null)
+    cRows.push('"【NL①】' + m[1].trim() + '（' + m[2] + 'ポモ）",' + tmrDateStr + ',,' + tmrDateStr + ',,False,"' + m[1].trim() + '"');
+  while ((m = re23.exec(nlText)) !== null)
+    dRows.push('"【NL②③】' + m[1].trim() + '（' + m[2] + 'ポモ）",' + delDateStr + ',,,,True,"' + m[1].trim() + '"');
+  return { calCSV: cRows.join('\n'), delCSV: dRows.join('\n') };
 }
 
 function generateEvening() {
@@ -1943,7 +1921,6 @@ function generateEvening() {
   const feedback = document.getElementById('e-feedback').value;
   const notebooklm = document.getElementById('e-notebooklm').value;
 
-  // v7: 朝のHP/MPベース値を取得
   const morningData = JSON.parse(localStorage.getItem('mitsumeru_morning') || '{}');
   const baseHP = morningData['hp-val'] && morningData['hp-val'] !== '—' ? parseInt(morningData['hp-val']) : 70;
   const baseMP = morningData['mp-val'] && morningData['mp-val'] !== '—' ? parseInt(morningData['mp-val']) : 70;
@@ -1951,12 +1928,9 @@ function generateEvening() {
   const p = memos.filter(m => m.tag === 'P').map(m => m.content).join(' / ') || 'なし';
   const v = memos.filter(m => m.tag === 'V').map(m => m.content).join(' / ') || 'なし';
   const g = memos.filter(m => m.tag === 'G').map(m => m.content).join(' / ') || 'なし';
-  const hpMemos = memos.filter(m => m.tag === 'HP').map(m => m.content).join(' / ') || 'なし';
 
   const debugText = `役割:${debugScores.d1}、委譲:${debugScores.d2}、動機:${debugScores.d3}、資産:${debugScores.d4}、余白:${debugScores.d5}`;
-  // v8: 累積LV
-  const lvBase = getLVBase();
-  const lvGrandTotal = lvBase + counts.pomo * 10;
+  const lvGrandTotal = getLVBase() + counts.pomo * 10;
   const lvDisplay = formatLV(lvGrandTotal);
   const now = new Date();
   const dateStr = `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日`;
@@ -1985,10 +1959,9 @@ function generateEvening() {
   }
   delayCSV = delayRows.join('\n');
 
-  // v7: NotebookLMテキストからタスク抽出してCSVへ追記
-  const nlParsed = parseNLText(notebooklm, calendarCSV, delayCSV, tomorrowDateStr, delayDateStr);
-  calendarCSV = nlParsed.calendarCSV;
-  delayCSV = nlParsed.delayCSV;
+  const nlR = parseNLText(notebooklm, calendarCSV, delayCSV, tomorrowDateStr, delayDateStr);
+  calendarCSV = nlR.calCSV;
+  delayCSV = nlR.delCSV;
 
   localStorage.setItem('mitsumeru_calendar', calendarCSV);
   localStorage.setItem('mitsumeru_delay', delayCSV);
@@ -2009,7 +1982,7 @@ G（気づき）：${g}
 ノイズ回数：${counts.noise}回
 ポモドーロ数：${counts.pomo}ポモ
 Try100達成数：${counts.try100}個
-LV累積：${lvDisplay}（本日ポモ追加後）
+LV累積：${lvDisplay}
 
 【5つのデバッグ】
 ${debugText}
@@ -2035,18 +2008,9 @@ ${feedback || 'なし'}
 ${notebooklm || 'なし'}
 
 【HP・MP・LV計算ルール（必ず遵守）】
-■ HP最終値：
-- ベース：HP基礎値（${baseHP}）からスタート
-- #HPメモに「休息」「休憩」「余暇」「リフレッシュ」等の内容があれば +5〜+10
-- #Gメモに「余暇」「楽しい」「リラックス」等の内容があれば +3〜+5
-- ポモドーロ数が10を超えた場合：超過1ポモごとに -3（例：12ポモ → -6）
-- 最終HP = 上記の合計（0〜100の範囲内で出力）
-■ MP最終値：
-- ベース：MP基礎値（${baseMP}）からスタート
-- #Vメモ1件ごとに -5（ノイズ回数 × -5）
-- #Gメモにアイデア・気づきの内容があれば +5〜+10
-- 最終MP = 上記の合計（0〜110の範囲内で出力）
-■ LV：前日累積 + 本日ポモ×10（例: 前日LV2/30で本日5ポモ → +50 → LV2/80）
+■ HP最終値：ベース${baseHP}。#HPメモに休息系内容 +5〜10。#Gに余暇系 +3〜5。10ポモ超は超過1ポモ×-3。範囲0〜100。
+■ MP最終値：ベース${baseMP}。#V1件×-5。#Gにアイデア系 +5〜10。範囲0〜110。
+■ LV：累積形式で表示（例: LV2/30）
 
 上記データをもとに、以下のMarkdown形式で出力してください。
 
@@ -2103,21 +2067,18 @@ HHMM ポモ数 タスク内容
       mdBox.classList.add('visible');
       localStorage.setItem('mitsumeru_output', text);
 
-      // v7: スケジュール提案セクションをカレンダーCSVへ追加
-      const scheduleMatch = text.match(/##\s*【明日のスケジュール提案】[\s\S]*?\n([\s\S]*?)(?=\n##|$)/);
-      if (scheduleMatch) {
-        const { events: schedEvents, dateStr: sDateStr } = parseSchedule(scheduleMatch[1]);
-        if (schedEvents.length > 0) {
-          const extraRows = schedEvents.map(e =>
-            `"【参謀提案】${e.title}（${e.pomos}ポモ）",${e.date},${e.start},${e.date},${e.end},False,"【参謀提案】${e.title}"`
-          );
-          calendarCSV = calendarCSV + '\n' + extraRows.join('\n');
-          csvBox.textContent = calendarCSV;
+      const schedMatch = text.match(/##\s*【明日のスケジュール提案】[\s\S]*?\n([\s\S]*?)(?=\n##|$)/);
+      if (schedMatch) {
+        const { events: sEv } = parseSchedule(schedMatch[1]);
+        if (sEv.length > 0) {
+          calendarCSV += '\n' + sEv.map(e =>
+            '"【参謀提案】' + e.title + '（' + e.pomos + 'ポモ）",' + e.date + ',' + e.start + ',' + e.date + ',' + e.end + ',False,"' + e.title + '"'
+          ).join('\n');
+          if (csvBox) csvBox.textContent = calendarCSV;
           localStorage.setItem('mitsumeru_calendar', calendarCSV);
         }
       }
 
-      // v7: 出力をeveningデータにピギーバックしてクラウド同期
       const _ev = JSON.parse(localStorage.getItem('mitsumeru_evening') || '{}');
       _ev['_output_md'] = text;
       _ev['_calendar_csv'] = calendarCSV;
