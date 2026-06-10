@@ -154,7 +154,8 @@ tr:hover td{background:rgba(79,195,247,0.03);}
   <div class="logo">⚓</div>
   <h1>凪システム 経営羅針盤 <span>v1.0 | Fusion Partners</span></h1>
   <button class="btn btn-secondary btn-sm" onclick="openModal('modal-data')">⚙ データ管理</button>
-  <button class="btn btn-success btn-sm" onclick="openModal('modal-bulk-import')">📥 ミツメルインポート</button>
+  <button class="btn btn-success btn-sm" onclick="autoSyncAll()" style="background:var(--accent2);border-color:var(--accent2);">🔄 診断データを同期</button>
+  <button class="btn btn-secondary btn-sm" onclick="openModal('modal-bulk-import')">📥 手動インポート</button>
   <button class="btn btn-warn btn-sm" onclick="loadSample()">📊 サンプル</button>
 </header>
 
@@ -494,44 +495,26 @@ tr:hover td{background:rgba(79,195,247,0.03);}
 <div class="modal-overlay" id="modal-bulk-import" onclick="if(event.target===this)closeModal('modal-bulk-import')">
   <div class="modal" style="max-width:680px;">
     <button class="modal-close" onclick="closeModal('modal-bulk-import')">✕</button>
-    <div class="modal-title">📥 ミツメルインポート</div>
-    <div class="nav-tabs" style="border-radius:6px;overflow:hidden;margin-bottom:14px;">
-      <div class="nav-tab active" onclick="switchImportTab('mitsumeru')" id="itab-mitsumeru">📋 採用スキャン</div>
-      <div class="nav-tab" onclick="switchImportTab('ta')" id="itab-ta">🧭 TAスキャン</div>
-      <div class="nav-tab" onclick="switchImportTab('pm')" id="itab-pm">🎯 PMスキャン</div>
+    <div class="modal-title">📥 データインポート</div>
+    <p style="font-size:0.78rem;color:var(--sub);margin-bottom:10px;">
+      各診断ツールの「📤 凪システムへ一括エクスポート」でコピーしたJSONをここに貼り付けてください。<br>
+      採用スキャン・TAスキャン・PMスキャン、どのデータでも<strong>自動判別</strong>してインポートします。
+    </p>
+    <textarea id="unified-import-ta" rows="8" style="width:100%;font-size:0.72rem;font-family:monospace;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);resize:vertical;" placeholder="JSONをここに貼り付けてください"></textarea>
+    <div id="unified-preview" style="margin-top:8px;font-size:0.78rem;"></div>
+    <div style="display:flex;gap:10px;margin-top:10px;">
+      <button class="btn btn-secondary" onclick="previewUnifiedImport()" style="flex:1;">👁 プレビュー</button>
+      <button class="btn btn-primary" onclick="executeUnifiedImport()" style="flex:1;">✅ インポート実行</button>
     </div>
 
-    <!-- 採用スキャン -->
-    <div id="import-mitsumeru">
-      <p style="font-size:0.78rem;color:var(--sub);margin-bottom:10px;"><a href="./mitsumeru_tekisei_check.html" target="_blank" style="color:var(--accent);">mitsumeru_tekisei_check.html</a> の「📤 凪システムへ一括エクスポート」でコピーしたJSONを貼り付けてください。法人・事業所を自動マッチングし、スタッフを一括登録します。</p>
-      <textarea id="bulk-import-ta" rows="8" style="width:100%;font-size:0.72rem;font-family:monospace;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);resize:vertical;" placeholder='[{"name":"田中 健太","corp":"Fusion Partners","office":"FusionOS Labo","lsrp":{"total":7},...}]'></textarea>
-      <div id="bulk-preview" style="margin-top:8px;font-size:0.78rem;color:var(--sub);"></div>
-      <div style="display:flex;gap:10px;margin-top:10px;">
-        <button class="btn btn-secondary" onclick="previewBulkImport()" style="flex:1;">👁 プレビュー</button>
-        <button class="btn btn-primary" onclick="executeBulkImport()" style="flex:1;">✅ インポート実行</button>
-      </div>
-    </div>
-
-    <!-- PMスキャン -->
-    <div id="import-pm" style="display:none;">
-      <p style="font-size:0.78rem;color:var(--sub);margin-bottom:10px;">pm_scan.html の「📤 凪システムへ一括エクスポート」でコピーしたJSONを貼り付けてください。同名・同事業所の管理者スタッフに P/M スコアを上書き更新します。</p>
-      <textarea id="pm-import-ta" rows="8" style="width:100%;font-size:0.72rem;font-family:monospace;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);resize:vertical;" placeholder='[{"type":"pm_assessment","name":"田中 健太","corp":"Fusion Partners","office":"FusionOS Labo","p":28,"m":24,"pmStyle":"PM",...}]'></textarea>
-      <div id="pm-preview" style="margin-top:8px;font-size:0.78rem;color:var(--sub);"></div>
-      <div style="display:flex;gap:10px;margin-top:10px;">
-        <button class="btn btn-secondary" onclick="previewPMImport()" style="flex:1;">👁 プレビュー</button>
-        <button class="btn btn-primary" onclick="executePMImport()" style="flex:1;">✅ PM更新実行</button>
-      </div>
-    </div>
-
-    <!-- TAスキャン -->
-    <div id="import-ta" style="display:none;">
-      <p style="font-size:0.78rem;color:var(--sub);margin-bottom:10px;">ta_scan.html の「📤 凪システムへ一括エクスポート」でコピーしたJSONを貼り付けてください。同名・同事業所のスタッフに Task/Social/KSA を上書き更新します。</p>
-      <textarea id="ta-import-ta" rows="8" style="width:100%;font-size:0.72rem;font-family:monospace;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);resize:vertical;" placeholder='[{"type":"team_assessment","name":"田中 健太","corp":"Fusion Partners","office":"FusionOS Labo","task":44,"social":42,"ksa":65,...}]'></textarea>
-      <div id="ta-preview" style="margin-top:8px;font-size:0.78rem;color:var(--sub);"></div>
-      <div style="display:flex;gap:10px;margin-top:10px;">
-        <button class="btn btn-secondary" onclick="previewTAImport()" style="flex:1;">👁 プレビュー</button>
-        <button class="btn btn-primary" onclick="executeTAImport()" style="flex:1;">✅ TA更新実行</button>
-      </div>
+    <!-- 旧タブ用の隠しエレメント（既存JS互換用） -->
+    <div style="display:none;">
+      <textarea id="bulk-import-ta"></textarea>
+      <textarea id="pm-import-ta"></textarea>
+      <textarea id="ta-import-ta"></textarea>
+      <div id="bulk-preview"></div>
+      <div id="pm-preview"></div>
+      <div id="ta-preview"></div>
     </div>
 
     <div style="margin-top:10px;">
@@ -1751,7 +1734,268 @@ function switchImportTab(tab){
 function parsePMImportJSON(){
   const raw=(document.getElementById('pm-import-ta').value||'').trim();
   if(!raw) return null;
-  try{ const d=JSON.parse(raw); return Array.isArray(d)?d:null; }catch(e){ return null; }
+  try{ const d=JSON.parse(raw); return Array.isArray(d)?d:[d]; }catch(e){ return null; }
+}
+
+// ════════════════════════════════════════════════════
+//  統合インポート（自動判別）
+// ════════════════════════════════════════════════════
+
+function detectItemType(r){
+  if(r.lsrp||r.egogram||r.enneagram) return 'mitsumeru';
+  if(r.type==='team_assessment'||r.task!=null) return 'ta';
+  if(r.type==='pm_assessment'||(r.p!=null&&r.m!=null)) return 'pm';
+  return 'unknown';
+}
+
+function parseUnifiedImportJSON(){
+  const raw=(document.getElementById('unified-import-ta').value||'').trim();
+  if(!raw) return null;
+  try{ const d=JSON.parse(raw); return Array.isArray(d)?d:[d]; }catch(e){ return null; }
+}
+
+function previewUnifiedImport(){
+  const arr=parseUnifiedImportJSON();
+  const el=document.getElementById('unified-preview');
+  if(!arr){
+    el.innerHTML='<span style="color:var(--danger);">❌ JSONの形式が正しくありません。各ツールの「📤 凪システムへ一括エクスポート」ボタンでコピーしたJSONを貼り付けてください。</span>';
+    return;
+  }
+  const counts={mitsumeru:0,ta:0,pm:0,unknown:0};
+  arr.forEach(r=>{ counts[detectItemType(r)]++; });
+  const lines=[];
+  if(counts.mitsumeru) lines.push(`<span style="color:var(--accent2);">📋 採用スキャン: ${counts.mitsumeru}件</span>（スタッフ新規登録）`);
+  if(counts.ta)        lines.push(`<span style="color:var(--accent2);">🧭 TAスキャン: ${counts.ta}件</span>（Task/Social/KSA 更新）`);
+  if(counts.pm)        lines.push(`<span style="color:var(--accent2);">🎯 PMスキャン: ${counts.pm}件</span>（P/M 更新）`);
+  if(counts.unknown)   lines.push(`<span style="color:var(--warn);">⚠️ 判別不明: ${counts.unknown}件（スキップ）</span>`);
+  el.innerHTML=`<div style="background:var(--surface);border-radius:6px;padding:10px;border:1px solid var(--border);">
+    <div style="margin-bottom:6px;font-weight:bold;">✅ ${arr.length}件 を検出しました</div>
+    ${lines.map(l=>`<div style="font-size:0.78rem;margin-bottom:4px;">${l}</div>`).join('')}
+    <div style="font-size:0.71rem;color:var(--sub);margin-top:6px;">⚠️ 採用スキャンは新規登録、TA・PMは同名スタッフへの上書き更新です。</div>
+  </div>`;
+}
+
+// ════════════════════════════════════════════════════
+//  自動同期（localStorage直読み・コピペ不要）
+// ════════════════════════════════════════════════════
+
+function autoSyncAll(){
+  // 各ツールのlocalStorageキーを直接読み込む
+  function loadKey(key){ try{ return JSON.parse(localStorage.getItem(key)||'[]'); }catch{ return []; } }
+  const mitsuRoster = loadKey('mitsumeru_scan_roster');
+  const taRoster    = loadKey('ta_roster');
+  const pmRoster    = loadKey('pm_roster');
+
+  const total = mitsuRoster.length + taRoster.length + pmRoster.length;
+  if(!total){
+    alert('同期できる診断データがありません。\n各診断ツール（tekisei_check・ta_scan・pm_scan）で診断を完了してください。');
+    return;
+  }
+
+  if(!confirm(
+    `以下のデータを同期します：\n` +
+    (mitsuRoster.length ? `📋 採用スキャン: ${mitsuRoster.length}件\n` : '') +
+    (taRoster.length    ? `🧭 TAスキャン: ${taRoster.length}件\n` : '') +
+    (pmRoster.length    ? `🎯 PMスキャン: ${pmRoster.length}件\n` : '') +
+    `\nよろしいですか？`
+  )) return;
+
+  let mitsuCreated=0, mitsuSkipped=0, taUpdated=0, taSkipped=0, pmUpdated=0, pmSkipped=0;
+
+  // ── STEP1: 採用スキャン → スタッフ新規登録 ──
+  const allStaff = getAllStaff();
+  mitsuRoster.forEach(r=>{
+    const name=(r.name||'').trim();
+    if(!name){ mitsuSkipped++; return; }
+    const corpId = findOrCreateCorp(r.corp||'');
+    const officeId = findOrCreateOffice(corpId, r.office||'');
+    if(!officeId){ mitsuSkipped++; return; }
+    const dup = allStaff.find(s=>s.name===name&&s.officeId===officeId);
+    if(dup){
+      // 既存スタッフのlsrp/ego/ennを上書き更新
+      const ego=r.egogram||{};
+      if(ego.CP!=null) dup.ego={CP:n(ego.CP),NP:n(ego.NP),A:n(ego.A),FC:n(ego.FC),AC:n(ego.AC)};
+      const enn=mapEnnType(r);
+      if(enn.length) dup.enn=enn;
+      const lsrpTotal=n(r.lsrp?.total);
+      if(lsrpTotal>0) dup.lsrp={total:lsrpTotal,levelShort:r.lsrpLevelShort||getLSRPLabel(lsrpTotal).short};
+      mitsuSkipped++; return;
+    }
+    const ego=r.egogram||{};
+    const enn=mapEnnType(r);
+    const lsrpTotal=n(r.lsrp?.total);
+    allStaff.push({
+      id:uid(), corpId, officeId, name, role:'一般職',
+      task:0, social:0, p:0, m:0, ksa:0,
+      ego:{CP:n(ego.CP),NP:n(ego.NP),A:n(ego.A),FC:n(ego.FC),AC:n(ego.AC)},
+      enn, lsrp:lsrpTotal>0?{total:lsrpTotal,levelShort:r.lsrpLevelShort||getLSRPLabel(lsrpTotal).short}:null,
+      importedFrom:'mitsumeru_scan', importedAt:new Date().toISOString()
+    });
+    mitsuCreated++;
+  });
+  save('nagi_staff', allStaff);
+
+  // ── STEP2: TAスキャン → Task/Social/KSA 更新（なければ新規作成）──
+  const allStaff2 = getAllStaff();
+  const allOffices2 = getAllOffices();
+  taRoster.forEach(r=>{
+    const name=(r.name||'').trim();
+    if(!name){ taSkipped++; return; }
+    let targetOffice = r.office ? allOffices2.find(o=>o.name===r.office)||null : null;
+    let staff = targetOffice ? allStaff2.find(s=>s.name===name&&s.officeId===targetOffice.id) : null;
+    if(!staff){ const c=allStaff2.filter(s=>s.name===name); if(c.length===1) staff=c[0]; }
+    if(!staff){
+      // スタッフ未登録なら新規作成
+      const corpId = findOrCreateCorp(r.corp||'');
+      const officeId = findOrCreateOffice(corpId, r.office||'');
+      if(!officeId){ taSkipped++; return; }
+      const newStaff = {id:uid(),corpId,officeId,name,role:r.role||'一般職',task:0,social:0,p:0,m:0,ksa:0,ego:{CP:0,NP:0,A:0,FC:0,AC:0},enn:[],lsrp:null,importedFrom:'ta_scan',importedAt:new Date().toISOString()};
+      allStaff2.push(newStaff);
+      staff = newStaff;
+    }
+    if(r.task!=null)   staff.task=Number(r.task)||0;
+    if(r.social!=null) staff.social=Number(r.social)||0;
+    if(r.ksa!=null)    staff.ksa=Number(r.ksa)||0;
+    if(r.slStage)      staff.slStage=r.slStage;
+    if(r.ksaGap!=null) staff.ksaGap=parseFloat(r.ksaGap)||0;
+    staff.taImportedAt=new Date().toISOString();
+    taUpdated++;
+  });
+  save('nagi_staff', allStaff2);
+
+  // ── STEP3: PMスキャン → P/M 更新（なければ新規作成）──
+  const allStaff3 = getAllStaff();
+  const allOffices3 = getAllOffices();
+  pmRoster.forEach(r=>{
+    const name=(r.name||'').trim();
+    if(!name){ pmSkipped++; return; }
+    let targetOffice = r.office ? allOffices3.find(o=>o.name===r.office)||null : null;
+    let staff = targetOffice ? allStaff3.find(s=>s.name===name&&s.officeId===targetOffice.id) : null;
+    if(!staff){ const c=allStaff3.filter(s=>s.name===name); if(c.length===1) staff=c[0]; }
+    if(!staff){
+      const corpId = findOrCreateCorp(r.corp||'');
+      const officeId = findOrCreateOffice(corpId, r.office||'');
+      if(!officeId){ pmSkipped++; return; }
+      const newStaff = {id:uid(),corpId,officeId,name,role:r.role||'管理者クラス',task:0,social:0,p:0,m:0,ksa:0,ego:{CP:0,NP:0,A:0,FC:0,AC:0},enn:[],lsrp:null,importedFrom:'pm_scan',importedAt:new Date().toISOString()};
+      allStaff3.push(newStaff);
+      staff = newStaff;
+    }
+    if(r.p!=null) staff.p=Number(r.p)||0;
+    if(r.m!=null) staff.m=Number(r.m)||0;
+    if(r.pmStyle) staff.pmStyle=r.pmStyle;
+    staff.pmImportedAt=new Date().toISOString();
+    if(staff.role==='一般職') staff.role='管理者クラス';
+    pmUpdated++;
+  });
+  save('nagi_staff', allStaff3);
+
+  refreshCorpSelector();
+  refreshOfficeSelectors();
+  renderCurrentTab();
+
+  alert(
+    `✅ 同期完了！\n\n` +
+    (mitsuRoster.length ? `📋 採用スキャン: 新規${mitsuCreated}件 / 更新${mitsuSkipped}件\n` : '') +
+    (taRoster.length    ? `🧭 TAスキャン: ${taUpdated}件 更新\n` : '') +
+    (pmRoster.length    ? `🎯 PMスキャン: ${pmUpdated}件 更新\n` : '')
+  );
+}
+
+function executeUnifiedImport(){
+  const arr=parseUnifiedImportJSON();
+  if(!arr){ alert('JSONの形式が正しくありません'); return; }
+
+  const mitsuItems=arr.filter(r=>detectItemType(r)==='mitsumeru');
+  const taItems=arr.filter(r=>detectItemType(r)==='ta');
+  const pmItems=arr.filter(r=>detectItemType(r)==='pm');
+
+  const total=mitsuItems.length+taItems.length+pmItems.length;
+  if(!total){ alert('インポートできるデータが見つかりませんでした'); return; }
+  if(!confirm(`${total}件のデータをインポートします。よろしいですか？`)) return;
+
+  let mitsuCreated=0,mitsuSkipped=0,taUpdated=0,taNotFound=0,pmUpdated=0,pmNotFound=0;
+
+  // ── 採用スキャン（新規登録）──
+  if(mitsuItems.length){
+    const allStaff=getAllStaff();
+    mitsuItems.forEach(r=>{
+      const name=(r.name||'').trim();
+      if(!name){ mitsuSkipped++; return; }
+      const corpId=findOrCreateCorp(r.corp||'');
+      const officeId=findOrCreateOffice(corpId,r.office||'');
+      if(!officeId){ mitsuSkipped++; return; }
+      const dup=allStaff.find(s=>s.name===name&&s.officeId===officeId);
+      if(dup){ mitsuSkipped++; return; }
+      const ego=r.egogram||{};
+      const enn=mapEnnType(r);
+      const lsrpTotal=n(r.lsrp?.total);
+      const lsrpShort=r.lsrpLevelShort||getLSRPLabel(lsrpTotal).short;
+      allStaff.push({
+        id:uid(),corpId,officeId,name,role:'一般職',
+        task:0,social:0,p:0,m:0,ksa:0,
+        ego:{CP:n(ego.CP),NP:n(ego.NP),A:n(ego.A),FC:n(ego.FC),AC:n(ego.AC)},
+        enn,lsrp:lsrpTotal>0?{total:lsrpTotal,levelShort:lsrpShort}:null,
+        importedFrom:'mitsumeru_scan',importedAt:new Date().toISOString()
+      });
+      mitsuCreated++;
+    });
+    save('nagi_staff',allStaff);
+  }
+
+  // ── TAスキャン（上書き更新）──
+  if(taItems.length){
+    const allStaff=getAllStaff();
+    const allOffices=getAllOffices();
+    taItems.forEach(r=>{
+      const name=(r.name||'').trim();
+      if(!name){ taNotFound++; return; }
+      let targetOffice=r.office?allOffices.find(o=>o.name===r.office)||null:null;
+      let staff=targetOffice?allStaff.find(s=>s.name===name&&s.officeId===targetOffice.id):null;
+      if(!staff){ const c=allStaff.filter(s=>s.name===name); if(c.length===1) staff=c[0]; }
+      if(!staff){ taNotFound++; return; }
+      if(r.task!=null)   staff.task=Number(r.task)||0;
+      if(r.social!=null) staff.social=Number(r.social)||0;
+      if(r.ksa!=null)    staff.ksa=Number(r.ksa)||0;
+      if(r.slStage)      staff.slStage=r.slStage;
+      if(r.ksaGap!=null) staff.ksaGap=parseFloat(r.ksaGap)||0;
+      staff.taImportedAt=new Date().toISOString();
+      taUpdated++;
+    });
+    save('nagi_staff',allStaff);
+  }
+
+  // ── PMスキャン（上書き更新）──
+  if(pmItems.length){
+    const allStaff=getAllStaff();
+    const allOffices=getAllOffices();
+    pmItems.forEach(r=>{
+      const name=(r.name||'').trim();
+      if(!name){ pmNotFound++; return; }
+      let targetOffice=r.office?allOffices.find(o=>o.name===r.office)||null:null;
+      let staff=targetOffice?allStaff.find(s=>s.name===name&&s.officeId===targetOffice.id):null;
+      if(!staff){ const c=allStaff.filter(s=>s.name===name); if(c.length===1) staff=c[0]; }
+      if(!staff){ pmNotFound++; return; }
+      if(r.p!=null) staff.p=Number(r.p)||0;
+      if(r.m!=null) staff.m=Number(r.m)||0;
+      if(r.pmStyle) staff.pmStyle=r.pmStyle;
+      staff.pmImportedAt=new Date().toISOString();
+      if(staff.role==='一般職') staff.role='管理者クラス';
+      pmUpdated++;
+    });
+    save('nagi_staff',allStaff);
+  }
+
+  refreshCorpSelector();
+  refreshOfficeSelectors();
+  renderCurrentTab();
+  closeModal('modal-bulk-import');
+
+  const msg=[
+    mitsuItems.length?`📋 採用スキャン：登録 ${mitsuCreated}件 / スキップ ${mitsuSkipped}件`:'',
+    taItems.length?`🧭 TAスキャン：更新 ${taUpdated}件 / 未マッチ ${taNotFound}件`:'',
+    pmItems.length?`🎯 PMスキャン：更新 ${pmUpdated}件 / 未マッチ ${pmNotFound}件`:'',
+  ].filter(Boolean).join('\n');
+  alert(`✅ インポート完了\n\n${msg}${taNotFound+pmNotFound>0?'\n\n💡 未マッチは採用スキャンを先にインポートしてからTA/PMを再インポートしてください。':''}`);
 }
 
 function previewPMImport(){
@@ -1812,7 +2056,7 @@ function executePMImport(){
 function parseTAImportJSON(){
   const raw=(document.getElementById('ta-import-ta').value||'').trim();
   if(!raw) return null;
-  try{ const d=JSON.parse(raw); return Array.isArray(d)?d:null; }catch(e){ return null; }
+  try{ const d=JSON.parse(raw); return Array.isArray(d)?d:[d]; }catch(e){ return null; }
 }
 
 function previewTAImport(){
