@@ -567,9 +567,10 @@ function getRCStatus(ego){
   if(!ego) return {label:'─',cls:'',reason:''};
   const cp=n(ego.CP),np=n(ego.NP),fc=n(ego.FC),ac=n(ego.AC);
   const I=cp+fc, U=np+ac;
-  if(I>=10 && U<10) return {label:'危険★',cls:'rc-danger',reason:'他者否定OS（I+U-）：正論で周囲を裁き、組織の凪を破壊する猛毒。即時介入が必要。'};
-  if(I<10 && U>=10) return {label:'依存',cls:'rc-dep',reason:'自律性欠如OS（I-U+）：指示待ち・現状維持。仕組みの進化を阻害する不純物。'};
-  if(I<10 && U<10)  return {label:'注意',cls:'rc-warn',reason:'自他否定OS（I-U-）：孤立・無気力・離職リスクが高い。継続的な1on1が必要。'};
+  // mitsumeru_tekisei_check と同じ基準（U<5 が危険ライン）
+  if(I>9 && U<5) return {label:'危険★',cls:'rc-danger',reason:'冷徹OS（I+U-）：正論で周囲を裁き、組織の凪を破壊するリスク。即時介入が必要。'};
+  if(I>7 && U<5) return {label:'危険★',cls:'rc-danger',reason:'冷徹傾向OS（I高U低）：感情より論理優先で人間関係に摩擦が生じやすい。注意観察が必要。'};
+  if(I<5 && U<5) return {label:'注意',cls:'rc-warn',reason:'停滞OS（I-U-）：孤立・無気力・離職リスクが高い。継続的な1on1が必要。'};
   return {label:'安全',cls:'rc-safe',reason:'健全な自他肯定OS。凪を支える人材。'};
 }
 
