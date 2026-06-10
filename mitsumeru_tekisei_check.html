@@ -149,6 +149,7 @@
 <header>
   <div style="width:28px;height:28px;background:linear-gradient(135deg,#4fc3f7,#1565c0);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">🔍</div>
   <h1>ミツメルスキャン <span style="font-size:0.68rem;font-weight:400;color:var(--sub);">v0.3 | Fusion Partners</span></h1>
+  <button class="header-nav-btn" onclick="sendAllToAdmin()" style="background:var(--accent2);color:#000;border-color:var(--accent2);font-weight:700;">📤 データを送る</button>
   <button class="header-nav-btn" onclick="showRoster()">📋 受検者一覧</button>
 </header>
 
@@ -866,6 +867,48 @@ function sendToAdmin(){
     const body = encodeURIComponent(`診断が完了しました。\n\n以下のリンクを開いてインポートしてください：\n${url}`);
     window.open(`mailto:?subject=${subject}&body=${body}`);
     document.getElementById('send-ok').style.display='block';
+  }
+}
+
+// このデバイスの全データをまとめて管理者に送信
+function sendAllToAdmin(){
+  let roster = [];
+  try { roster = JSON.parse(localStorage.getItem('mitsumeru_scan_roster') || '[]'); } catch(e){}
+  if(!roster.length){
+    alert('このデバイスにはまだ診断データがありません。');
+    return;
+  }
+
+  // 全員分をコンパクト形式に変換
+  const compactList = roster.map(r => ({
+    t: 'm',
+    n: r.name ?? '',
+    c: r.corp ?? '',
+    o: r.office ?? '',
+    l: r.lsrp?.total ?? 0,
+    lv: r.lsrpLevelShort ?? '',
+    eg: [r.egogram?.CP??0, r.egogram?.NP??0, r.egogram?.A??0, r.egogram?.FC??0, r.egogram?.AC??0],
+    rc: r.rc?.['判定'] ?? '',
+    rcr: r.rcRaw ?? 0,
+    e1: r.ennTop1 ?? '',
+    e2: r.ennTop2 ?? '',
+    e3: r.ennTop3 ?? ''
+  }));
+
+  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(compactList))));
+  const url = `https://fusionpartnersoffice-oss.github.io/mitsumeru/nagi_system.html?d=${encoded}`;
+  const nameList = roster.map(r=>r.name).join('、');
+
+  if(navigator.share){
+    navigator.share({
+      title: `【診断データ送信】${roster.length}名分`,
+      text: `${roster.length}名（${nameList}）の診断データを送信します。リンクを開いてインポートしてください。`,
+      url: url
+    }).catch(()=>{});
+  } else {
+    const subject = encodeURIComponent(`【診断データ送信】${roster.length}名分`);
+    const body = encodeURIComponent(`${roster.length}名（${nameList}）の診断データです。\n\n以下のリンクを開いてインポートしてください：\n${url}`);
+    window.open(`mailto:?subject=${subject}&body=${body}`);
   }
 }
 
