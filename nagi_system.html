@@ -146,6 +146,42 @@ tr:hover td{background:rgba(79,195,247,0.03);}
 .legend{display:flex;gap:12px;flex-wrap:wrap;font-size:0.72rem;color:var(--sub);margin-top:6px;}
 .legend-item{display:flex;align-items:center;gap:4px;}
 .legend-dot{width:9px;height:9px;border-radius:50%;}
+
+/* ── 印刷用 ── */
+.print-page-title{display:none;}
+@media print{
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  :root{--bg:#fff;--surface:#f5f5f5;--card:#fff;--text:#111;--sub:#555;--border:#ccc;
+    --accent:#0066cc;--accent2:#2e7d32;--accent3:#e65100;--accent4:#880e4f;
+    --danger:#c62828;--warn:#e65100;}
+  body{background:#fff!important;color:#111!important;}
+  header,.selector-bar,.nav-tabs{display:none!important;}
+  .modal-overlay{display:none!important;}
+  .page{display:block!important;}
+  .page+.page{page-break-before:always;}
+  .btn{display:none!important;}
+  .print-page-title{display:block;font-size:1.1rem;font-weight:700;color:#0066cc;
+    border-bottom:2px solid #0066cc;margin-bottom:14px;padding-bottom:6px;}
+  .card{background:#f9f9f9!important;border:1px solid #ddd!important;}
+  .table-wrap{border:1px solid #ccc!important;}
+  th{background:#eee!important;color:#333!important;}
+  .tag-safe{background:#e8f5e9!important;color:#2e7d32!important;}
+  .tag-warn{background:#fff3e0!important;color:#e65100!important;}
+  .tag-danger{background:#ffebee!important;color:#c62828!important;}
+  .tag-info{background:#e3f2fd!important;color:#0066cc!important;}
+  .tag-sub{background:#f5f5f5!important;color:#555!important;}
+  .rc-safe{color:#2e7d32!important;font-weight:700;}
+  .rc-warn{color:#e65100!important;font-weight:700;}
+  .rc-danger{color:#c62828!important;font-weight:700;}
+  .lsrp-S{color:#2e7d32!important;}
+  .lsrp-W{color:#e65100!important;}
+  .lsrp-D{color:#c62828!important;font-weight:700;}
+  main{padding:10px 0 20px!important;max-width:100%!important;}
+  .section-title{color:#0066cc!important;border-left-color:#0066cc!important;}
+  .card-value{color:#111!important;}
+  .card-title{color:#555!important;}
+  svg text{fill:#111!important;}
+}
 </style>
 </head>
 <body>
@@ -163,6 +199,7 @@ tr:hover td{background:rgba(79,195,247,0.03);}
     <button class="btn btn-secondary btn-sm" onclick="openModal('modal-bulk-import')">📥 手動インポート</button>
     <button class="btn btn-secondary btn-sm" onclick="openModal('modal-data')">⚙ データ管理</button>
     <button class="btn btn-warn btn-sm" onclick="loadSample()">📊 サンプル</button>
+    <button class="btn btn-secondary btn-sm" onclick="printAll()">🖨 印刷/PDF</button>
   </div>
 </header>
 
@@ -186,6 +223,7 @@ tr:hover td{background:rgba(79,195,247,0.03);}
      PAGE: 法人全体ダッシュボード
 ══════════════════════════════════════ -->
 <div class="page active" id="page-corp">
+  <div class="print-page-title">📊 法人全体ダッシュボード</div>
   <div class="section">
     <div class="section-title">📈 Corporate Financials（法人全体計数）</div>
     <div class="grid-4" id="corp-fin-kpis"></div>
@@ -217,6 +255,7 @@ tr:hover td{background:rgba(79,195,247,0.03);}
      PAGE: 事業所別ダッシュボード
 ══════════════════════════════════════ -->
 <div class="page" id="page-office">
+  <div class="print-page-title">🏢 事業所別ダッシュボード</div>
   <div class="grid-2">
     <div class="section">
       <div class="section-title">💰 Financial Engine（事業所計数）</div>
@@ -243,6 +282,7 @@ tr:hover td{background:rgba(79,195,247,0.03);}
      PAGE: スタッフ一覧表
 ══════════════════════════════════════ -->
 <div class="page" id="page-staff">
+  <div class="print-page-title">👥 スタッフ一覧</div>
   <div class="section">
     <div class="section-title">
       <span>👥 事業所別スタッフ一覧（全カラム表示）</span>
@@ -271,6 +311,7 @@ tr:hover td{background:rgba(79,195,247,0.03);}
      PAGE: RC異常者一覧表
 ══════════════════════════════════════ -->
 <div class="page" id="page-rc">
+  <div class="print-page-title">🚨 RC異常者リスト</div>
   <div class="section">
     <div class="section-title">🚨 RC異常者（エゴグラム由来：心理的OS異常）</div>
     <div class="table-wrap" id="rc-anomaly-wrap">
@@ -2300,6 +2341,32 @@ function checkURLImport(){
   }catch(e){
     console.error('URL import error:',e);
   }
+}
+
+// ════════════════════════════════════════════════════
+//  印刷・PDF出力
+// ════════════════════════════════════════════════════
+function printAll(){
+  // 全タブを一時的に表示してレンダリング
+  ['corp','office','staff','rc'].forEach(t=>{
+    document.getElementById(`page-${t}`).style.display='block';
+  });
+  renderCorpDashboard();
+  renderOfficeDashboard();
+  renderStaffList();
+  renderRCList();
+
+  // 印刷後に元のタブ表示に戻す
+  const restore=()=>{
+    ['corp','office','staff','rc'].forEach(t=>{
+      const el=document.getElementById(`page-${t}`);
+      el.style.display='';
+      el.classList.toggle('active',t===currentTab);
+    });
+    window.removeEventListener('afterprint',restore);
+  };
+  window.addEventListener('afterprint',restore);
+  setTimeout(()=>window.print(),200);
 }
 
 function init(){
