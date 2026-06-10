@@ -147,6 +147,23 @@ tr:hover td{background:rgba(79,195,247,0.03);}
 .legend-item{display:flex;align-items:center;gap:4px;}
 .legend-dot{width:9px;height:9px;border-radius:50%;}
 
+/* ── 個人カルテ ── */
+.karte-header{display:flex;align-items:center;gap:14px;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border);}
+.karte-avatar{width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#1565c0);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
+.karte-name{font-size:1.3rem;font-weight:700;}
+.karte-sub{font-size:0.78rem;color:var(--sub);margin-top:2px;}
+.karte-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
+.karte-block{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;}
+.karte-block-title{font-size:0.72rem;color:var(--sub);margin-bottom:8px;border-bottom:1px solid var(--border);padding-bottom:4px;}
+.karte-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;font-size:0.8rem;}
+.karte-label{color:var(--sub);font-size:0.74rem;}
+.karte-val{font-weight:600;}
+.karte-sl-box{background:rgba(79,195,247,0.1);border:1px solid var(--accent);border-radius:6px;padding:10px;margin-top:8px;font-size:0.78rem;}
+.karte-sl-rec{font-weight:700;color:var(--accent);margin-bottom:4px;}
+.karte-sl-desc{color:var(--sub);line-height:1.5;}
+@media(max-width:560px){.karte-grid{grid-template-columns:1fr;}}
+.no-print{}
+
 /* ── 印刷用 ── */
 .print-page-title{display:none;}
 @media print{
@@ -177,6 +194,16 @@ tr:hover td{background:rgba(79,195,247,0.03);}
   .lsrp-W{color:#e65100!important;}
   .lsrp-D{color:#c62828!important;font-weight:700;}
   main{padding:10px 0 20px!important;max-width:100%!important;}
+  /* 個人カルテ印刷モード */
+  body.printing-card header,body.printing-card .selector-bar,body.printing-card .nav-tabs,body.printing-card main{display:none!important;}
+  body.printing-card .modal-overlay{display:block!important;position:static!important;background:none!important;padding:0!important;}
+  body.printing-card .modal{box-shadow:none!important;border:none!important;max-width:100%!important;padding:16px!important;}
+  body.printing-card .no-print{display:none!important;}
+  body.printing-card .modal-close{display:none!important;}
+  .karte-block{background:#f9f9f9!important;border:1px solid #ddd!important;}
+  .karte-sl-box{background:#e3f2fd!important;border-color:#0066cc!important;}
+  .karte-sl-rec{color:#0066cc!important;}
+  .karte-sl-desc{color:#333!important;}
   .section-title{color:#0066cc!important;border-left-color:#0066cc!important;}
   .card-value{color:#111!important;}
   .card-title{color:#555!important;}
@@ -540,6 +567,18 @@ tr:hover td{background:rgba(79,195,247,0.03);}
 <!-- ══════════════════════════════════════
      MODAL: ミツメルスキャン 一括インポート
 ══════════════════════════════════════ -->
+<!-- ══ 個人カルテ モーダル ══ -->
+<div class="modal-overlay" id="modal-staff-detail" onclick="if(event.target===this)closeModal('modal-staff-detail')">
+  <div class="modal" style="max-width:680px;" id="staff-detail-content">
+    <button class="modal-close" onclick="closeModal('modal-staff-detail')" style="float:right;">✕</button>
+    <div id="staff-detail-body"></div>
+    <div style="display:flex;gap:8px;margin-top:16px;" class="no-print">
+      <button class="btn btn-secondary" onclick="printStaffCard()" style="flex:1;">🖨 この1枚を印刷/PDF</button>
+      <button class="btn btn-secondary" onclick="closeModal('modal-staff-detail')" style="flex:1;">閉じる</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modal-bulk-import" onclick="if(event.target===this)closeModal('modal-bulk-import')">
   <div class="modal" style="max-width:680px;">
     <button class="modal-close" onclick="closeModal('modal-bulk-import')">✕</button>
@@ -595,6 +634,7 @@ function getCorps(){ return load('nagi_corps'); }
 function getOffices(corpId){ const a=load('nagi_offices'); return corpId?a.filter(o=>o.corpId===corpId):a; }
 function getAllOffices(){ return load('nagi_offices'); }
 function getAllStaff(){ return load('nagi_staff'); }
+function getStaffById(id){ return load('nagi_staff').find(s=>s.id===id)||null; }
 function getStaffByOffice(oid){ return load('nagi_staff').filter(s=>s.officeId===oid); }
 function getStaffByCorp(cid){ return load('nagi_staff').filter(s=>s.corpId===cid); }
 function getFin(oid){ return (load('nagi_fin').find(f=>f.officeId===oid))||null; }
@@ -1186,6 +1226,7 @@ function renderStaffList(){
       <td class="${lsrpL.cls}" style="white-space:nowrap;">${lsrpL.label}</td>
       <td><span class="tag sl-${slStage}">${slStage}</span></td>
       <td style="white-space:nowrap;">
+        <button class="btn btn-primary btn-xs" onclick="openStaffDetail('${s.id}')">詳細</button>
         <button class="btn btn-secondary btn-xs" onclick="openEditStaff('${s.id}')">編集</button>
         <button class="btn btn-danger btn-xs" onclick="deleteStaff('${s.id}')">削除</button>
       </td>
@@ -2341,6 +2382,121 @@ function checkURLImport(){
   }catch(e){
     console.error('URL import error:',e);
   }
+}
+
+// ════════════════════════════════════════════════════
+//  個人カルテ
+// ════════════════════════════════════════════════════
+function openStaffDetail(staffId){
+  const s=getStaffById(staffId);
+  if(!s){ alert('スタッフが見つかりません'); return; }
+  const offices=getAllOffices();
+  const off=offices.find(o=>o.id===s.officeId);
+  const pm=getPMStyle(s.p,s.m);
+  const rc=getRCStatus(s.ego);
+  const lsrpL=getLSRPLabel(s.lsrp?.total||0);
+  const slStage=getSLStage(s.task,s.social);
+  const slInfo=SL_INFO[slStage]||{};
+  const ego=s.ego||{};
+  const enn=s.enn||[];
+  const offAvg=getOfficeAvgTA(s.officeId);
+  const gap=getKSAGap(s.ksa, offAvg.avgTask, offAvg.avgSoc);
+  const gapColor=gap>20?'var(--danger)':gap>10?'var(--warn)':'var(--accent2)';
+  const rcColor=rc.cls==='rc-danger'?'var(--danger)':rc.cls==='rc-warn'?'var(--warn)':'var(--accent2)';
+  const lsrpColor=lsrpL.cls==='lsrp-D'?'var(--danger)':lsrpL.cls==='lsrp-W'?'var(--warn)':'var(--accent2)';
+
+  const ennNames=enn.length?enn.join(' / '):'─';
+
+  document.getElementById('staff-detail-body').innerHTML=`
+    <div class="karte-header">
+      <div class="karte-avatar">👤</div>
+      <div>
+        <div class="karte-name">${s.name}</div>
+        <div class="karte-sub">${off?.name||'─'} ／ ${s.role}</div>
+      </div>
+      <div style="margin-left:auto;text-align:right;">
+        <div style="font-size:0.68rem;color:var(--sub);">個人カルテ</div>
+        <div style="font-size:0.72rem;color:var(--sub);">${new Date().toLocaleDateString('ja-JP')}</div>
+      </div>
+    </div>
+
+    <div class="karte-grid">
+      <!-- TA / SL理論 -->
+      <div class="karte-block" style="grid-column:1/-1;">
+        <div class="karte-block-title">🧭 チームアセスメント × SL理論</div>
+        <div style="display:flex;gap:24px;margin-bottom:8px;flex-wrap:wrap;">
+          <div><span class="karte-label">Task行動</span><br><span class="karte-val" style="font-size:1.2rem;">${n(s.task)}</span><span style="font-size:0.72rem;color:var(--sub);"> /64</span></div>
+          <div><span class="karte-label">Social行動</span><br><span class="karte-val" style="font-size:1.2rem;">${n(s.social)}</span><span style="font-size:0.72rem;color:var(--sub);"> /64</span></div>
+          <div><span class="karte-label">SL段階</span><br><span class="karte-val" style="font-size:1.3rem;color:var(--accent);">${slStage}</span></div>
+          <div><span class="karte-label">KSA Gap</span><br><span class="karte-val" style="color:${gapColor};">${gap>0?'+':''}${gap.toFixed(1)}%</span></div>
+        </div>
+        <div class="karte-sl-box">
+          <div class="karte-sl-rec">📌 ${slInfo.rec||'─'}</div>
+          <div class="karte-sl-desc">${slInfo.desc||'─'}</div>
+          <div style="font-size:0.72rem;color:var(--accent3);margin-top:4px;">💡 ${slInfo.pm||''}</div>
+        </div>
+      </div>
+
+      <!-- PM理論 -->
+      <div class="karte-block">
+        <div class="karte-block-title">🎯 PM理論（管理者スタイル）</div>
+        <div class="karte-row"><span class="karte-label">P行動</span><span class="karte-val">${n(s.p)}</span></div>
+        <div class="karte-row"><span class="karte-label">M行動</span><span class="karte-val">${n(s.m)}</span></div>
+        <div style="text-align:center;margin-top:8px;">
+          <span class="${pm.cls}" style="font-size:1.6rem;font-weight:800;">${pm.label}</span>
+          <div style="font-size:0.72rem;color:var(--sub);margin-top:2px;">${pm.label==='PM'?'理想型マネージャー':pm.label==='Pm'?'業績重視型':pm.label==='pM'?'人間関係重視型':'改善が必要'}</div>
+        </div>
+      </div>
+
+      <!-- エゴグラム / RC -->
+      <div class="karte-block">
+        <div class="karte-block-title">🧠 エゴグラム × RC判定</div>
+        <div class="karte-row"><span class="karte-label">CP（批判）</span><span class="karte-val">${n(ego.CP)}</span></div>
+        <div class="karte-row"><span class="karte-label">NP（養育）</span><span class="karte-val">${n(ego.NP)}</span></div>
+        <div class="karte-row"><span class="karte-label">A（論理）</span><span class="karte-val">${n(ego.A)}</span></div>
+        <div class="karte-row"><span class="karte-label">FC（自由）</span><span class="karte-val">${n(ego.FC)}</span></div>
+        <div class="karte-row"><span class="karte-label">AC（服従）</span><span class="karte-val">${n(ego.AC)}</span></div>
+        <div style="margin-top:8px;padding:6px 8px;border-radius:6px;background:rgba(0,0,0,0.2);">
+          <span class="karte-label">RC判定：</span>
+          <span class="${rc.cls}" style="font-weight:700;color:${rcColor};">${rc.label}</span>
+          ${rc.reason?`<div style="font-size:0.7rem;color:var(--sub);margin-top:3px;">${rc.reason}</div>`:''}
+        </div>
+      </div>
+
+      <!-- LSRP -->
+      <div class="karte-block">
+        <div class="karte-block-title">⚠️ LSRP（反社会傾向スコア）</div>
+        <div style="text-align:center;padding:8px 0;">
+          <div style="font-size:2rem;font-weight:800;color:${lsrpColor};">${s.lsrp?.total||0}</div>
+          <div style="font-size:0.72rem;color:var(--sub);">スコア</div>
+        </div>
+        <div style="text-align:center;">
+          <span style="font-weight:700;color:${lsrpColor};">${lsrpL.label}</span>
+        </div>
+        ${(s.lsrp?.total||0)>=11?`<div style="font-size:0.72rem;color:var(--sub);margin-top:6px;">${(s.lsrp?.total||0)>=16?'⚠️ 危険：即時介入が必要です':'注意：継続的な観察が必要です'}</div>`:''}
+      </div>
+
+      <!-- エニアグラム -->
+      <div class="karte-block">
+        <div class="karte-block-title">🔮 エニアグラム</div>
+        <div style="font-size:0.82rem;">
+          <div class="karte-row"><span class="karte-label">1位</span><span class="karte-val">${enn[0]||'─'}</span></div>
+          <div class="karte-row"><span class="karte-label">2位</span><span class="karte-val">${enn[1]||'─'}</span></div>
+          <div class="karte-row"><span class="karte-label">3位</span><span class="karte-val">${enn[2]||'─'}</span></div>
+        </div>
+      </div>
+    </div>
+  `;
+  openModal('modal-staff-detail');
+}
+
+function printStaffCard(){
+  document.body.classList.add('printing-card');
+  window.onafterprint=()=>{
+    document.body.classList.remove('printing-card');
+    window.onafterprint=null;
+  };
+  setTimeout(()=>window.print(),100);
 }
 
 // ════════════════════════════════════════════════════
