@@ -849,7 +849,7 @@ function sendToAdmin(){
     e3: lastResult.ennTop3 ?? ''
   };
 
-  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(compact))));
+  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(compact)))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
   const url = `https://fusionpartnersoffice-oss.github.io/mitsumeru/nagi_system.html?d=${encoded}`;
 
   // Web Share API（モバイル対応）
@@ -895,7 +895,7 @@ function sendAllToAdmin(){
     e3: r.ennTop3 ?? ''
   }));
 
-  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(compactList))));
+  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(compactList)))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
   const url = `https://fusionpartnersoffice-oss.github.io/mitsumeru/nagi_system.html?d=${encoded}`;
   const nameList = roster.map(r=>r.name).join('、');
 

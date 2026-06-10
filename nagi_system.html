@@ -2299,7 +2299,8 @@ function checkURLImport(){
     const d=params.get('d');
     if(!d) return;
 
-    const raw=JSON.parse(decodeURIComponent(escape(atob(d))));
+    const b64=d.replace(/-/g,'+').replace(/_/g,'/');
+    const raw=JSON.parse(decodeURIComponent(escape(atob(b64))));
     const items=Array.isArray(raw)?raw:[raw];
 
     // プレビュー表示
