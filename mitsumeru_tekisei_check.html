@@ -254,15 +254,26 @@
     <div class="result-card" id="enneagram-result"></div>
   </div>
 
-  <div class="result-section">
-    <h3>📋 凪システム連携用データ</h3>
-    <div class="export-box" id="export-text"></div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;">
-      <button class="btn btn-primary btn-sm" onclick="copyExport()">📋 コピー</button>
-      <button class="btn btn-success btn-sm" onclick="saveToRoster()">💾 受検者リストに保存</button>
-      <button class="btn btn-print btn-sm" onclick="window.print()">🖨️ 印刷 / PDF保存</button>
-      <span id="copy-ok" style="color:var(--accent2);font-size:0.8rem;align-self:center;display:none;">✓ コピーしました</span>
-      <span id="save-ok" style="color:var(--accent2);font-size:0.8rem;align-self:center;display:none;">✓ 保存しました</span>
+  <!-- 受験者向け：送信ボタンのみ -->
+  <div id="send-section" style="text-align:center;padding:24px 16px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;">
+    <div style="font-size:1.1rem;font-weight:bold;color:var(--fg);margin-bottom:8px;">✅ 診断が完了しました</div>
+    <div style="font-size:0.85rem;color:var(--sub);margin-bottom:20px;">下のボタンを押して、担当者に診断データを送信してください。</div>
+    <button class="btn btn-success" onclick="sendToAdmin()" style="font-size:1rem;padding:12px 32px;border-radius:30px;letter-spacing:1px;">📤 担当者に送信する</button>
+    <div id="send-ok" style="display:none;margin-top:16px;font-size:0.95rem;color:var(--accent2);">✓ 送信しました。ありがとうございました。</div>
+  </div>
+
+  <!-- 管理者向け：詳細データ（デフォルト非表示） -->
+  <div id="admin-export-section" style="display:none;">
+    <div class="result-section">
+      <h3>📋 凪システム連携用データ（管理者用）</h3>
+      <div class="export-box" id="export-text"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-primary btn-sm" onclick="copyExport()">📋 コピー</button>
+        <button class="btn btn-success btn-sm" onclick="saveToRoster()">💾 受検者リストに保存</button>
+        <button class="btn btn-print btn-sm" onclick="window.print()">🖨️ 印刷 / PDF保存</button>
+        <span id="copy-ok" style="color:var(--accent2);font-size:0.8rem;align-self:center;display:none;">✓ コピーしました</span>
+        <span id="save-ok" style="color:var(--accent2);font-size:0.8rem;align-self:center;display:none;">✓ 保存しました</span>
+      </div>
     </div>
   </div>
 
@@ -806,6 +817,56 @@ function exportCSV() {
   a.href = URL.createObjectURL(blob);
   a.download = 'mitsumeru_scan_' + new Date().toISOString().split('T')[0] + '.csv';
   a.click();
+}
+
+// ═══════════════════════════════════════════════
+// 管理者への送信（URL経由）
+// ═══════════════════════════════════════════════
+
+function sendToAdmin(){
+  if(!lastResult){ alert('診断データがありません'); return; }
+
+  // コンパクトなデータに変換
+  const compact = {
+    t: 'm',
+    n: lastResult.name,
+    c: lastResult.corp,
+    o: lastResult.office,
+    l: lastResult.lsrp?.total ?? 0,
+    lv: lastResult.lsrpLevelShort ?? '',
+    eg: [
+      lastResult.egogram?.CP ?? 0,
+      lastResult.egogram?.NP ?? 0,
+      lastResult.egogram?.A  ?? 0,
+      lastResult.egogram?.FC ?? 0,
+      lastResult.egogram?.AC ?? 0
+    ],
+    rc: lastResult.rc?.['判定'] ?? '',
+    rcr: lastResult.rcRaw ?? 0,
+    e1: lastResult.ennTop1 ?? '',
+    e2: lastResult.ennTop2 ?? '',
+    e3: lastResult.ennTop3 ?? ''
+  };
+
+  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(compact))));
+  const url = `https://fusionpartnersoffice-oss.github.io/mitsumeru/nagi_system.html?d=${encoded}`;
+
+  // Web Share API（モバイル対応）
+  if(navigator.share){
+    navigator.share({
+      title: `【診断完了】${lastResult.name}`,
+      text: '診断が完了しました。下のリンクを開いてインポートしてください。',
+      url: url
+    }).then(()=>{
+      document.getElementById('send-ok').style.display='block';
+    }).catch(()=>{});
+  } else {
+    // デスクトップ：メールで送信
+    const subject = encodeURIComponent(`【診断完了】${lastResult.name}`);
+    const body = encodeURIComponent(`診断が完了しました。\n\n以下のリンクを開いてインポートしてください：\n${url}`);
+    window.open(`mailto:?subject=${subject}&body=${body}`);
+    document.getElementById('send-ok').style.display='block';
+  }
 }
 
 // ═══════════════════════════════════════════════

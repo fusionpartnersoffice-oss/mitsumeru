@@ -153,10 +153,17 @@ tr:hover td{background:rgba(79,195,247,0.03);}
 <header>
   <div class="logo">⚓</div>
   <h1>凪システム 経営羅針盤 <span>v1.0 | Fusion Partners</span></h1>
-  <button class="btn btn-secondary btn-sm" onclick="openModal('modal-data')">⚙ データ管理</button>
-  <button class="btn btn-success btn-sm" onclick="autoSyncAll()" style="background:var(--accent2);border-color:var(--accent2);">🔄 診断データを同期</button>
-  <button class="btn btn-secondary btn-sm" onclick="openModal('modal-bulk-import')">📥 手動インポート</button>
-  <button class="btn btn-warn btn-sm" onclick="loadSample()">📊 サンプル</button>
+  <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+    <span style="font-size:0.7rem;color:var(--sub);margin-right:2px;">診断ツール：</span>
+    <a href="./mitsumeru_tekisei_check.html" target="_blank" class="btn btn-secondary btn-sm" style="text-decoration:none;">📋 採用スキャン</a>
+    <a href="./ta_scan.html" target="_blank" class="btn btn-secondary btn-sm" style="text-decoration:none;">🧭 TAスキャン</a>
+    <a href="./pm_scan.html" target="_blank" class="btn btn-secondary btn-sm" style="text-decoration:none;">🎯 PMスキャン</a>
+    <span style="width:1px;height:18px;background:var(--border);margin:0 4px;"></span>
+    <button class="btn btn-success btn-sm" onclick="autoSyncAll()" style="background:var(--accent2);border-color:var(--accent2);">🔄 診断データを同期</button>
+    <button class="btn btn-secondary btn-sm" onclick="openModal('modal-bulk-import')">📥 手動インポート</button>
+    <button class="btn btn-secondary btn-sm" onclick="openModal('modal-data')">⚙ データ管理</button>
+    <button class="btn btn-warn btn-sm" onclick="loadSample()">📊 サンプル</button>
+  </div>
 </header>
 
 <div class="selector-bar">
@@ -2199,12 +2206,108 @@ function loadSample(){
 //  初期化
 // ════════════════════════════════════════════════════
 
+// ════════════════════════════════════════════════════
+//  URLパラメータ経由のインポート（?d=BASE64）
+// ════════════════════════════════════════════════════
+
+function checkURLImport(){
+  try{
+    const params=new URLSearchParams(window.location.search);
+    const d=params.get('d');
+    if(!d) return;
+
+    const raw=JSON.parse(decodeURIComponent(escape(atob(d))));
+    const items=Array.isArray(raw)?raw:[raw];
+
+    // プレビュー表示
+    const names=items.map(r=>r.n||r.name||'').filter(Boolean);
+    const preview=names.slice(0,3).join('、')+(names.length>3?` 他${names.length-3}名`:'');
+    if(!confirm(`📋 診断データが届いています！\n\n【${preview}】\n${items.length}件をインポートしますか？`)) {
+      history.replaceState({},'',' ');
+      return;
+    }
+
+    let created=0, updated=0, skipped=0;
+    const allStaff=getAllStaff();
+
+    items.forEach(r=>{
+      // フォーマット変換（compact→full）
+      const entry={
+        name: r.n||r.name||'',
+        corp: r.c||r.corp||'',
+        office: r.o||r.office||'',
+        role: r.r||r.role||'一般職',
+        egogram: r.eg ? {CP:r.eg[0],NP:r.eg[1],A:r.eg[2],FC:r.eg[3],AC:r.eg[4]} : (r.egogram||{}),
+        lsrp: r.l!=null ? {total:r.l, level:r.lv||''} : (r.lsrp||null),
+        lsrpLevelShort: r.lv||r.lsrpLevelShort||'',
+        ennTop1: r.e1||r.ennTop1||'',
+        ennTop2: r.e2||r.ennTop2||'',
+        ennTop3: r.e3||r.ennTop3||'',
+        task: r.tk!=null?Number(r.tk):( r.task!=null?Number(r.task):null ),
+        social: r.s!=null?Number(r.s):( r.social!=null?Number(r.social):null ),
+        ksa: r.k!=null?Number(r.k):( r.ksa!=null?Number(r.ksa):null ),
+        ksaGap: r.g!=null?parseFloat(r.g):( r.ksaGap!=null?parseFloat(r.ksaGap):null ),
+        slStage: r.sl||r.slStage||'',
+        p: r.p!=null?Number(r.p):null,
+        m: r.m!=null?Number(r.m):null,
+        pmStyle: r.ps||r.pmStyle||'',
+        type: r.t||r.type||'',
+      };
+
+      const name=(entry.name||'').trim();
+      if(!name){ skipped++; return; }
+
+      const corpId=findOrCreateCorp(entry.corp);
+      const officeId=findOrCreateOffice(corpId, entry.office);
+      if(!officeId){ skipped++; return; }
+
+      let staff=allStaff.find(s=>s.name===name&&s.officeId===officeId);
+      if(!staff){
+        staff={id:uid(),corpId,officeId,name,role:entry.role,task:0,social:0,p:0,m:0,ksa:0,ego:{CP:0,NP:0,A:0,FC:0,AC:0},enn:[],lsrp:null,importedFrom:'url',importedAt:new Date().toISOString()};
+        allStaff.push(staff);
+        created++;
+      } else { updated++; }
+
+      // エゴグラム
+      if(entry.egogram?.CP!=null) staff.ego={CP:n(entry.egogram.CP),NP:n(entry.egogram.NP),A:n(entry.egogram.A),FC:n(entry.egogram.FC),AC:n(entry.egogram.AC)};
+      // LSRP
+      const lsrpTotal=n(entry.lsrp?.total??entry.l);
+      if(lsrpTotal>0) staff.lsrp={total:lsrpTotal,levelShort:entry.lsrpLevelShort||getLSRPLabel(lsrpTotal).short};
+      // エニア
+      const enn=mapEnnType(entry);
+      if(enn.length) staff.enn=enn;
+      // Task/Social/KSA
+      if(entry.task!=null) staff.task=entry.task;
+      if(entry.social!=null) staff.social=entry.social;
+      if(entry.ksa!=null) staff.ksa=entry.ksa;
+      if(entry.ksaGap!=null) staff.ksaGap=entry.ksaGap;
+      if(entry.slStage) staff.slStage=entry.slStage;
+      // PM
+      if(entry.p!=null) staff.p=entry.p;
+      if(entry.m!=null) staff.m=entry.m;
+      if(entry.pmStyle) staff.pmStyle=entry.pmStyle;
+      if(entry.p!=null&&staff.role==='一般職') staff.role='管理者クラス';
+    });
+
+    save('nagi_staff',allStaff);
+    refreshCorpSelector();
+    refreshOfficeSelectors();
+    renderCurrentTab();
+    // URLからパラメータを除去
+    history.replaceState({},'',' ');
+    alert(`✅ インポート完了！\n新規登録: ${created}件 / 更新: ${updated}件`);
+  }catch(e){
+    console.error('URL import error:',e);
+  }
+}
+
 function init(){
   refreshCorpSelector();
   refreshOfficeSelectors();
   renderCorpsList();
   renderOfficesList();
   renderCurrentTab();
+  checkURLImport(); // URLパラメータチェック
 }
 
 init();
