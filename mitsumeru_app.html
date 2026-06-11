@@ -1056,6 +1056,7 @@ function saveMorning() {
   if (mpVal) data['mp-val'] = mpVal.textContent;
   if (modeBadge) { data['mode-badge-text'] = modeBadge.textContent; data['mode-badge-class'] = modeBadge.className; }
   if (morningResult) data['morning-result-visible'] = morningResult.style.display !== 'none';
+  if (data['lv-base'] === undefined) data['lv-base'] = getLVBase();
   localStorage.setItem('mitsumeru_morning', JSON.stringify(data));
   cloudSave('morning', data);
 }
@@ -1324,7 +1325,9 @@ function changeTargetDate(newDate) {
   const hasMorning = !!localStorage.getItem('mitsumeru_morning');
   const hasData = hasMorning || memos.length > 0;
 
-  const _lvNew = getLVBase() + counts.pomo * 10;
+  const _mLVd = JSON.parse(localStorage.getItem('mitsumeru_morning') || '{}');
+  const _lvBased = _mLVd['lv-base'] !== undefined ? _mLVd['lv-base'] : getLVBase();
+  const _lvNew = _lvBased + counts.pomo * 10;
   localStorage.setItem('mitsumeru_lv_total', _lvNew);
   cloudSaveGlobal('lv', { total: _lvNew });
   function doReset() {
@@ -1594,7 +1597,9 @@ function calcAutoCount() {
   const l = document.getElementById('auto-lv');
   if (n) n.textContent = noiseCount;
   if (p) p.textContent = pomoTotal;
-  if (l) l.textContent = formatLV(getLVBase() + pomoTotal * 10);
+  const _mLV = JSON.parse(localStorage.getItem('mitsumeru_morning') || '{}');
+  const _lvBase = _mLV['lv-base'] !== undefined ? _mLV['lv-base'] : getLVBase();
+  if (l) l.textContent = formatLV(_lvBase + pomoTotal * 10);
   counts.noise = noiseCount;
   counts.pomo = pomoTotal;
 }
@@ -1898,6 +1903,9 @@ function generateEvening() {
   const g = memos.filter(m => m.tag === 'G').map(m => m.content).join(' / ') || 'なし';
 
   const debugText = `役割:${debugScores.d1}、委譲:${debugScores.d2}、動機:${debugScores.d3}、資産:${debugScores.d4}、余白:${debugScores.d5}`;
+  const _mLVe = JSON.parse(localStorage.getItem('mitsumeru_morning') || '{}');
+  const _lvBaseE = _mLVe['lv-base'] !== undefined ? _mLVe['lv-base'] : getLVBase();
+  const lvTotal = _lvBaseE + counts.pomo * 10;
   const lv = counts.pomo * 10;
   const now = new Date();
   const dateStr = `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日`;
@@ -1947,7 +1955,7 @@ G（気づき）：${g}
 ノイズ回数：${counts.noise}回
 ポモドーロ数：${counts.pomo}ポモ
 Try100達成数：${counts.try100}個
-LV：${lv}/100
+LV：${lvTotal}pt（本日+${lv}pt）
 
 【5つのデバッグ】
 ${debugText}
@@ -1980,7 +1988,7 @@ ${notebooklm || 'なし'}
 （翌朝の最重要指針・総ポモドーロ数を明記）
 
 ## 【本日のステータス】
-HP（X/100） / MP（X/100） / LV（${lv}/100）と根拠
+HP（X/100） / MP（X/100） / LV（累積${lvTotal}pt、本日+${lv}pt）と根拠
 
 ## 【因果関係の看破】
 P・V・Gの連動性をロジカルに解説
