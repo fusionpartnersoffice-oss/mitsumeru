@@ -536,6 +536,11 @@
       <textarea id="memo-content" placeholder="気づいたこと、起きたこと、ボヤキをそのまま入力"></textarea>
     </div>
 
+    <div class="field" style="display:flex;align-items:center;gap:10px;">
+      <button id="delay-toggle" onclick="toggleDelayFlag()" style="padding:8px 16px;border-radius:20px;border:0.5px solid var(--border);background:var(--bg);font-size:12px;cursor:pointer;color:var(--text3);transition:all 0.2s;">📌 先送りフラグ OFF</button>
+      <span style="font-size:11px;color:var(--text3);">ONにすると夜の先送りCSVに自動追加</span>
+    </div>
+
     <div class="field">
       <label>画像URL（任意）— GoogleフォトなどのURLを貼り付け</label>
       <input type="url" id="memo-image-url" placeholder="https://photos.google.com/..." style="width:100%;padding:9px 12px;font-size:13px;font-family:'Noto Sans JP',sans-serif;background:var(--bg);border:0.5px solid var(--border);border-radius:4px;color:var(--text);outline:none;">
@@ -1086,6 +1091,7 @@ if (localStorage.getItem('mitsumeru_day')) {
 }
 
 let selectedTag = 'HP';
+let memoDelayFlag = false;
 let apiKey = localStorage.getItem('mitsumeru_api_key') || '';
 
 // クラウド同期設定（SYNC_KEYは対象日に連動して動的に変わる）
@@ -1264,8 +1270,10 @@ function saveMorning() {
   const mpVal = document.getElementById('mp-val');
   const modeBadge = document.getElementById('mode-badge');
   const morningResult = document.getElementById('morning-result');
+  const lvVal = document.getElementById('lv-val');
   if (hpVal) data['hp-val'] = hpVal.textContent;
   if (mpVal) data['mp-val'] = mpVal.textContent;
+  if (lvVal) data['lv-val'] = lvVal.textContent;
   if (modeBadge) { data['mode-badge-text'] = modeBadge.textContent; data['mode-badge-class'] = modeBadge.className; }
   if (morningResult) data['morning-result-visible'] = morningResult.style.display !== 'none';
   if (data['lv-base'] === undefined) data['lv-base'] = getLVBase();
@@ -1335,6 +1343,10 @@ window.addEventListener('DOMContentLoaded', async function() {
     if (morning['mp-val'] && morning['mp-val'] !== '—') {
       const mpEl = document.getElementById('mp-val');
       if (mpEl) mpEl.textContent = morning['mp-val'];
+    }
+    if (morning['lv-val'] && morning['lv-val'] !== '—') {
+      const lvEl = document.getElementById('lv-val');
+      if (lvEl) lvEl.textContent = morning['lv-val'];
     }
     if (morning['mode-badge-text']) {
       const badge = document.getElementById('mode-badge');
@@ -1450,6 +1462,10 @@ window.addEventListener('DOMContentLoaded', async function() {
       if (cloudMorning['mp-val'] && cloudMorning['mp-val'] !== '—') {
         const mpEl = document.getElementById('mp-val');
         if (mpEl) mpEl.textContent = cloudMorning['mp-val'];
+      }
+      if (cloudMorning['lv-val'] && cloudMorning['lv-val'] !== '—') {
+        const lvEl = document.getElementById('lv-val');
+        if (lvEl) lvEl.textContent = cloudMorning['lv-val'];
       }
       if (cloudMorning['mode-badge-text']) {
         const badge = document.getElementById('mode-badge');
@@ -1878,7 +1894,7 @@ function addMemo() {
   const pomos = selectedTag === 'P' ? counts['memo-pomo'] : null;
   const timeStr = time ? time.replace(':','') : '';
   const imgUrl = document.getElementById('memo-image-url').value.trim() || null;
-  memos.push({ tag: selectedTag, time: timeStr, pomos, content, image: imgUrl });
+  memos.push({ tag: selectedTag, time: timeStr, pomos, content, image: imgUrl, delayed: memoDelayFlag });
   saveMemos();
   renderMemos();
   updateEveningMemoPreview();
@@ -1887,7 +1903,28 @@ function addMemo() {
   counts['memo-pomo'] = 0;
   document.getElementById('memo-pomo-count').textContent = '0';
   document.getElementById('memo-image-url').value = '';
+  // 先送りフラグをリセット
+  memoDelayFlag = false;
+  const dt = document.getElementById('delay-toggle');
+  if (dt) { dt.textContent = '📌 先送りフラグ OFF'; dt.style.background = 'var(--bg)'; dt.style.color = 'var(--text3)'; }
   setNowTime();
+}
+
+function toggleDelayFlag() {
+  memoDelayFlag = !memoDelayFlag;
+  const btn = document.getElementById('delay-toggle');
+  if (!btn) return;
+  if (memoDelayFlag) {
+    btn.textContent = '📌 先送りフラグ ON';
+    btn.style.background = '#fff3cd';
+    btn.style.color = '#b8860b';
+    btn.style.borderColor = '#ffd970';
+  } else {
+    btn.textContent = '📌 先送りフラグ OFF';
+    btn.style.background = 'var(--bg)';
+    btn.style.color = 'var(--text3)';
+    btn.style.borderColor = 'var(--border)';
+  }
 }
 
 function updateEveningMemoPreview() {
@@ -1925,6 +1962,7 @@ function renderMemos() {
       ${m.pomos!==null?`<span style="color:var(--accent);min-width:36px;font-size:12px;">${m.pomos}ポモ</span>`:'<span style="min-width:36px;"></span>'}
       <div style="flex:1;">
         <span style="font-size:13px;line-height:1.6;">${m.content}</span>
+        ${m.delayed ? '<span style="font-size:10px;background:#fff3cd;color:#b8860b;border-radius:10px;padding:1px 6px;margin-left:4px;">📌先送り</span>' : ''}
         ${m.image ? `<div style="margin-top:4px;"><a href="${m.image}" target="_blank" style="font-size:12px;color:var(--accent);text-decoration:none;">📷 画像を開く →</a></div>` : ''}
       </div>
       <button onclick="editMemo(${i})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:0 4px;flex-shrink:0;">✏️</button>
@@ -1961,6 +1999,16 @@ function editMemo(i) {
     document.getElementById('memo-pomo-field').style.display = 'block';
   } else {
     document.getElementById('memo-pomo-field').style.display = 'none';
+  }
+  // 先送りフラグを復元
+  memoDelayFlag = !!m.delayed;
+  const dt = document.getElementById('delay-toggle');
+  if (dt) {
+    if (memoDelayFlag) {
+      dt.textContent = '📌 先送りフラグ ON'; dt.style.background = '#fff3cd'; dt.style.color = '#b8860b'; dt.style.borderColor = '#ffd970';
+    } else {
+      dt.textContent = '📌 先送りフラグ OFF'; dt.style.background = 'var(--bg)'; dt.style.color = 'var(--text3)'; dt.style.borderColor = 'var(--border)';
+    }
   }
   // 元のメモを削除
   memos.splice(i, 1);
@@ -2060,7 +2108,7 @@ function calcMorning() {
   document.getElementById('hp-val').textContent = hpAdj;
   document.getElementById('mp-val').textContent = mp;
   const lvValEl = document.getElementById('lv-val');
-  if (lvValEl) lvValEl.textContent = formatLV(getLVBase());
+  if (lvValEl) lvValEl.textContent = formatLV(getLVBase() + counts.pomo * 10);
 
   let mode, modeClass, modeText;
   if (hpAdj >= 60 && mp >= 60) { mode = 'normal'; modeText = '通常モード — 今日は動けます'; modeClass = 'mode-normal'; }
@@ -2182,11 +2230,17 @@ function generateEvening() {
   localStorage.setItem('mitsumeru_calendar', calendarCSV);
 
   let delayRows = ['Subject,Start Date,Start Time,End Date,End Time,All Day Event,Description'];
+  // 手入力の先送りタスク
   if (delay.trim()) {
     delay.split('\n').filter(l => l.trim()).forEach(line => {
       delayRows.push(`"【先送り・急重度②】${line.trim()}",${delayDateStr},,,, True,"【目的】${line.trim()} ／ 【遅延理由】本日未完了"`);
     });
   }
+  // 先送りフラグ付きのメモを自動追加
+  memos.filter(m => m.delayed).forEach(m => {
+    const label = `${tagIcons[m.tag] || ''}${m.content}`;
+    delayRows.push(`"【先送り・急重度②】${label}",${delayDateStr},,,, True,"【目的】${m.content} ／ 【遅延理由】本日先送りフラグ済み"`);
+  });
   delayCSV = delayRows.join('\n');
   localStorage.setItem('mitsumeru_delay', delayCSV);
 
@@ -2209,7 +2263,7 @@ G（気づき）：${g}
 ノイズ回数：${counts.noise}回
 ポモドーロ数：${counts.pomo}ポモ
 Try100達成数：${counts.try100}個
-LV：${lvTotal}pt（本日+${lv}pt）
+LV：${formatLV(lvTotal)}（本日+${lv}pt）
 
 【5つのデバッグ】
 ${debugText}
@@ -2242,7 +2296,7 @@ ${notebooklm || 'なし'}
 （翌朝の最重要指針・総ポモドーロ数を明記）
 
 ## 【本日のステータス】
-HP（X/100） / MP（X/100） / LV（累積${lvTotal}pt、本日+${lv}pt）と根拠
+HP（X/100） / MP（X/100） / LV（${formatLV(lvTotal)}、本日+${lv}pt）と根拠
 
 ## 【因果関係の看破】
 P・V・Gの連動性をロジカルに解説
@@ -2352,7 +2406,7 @@ function downloadHTML() {
 <div class="stats">
   <div class="stat"><div class="stat-label">ノイズ回数</div><div class="stat-val" style="color:#c0392b;">${counts.noise}</div></div>
   <div class="stat"><div class="stat-label">ポモ合計</div><div class="stat-val" style="color:#1a7a52;">${counts.pomo}</div></div>
-  <div class="stat"><div class="stat-label">LV</div><div class="stat-val" style="color:#8a6a1a;">${counts.pomo*10}</div></div>
+  <div class="stat"><div class="stat-label">LV</div><div class="stat-val" style="color:#8a6a1a;">${formatLV(lvTotal)}</div></div>
 </div>
 
 <h2>随時メモ（画像含む）</h2>
