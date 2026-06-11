@@ -2439,7 +2439,7 @@ function submitScanStep1() {
     type: parseInt(type), name: SCAN_ENN_NAMES[parseInt(type)], score
   }));
 
-  const today = new Date().toLocaleDateString('ja-JP');
+  const today = new Date().toISOString().slice(0, 10);
   const saveData = { answers: scanEnnAnswers, top3, allScores: scores, savedAt: today };
   localStorage.setItem('mitsumeru_scan_step1', JSON.stringify(saveData));
 
@@ -2596,7 +2596,7 @@ function submitScanStep2() {
     else rcJudge = '注意（I-U-）';
   }
 
-  const today = new Date().toLocaleDateString('ja-JP');
+  const today = new Date().toISOString().slice(0, 10);
   const saveData = { answers: scanEgoAnswers, scores, rcRaw, rcJudge, savedAt: today };
   localStorage.setItem('mitsumeru_scan_step2', JSON.stringify(saveData));
 
@@ -2756,7 +2756,7 @@ function submitScanStep3() {
     rcJudge = rcRaw >= 7 ? '危険（I+U-）' : rcRaw >= 4 ? '注意（I-U-）' : '安全（凪）';
   }
 
-  const today = new Date().toLocaleDateString('ja-JP');
+  const today = new Date().toISOString().slice(0, 10);
   const saveData = { answers: scanRcAnswers, rcRaw, rcRisk, rcJudge, savedAt: today };
   localStorage.setItem('mitsumeru_scan_step3', JSON.stringify(saveData));
 
@@ -2903,7 +2903,7 @@ function submitScanStep4() {
   const level = LSRP_LEVEL.find(l => total >= l.min);
   const cause = c > imp ? '冷酷性・利己性に注意' : imp > c ? '衝動性・反社会性に注意' : '複合リスク';
 
-  const today = new Date().toLocaleDateString('ja-JP');
+  const today = new Date().toISOString().slice(0, 10);
   const saveData = { answers: scanLsrpAnswers, c, i: imp, total, level: level.key, cause, savedAt: today };
   localStorage.setItem('mitsumeru_scan_step4', JSON.stringify(saveData));
 
@@ -2978,7 +2978,7 @@ function checkScanComplete() {
   // CloudflareKVにスキャン結果を保存
   const d1 = JSON.parse(s1), d2 = JSON.parse(s2), d3 = JSON.parse(s3), d4 = JSON.parse(s4);
   const scanAll = {
-    completedAt: new Date().toLocaleDateString('ja-JP'),
+    completedAt: new Date().toISOString().slice(0, 10),
     enneagram: { top3: d1.top3, allScores: d1.allScores },
     egogram: d2.scores,
     rc: { rcRaw: d3.rcRaw, rcRisk: d3.rcRisk, rcJudge: d3.rcJudge },
@@ -2994,15 +2994,17 @@ function checkScanExpiry() {
   const now = new Date();
   let expired = false;
   steps.forEach(key => {
-    const saved = localStorage.getItem(key);
-    if (!saved) return;
-    const d = JSON.parse(saved);
-    if (!d.savedAt) return;
-    const parts = d.savedAt.split('/').map(Number);
-    // ja-JP形式: YYYY/MM/DD
-    const saved_date = new Date(parts[0], parts[1] - 1, parts[2]);
-    const days = Math.floor((now - saved_date) / 86400000);
-    if (days > 90) expired = true;
+    try {
+      const saved = localStorage.getItem(key);
+      if (!saved) return;
+      const d = JSON.parse(saved);
+      if (!d.savedAt) return;
+      // ISO形式 YYYY-MM-DD または旧ja-JP形式 YYYY/MM/DD に対応
+      const saved_date = new Date(d.savedAt.replace(/\//g, '-'));
+      if (isNaN(saved_date.getTime())) return;
+      const days = Math.floor((now - saved_date) / 86400000);
+      if (days > 90) expired = true;
+    } catch(e) {}
   });
   const badge = document.getElementById('badge-expiry');
   if (badge) badge.style.display = expired ? 'inline-block' : 'none';
