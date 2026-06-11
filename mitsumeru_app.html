@@ -366,9 +366,17 @@
   .scan-progress-bar { height: 4px; background: var(--accent); border-radius: 2px; transition: width 0.3s; }
   .step-badge { display: inline-block; font-size: 10px; background: var(--text); color: var(--bg); border-radius: 20px; padding: 2px 10px; letter-spacing: 1px; margin-bottom: 10px; }
   .step2-btn { width: 100%; padding: 14px; background: var(--green); color: #fff; border: none; border-radius: 6px; font-size: 14px; font-family: 'Noto Sans JP', sans-serif; letter-spacing: 2px; cursor: pointer; margin-top: 10px; }
+  /* トースト通知 */
+  #sync-toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--bg2); color: var(--text); border: 1px solid var(--text3); border-radius: 8px; padding: 10px 20px; font-size: 12px; letter-spacing: 1px; z-index: 9999; transition: transform 0.3s ease, opacity 0.3s ease; opacity: 0; pointer-events: none; white-space: nowrap; }
+  #sync-toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+  #sync-toast.success { border-color: var(--green); color: var(--green); }
+  #sync-toast.error { border-color: #e57373; color: #e57373; }
+  #offline-banner { display: none; position: fixed; top: 0; left: 0; right: 0; background: #555; color: #fff; text-align: center; font-size: 11px; padding: 4px; letter-spacing: 1px; z-index: 9998; }
 </style>
 </head>
 <body>
+<div id="offline-banner">📡 オフライン中 — ローカルに保存中。オンライン復帰時に自動同期します</div>
+<div id="sync-toast"></div>
 
 <div class="header">
   <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;">
@@ -1084,40 +1092,120 @@ let apiKey = localStorage.getItem('mitsumeru_api_key') || '';
 const SYNC_URL = 'https://mitsumeru-sync.fusion-partners-office.workers.dev';
 let SYNC_KEY = _savedDay; // 対象日と連動
 
-async function cloudSave(type, data) {
+// ---- トースト通知 ----
+let _toastTimer = null;
+function showToast(msg, type = 'info', duration = 2500) {
+  const el = document.getElementById('sync-toast');
+  if (!el) return;
+  el.textContent = msg;
+  el.className = 'show ' + type;
+  if (_toastTimer) clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => { el.className = ''; }, duration);
+}
+
+// ---- オフライン検知 ----
+function updateOfflineBanner() {
+  const banner = document.getElementById('offline-banner');
+  if (!banner) return;
+  banner.style.display = navigator.onLine ? 'none' : 'block';
+}
+window.addEventListener('online', () => {
+  updateOfflineBanner();
+  showToast('✅ オンライン復帰 — クラウドに同期中…', 'success', 3000);
+  setTimeout(() => { syncAllToCloud(); }, 800);
+});
+window.addEventListener('offline', () => {
+  updateOfflineBanner();
+  showToast('📡 オフライン — ローカル保存に切り替えました', 'error', 3500);
+});
+
+// ---- pending キュー（オフライン中の保存を記録） ----
+const _pendingSaves = [];
+
+// ---- fetch with timeout + 1 retry ----
+async function fetchWithRetry(url, options = {}, timeoutMs = 7000, retries = 1) {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), timeoutMs);
+    try {
+      const res = await fetch(url, { ...options, signal: ctrl.signal });
+      clearTimeout(tid);
+      return res;
+    } catch (e) {
+      clearTimeout(tid);
+      if (attempt === retries) throw e;
+      await new Promise(r => setTimeout(r, 1200)); // リトライ前に1.2秒待機
+    }
+  }
+}
+
+// ---- オフライン時にキューに積んで復帰後まとめて送信 ----
+async function syncAllToCloud() {
+  while (_pendingSaves.length > 0) {
+    const { isGlobal, type, data } = _pendingSaves.shift();
+    if (isGlobal) await cloudSaveGlobal(type, data, true);
+    else await cloudSave(type, data, true);
+  }
+}
+
+async function cloudSave(type, data, silent = false) {
+  if (!navigator.onLine) {
+    _pendingSaves.push({ isGlobal: false, type, data });
+    return;
+  }
   try {
     const safeKey = encodeURIComponent(type + '_' + SYNC_KEY);
-    const res = await fetch(`${SYNC_URL}?key=${safeKey}`, {
+    const res = await fetchWithRetry(`${SYNC_URL}?key=${safeKey}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
-    if (!res.ok) console.log('クラウド保存失敗 status:', res.status);
-  } catch(e) { console.log('クラウド保存失敗（オフライン？）', e); }
+    if (!res.ok) {
+      if (!silent) showToast('⚠ クラウド保存に失敗しました (HTTP ' + res.status + ')', 'error');
+      console.warn('cloudSave失敗 status:', res.status);
+    }
+  } catch(e) {
+    if (!silent) showToast('⚠ クラウド保存に失敗しました（接続エラー）', 'error');
+    console.warn('cloudSave失敗:', e);
+    _pendingSaves.push({ isGlobal: false, type, data });
+  }
 }
 
-
 // v7: グローバル同期（累積LV・プロフィール用）
-async function cloudSaveGlobal(type, data) {
+async function cloudSaveGlobal(type, data, silent = false) {
+  if (!navigator.onLine) {
+    _pendingSaves.push({ isGlobal: true, type, data });
+    return;
+  }
   try {
     const safeKey = encodeURIComponent(type + '_global');
-    const res = await fetch(`${SYNC_URL}?key=${safeKey}`, {
+    const res = await fetchWithRetry(`${SYNC_URL}?key=${safeKey}`, {
       method: 'PUT', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
-    if (!res.ok) console.log('グローバル保存失敗:', res.status);
-  } catch(e) { console.log('グローバル保存失敗', e); }
+    if (!res.ok) {
+      if (!silent) showToast('⚠ クラウド保存に失敗しました (HTTP ' + res.status + ')', 'error');
+      console.warn('cloudSaveGlobal失敗 status:', res.status);
+    }
+  } catch(e) {
+    if (!silent) showToast('⚠ クラウド保存に失敗しました（接続エラー）', 'error');
+    console.warn('cloudSaveGlobal失敗:', e);
+    _pendingSaves.push({ isGlobal: true, type, data });
+  }
 }
+
 async function cloudLoadGlobal(type) {
+  if (!navigator.onLine) return null;
   try {
     const safeKey = encodeURIComponent(type + '_global');
-    const res = await fetch(`${SYNC_URL}?key=${safeKey}`);
+    const res = await fetchWithRetry(`${SYNC_URL}?key=${safeKey}`);
     if (!res.ok) return null;
     const json = await res.json();
     if (!json.value) return null;
     return typeof json.value === 'string' ? JSON.parse(json.value) : json.value;
   } catch(e) { return null; }
 }
+
 function formatLV(totalPoints) {
   const level = Math.floor(totalPoints / 100) + 1;
   const pts = totalPoints % 100;
@@ -1127,14 +1215,15 @@ function getLVBase() {
   return parseInt(localStorage.getItem('mitsumeru_lv_total') || '0');
 }
 async function cloudLoad(type) {
+  if (!navigator.onLine) return null;
   try {
     const safeKey = encodeURIComponent(type + '_' + SYNC_KEY);
-    const res = await fetch(`${SYNC_URL}?key=${safeKey}`);
+    const res = await fetchWithRetry(`${SYNC_URL}?key=${safeKey}`);
     if (!res.ok) return null;
     const json = await res.json();
     if (!json.value) return null;
     return typeof json.value === 'string' ? JSON.parse(json.value) : json.value;
-  } catch(e) { console.log('クラウド読み込み失敗', e); return null; }
+  } catch(e) { console.warn('cloudLoad失敗:', e); return null; }
 }
 
 // データ保存関数（localStorage + クラウド）
@@ -1186,6 +1275,9 @@ function saveMorning() {
 
 // 起動時にデータ復元（クラウド優先、なければlocalStorage）
 window.addEventListener('DOMContentLoaded', async function() {
+  // オフラインバナー初期化
+  updateOfflineBanner();
+
   // localStorageで即時復元（timeoutなし）
   (function restoreFromLocal() {
     const morning = JSON.parse(localStorage.getItem('mitsumeru_morning') || '{}');
@@ -1403,19 +1495,20 @@ window.addEventListener('DOMContentLoaded', async function() {
       if (anyMissing) {
         // KVには集約データのみ保存されているため、各STEPの個別回答は復元不可
         // completedAtが存在する = 全STEP完了済みとして進捗バッジのみ更新
-        if (typeof checkScanComplete === 'function') {
-          // 個別STEPデータがない場合はバッジのみ更新
-          const badge = document.getElementById('scan-progress-badge');
-          if (badge) badge.style.display = 'block';
-          const expiry = document.getElementById('badge-expiry');
-          if (expiry && cloudScan.completedAt) {
-            const parts = cloudScan.completedAt.split('/').map(Number);
-            const savedDate = new Date(parts[0], parts[1] - 1, parts[2]);
-            if ((new Date() - savedDate) / 86400000 > 90) expiry.style.display = 'inline-block';
+        const badge = document.getElementById('scan-progress-badge');
+        if (badge) badge.style.display = 'block';
+        const expiry = document.getElementById('badge-expiry');
+        if (expiry && cloudScan.completedAt) {
+          // ISO形式(YYYY-MM-DD)・旧ja-JP形式(YYYY/MM/DD)両対応
+          const savedDate = new Date(cloudScan.completedAt.replace(/\//g, '-'));
+          if (!isNaN(savedDate.getTime()) && (new Date() - savedDate) / 86400000 > 90) {
+            expiry.style.display = 'inline-block';
           }
         }
       }
     }
+    // 同期完了トースト（オンライン時のみ）
+    if (navigator.onLine) showToast('☁ クラウド同期完了', 'success', 2000);
   }, 1500);
 });
 
