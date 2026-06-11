@@ -574,6 +574,37 @@
     </div>
   </div>
 
+  <!-- 進捗バッジ（STEP1・STEP2完了時に表示） -->
+  <div id="scan-progress-badge" style="display:none;background:var(--bg2);border:0.5px solid var(--border);border-radius:8px;padding:12px 16px;margin-bottom:12px;font-size:12px;color:var(--text2);line-height:2;">
+    <div style="font-size:10px;color:var(--text3);letter-spacing:2px;margin-bottom:6px;">スキャン進捗</div>
+    <span id="badge-step1" style="display:inline-block;background:var(--green);color:#fff;border-radius:20px;padding:2px 10px;font-size:11px;margin-right:6px;">✓ STEP1 エニアグラム</span>
+    <span id="badge-step2" style="display:inline-block;background:var(--green);color:#fff;border-radius:20px;padding:2px 10px;font-size:11px;">✓ STEP2 エゴグラム</span>
+  </div>
+
+  <!-- STEP2: エゴグラム診断 -->
+  <div class="section" id="scan-step2-section">
+    <div class="section-title">🧠 スキャン STEP2/4：エゴグラム診断</div>
+    <div id="scan-step2-meta" style="font-size:12px;color:var(--text3);margin-bottom:12px;">前回回答日：<span id="scan-step2-date">未回答</span></div>
+    <div id="scan-step2-closed">
+      <p style="font-size:12px;color:var(--text2);line-height:1.8;margin-bottom:12px;">30問の設問に答えて、エゴグラム（CP/NP/A/FC/AC）と組織適応リスク（RC）を診断します。</p>
+      <button class="btn-secondary" onclick="openScanStep2()">▶ 診断を開始する（30問）</button>
+    </div>
+    <div id="scan-step2-open" style="display:none;">
+      <div class="scan-progress"><div class="scan-progress-bar" id="scan-step2-bar" style="width:0%"></div></div>
+      <div style="font-size:11px;color:var(--text3);text-align:right;margin-bottom:12px;"><span id="scan-step2-count">0</span> / 30 回答済み</div>
+      <div id="scan-egogram-questions"></div>
+      <button class="btn-primary" id="scan-step2-submit" onclick="submitScanStep2()" style="display:none;margin-top:8px;">診断を完了して結果を見る</button>
+      <button class="btn-secondary" onclick="closeScanStep2()" style="margin-top:8px;">▲ 閉じる</button>
+    </div>
+    <div id="scan-step2-result" style="display:none;margin-top:12px;">
+      <div style="background:var(--bg2);border-radius:8px;padding:14px;">
+        <div style="font-size:11px;color:var(--text3);letter-spacing:1px;margin-bottom:10px;">診断結果</div>
+        <div id="scan-step2-result-body"></div>
+      </div>
+      <button class="step2-btn" onclick="onClickStep3()" style="margin-top:10px;">STEP3へ → <span style="font-size:11px;opacity:0.8;">（準備中）</span></button>
+    </div>
+  </div>
+
   <div class="section">
     <div class="section-title">👤 基本情報</div>
     <div class="field">
@@ -1226,6 +1257,8 @@ window.addEventListener('DOMContentLoaded', async function() {
     if (typeof renderMemos === 'function') renderMemos();
     if (typeof loadProfile === 'function') loadProfile();
     if (typeof loadScanStep1 === 'function') loadScanStep1();
+    if (typeof loadScanStep2 === 'function') loadScanStep2();
+    if (typeof updateScanBadge === 'function') updateScanBadge();
   })();
 
   // クラウドから最新データを取得して上書き（クラウドを常に優先）
@@ -2356,7 +2389,186 @@ function loadScanStep1() {
 }
 
 function onClickStep2() {
-  alert('STEP2は準備中です。');
+  document.getElementById('scan-step2-section').scrollIntoView({ behavior: 'smooth' });
+}
+
+/* =============================================
+   STEP2: エゴグラム診断
+   ============================================= */
+const SCAN_EGO_QUESTIONS = [
+  { text: '挨拶や礼儀ができていない人を見ると腹が立つ。', cat: 'CP' },
+  { text: '相手の気持ちを察して、先回りして行動する。', cat: 'NP' },
+  { text: '感情を抑え、数字やデータで話し合う。', cat: 'A' },
+  { text: '冗談を言ったり、場を盛り上げるのが得意だ。', cat: 'FC' },
+  { text: '会議では、まず周囲の意見を聞いてから発言する。', cat: 'AC' },
+  { text: '不正や不公平なことには、厳しく対処すべきだ。', cat: 'CP' },
+  { text: '困っている人がいると、自分の仕事を後回しにしても助ける。', cat: 'NP' },
+  { text: '効率の悪いやり方を見ると、すぐに改善案を考えたくなる。', cat: 'A' },
+  { text: '好奇心のままに新しいことに挑戦するのが好きだ。', cat: 'FC' },
+  { text: '上司の機嫌を損ねないように振る舞うことが多い。', cat: 'AC' },
+  { text: '上司の指示でも、自分が納得できなければ従う必要はないと思う。', cat: 'RC' },
+  { text: '効率のためなら、既存のルールを一時的に無視しても良い。', cat: 'RC' },
+  { text: '正論であれば、相手が誰であっても論破すべきだ。', cat: 'RC' },
+  { text: '「昔からの慣習」は、無意味な束縛だと感じて不快になる。', cat: 'RC' },
+  { text: '自分の直感や経験の方が、マニュアルより正しいと信じている。', cat: 'RC' },
+  { text: '新しい組織のやり方には、まず疑いから入ってしまう。', cat: 'RC' },
+  { text: '自分の手法を他人に細かく可視化されるのは苦痛だ。', cat: 'RC' },
+  { text: '改善案を出すよりも先に、不満を同僚に漏らしてしまう。', cat: 'RC' },
+  { text: '自分がミスした原因は、主に「仕組みの悪さ」にあると思う。', cat: 'RC' },
+  { text: '「チームワーク」という言葉に、同調圧力のような抵抗を感じる。', cat: 'RC' },
+  { text: '責任ある立場に立たされると、やる気が湧く。', cat: 'CP' },
+  { text: '面倒見が良いと周りから言われる。', cat: 'NP' },
+  { text: '常に冷静で、パニックになることはない。', cat: 'A' },
+  { text: '喜怒哀楽がはっきりしているほうだ。', cat: 'FC' },
+  { text: '頼まれたら嫌と言えない性格だ。', cat: 'AC' },
+  { text: '規律やマナーを何より重んじる。', cat: 'CP' },
+  { text: '人からどう見られているか常に意識している。', cat: 'NP' },
+  { text: '難しい問題ほど、解いてやろうと燃える。', cat: 'A' },
+  { text: 'ユーモアを忘れず、人を笑わせるのが好きだ。', cat: 'FC' },
+  { text: '周囲との調和を保つために、自分を殺すことがある。', cat: 'AC' }
+];
+const EGO_CAT_IDX = { CP:[0,5,20,25], NP:[1,6,21,26], A:[2,7,22,27], FC:[3,8,23,28], AC:[4,9,24,29] };
+const EGO_RC_IDX = [10,11,12,13,14,15,16,17,18,19];
+const EGO_CAT_COLORS = { CP:'#c0392b', NP:'#2d7a52', A:'#1a5a9a', FC:'#b8860b', AC:'#8a7a6a' };
+let scanEgoAnswers = new Array(30).fill(null);
+
+function openScanStep2() {
+  document.getElementById('scan-step2-closed').style.display = 'none';
+  document.getElementById('scan-step2-open').style.display = 'block';
+  if (!document.getElementById('scan-egogram-questions').innerHTML) {
+    renderScanStep2Questions();
+  }
+}
+function closeScanStep2() {
+  document.getElementById('scan-step2-open').style.display = 'none';
+  document.getElementById('scan-step2-closed').style.display = 'block';
+}
+
+function renderScanStep2Questions() {
+  const saved = localStorage.getItem('mitsumeru_scan_step2');
+  if (saved) {
+    const d = JSON.parse(saved);
+    scanEgoAnswers = d.answers || new Array(30).fill(null);
+  }
+  const c = document.getElementById('scan-egogram-questions');
+  c.innerHTML = SCAN_EGO_QUESTIONS.map((q, i) => {
+    const catColor = EGO_CAT_COLORS[q.cat] || 'var(--accent)';
+    return `<div class="scan-q-card" id="scan-ego-q-${i}">
+      <div class="scan-q-num" style="display:flex;justify-content:space-between;">
+        <span>Q${i+1}</span>
+        <span style="color:${catColor};font-weight:500;">${q.cat}</span>
+      </div>
+      <div class="scan-q-text">${q.text}</div>
+      <div class="scan-q-options">${SCAN_ENN_OPTS.map(opt => `
+        <label class="scan-q-option">
+          <input type="radio" name="sego_${i}" value="${opt.value}"
+            onchange="setScanEgoAnswer(${i},${opt.value})"
+            ${scanEgoAnswers[i] === opt.value ? 'checked' : ''}>
+          <span>${opt.label}</span>
+        </label>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+  updateScanStep2Progress();
+}
+
+function setScanEgoAnswer(i, v) {
+  scanEgoAnswers[i] = v;
+  updateScanStep2Progress();
+}
+
+function updateScanStep2Progress() {
+  const answered = scanEgoAnswers.filter(a => a !== null).length;
+  document.getElementById('scan-step2-count').textContent = answered;
+  document.getElementById('scan-step2-bar').style.width = (answered / 30 * 100) + '%';
+  document.getElementById('scan-step2-submit').style.display = answered === 30 ? 'block' : 'none';
+}
+
+function submitScanStep2() {
+  if (scanEgoAnswers.filter(a => a === null).length > 0) { alert('まだ未回答の設問があります。'); return; }
+
+  const scores = {};
+  ['CP','NP','A','FC','AC'].forEach(cat => {
+    const raw = EGO_CAT_IDX[cat].reduce((s, i) => s + scanEgoAnswers[i], 0);
+    scores[cat] = Math.min(10, Math.max(0, Math.round(raw * 10 / 8)));
+  });
+  const rcRaw = EGO_RC_IDX.filter(i => scanEgoAnswers[i] >= 1).length;
+  const I = scores.CP + scores.FC;
+  const U = scores.NP + scores.AC;
+  scores.I = I; scores.U = U;
+
+  let rcJudge;
+  if (rcRaw >= 5) {
+    rcJudge = I >= 10 ? '危険（I+U-）' : U >= 10 ? '依存（I-U+）' : '注意（I-U-）';
+  } else {
+    if (I >= 10 && U >= 10) rcJudge = '安全（凪）';
+    else if (I >= 10 && U < 10) rcJudge = '危険（I+U-）';
+    else if (I < 10 && U >= 10) rcJudge = '依存（I-U+）';
+    else rcJudge = '注意（I-U-）';
+  }
+
+  const today = new Date().toLocaleDateString('ja-JP');
+  const saveData = { answers: scanEgoAnswers, scores, rcRaw, rcJudge, savedAt: today };
+  localStorage.setItem('mitsumeru_scan_step2', JSON.stringify(saveData));
+
+  // プロファイルフィールドを自動更新
+  ['cp','np','a','fc','ac'].forEach(k => {
+    const el = document.getElementById('p-' + k);
+    if (el) el.value = scores[k.toUpperCase()];
+  });
+  const rcEl = document.getElementById('p-rc');
+  if (rcEl) rcEl.value = rcJudge;
+
+  showScanStep2Result(scores, rcRaw, rcJudge, today);
+  closeScanStep2();
+  updateScanBadge();
+}
+
+function showScanStep2Result(scores, rcRaw, rcJudge, date) {
+  document.getElementById('scan-step2-date').textContent = date || '取得中...';
+  const cats = ['CP','NP','A','FC','AC'];
+  const catLabels = { CP:'批判的親(CP)', NP:'養育的親(NP)', A:'成人(A)', FC:'自由な子(FC)', AC:'従順な子(AC)' };
+  const body = document.getElementById('scan-step2-result-body');
+  body.innerHTML = `
+    <div style="margin-bottom:12px;">
+      ${cats.map(cat => `
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+          <div style="font-size:11px;color:${EGO_CAT_COLORS[cat]};font-weight:500;min-width:48px;">${cat}</div>
+          <div style="flex:1;background:var(--bg);border-radius:3px;height:10px;overflow:hidden;">
+            <div style="width:${scores[cat]*10}%;background:${EGO_CAT_COLORS[cat]};height:10px;border-radius:3px;transition:width 0.4s;"></div>
+          </div>
+          <div style="font-size:12px;font-weight:500;min-width:24px;text-align:right;">${scores[cat]}</div>
+        </div>`).join('')}
+    </div>
+    <div style="font-size:11px;color:var(--text2);background:var(--bg);border-radius:6px;padding:8px 12px;">
+      I値(CP+FC)=${scores.I} / U値(NP+AC)=${scores.U} / RCリスク=${rcRaw}/10<br>
+      <span style="font-weight:500;">RC判定：${rcJudge}</span>
+    </div>`;
+  document.getElementById('scan-step2-result').style.display = 'block';
+  document.getElementById('scan-step2-closed').style.display = 'block';
+}
+
+function loadScanStep2() {
+  const saved = localStorage.getItem('mitsumeru_scan_step2');
+  if (!saved) return;
+  const d = JSON.parse(saved);
+  scanEgoAnswers = d.answers || new Array(30).fill(null);
+  if (d.savedAt) showScanStep2Result(d.scores, d.rcRaw, d.rcJudge, d.savedAt);
+  updateScanBadge();
+}
+
+function updateScanBadge() {
+  const s1 = !!localStorage.getItem('mitsumeru_scan_step1');
+  const s2 = !!localStorage.getItem('mitsumeru_scan_step2');
+  const badge = document.getElementById('scan-progress-badge');
+  if (!badge) return;
+  document.getElementById('badge-step1').style.display = s1 ? 'inline-block' : 'none';
+  document.getElementById('badge-step2').style.display = s2 ? 'inline-block' : 'none';
+  badge.style.display = (s1 || s2) ? 'block' : 'none';
+}
+
+function onClickStep3() {
+  alert('STEP3は準備中です。');
 }
 </script>
 
