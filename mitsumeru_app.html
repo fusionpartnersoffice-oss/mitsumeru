@@ -352,6 +352,20 @@
   input[type="number"] { -moz-appearance: textfield; }
   input[type="number"]::-webkit-outer-spin-button,
   input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+  /* スキャン STEP質問カード */
+  .scan-q-card { background: var(--card); border: 0.5px solid var(--border); border-radius: 8px; padding: 14px; margin-bottom: 8px; }
+  .scan-q-num { font-size: 10px; color: var(--text3); letter-spacing: 1px; margin-bottom: 4px; }
+  .scan-q-text { font-size: 13px; color: var(--text); margin-bottom: 10px; line-height: 1.6; }
+  .scan-q-options { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+  .scan-q-option { cursor: pointer; }
+  .scan-q-option input { display: none; }
+  .scan-q-option span { display: block; padding: 6px 8px; border-radius: 4px; border: 0.5px solid var(--border); font-size: 11px; text-align: center; color: var(--text2); transition: all 0.15s; background: var(--bg); }
+  .scan-q-option input:checked + span { border-color: var(--accent); background: var(--bg2); color: var(--text); font-weight: 500; }
+  .scan-progress { height: 4px; background: var(--bg2); border-radius: 2px; margin-bottom: 12px; }
+  .scan-progress-bar { height: 4px; background: var(--accent); border-radius: 2px; transition: width 0.3s; }
+  .step-badge { display: inline-block; font-size: 10px; background: var(--text); color: var(--bg); border-radius: 20px; padding: 2px 10px; letter-spacing: 1px; margin-bottom: 10px; }
+  .step2-btn { width: 100%; padding: 14px; background: var(--green); color: #fff; border: none; border-radius: 6px; font-size: 14px; font-family: 'Noto Sans JP', sans-serif; letter-spacing: 2px; cursor: pointer; margin-top: 10px; }
 </style>
 </head>
 <body>
@@ -535,6 +549,30 @@
 <!-- 設定モード -->
 <div id="screen-profile" class="screen">
   <div class="date-display">ミツメルスキャン — あなたの基礎ステータス</div>
+
+  <!-- STEP1: エニアグラム診断 -->
+  <div class="section" id="scan-step1-section">
+    <div class="section-title">🔬 スキャン STEP1/4：エニアグラム診断</div>
+    <div id="scan-step1-meta" style="font-size:12px;color:var(--text3);margin-bottom:12px;">前回回答日：<span id="scan-step1-date">未回答</span></div>
+    <div id="scan-step1-closed">
+      <p style="font-size:12px;color:var(--text2);line-height:1.8;margin-bottom:12px;">90問の設問に答えて、あなたのエニアグラムタイプを診断します。<br>各設問に「あてはまる〜あてはまらない」で回答してください。</p>
+      <button class="btn-secondary" onclick="openScanStep1()">▶ 診断を開始する（90問）</button>
+    </div>
+    <div id="scan-step1-open" style="display:none;">
+      <div class="scan-progress"><div class="scan-progress-bar" id="scan-step1-bar" style="width:0%"></div></div>
+      <div style="font-size:11px;color:var(--text3);text-align:right;margin-bottom:12px;"><span id="scan-step1-count">0</span> / 90 回答済み</div>
+      <div id="scan-enneagram-questions"></div>
+      <button class="btn-primary" id="scan-step1-submit" onclick="submitScanStep1()" style="display:none;margin-top:8px;">診断を完了して結果を見る</button>
+      <button class="btn-secondary" onclick="closeScanStep1()" style="margin-top:8px;">▲ 閉じる</button>
+    </div>
+    <div id="scan-step1-result" style="display:none;margin-top:12px;">
+      <div style="background:var(--bg2);border-radius:8px;padding:14px;">
+        <div style="font-size:11px;color:var(--text3);letter-spacing:1px;margin-bottom:10px;">診断結果</div>
+        <div id="scan-step1-result-body"></div>
+      </div>
+      <button class="step2-btn" onclick="onClickStep2()">STEP2へ → <span style="font-size:11px;opacity:0.8;">（準備中）</span></button>
+    </div>
+  </div>
 
   <div class="section">
     <div class="section-title">👤 基本情報</div>
@@ -1187,6 +1225,7 @@ window.addEventListener('DOMContentLoaded', async function() {
     if (typeof calcAutoCount === 'function') calcAutoCount();
     if (typeof renderMemos === 'function') renderMemos();
     if (typeof loadProfile === 'function') loadProfile();
+    if (typeof loadScanStep1 === 'function') loadScanStep1();
   })();
 
   // クラウドから最新データを取得して上書き（クラウドを常に優先）
@@ -2197,6 +2236,127 @@ function importScanResult() {
   }
   alert('スキャン結果をフィールドに反映しました。\n内容を確認して「保存する」ボタンを押してください。');
   closeScanImport();
+}
+
+/* =============================================
+   STEP1: エニアグラム診断
+   ============================================= */
+const SCAN_ENN_QUESTIONS = [
+  '好奇心旺盛で、新しいものが好き。','頼られたら助けずにはいられない。','慎重で控えめなほうである。','「おせっかいだ」と言われることがある。','「ちゃんと」していないと、なんだか落ち着かない。','エネルギーに満ちている。','自分は、人から好かれていると思う。','「個性的だ」「変わっている」と言われるのが、実は嬉しい。','知識を蓄えることに喜びを感じる。','石橋を叩いて渡るタイプだ。','楽天的で、なんとかなると思うほうだ。','リーダーシップを発揮するのが得意だ。','争いごとは避けたい。','完璧主義なところがある。','人の役に立つことが自分の生きがいだ。','感情が豊かで、涙もろい。','一人の時間がないとストレスが溜まる。','組織やルールの枠組みの中にいると安心する。','楽しい計画を立てるのが好きだ。','自分の意見をはっきり言うほうだ。','周囲の意見に合わせてしまうことが多い。','間違ったことを見過ごせない。','他人の評価が気になる。','効率的に物事を進めるのが得意だ。','感受性が強く、芸術的なものに惹かれる。','分析したり、深く考えたりするのが好きだ。','最悪の事態を想定して行動する。','嫌なことがあってもすぐに切り替えられる。','負けず嫌いである。','平和主義で、穏やかな環境を好む。','細かいミスが許せない。','感謝されると、もっと頑張ろうと思う。','自分は特別な存在だという意識がある。','感情に振り回されず、客観的に判断したい。','信頼できるリーダーについていきたい。','じっとしているのが苦手だ。','正論で相手を黙らせてしまうことがある。','他人の微妙な変化に敏感だ。','ルーチンワークを正確にこなすのが得意だ。','人を喜ばせるためのサプライズが好きだ。','自分のスタイル（流儀）を崩したくない。','データや事実を何より重視する。','不安を感じやすいほうだ。','新しいアイデアが次々と湧いてくる。','集団の中で中心的な存在になることが多い。','自分を律して、やるべきことを優先する。','困っている人には、そっと寄り添いたい。','自分の能力を最大限に発揮して成功したい。','人とは違う、独自の感性を大切にしたい。','専門的なスキルを磨くことに没頭できる。','周囲の期待に応えるために努力する。','多趣味で、やりたいことがたくさんある。','自分の信念を曲げるくらいなら、ぶつかっても良い。','穏やかで、波風の立たない毎日が理想だ。','「もっと良くできるはずだ」と常に考えている。','人から感謝されないと、虚しさを感じることがある。','自分の実績を正当に評価してほしい。','孤独であることをどこかで楽しんでいる。','考える時間は十分にある方が良い。','規則やルールは、集団を守るために必要不可欠だ。','深刻な状況でも、明るい側面を見つけようとする。','正義感が強く、曲がったことが大嫌いだ。','「まあいいか」と妥協するのが苦手だ。','自分のことは後回しにしてでも、誰かの力になりたい。','競争で一番になることにこだわる。','自分の内面にある「深い感情」を大切にしたい。','客観的なデータがない意見には納得しにくい。','頼りになるリーダーがいると、全幅の信頼を寄せる。','人を楽しませるアイデアを考えるのが得意だ。','自分の弱みを見せるのは、負けだと思っている。','誰とでも仲良く、公平に接したい。','理想が高く、自分にも他人にも厳しい。','相手が望む自分を、無意識に演じてしまうことがある。','目標を達成するためなら、多少の犠牲は仕方ない。','どこか浮世離れしていると言われることがある。','無駄な会議や雑談は、時間の無駄だと感じる。','伝統や格式のあるものに惹かれる。','好奇心が旺盛で、じっとしていられない。','相手に指図されると、反射的に反発したくなる。','争うくらいなら、自分が我慢すれば良いと思う。','「こうあるべき」という倫理観を大切にしている。','お礼や手紙などをマメに書くほうだ。','効率を追求し、最短距離で結果を出したい。','人から理解されない寂しさを、時に感じる。','複雑な問題を論理的に解き明かすのが好きだ。','周囲の顔色を伺って、安心感を得ようとする。','自由を奪われることが何より苦痛だ。','面倒なことは、強引にでも解決してしまいたい。','全体のバランスを見て、調整役に回ることが多い。','立てた計画通りに物事を進めたい。'
+];
+const SCAN_ENN_TYPE_MAP = {
+  1:[4,13,21,30,45,54,61,62,71,80],2:[1,3,14,31,37,46,55,63,72,81],
+  3:[6,22,23,44,47,50,56,64,73,82],4:[7,15,24,32,40,48,57,65,74,83],
+  5:[8,16,25,33,41,49,58,66,75,84],6:[2,9,17,26,34,42,59,67,76,85],
+  7:[0,10,18,27,35,43,51,60,68,77],8:[5,11,19,28,36,52,69,78,86,87],
+  9:[12,20,29,38,39,53,70,79,88,89]
+};
+const SCAN_ENN_NAMES = {1:'完全主義者',2:'献身家',3:'達成者',4:'個人主義者',5:'研究者',6:'忠実家',7:'楽天家',8:'挑戦者',9:'調停者'};
+const SCAN_ENN_OPTS = [{label:'あてはまる',value:2},{label:'ややあてはまる',value:1},{label:'あまりあてはまらない',value:0},{label:'あてはまらない',value:-1}];
+let scanEnnAnswers = new Array(90).fill(null);
+
+function openScanStep1() {
+  document.getElementById('scan-step1-closed').style.display = 'none';
+  document.getElementById('scan-step1-open').style.display = 'block';
+  if (!document.getElementById('scan-enneagram-questions').innerHTML) {
+    renderScanStep1Questions();
+  }
+}
+function closeScanStep1() {
+  document.getElementById('scan-step1-open').style.display = 'none';
+  document.getElementById('scan-step1-closed').style.display = 'block';
+}
+
+function renderScanStep1Questions() {
+  const saved = localStorage.getItem('mitsumeru_scan_step1');
+  if (saved) {
+    const d = JSON.parse(saved);
+    scanEnnAnswers = d.answers || new Array(90).fill(null);
+  }
+  const c = document.getElementById('scan-enneagram-questions');
+  c.innerHTML = SCAN_ENN_QUESTIONS.map((q, i) => {
+    return `<div class="scan-q-card" id="scan-q-${i}">
+      <div class="scan-q-num">Q${i+1}</div>
+      <div class="scan-q-text">${q}</div>
+      <div class="scan-q-options">${SCAN_ENN_OPTS.map(opt => `
+        <label class="scan-q-option">
+          <input type="radio" name="senn_${i}" value="${opt.value}"
+            onchange="setScanEnnAnswer(${i},${opt.value})"
+            ${scanEnnAnswers[i] === opt.value ? 'checked' : ''}>
+          <span>${opt.label}</span>
+        </label>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+  updateScanStep1Progress();
+}
+
+function setScanEnnAnswer(i, v) {
+  scanEnnAnswers[i] = v;
+  updateScanStep1Progress();
+}
+
+function updateScanStep1Progress() {
+  const answered = scanEnnAnswers.filter(a => a !== null).length;
+  document.getElementById('scan-step1-count').textContent = answered;
+  document.getElementById('scan-step1-bar').style.width = (answered / 90 * 100) + '%';
+  document.getElementById('scan-step1-submit').style.display = answered === 90 ? 'block' : 'none';
+}
+
+function submitScanStep1() {
+  const unanswered = scanEnnAnswers.filter(a => a === null).length;
+  if (unanswered > 0) { alert(`まだ${unanswered}問未回答です。`); return; }
+
+  const scores = {};
+  for (let t = 1; t <= 9; t++) {
+    scores[t] = 0;
+    SCAN_ENN_TYPE_MAP[t].forEach(idx => { scores[t] += scanEnnAnswers[idx]; });
+  }
+  const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+  const top3 = sorted.slice(0, 3).map(([type, score]) => ({
+    type: parseInt(type), name: SCAN_ENN_NAMES[parseInt(type)], score
+  }));
+
+  const today = new Date().toLocaleDateString('ja-JP');
+  const saveData = { answers: scanEnnAnswers, top3, allScores: scores, savedAt: today };
+  localStorage.setItem('mitsumeru_scan_step1', JSON.stringify(saveData));
+
+  // プロファイルのエニアグラムフィールドを自動更新
+  const ennMap = {1:'001(完全主義者)',2:'002(献身家)',3:'003(達成者)',4:'004(個人主義者)',5:'005(研究者)',6:'006(忠実家)',7:'007(楽天家)',8:'008(挑戦者)',9:'009(調停者)'};
+  top3.forEach((item, i) => {
+    const el = document.getElementById(['p-enea1','p-enea2','p-enea3'][i]);
+    if (el) el.value = ennMap[item.type] || '';
+  });
+
+  showScanStep1Result(top3, today);
+  closeScanStep1();
+}
+
+function showScanStep1Result(top3, date) {
+  document.getElementById('scan-step1-date').textContent = date || '取得中...';
+  const body = document.getElementById('scan-step1-result-body');
+  body.innerHTML = top3.map((item, i) => `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+      <div style="font-size:11px;color:var(--text3);min-width:28px;">${['1位','2位','3位'][i]}</div>
+      <div style="flex:1;">
+        <div style="font-size:14px;font-weight:500;">00${item.type} ${item.name}</div>
+        <div style="font-size:11px;color:var(--text3);">スコア：${item.score}pt</div>
+      </div>
+    </div>`).join('');
+  document.getElementById('scan-step1-result').style.display = 'block';
+  document.getElementById('scan-step1-closed').style.display = 'block';
+}
+
+function loadScanStep1() {
+  const saved = localStorage.getItem('mitsumeru_scan_step1');
+  if (!saved) return;
+  const d = JSON.parse(saved);
+  scanEnnAnswers = d.answers || new Array(90).fill(null);
+  if (d.savedAt) showScanStep1Result(d.top3, d.savedAt);
+}
+
+function onClickStep2() {
+  alert('STEP2は準備中です。');
 }
 </script>
 
