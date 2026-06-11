@@ -1645,14 +1645,25 @@ function updateEgoBar() {
 
 function getProfileText() {
   const saved = localStorage.getItem('mitsumeru_profile');
-  if (!saved) return 'プロファイル未設定';
-  const p = JSON.parse(saved);
-  return `名前:${p.name} 役割:${p.role}
-LSRP:${p.lsrp} RC:${p.rc}
-エゴグラム CP:${p.ego?.cp} NP:${p.ego?.np} A:${p.ego?.a} FC:${p.ego?.fc} AC:${p.ego?.ac}
-エニアグラム 第1位:${p.enea?.[0]} 第2位:${p.enea?.[1]} 第3位:${p.enea?.[2]}
-MUST:${p.must} NEVER:${p.never}
-キャリアアンカー:${p.anchor}`;
+  const p = saved ? JSON.parse(saved) : {};
+  const base = `名前:${p.name||''} 役割:${p.role||''}
+LSRP:${p.lsrp||''} RC:${p.rc||''}
+エゴグラム CP:${p.ego?.cp||''} NP:${p.ego?.np||''} A:${p.ego?.a||''} FC:${p.ego?.fc||''} AC:${p.ego?.ac||''}
+エニアグラム 第1位:${p.enea?.[0]||''} 第2位:${p.enea?.[1]||''} 第3位:${p.enea?.[2]||''}
+MUST:${p.must||''} NEVER:${p.never||''}
+キャリアアンカー:${p.anchor||''}`;
+
+  // スキャン診断結果（STEP1〜4）を直接追記
+  const scanLines = [];
+  const s1 = localStorage.getItem('mitsumeru_scan_step1');
+  const s2 = localStorage.getItem('mitsumeru_scan_step2');
+  const s3 = localStorage.getItem('mitsumeru_scan_step3');
+  const s4 = localStorage.getItem('mitsumeru_scan_step4');
+  if (s1) { try { const d=JSON.parse(s1); if(d.top3) scanLines.push(`エニアグラム診断(${d.savedAt}): ${d.top3.map(t=>`${t.type}位${t.name}(${t.score}pt)`).join(' / ')}`); } catch(e){} }
+  if (s2) { try { const d=JSON.parse(s2); if(d.scores) scanLines.push(`エゴグラム診断(${d.savedAt}): CP:${d.scores.CP} NP:${d.scores.NP} A:${d.scores.A} FC:${d.scores.FC} AC:${d.scores.AC} I値:${d.scores.I} U値:${d.scores.U}`); } catch(e){} }
+  if (s3) { try { const d=JSON.parse(s3); scanLines.push(`RC判定(${d.savedAt}): ${d.rcJudge} リスク:${d.rcRisk}`); } catch(e){} }
+  if (s4) { try { const d=JSON.parse(s4); scanLines.push(`LSRP(${d.savedAt}): ${d.level} C:${d.c}/16 I:${d.i}/10 合計:${d.total}/26`); } catch(e){} }
+  return scanLines.length ? base + '\n【スキャン診断結果】\n' + scanLines.join('\n') : base;
 }
 
 function switchTab(tab) {
@@ -2997,35 +3008,6 @@ function checkScanExpiry() {
   if (badge) badge.style.display = expired ? 'inline-block' : 'none';
 }
 
-/* =============================================
-   getProfileText 拡張（スキャン結果を反映）
-   ============================================= */
-const _origGetProfileText = getProfileText;
-function getProfileText() {
-  let base = _origGetProfileText();
-  const s1 = localStorage.getItem('mitsumeru_scan_step1');
-  const s2 = localStorage.getItem('mitsumeru_scan_step2');
-  const s3 = localStorage.getItem('mitsumeru_scan_step3');
-  const s4 = localStorage.getItem('mitsumeru_scan_step4');
-  const lines = [];
-  if (s1) {
-    const d = JSON.parse(s1);
-    if (d.top3) lines.push(`エニアグラム診断（${d.savedAt}）: ${d.top3.map(t => `${t.type}位${t.name}(${t.score}pt)`).join(' / ')}`);
-  }
-  if (s2) {
-    const d = JSON.parse(s2);
-    if (d.scores) lines.push(`エゴグラム診断（${d.savedAt}）: CP:${d.scores.CP} NP:${d.scores.NP} A:${d.scores.A} FC:${d.scores.FC} AC:${d.scores.AC} / I値:${d.scores.I} U値:${d.scores.U}`);
-  }
-  if (s3) {
-    const d = JSON.parse(s3);
-    lines.push(`RC判定（${d.savedAt}）: ${d.rcJudge} リスク:${d.rcRisk}`);
-  }
-  if (s4) {
-    const d = JSON.parse(s4);
-    lines.push(`LSRP（${d.savedAt}）: ${d.level} C:${d.c}/16 I:${d.i}/10 合計:${d.total}/26`);
-  }
-  return lines.length ? base + '\n【スキャン診断結果】\n' + lines.join('\n') : base;
-}
 </script>
 
 </body>
