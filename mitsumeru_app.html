@@ -579,7 +579,9 @@
     <div style="font-size:10px;color:var(--text3);letter-spacing:2px;margin-bottom:6px;">スキャン進捗</div>
     <span id="badge-step1" style="display:inline-block;background:var(--green);color:#fff;border-radius:20px;padding:2px 10px;font-size:11px;margin-right:6px;">✓ STEP1 エニアグラム</span>
     <span id="badge-step2" style="display:inline-block;background:var(--green);color:#fff;border-radius:20px;padding:2px 10px;font-size:11px;margin-right:6px;">✓ STEP2 エゴグラム</span>
-    <span id="badge-step3" style="display:inline-block;background:var(--green);color:#fff;border-radius:20px;padding:2px 10px;font-size:11px;">✓ STEP3 RC判定</span>
+    <span id="badge-step3" style="display:inline-block;background:var(--green);color:#fff;border-radius:20px;padding:2px 10px;font-size:11px;margin-right:6px;">✓ STEP3 RC判定</span>
+    <span id="badge-step4" style="display:inline-block;background:var(--green);color:#fff;border-radius:20px;padding:2px 10px;font-size:11px;margin-right:6px;">✓ STEP4 LSRP</span>
+    <span id="badge-expiry" style="display:none;background:var(--gold);color:#fff;border-radius:20px;padding:2px 10px;font-size:11px;">⚠ 更新推奨（90日超）</span>
   </div>
 
   <!-- STEP2: エゴグラム診断 -->
@@ -626,7 +628,34 @@
         <div style="font-size:11px;color:var(--text3);letter-spacing:1px;margin-bottom:10px;">診断結果</div>
         <div id="scan-step3-result-body"></div>
       </div>
-      <button class="step2-btn" onclick="onClickStep4()" style="margin-top:10px;">STEP4へ → <span style="font-size:11px;opacity:0.8;">（準備中）</span></button>
+      <button class="step2-btn" onclick="onClickStep4()" style="margin-top:10px;">STEP4へ →</button>
+    </div>
+  </div>
+
+  <!-- STEP4: LSRP診断 -->
+  <div class="section" id="scan-step4-section">
+    <div class="section-title">⚔️ スキャン STEP4/4：LSRP診断（サイコパシー傾向）</div>
+    <div id="scan-step4-meta" style="font-size:12px;color:var(--text3);margin-bottom:12px;">前回回答日：<span id="scan-step4-date">未回答</span></div>
+    <div id="scan-step4-closed">
+      <p style="font-size:12px;color:var(--text2);line-height:1.8;margin-bottom:12px;">26問の設問に答えて、冷酷性（C）と衝動性（I）の傾向を診断します。<br>組織内での適合度・リスクを把握するための指標です。</p>
+      <button class="btn-secondary" onclick="openScanStep4()">▶ 診断を開始する（26問）</button>
+    </div>
+    <div id="scan-step4-open" style="display:none;">
+      <div class="scan-progress"><div class="scan-progress-bar" id="scan-step4-bar" style="width:0%"></div></div>
+      <div style="font-size:11px;color:var(--text3);text-align:right;margin-bottom:12px;"><span id="scan-step4-count">0</span> / 26 回答済み</div>
+      <div id="scan-lsrp-questions"></div>
+      <button class="btn-primary" id="scan-step4-submit" onclick="submitScanStep4()" style="display:none;margin-top:8px;">診断を完了して結果を見る</button>
+      <button class="btn-secondary" onclick="closeScanStep4()" style="margin-top:8px;">▲ 閉じる</button>
+    </div>
+    <div id="scan-step4-result" style="display:none;margin-top:12px;">
+      <div style="background:var(--bg2);border-radius:8px;padding:14px;">
+        <div style="font-size:11px;color:var(--text3);letter-spacing:1px;margin-bottom:10px;">診断結果</div>
+        <div id="scan-step4-result-body"></div>
+      </div>
+      <div id="scan-complete-msg" style="display:none;margin-top:12px;background:#e8f5ee;border:0.5px solid #a8dfc4;border-radius:8px;padding:14px;text-align:center;">
+        <div style="font-size:14px;font-weight:500;color:var(--green);margin-bottom:6px;">🎉 スキャン全STEP完了</div>
+        <div style="font-size:11px;color:var(--text2);">結果はClaudeのアドバイス生成に自動反映されます</div>
+      </div>
     </div>
   </div>
 
@@ -1284,7 +1313,9 @@ window.addEventListener('DOMContentLoaded', async function() {
     if (typeof loadScanStep1 === 'function') loadScanStep1();
     if (typeof loadScanStep2 === 'function') loadScanStep2();
     if (typeof loadScanStep3 === 'function') loadScanStep3();
+    if (typeof loadScanStep4 === 'function') loadScanStep4();
     if (typeof updateScanBadge === 'function') updateScanBadge();
+    if (typeof checkScanExpiry === 'function') checkScanExpiry();
   })();
 
   // クラウドから最新データを取得して上書き（クラウドを常に優先）
@@ -1363,6 +1394,27 @@ window.addEventListener('DOMContentLoaded', async function() {
         if (el && cloudEvening[id] !== undefined) el.value = cloudEvening[id];
       });
       localStorage.setItem('mitsumeru_evening', JSON.stringify(cloudEvening));
+    }
+    // スキャン結果をKVから復元（ローカルに未保存の場合のみ）
+    const cloudScan = await cloudLoadGlobal('scan');
+    if (cloudScan && cloudScan.completedAt) {
+      const keys = ['mitsumeru_scan_step1','mitsumeru_scan_step2','mitsumeru_scan_step3','mitsumeru_scan_step4'];
+      const anyMissing = keys.some(k => !localStorage.getItem(k));
+      if (anyMissing) {
+        // KVには集約データのみ保存されているため、各STEPの個別回答は復元不可
+        // completedAtが存在する = 全STEP完了済みとして進捗バッジのみ更新
+        if (typeof checkScanComplete === 'function') {
+          // 個別STEPデータがない場合はバッジのみ更新
+          const badge = document.getElementById('scan-progress-badge');
+          if (badge) badge.style.display = 'block';
+          const expiry = document.getElementById('badge-expiry');
+          if (expiry && cloudScan.completedAt) {
+            const parts = cloudScan.completedAt.split('/').map(Number);
+            const savedDate = new Date(parts[0], parts[1] - 1, parts[2]);
+            if ((new Date() - savedDate) / 86400000 > 90) expiry.style.display = 'inline-block';
+          }
+        }
+      }
     }
   }, 1500);
 });
@@ -2587,12 +2639,14 @@ function updateScanBadge() {
   const s1 = !!localStorage.getItem('mitsumeru_scan_step1');
   const s2 = !!localStorage.getItem('mitsumeru_scan_step2');
   const s3 = !!localStorage.getItem('mitsumeru_scan_step3');
+  const s4 = !!localStorage.getItem('mitsumeru_scan_step4');
   const badge = document.getElementById('scan-progress-badge');
   if (!badge) return;
   document.getElementById('badge-step1').style.display = s1 ? 'inline-block' : 'none';
   document.getElementById('badge-step2').style.display = s2 ? 'inline-block' : 'none';
   document.getElementById('badge-step3').style.display = s3 ? 'inline-block' : 'none';
-  badge.style.display = (s1 || s2 || s3) ? 'block' : 'none';
+  document.getElementById('badge-step4').style.display = s4 ? 'inline-block' : 'none';
+  badge.style.display = (s1 || s2 || s3 || s4) ? 'block' : 'none';
 }
 
 function onClickStep3() {
@@ -2739,7 +2793,238 @@ function loadScanStep3() {
 }
 
 function onClickStep4() {
-  alert('STEP4は準備中です。');
+  document.getElementById('scan-step4-section').scrollIntoView({ behavior: 'smooth' });
+}
+
+/* =============================================
+   STEP4: LSRP診断
+   ============================================= */
+const SCAN_LSRP_QUESTIONS = [
+  { text: '目標達成のためなら、周囲の感情を多少切り捨てるのも合理的な判断だ。', type: 'c', rev: false },
+  { text: '他人が不運に遭ったり落ち込んだりしているのを見ると、自分ごとのように胸が痛む。', type: 'c', rev: true },
+  { text: '自分の利益のためなら、多少のルール違反や抜け道を使っても大きな問題ではない。', type: 'c', rev: false },
+  { text: '誰かを騙して自分が得をすることなど、道義的に絶対に考えられない。', type: 'c', rev: true },
+  { text: '他人がどうなろうと、自分の目標さえ達成できればそれで満足だ。', type: 'c', rev: false },
+  { text: '他人からどう思われるかを気にして、自分の行動を制限することはほとんどない。', type: 'c', rev: false },
+  { text: '困っている人がいるとき、その人が自分に何かをもたらしてくれる可能性があるか考えてしまう。', type: 'c', rev: false },
+  { text: '私は、どんな状況でも他人の心情を深く理解し、寄り添うことができると自信がある。', type: 'c', rev: true },
+  { text: '自分の目標を達成するために、周囲を味方に引き入れる技術は重要だ。', type: 'c', rev: false },
+  { text: '他人の不幸を聞くと、心からその人を助けたいという衝動に駆られる。', type: 'c', rev: true },
+  { text: '自分の成果を上げるために、他人の評価や手柄をうまく利用するのは当然の戦略だ。', type: 'c', rev: false },
+  { text: '周囲の人が困難に直面している姿を見ると、正直なところ「自分に関係なくてよかった」と感じる。', type: 'c', rev: false },
+  { text: 'どんなに厳しい状況であっても、他人の立場になって物事を考える努力を怠らない。', type: 'c', rev: true },
+  { text: '仕事上でトラブルが起きたとき、それが自分以外の誰かの責任であれば、はっきりとそう指摘する。', type: 'c', rev: false },
+  { text: '他人が大切にしているものや価値観を尊重し、それを傷つけないように配慮している。', type: 'c', rev: true },
+  { text: 'チームや組織の目的達成のためなら、多少の犠牲は避けられないと割り切っている。', type: 'c', rev: false },
+  { text: '長期的なキャリア戦略よりも、目の前のチャンスや直感を優先して動くことが多い。', type: 'i', rev: false },
+  { text: '仕事中に「このままではまずい」と分かっていても、突発的な行動を抑えられないことがある。', type: 'i', rev: false },
+  { text: 'プロジェクトの方針や個人の約束であっても、状況が変わり次第、すぐに変更しても問題ないと考えている。', type: 'i', rev: false },
+  { text: '決められたマニュアルや手順書を忠実に守り、一貫した行動をとることが得意だ。', type: 'i', rev: true },
+  { text: 'その場の勢いで決断し、後から「もっと慎重に考えるべきだった」と後悔することがある。', type: 'i', rev: false },
+  { text: '突発的に何かを変えたい、あるいは新しい刺激が欲しいと強く感じることがある。', type: 'i', rev: false },
+  { text: '私は、どんなトラブルが起きても、あらかじめ決めた計画通りに冷静に対処できる。', type: 'i', rev: true },
+  { text: '長期的な目標を達成するために、目先の楽しみを我慢することに抵抗はない。', type: 'i', rev: true },
+  { text: '自分が正しいと思った判断なら、組織のルールや慣習を無視しても進めるべきだ。', type: 'i', rev: false },
+  { text: '私は、自分の衝動をコントロールし、社会的なルールや期待に応える努力を惜しまない。', type: 'i', rev: true }
+];
+const LSRP_LEVEL = [
+  { min: 16, label: '★★★ 危険：組織の猛毒', color: '#c0392b', key: '危険：組織の猛毒' },
+  { min: 11, label: '★★☆ 要注意：観察対象',  color: '#b8860b', key: '要注意：観察対象' },
+  { min: 0,  label: '★☆☆ 安全圏：適合ピース', color: '#2d7a52', key: '安全圏：適合ピース' }
+];
+let scanLsrpAnswers = new Array(26).fill(null);
+
+function openScanStep4() {
+  document.getElementById('scan-step4-closed').style.display = 'none';
+  document.getElementById('scan-step4-open').style.display = 'block';
+  if (!document.getElementById('scan-lsrp-questions').innerHTML) renderScanStep4Questions();
+}
+function closeScanStep4() {
+  document.getElementById('scan-step4-open').style.display = 'none';
+  document.getElementById('scan-step4-closed').style.display = 'block';
+}
+
+function renderScanStep4Questions() {
+  const saved = localStorage.getItem('mitsumeru_scan_step4');
+  if (saved) scanLsrpAnswers = JSON.parse(saved).answers || new Array(26).fill(null);
+  const catColors = { c: '#c0392b', i: '#1a5a9a' };
+  document.getElementById('scan-lsrp-questions').innerHTML = SCAN_LSRP_QUESTIONS.map((q, i) => `
+    <div class="scan-q-card">
+      <div class="scan-q-num" style="display:flex;justify-content:space-between;">
+        <span>Q${i + 1}</span>
+        <span style="color:${catColors[q.type]};font-weight:500;">${q.type === 'c' ? '冷酷性' : '衝動性'}</span>
+      </div>
+      <div class="scan-q-text">${q.text}</div>
+      <div class="scan-q-options">${SCAN_ENN_OPTS.map(opt => `
+        <label class="scan-q-option">
+          <input type="radio" name="slsrp_${i}" value="${opt.value}"
+            onchange="setScanLsrpAnswer(${i},${opt.value})"
+            ${scanLsrpAnswers[i] === opt.value ? 'checked' : ''}>
+          <span>${opt.label}</span>
+        </label>`).join('')}
+      </div>
+    </div>`).join('');
+  updateScanStep4Progress();
+}
+
+function setScanLsrpAnswer(i, v) {
+  scanLsrpAnswers[i] = v;
+  updateScanStep4Progress();
+}
+
+function updateScanStep4Progress() {
+  const answered = scanLsrpAnswers.filter(a => a !== null).length;
+  document.getElementById('scan-step4-count').textContent = answered;
+  document.getElementById('scan-step4-bar').style.width = (answered / 26 * 100) + '%';
+  document.getElementById('scan-step4-submit').style.display = answered === 26 ? 'block' : 'none';
+}
+
+function submitScanStep4() {
+  if (scanLsrpAnswers.includes(null)) { alert('まだ未回答の設問があります。'); return; }
+
+  let c = 0, imp = 0;
+  SCAN_LSRP_QUESTIONS.forEach((q, i) => {
+    const v = scanLsrpAnswers[i];
+    const hit = q.rev ? v <= 0 : v >= 1;
+    if (hit) { q.type === 'c' ? c++ : imp++; }
+  });
+  const total = c + imp;
+  const level = LSRP_LEVEL.find(l => total >= l.min);
+  const cause = c > imp ? '冷酷性・利己性に注意' : imp > c ? '衝動性・反社会性に注意' : '複合リスク';
+
+  const today = new Date().toLocaleDateString('ja-JP');
+  const saveData = { answers: scanLsrpAnswers, c, i: imp, total, level: level.key, cause, savedAt: today };
+  localStorage.setItem('mitsumeru_scan_step4', JSON.stringify(saveData));
+
+  // プロファイルのLSRPフィールドを自動更新
+  const el = document.getElementById('p-lsrp');
+  if (el) el.value = level.key;
+
+  showScanStep4Result(c, imp, total, level, cause, today);
+  closeScanStep4();
+  updateScanBadge();
+  checkScanComplete();
+}
+
+function showScanStep4Result(c, imp, total, level, cause, date) {
+  document.getElementById('scan-step4-date').textContent = date;
+  const cBar = Math.round(c / 16 * 100);
+  const iBar = Math.round(imp / 10 * 100);
+  document.getElementById('scan-step4-result-body').innerHTML = `
+    <div style="text-align:center;padding:8px 0 14px;">
+      <div style="font-size:17px;font-weight:500;color:${level.color};">${level.label}</div>
+    </div>
+    <div style="margin-bottom:12px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+        <div style="font-size:11px;color:#c0392b;min-width:52px;">冷酷性(C)</div>
+        <div style="flex:1;background:var(--bg);border-radius:3px;height:10px;overflow:hidden;">
+          <div style="width:${cBar}%;background:#c0392b;height:10px;border-radius:3px;transition:width 0.4s;"></div>
+        </div>
+        <div style="font-size:12px;font-weight:500;min-width:36px;text-align:right;">${c}/16</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div style="font-size:11px;color:#1a5a9a;min-width:52px;">衝動性(I)</div>
+        <div style="flex:1;background:var(--bg);border-radius:3px;height:10px;overflow:hidden;">
+          <div style="width:${iBar}%;background:#1a5a9a;height:10px;border-radius:3px;transition:width 0.4s;"></div>
+        </div>
+        <div style="font-size:12px;font-weight:500;min-width:36px;text-align:right;">${imp}/10</div>
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--text2);background:var(--bg);border-radius:6px;padding:8px 12px;">
+      合計スコア：${total}/26 ／ ${total >= 11 ? '主因：' + cause : '良好なバランス'}
+    </div>`;
+  document.getElementById('scan-step4-result').style.display = 'block';
+  document.getElementById('scan-step4-closed').style.display = 'block';
+}
+
+function loadScanStep4() {
+  const saved = localStorage.getItem('mitsumeru_scan_step4');
+  if (!saved) return;
+  const d = JSON.parse(saved);
+  scanLsrpAnswers = d.answers || new Array(26).fill(null);
+  if (d.savedAt) {
+    const level = LSRP_LEVEL.find(l => l.key === d.level) || LSRP_LEVEL[2];
+    showScanStep4Result(d.c, d.i, d.total, level, d.cause, d.savedAt);
+  }
+  updateScanBadge();
+  checkScanComplete();
+}
+
+/* =============================================
+   全STEP完了処理・KV保存・90日チェック
+   ============================================= */
+function checkScanComplete() {
+  const s1 = localStorage.getItem('mitsumeru_scan_step1');
+  const s2 = localStorage.getItem('mitsumeru_scan_step2');
+  const s3 = localStorage.getItem('mitsumeru_scan_step3');
+  const s4 = localStorage.getItem('mitsumeru_scan_step4');
+  if (!(s1 && s2 && s3 && s4)) return;
+
+  // 全STEP完了メッセージ表示
+  const msg = document.getElementById('scan-complete-msg');
+  if (msg) msg.style.display = 'block';
+
+  // CloudflareKVにスキャン結果を保存
+  const d1 = JSON.parse(s1), d2 = JSON.parse(s2), d3 = JSON.parse(s3), d4 = JSON.parse(s4);
+  const scanAll = {
+    completedAt: new Date().toLocaleDateString('ja-JP'),
+    enneagram: { top3: d1.top3, allScores: d1.allScores },
+    egogram: d2.scores,
+    rc: { rcRaw: d3.rcRaw, rcRisk: d3.rcRisk, rcJudge: d3.rcJudge },
+    lsrp: { c: d4.c, i: d4.i, total: d4.total, level: d4.level, cause: d4.cause }
+  };
+  cloudSaveGlobal('scan', scanAll);
+
+  checkScanExpiry();
+}
+
+function checkScanExpiry() {
+  const steps = ['mitsumeru_scan_step1','mitsumeru_scan_step2','mitsumeru_scan_step3','mitsumeru_scan_step4'];
+  const now = new Date();
+  let expired = false;
+  steps.forEach(key => {
+    const saved = localStorage.getItem(key);
+    if (!saved) return;
+    const d = JSON.parse(saved);
+    if (!d.savedAt) return;
+    const parts = d.savedAt.split('/').map(Number);
+    // ja-JP形式: YYYY/MM/DD
+    const saved_date = new Date(parts[0], parts[1] - 1, parts[2]);
+    const days = Math.floor((now - saved_date) / 86400000);
+    if (days > 90) expired = true;
+  });
+  const badge = document.getElementById('badge-expiry');
+  if (badge) badge.style.display = expired ? 'inline-block' : 'none';
+}
+
+/* =============================================
+   getProfileText 拡張（スキャン結果を反映）
+   ============================================= */
+const _origGetProfileText = getProfileText;
+function getProfileText() {
+  let base = _origGetProfileText();
+  const s1 = localStorage.getItem('mitsumeru_scan_step1');
+  const s2 = localStorage.getItem('mitsumeru_scan_step2');
+  const s3 = localStorage.getItem('mitsumeru_scan_step3');
+  const s4 = localStorage.getItem('mitsumeru_scan_step4');
+  const lines = [];
+  if (s1) {
+    const d = JSON.parse(s1);
+    if (d.top3) lines.push(`エニアグラム診断（${d.savedAt}）: ${d.top3.map(t => `${t.type}位${t.name}(${t.score}pt)`).join(' / ')}`);
+  }
+  if (s2) {
+    const d = JSON.parse(s2);
+    if (d.scores) lines.push(`エゴグラム診断（${d.savedAt}）: CP:${d.scores.CP} NP:${d.scores.NP} A:${d.scores.A} FC:${d.scores.FC} AC:${d.scores.AC} / I値:${d.scores.I} U値:${d.scores.U}`);
+  }
+  if (s3) {
+    const d = JSON.parse(s3);
+    lines.push(`RC判定（${d.savedAt}）: ${d.rcJudge} リスク:${d.rcRisk}`);
+  }
+  if (s4) {
+    const d = JSON.parse(s4);
+    lines.push(`LSRP（${d.savedAt}）: ${d.level} C:${d.c}/16 I:${d.i}/10 合計:${d.total}/26`);
+  }
+  return lines.length ? base + '\n【スキャン診断結果】\n' + lines.join('\n') : base;
 }
 </script>
 
