@@ -578,7 +578,8 @@
   <div id="scan-progress-badge" style="display:none;background:var(--bg2);border:0.5px solid var(--border);border-radius:8px;padding:12px 16px;margin-bottom:12px;font-size:12px;color:var(--text2);line-height:2;">
     <div style="font-size:10px;color:var(--text3);letter-spacing:2px;margin-bottom:6px;">スキャン進捗</div>
     <span id="badge-step1" style="display:inline-block;background:var(--green);color:#fff;border-radius:20px;padding:2px 10px;font-size:11px;margin-right:6px;">✓ STEP1 エニアグラム</span>
-    <span id="badge-step2" style="display:inline-block;background:var(--green);color:#fff;border-radius:20px;padding:2px 10px;font-size:11px;">✓ STEP2 エゴグラム</span>
+    <span id="badge-step2" style="display:inline-block;background:var(--green);color:#fff;border-radius:20px;padding:2px 10px;font-size:11px;margin-right:6px;">✓ STEP2 エゴグラム</span>
+    <span id="badge-step3" style="display:inline-block;background:var(--green);color:#fff;border-radius:20px;padding:2px 10px;font-size:11px;">✓ STEP3 RC判定</span>
   </div>
 
   <!-- STEP2: エゴグラム診断 -->
@@ -601,7 +602,31 @@
         <div style="font-size:11px;color:var(--text3);letter-spacing:1px;margin-bottom:10px;">診断結果</div>
         <div id="scan-step2-result-body"></div>
       </div>
-      <button class="step2-btn" onclick="onClickStep3()" style="margin-top:10px;">STEP3へ → <span style="font-size:11px;opacity:0.8;">（準備中）</span></button>
+      <button class="step2-btn" onclick="onClickStep3()" style="margin-top:10px;">STEP3へ →</button>
+    </div>
+  </div>
+
+  <!-- STEP3: RC判定 -->
+  <div class="section" id="scan-step3-section">
+    <div class="section-title">🔰 スキャン STEP3/4：RC判定（組織適応リスク）</div>
+    <div id="scan-step3-meta" style="font-size:12px;color:var(--text3);margin-bottom:12px;">前回回答日：<span id="scan-step3-date">未回答</span></div>
+    <div id="scan-step3-closed">
+      <p style="font-size:12px;color:var(--text2);line-height:1.8;margin-bottom:12px;">10問の設問に答えて、組織内での行動リスク傾向を診断します。<br>STEP2（エゴグラム）完了済みの場合は、より精度の高いI/U値ベースの判定が適用されます。</p>
+      <button class="btn-secondary" onclick="openScanStep3()">▶ 診断を開始する（10問）</button>
+    </div>
+    <div id="scan-step3-open" style="display:none;">
+      <div class="scan-progress"><div class="scan-progress-bar" id="scan-step3-bar" style="width:0%"></div></div>
+      <div style="font-size:11px;color:var(--text3);text-align:right;margin-bottom:12px;"><span id="scan-step3-count">0</span> / 10 回答済み</div>
+      <div id="scan-rc-questions"></div>
+      <button class="btn-primary" id="scan-step3-submit" onclick="submitScanStep3()" style="display:none;margin-top:8px;">診断を完了して結果を見る</button>
+      <button class="btn-secondary" onclick="closeScanStep3()" style="margin-top:8px;">▲ 閉じる</button>
+    </div>
+    <div id="scan-step3-result" style="display:none;margin-top:12px;">
+      <div style="background:var(--bg2);border-radius:8px;padding:14px;">
+        <div style="font-size:11px;color:var(--text3);letter-spacing:1px;margin-bottom:10px;">診断結果</div>
+        <div id="scan-step3-result-body"></div>
+      </div>
+      <button class="step2-btn" onclick="onClickStep4()" style="margin-top:10px;">STEP4へ → <span style="font-size:11px;opacity:0.8;">（準備中）</span></button>
     </div>
   </div>
 
@@ -1258,6 +1283,7 @@ window.addEventListener('DOMContentLoaded', async function() {
     if (typeof loadProfile === 'function') loadProfile();
     if (typeof loadScanStep1 === 'function') loadScanStep1();
     if (typeof loadScanStep2 === 'function') loadScanStep2();
+    if (typeof loadScanStep3 === 'function') loadScanStep3();
     if (typeof updateScanBadge === 'function') updateScanBadge();
   })();
 
@@ -2560,15 +2586,160 @@ function loadScanStep2() {
 function updateScanBadge() {
   const s1 = !!localStorage.getItem('mitsumeru_scan_step1');
   const s2 = !!localStorage.getItem('mitsumeru_scan_step2');
+  const s3 = !!localStorage.getItem('mitsumeru_scan_step3');
   const badge = document.getElementById('scan-progress-badge');
   if (!badge) return;
   document.getElementById('badge-step1').style.display = s1 ? 'inline-block' : 'none';
   document.getElementById('badge-step2').style.display = s2 ? 'inline-block' : 'none';
-  badge.style.display = (s1 || s2) ? 'block' : 'none';
+  document.getElementById('badge-step3').style.display = s3 ? 'inline-block' : 'none';
+  badge.style.display = (s1 || s2 || s3) ? 'block' : 'none';
 }
 
 function onClickStep3() {
-  alert('STEP3は準備中です。');
+  document.getElementById('scan-step3-section').scrollIntoView({ behavior: 'smooth' });
+}
+
+/* =============================================
+   STEP3: RC判定（組織適応リスク）
+   ============================================= */
+const SCAN_RC_QUESTIONS = [
+  '上司の指示でも、自分が納得できなければ従う必要はないと思う。',
+  '効率のためなら、既存のルールを一時的に無視しても良い。',
+  '正論であれば、相手が誰であっても論破すべきだ。',
+  '「昔からの慣習」は、無意味な束縛だと感じて不快になる。',
+  '自分の直感や経験の方が、マニュアルより正しいと信じている。',
+  '新しい組織のやり方には、まず疑いから入ってしまう。',
+  '自分の手法を他人に細かく可視化されるのは苦痛だ。',
+  '改善案を出すよりも先に、不満を同僚に漏らしてしまう。',
+  '自分がミスした原因は、主に「仕組みの悪さ」にあると思う。',
+  '「チームワーク」という言葉に、同調圧力のような抵抗を感じる。'
+];
+
+const RC_JUDGE_MAP = {
+  '安全（凪）':   { label: '✅ 凪（バランス良好）',        color: '#2d7a52', key: '安全（凪）' },
+  '注意（I-U-）': { label: '⚠️ 停滞（自律性欠如・停滞OS）', color: '#b8860b', key: '注意（I-U-）' },
+  '依存（I-U+）': { label: '⚠️ 衝動（FC過剰・依存傾向）',  color: '#b8860b', key: '依存（I-U+）' },
+  '危険（I+U-）': { label: '🚨 危険（他者否定・独善OS）',   color: '#c0392b', key: '危険（I+U-）' }
+};
+
+let scanRcAnswers = new Array(10).fill(null);
+
+function openScanStep3() {
+  document.getElementById('scan-step3-closed').style.display = 'none';
+  document.getElementById('scan-step3-open').style.display = 'block';
+  if (!document.getElementById('scan-rc-questions').innerHTML) renderScanStep3Questions();
+}
+function closeScanStep3() {
+  document.getElementById('scan-step3-open').style.display = 'none';
+  document.getElementById('scan-step3-closed').style.display = 'block';
+}
+
+function renderScanStep3Questions() {
+  const saved = localStorage.getItem('mitsumeru_scan_step3');
+  if (saved) scanRcAnswers = JSON.parse(saved).answers || new Array(10).fill(null);
+  document.getElementById('scan-rc-questions').innerHTML = SCAN_RC_QUESTIONS.map((q, i) => `
+    <div class="scan-q-card">
+      <div class="scan-q-num">Q${i + 1}</div>
+      <div class="scan-q-text">${q}</div>
+      <div class="scan-q-options">${SCAN_ENN_OPTS.map(opt => `
+        <label class="scan-q-option">
+          <input type="radio" name="src_${i}" value="${opt.value}"
+            onchange="setScanRcAnswer(${i},${opt.value})"
+            ${scanRcAnswers[i] === opt.value ? 'checked' : ''}>
+          <span>${opt.label}</span>
+        </label>`).join('')}
+      </div>
+    </div>`).join('');
+  updateScanStep3Progress();
+}
+
+function setScanRcAnswer(i, v) {
+  scanRcAnswers[i] = v;
+  updateScanStep3Progress();
+}
+
+function updateScanStep3Progress() {
+  const answered = scanRcAnswers.filter(a => a !== null).length;
+  document.getElementById('scan-step3-count').textContent = answered;
+  document.getElementById('scan-step3-bar').style.width = (answered / 10 * 100) + '%';
+  document.getElementById('scan-step3-submit').style.display = answered === 10 ? 'block' : 'none';
+}
+
+function submitScanStep3() {
+  if (scanRcAnswers.includes(null)) { alert('まだ未回答の設問があります。'); return; }
+
+  const rcRaw = scanRcAnswers.filter(v => v >= 1).length;
+  const rcRisk = rcRaw >= 7 ? `高（${rcRaw}/10）` : rcRaw >= 4 ? `中（${rcRaw}/10）` : `低（${rcRaw}/10）`;
+
+  // STEP2のI/U値があれば精度の高い判定を使用、なければRC単独で判定
+  let rcJudge;
+  const step2 = JSON.parse(localStorage.getItem('mitsumeru_scan_step2') || '{}');
+  if (step2.scores) {
+    const { I, U } = step2.scores;
+    const rcBoost = rcRaw >= 5;
+    if (rcBoost || I >= 10) {
+      if (I >= 10 && U < 10) rcJudge = '危険（I+U-）';
+      else if (I < 10 && U >= 10) rcJudge = '依存（I-U+）';
+      else if (I < 10 && U < 10) rcJudge = '注意（I-U-）';
+      else rcJudge = rcRaw >= 5 ? '注意（I-U-）' : '安全（凪）';
+    } else {
+      rcJudge = I >= 10 && U >= 10 ? '安全（凪）' :
+                I >= 10             ? '危険（I+U-）' :
+                U >= 10             ? '依存（I-U+）' : '注意（I-U-）';
+    }
+  } else {
+    rcJudge = rcRaw >= 7 ? '危険（I+U-）' : rcRaw >= 4 ? '注意（I-U-）' : '安全（凪）';
+  }
+
+  const today = new Date().toLocaleDateString('ja-JP');
+  const saveData = { answers: scanRcAnswers, rcRaw, rcRisk, rcJudge, savedAt: today };
+  localStorage.setItem('mitsumeru_scan_step3', JSON.stringify(saveData));
+
+  // プロファイルのRC判定フィールドを更新
+  const rcEl = document.getElementById('p-rc');
+  if (rcEl) rcEl.value = rcJudge;
+
+  showScanStep3Result(rcRaw, rcRisk, rcJudge, today);
+  closeScanStep3();
+  updateScanBadge();
+}
+
+function showScanStep3Result(rcRaw, rcRisk, rcJudge, date) {
+  document.getElementById('scan-step3-date').textContent = date;
+  const info = RC_JUDGE_MAP[rcJudge] || { label: rcJudge, color: 'var(--text2)' };
+  const barW = Math.round(rcRaw / 10 * 100);
+  document.getElementById('scan-step3-result-body').innerHTML = `
+    <div style="text-align:center;padding:10px 0 14px;">
+      <div style="font-size:18px;font-weight:500;color:${info.color};">${info.label}</div>
+    </div>
+    <div style="margin-bottom:10px;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div style="font-size:11px;color:var(--text3);min-width:70px;">RCリスク指標</div>
+        <div style="flex:1;background:var(--bg);border-radius:3px;height:10px;overflow:hidden;">
+          <div style="width:${barW}%;background:${info.color};height:10px;border-radius:3px;transition:width 0.4s;"></div>
+        </div>
+        <div style="font-size:12px;font-weight:500;min-width:40px;text-align:right;">${rcRisk}</div>
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--text2);background:var(--bg);border-radius:6px;padding:8px 12px;">
+      RC該当数：${rcRaw}/10 問 ／ 判定：${rcJudge}
+      ${localStorage.getItem('mitsumeru_scan_step2') ? '<br><span style="color:var(--text3);">※ STEP2のI/U値を使用した精密判定</span>' : ''}
+    </div>`;
+  document.getElementById('scan-step3-result').style.display = 'block';
+  document.getElementById('scan-step3-closed').style.display = 'block';
+}
+
+function loadScanStep3() {
+  const saved = localStorage.getItem('mitsumeru_scan_step3');
+  if (!saved) return;
+  const d = JSON.parse(saved);
+  scanRcAnswers = d.answers || new Array(10).fill(null);
+  if (d.savedAt) showScanStep3Result(d.rcRaw, d.rcRisk, d.rcJudge, d.savedAt);
+  updateScanBadge();
+}
+
+function onClickStep4() {
+  alert('STEP4は準備中です。');
 }
 </script>
 
