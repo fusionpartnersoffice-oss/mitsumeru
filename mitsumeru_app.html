@@ -2112,75 +2112,54 @@ async function generateEvening() {
   // ④ メインサマリー生成
   const aiScheduleSuggestion = aiResult ? `【AI提案スケジュール（①急・重要）】\n${aiResult.calendar||'なし'}\n\n【要検討リスト】\n②今週中:${aiResult.review||'なし'}\n③委任:${aiResult.delegate||'なし'}\n④損切り:${aiResult.cutloss||'なし'}` : '';
 
-  const prompt = `あなたはFusion Partners代表の「SuccessOS 統合経営参謀」です。
+  const prompt = `あなたは今日の記録を読んで、明日の行動戦略を生成する専門AIです。
+
+以下のルールを厳守してください：
+- 客観的な事実のみ抽出
+- 感情的な脚色・推測・ハルシネーション禁止
+- マークダウン装飾禁止（#・##・太字の多用禁止）
+- 該当事実がない場合は「特になし」と明記
+- 語尾は「です・ます」調
+
+---
 指定日：${dateStr}
+HP:${hp}/100　MP:${mp}/100　ポモドーロ:${counts.pomo}ポモ
 
-【ユーザープロファイル】
-${getProfileText()}
-
-【随時メモ（当日の記録）】
-${getMemoSummary()}
-
-【補足・追記】
-${supplement || 'なし'}
-
-【本日のデータ】
 P（事実）：${p}
 V（ノイズ）：${v}
 G（気づき）：${g}
-ノイズ回数：${counts.noise}回　ポモドーロ数：${counts.pomo}ポモ　Try100達成数：${counts.try100}個
-LV：${lvTotal}pt（本日+${lv}pt）　HP:${hp}/100　MP:${mp}/100
 
-【5つのデバッグ】
-${debugText}
-役割の理由：${document.getElementById('d1-reason').value}
-委譲の理由：${document.getElementById('d2-reason').value}
-動機の理由：${document.getElementById('d3-reason').value}
-資産の理由：${document.getElementById('d4-reason').value}
-余白の理由：${document.getElementById('d5-reason').value}
+補足・追記：${supplement || 'なし'}
+明日の確定アポ：${tomorrow || 'なし'}
+先送りタスク（フラグ付き）：${delayWithFlags || 'なし'}
+${aiScheduleSuggestion ? '\n' + aiScheduleSuggestion : ''}
+---
 
-【明日の確定アポ】
-${tomorrow}
+【1】本日のP（実施事項）
+今日完了したこと・実施したことの事実のみ
 
-【先送りタスク（フラグ付き）】
-${delayWithFlags || 'なし'}
+【2】本日のV（ノイズ・ボトルネック）
+浮き彫りになった問題・懸念・保留事項
 
-${aiScheduleSuggestion}
+【3】本日のG（気づき・アイデア・Tryの種）
+今後の戦略やFusion OS構築に繋がる視点
 
-【明日のTry100・参考情報】
-${try100 || 'なし'}
+【4】明日の行動戦略
+ポモ数は必ず数字で記載し省略禁止：
 
-【SuccessOSフィードバック】
-${feedback || 'なし'}
+最優先タスク（急重度①）：内容（Xポモ）
+重要タスク（急重度②）：内容（Xポモ）
+軽微タスク（急重度③）：内容（Xポモ）
+保留・将来タスク（急重度④）：内容（ポモ未定）
 
-【NotebookLMコメント】
-${notebooklm || 'なし'}
+急重度の定義：
+①翌日必達・急用で重要
+②翌日中・重要だが急用でない
+③今週中・急用だが重要でない
+④将来対応
 
-上記データをもとに、以下のMarkdown形式で出力してください。
-
-# ミツメル行動監査サマリー｜${dateStr}
-
-## 【明日の戦略スローガン】
-（翌朝の最重要指針・総ポモドーロ数を明記）
-
-## 【本日のステータス】
-HP（${hp}/100） / MP（${mp}/100） / LV（累積${lvTotal}pt、本日+${lv}pt）と根拠
-
-## 【因果関係の看破】
-P・V・Gの連動性をロジカルに解説
-
-## 【音声解説用シナリオ】
-NotebookLM音声対話用のナラティブ（物語調）
-
-## 【インフォグラフィック構成案】
-図解・可視化のための視覚的構成イメージ
-
-## 【明日につながる参謀の前向きなアドバイス】
-本日の葛藤や行動をファクトに基づいてポジティブに肯定する一言
-
-## 【明日のスケジュール】
-AIが分類した①急・重要タスクと確定アポを統合した最終スケジュールを提示してください。
-形式：HHMM ポモ数 タスク内容`;
+【5】HP/MPを踏まえた一言
+今日のHP・MPを考慮して明日の動き方を一言でアドバイスする`;
 
   callClaude(prompt,
     text => {
