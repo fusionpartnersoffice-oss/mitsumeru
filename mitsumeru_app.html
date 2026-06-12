@@ -1293,9 +1293,10 @@ window.addEventListener('DOMContentLoaded', async function() {
   loadProfile();
 
   // ② KVから最新を取得してタイムスタンプで上書き判断
-  const [kvMemos, kvMorning, kvEvening, kvProfile, kvLV] = await Promise.all([
+  const [kvMemos, kvMorning, kvEvening, kvProfile, kvLV, kvOutput, kvCalendar, kvDelay] = await Promise.all([
     cloudLoad('memos'), cloudLoad('morning'), cloudLoad('evening'),
-    cloudLoadGlobal('profile'), cloudLoadGlobal('lv')
+    cloudLoadGlobal('profile'), cloudLoadGlobal('lv'),
+    cloudLoad('output'), cloudLoad('calendar'), cloudLoad('delay')
   ]);
 
   const bestMorning = newerOf(lsMorning, kvMorning);
@@ -1324,6 +1325,28 @@ window.addEventListener('DOMContentLoaded', async function() {
   if (kvLV && kvLV.total !== undefined && kvLV.total > getLVBase()) {
     localStorage.setItem('mitsumeru_lv_total', kvLV.total);
     calcAutoCount();
+  }
+
+  // 出力・CSV をKVから復元（別端末同期）
+  const bestOutput = newerOf(lsOutput, kvOutput);
+  if (bestOutput && bestOutput.text) {
+    const mdBox = document.getElementById('output-markdown');
+    if (mdBox && !mdBox.textContent) { mdBox.textContent = bestOutput.text; mdBox.classList.add('visible'); }
+    if (bestOutput !== lsOutput) localStorage.setItem(lsKey('output'), JSON.stringify(bestOutput));
+  }
+  const bestCalendar = newerOf(lsCalendar, kvCalendar);
+  if (bestCalendar && bestCalendar.csv) {
+    calendarCSV = bestCalendar.csv;
+    const csvBox = document.getElementById('output-csv');
+    if (csvBox && !csvBox.textContent) { csvBox.textContent = calendarCSV; csvBox.classList.add('visible'); }
+    if (bestCalendar !== lsCalendar) localStorage.setItem(lsKey('calendar'), JSON.stringify(bestCalendar));
+  }
+  const bestDelay = newerOf(lsDelay, kvDelay);
+  if (bestDelay && bestDelay.csv) {
+    delayCSV = bestDelay.csv;
+    const dBox = document.getElementById('output-delay-csv');
+    if (dBox && !dBox.textContent) { dBox.textContent = delayCSV; dBox.classList.add('visible'); }
+    if (bestDelay !== lsDelay) localStorage.setItem(lsKey('delay'), JSON.stringify(bestDelay));
   }
 
   // ③ オフライン復帰時の自動同期
@@ -2081,7 +2104,9 @@ async function generateEvening() {
     });
   }
   calendarCSV = csvRows.join('\n');
-  localStorage.setItem(lsKey('calendar'), JSON.stringify({ csv: calendarCSV, _ts: Date.now() }));
+  const calendarPayload = { csv: calendarCSV, _ts: Date.now() };
+  localStorage.setItem(lsKey('calendar'), JSON.stringify(calendarPayload));
+  cloudSave('calendar', calendarPayload);
 
   // ③ 要検討リスト CSV（②③④）
   let delayRows = ['Subject,Start Date,Start Time,End Date,End Time,All Day Event,Description'];
@@ -2102,7 +2127,9 @@ async function generateEvening() {
     });
   }
   delayCSV = delayRows.join('\n');
-  localStorage.setItem(lsKey('delay'), JSON.stringify({ csv: delayCSV, _ts: Date.now() }));
+  const delayPayload = { csv: delayCSV, _ts: Date.now() };
+  localStorage.setItem(lsKey('delay'), JSON.stringify(delayPayload));
+  cloudSave('delay', delayPayload);
 
   csvBox.textContent = calendarCSV; csvBox.classList.add('visible');
   delayCsvBox.textContent = delayCSV; delayCsvBox.classList.add('visible');
@@ -2170,7 +2197,9 @@ ${aiScheduleSuggestion ? '\n' + aiScheduleSuggestion : ''}
       loading.style.display = 'none';
       mdBox.textContent = text;
       mdBox.classList.add('visible');
-      localStorage.setItem(lsKey('output'), JSON.stringify({ text, _ts: Date.now() }));
+      const outputPayload = { text, _ts: Date.now() };
+      localStorage.setItem(lsKey('output'), JSON.stringify(outputPayload));
+      cloudSave('output', outputPayload);
     },
     err => {
       loading.style.display = 'none';
