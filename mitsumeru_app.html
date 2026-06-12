@@ -1225,6 +1225,7 @@ function applyMorningData(d) {
   }
   if (d['hp-val'] && d['hp-val']!=='—') { const e=document.getElementById('hp-val'); if(e) e.textContent=d['hp-val']; }
   if (d['mp-val'] && d['mp-val']!=='—') { const e=document.getElementById('mp-val'); if(e) e.textContent=d['mp-val']; }
+  if (d['lv-base'] !== undefined) { const e=document.getElementById('lv-val'); if(e) e.textContent=formatLV(d['lv-base']); }
   if (d['mode-badge-text']) { const b=document.getElementById('mode-badge'); if(b){b.textContent=d['mode-badge-text']; if(d['mode-badge-class']) b.className=d['mode-badge-class'];} }
   if (d['morning-result-visible']) { const r=document.getElementById('morning-result'); if(r) r.style.display='block'; }
   if (d['morning-advice']&&d['morning-advice'].trim()) { const a=document.getElementById('morning-advice'); if(a){a.textContent=d['morning-advice'];a.classList.add('visible');} }
@@ -2027,6 +2028,9 @@ async function generateEvening() {
   const _lvBaseE = lsMorningE['lv-base'] !== undefined ? lsMorningE['lv-base'] : getLVBase();
   const lvTotal = _lvBaseE + counts.pomo * 10;
   const lv = counts.pomo * 10;
+  // 今日のポモ数を累積に確定保存（翌日に引き継がれる）
+  localStorage.setItem('mitsumeru_lv_total', lvTotal);
+  cloudSaveGlobal('lv', { total: lvTotal, _ts: Date.now() });
   const now = new Date();
   const dateStr = `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日`;
   const hp = lsMorningE['hp-val'] || '—';
@@ -2123,7 +2127,7 @@ async function generateEvening() {
 
 ---
 指定日：${dateStr}
-HP:${hp}/100　MP:${mp}/100　ポモドーロ:${counts.pomo}ポモ
+HP:${hp}/100　MP:${mp}/100　本日ポモ:${counts.pomo}ポモ(+${lv}pt)　LV累積:${lvTotal}pt
 
 P（事実）：${p}
 V（ノイズ）：${v}
