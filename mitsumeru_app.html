@@ -990,6 +990,14 @@
   </div>
 
   <div class="section">
+    <div class="section-title">📅 週次サマリー</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:12px;">直近7日分の記録をClaudeが読んで、HP/MP推移・消耗パターン・来週の優先タスクを提案します。毎週月曜に使う想定です。</p>
+    <button class="btn-secondary" onclick="generateWeeklySummary()" style="margin-bottom:8px;">今週をまとめる</button>
+    <div class="loading-text" id="weekly-loading">週次データを分析中...</div>
+    <div class="output-box" id="weekly-summary"></div>
+  </div>
+
+  <div class="section">
     <div class="section-title">📊 月次サマリー</div>
     <p style="font-size:12px;color:var(--text2);margin-bottom:12px;">今月の全記録をClaudeが読んでサマリーを生成します。</p>
     <button class="btn-secondary" onclick="generateMonthlySummary()" style="margin-bottom:8px;">今月をまとめる</button>
@@ -2360,6 +2368,70 @@ function togglePastRecord(idx) {
 }
 
 // ===== \u6708\u6B21\u30B5\u30DE\u30EA\u30FC =====
+async function generateWeeklySummary() {
+  const loading = document.getElementById('weekly-loading');
+  const box = document.getElementById('weekly-summary');
+  loading.style.display = 'block';
+  box.classList.remove('visible');
+
+  const records = [];
+  const today = new Date();
+
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    const dateStr = d.toISOString().split('T')[0];
+    const [kvM, kvE, kvMm] = await Promise.all([
+      cloudLoad('morning', dateStr), cloudLoad('evening', dateStr), cloudLoad('memos', dateStr)
+    ]);
+    const lsM = lsLoad('morning', dateStr), lsE = lsLoad('evening', dateStr), lsMm = lsLoad('memos', dateStr);
+    const morning = newerOf(lsM, kvM), evening = newerOf(lsE, kvE), memosObj = newerOf(lsMm, kvMm);
+    if (!morning && !evening) continue;
+    const mArr = memosObj ? (Array.isArray(memosObj.data) ? memosObj.data : []) : [];
+    const pomoTotal = mArr.filter(m => m.tag === 'P').reduce((s, m) => s + (m.pomos || 0), 0);
+    const hp = morning ? morning['hp-val'] : '—';
+    const mp = morning ? morning['mp-val'] : '—';
+    records.push(
+      `## ${dateStr}\n` +
+      `HP:${hp} MP:${mp} ポモ:${pomoTotal}\n` +
+      `実績:${mArr.filter(m => m.tag === 'P').map(m => m.content).join(' / ') || 'なし'}\n` +
+      `ノイズ:${mArr.filter(m => m.tag === 'V').map(m => m.content).join(' / ') || 'なし'}\n` +
+      `補足:${evening ? (evening['e-supplement'] || '') : ''}`
+    );
+  }
+
+  if (records.length === 0) {
+    loading.style.display = 'none';
+    box.textContent = '直近7日分の記録が見つかりませんでした。';
+    box.classList.add('visible');
+    return;
+  }
+
+  const startDate = (() => { const d = new Date(today); d.setDate(today.getDate() - 6); return d.toISOString().split('T')[0]; })();
+  const endDate = today.toISOString().split('T')[0];
+
+  const prompt = `あなたはFusion Partners代表の「SuccessOS 統合経営参謀」です。
+以下は${startDate}〜${endDate}の7日間の記録です。週次サマリーを生成してください。
+
+${records.join('\n\n')}
+
+以下の形式で出力してください：
+# 週次サマリー（${startDate}〜${endDate}）
+## HP/MP推移と傾向
+（平均値・最高・最低・消耗した日とその要因の分析）
+## 今週の主な成果
+## 消耗パターン分析
+（どんな状況・タスクでエネルギーが下がったか）
+## 来週の優先タスク提案
+（エネルギー状態を踏まえた3つ以内の重点タスク）
+## ひとこと所感`;
+
+  callClaude(prompt,
+    text => { loading.style.display = 'none'; box.textContent = text; box.classList.add('visible'); },
+    err  => { loading.style.display = 'none'; box.textContent = 'エラー：' + err; box.classList.add('visible'); }
+  );
+}
+
 async function generateMonthlySummary() {
   const loading = document.getElementById('monthly-loading');
   const box = document.getElementById('monthly-summary');
