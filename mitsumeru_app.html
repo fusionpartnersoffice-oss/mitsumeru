@@ -479,17 +479,32 @@
       <div style="height:1px;background:var(--border);margin:14px 0;"></div>
 
       <p style="font-weight:500;color:var(--text);margin-bottom:6px;">📤 出力（毎日の締め）</p>
-      <p><span style="color:var(--accent);">Markdownをコピー</span> → NotebookLMに貼り付け</p>
-      <p><span style="color:var(--green);">HTMLをダウンロード</span> → Googleドライブの「ミツメル記録」フォルダに保存</p>
-      <p style="color:var(--text3);font-size:12px;">HTMLには画像＋テキストがセットで保存されます</p>
+      <p>「翌日戦略を生成する」→ 出力タブに自動移動</p>
+      <p><span style="color:var(--accent);">NotebookLMにコピー</span> → そのままNotebookLMに貼り付け</p>
+      <p><span style="color:var(--green);">テキストで保存</span> → .txtファイルとしてダウンロード</p>
       <p>カレンダーCSV → Googleカレンダーにインポート</p>
 
       <div style="height:1px;background:var(--border);margin:14px 0;"></div>
 
+      <div style="background:#e8f0fb;border-radius:8px;padding:14px;margin-bottom:16px;border:0.5px solid #a8c4f0;">
+        <p style="font-weight:500;color:#1a4a8a;margin-bottom:8px;">☁️ マルチデバイス同期のルール</p>
+        <p>データはクラウド（KV）に自動保存されます。</p>
+        <p style="margin-top:6px;">【同期のタイミング】</p>
+        <p>・入力した瞬間に自動保存（画面上部に「同期済み ✓」表示）</p>
+        <p>・別の端末でページを開く（または更新する）と最新データが読み込まれる</p>
+        <p style="margin-top:6px;">【正しい使い方】</p>
+        <p>① PC・スマホどちらでも入力・ボタン操作が可能</p>
+        <p>② 別の端末で確認するときはページを開き直す（または更新する）</p>
+        <p>③ 開き直せばボタンを押さなくても復元済みの状態になる</p>
+        <p style="color:#1a4a8a;font-size:12px;margin-top:6px;">※「翌日戦略を生成する」の結果もKVに保存されます。生成後にスマホで開けば出力タブに同じ内容が表示されます</p>
+      </div>
+
+      <div style="height:1px;background:var(--border);margin:14px 0;"></div>
+
       <p style="font-weight:500;color:var(--text);margin-bottom:6px;">⚠️ 注意事項</p>
-      <p>・ブラウザを閉じるとその日のデータは消えます。必ず出力してから閉じてください</p>
       <p>・宵越し入力（0時を過ぎた場合）は朝・夜の「対象日」を前日に変更してください</p>
       <p>・Claudeへの接続が必要です。オフライン時はアドバイス生成ができません</p>
+      <p>・オフライン中の入力は復帰後に自動でクラウドへ同期されます</p>
 
       <div style="background:var(--bg2);border-radius:8px;padding:14px;margin-top:16px;">
         <p style="font-size:12px;color:var(--text3);text-align:center;">Fusion Partners ミツメル v2.0<br>柴山 靖章 × Claude</p>
