@@ -2206,7 +2206,7 @@ ${aiScheduleSuggestion ? '\n' + aiScheduleSuggestion : ''}
 
 【5】本日のステータスと明日への一言
 以下の形式で必ず記載してください：
-HP：${hp}/100　MP：${mp}/100　LV：${lvTotal}pt（本日+${lv}pt、${counts.pomo}ポモ）
+HP：${hp}/100　MP：${mp}/100　LV：${formatLV(lvTotal)}（本日+${lv}pt、${counts.pomo}ポモ）
 根拠：今日のHP・MPがこの数値になった主な要因を1〜2文で事実ベースで記載
 明日への一言：HP・MPの状態を踏まえて明日の動き方を一言でアドバイスする`;
 
