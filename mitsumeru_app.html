@@ -1032,7 +1032,13 @@ let aiCalendarComment = '';
 let syncPending = false;
 
 // ===== 日付キー管理 =====
-const TODAY = new Date().toISOString().split('T')[0];
+// 端末のローカル時刻(JST)基準で YYYY-MM-DD を生成する。
+// toISOString() はUTC基準のため、JST早朝(0:00〜9:00)は前日扱いになり
+// 端末間で日付キーがズレて同期に失敗する。必ずこの関数を使うこと。
+function localDateStr(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+const TODAY = localDateStr(new Date());
 let targetDate = TODAY; // 現在の対象日
 
 // localStorage キー（日付別）
@@ -2357,7 +2363,7 @@ async function loadPastRecords() {
   for (let i = 0; i < 7; i++) {
     const d = new Date(today);
     d.setDate(d.getDate() - i);
-    const dateStr = d.toISOString().split('T')[0];
+    const dateStr = localDateStr(d);
     const [kvM, kvE, kvMm] = await Promise.all([
       cloudLoad('morning', dateStr), cloudLoad('evening', dateStr), cloudLoad('memos', dateStr)
     ]);
@@ -2412,7 +2418,7 @@ async function generateWeeklySummary() {
   for (let i = 6; i >= 0; i--) {
     const d = new Date(today);
     d.setDate(today.getDate() - i);
-    const dateStr = d.toISOString().split('T')[0];
+    const dateStr = localDateStr(d);
     const [kvM, kvE, kvMm] = await Promise.all([
       cloudLoad('morning', dateStr), cloudLoad('evening', dateStr), cloudLoad('memos', dateStr)
     ]);
@@ -2439,8 +2445,8 @@ async function generateWeeklySummary() {
     return;
   }
 
-  const startDate = (() => { const d = new Date(today); d.setDate(today.getDate() - 6); return d.toISOString().split('T')[0]; })();
-  const endDate = today.toISOString().split('T')[0];
+  const startDate = (() => { const d = new Date(today); d.setDate(today.getDate() - 6); return localDateStr(d); })();
+  const endDate = localDateStr(today);
 
   const prompt = `あなたはFusion Partners代表の「SuccessOS 統合経営参謀」です。
 以下は${startDate}〜${endDate}の7日間の記録です。週次サマリーを生成してください。
@@ -2477,7 +2483,7 @@ async function generateMonthlySummary() {
 
   for (let d = 1; d <= daysInMonth; d++) {
     const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    if (dateStr > now.toISOString().split('T')[0]) break;
+    if (dateStr > localDateStr(now)) break;
     const [kvM, kvE, kvMm] = await Promise.all([
       cloudLoad('morning', dateStr), cloudLoad('evening', dateStr), cloudLoad('memos', dateStr)
     ]);
