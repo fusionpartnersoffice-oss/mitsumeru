@@ -422,91 +422,61 @@
     <div style="font-size:13px;line-height:1.9;color:var(--text2);">
 
       <div style="background:#e8f5ee;border-radius:8px;padding:14px;margin-bottom:16px;border:0.5px solid #a8dfc4;">
-        <p style="font-weight:500;color:#1a7a52;margin-bottom:8px;">🔑 最初にやること（必須）</p>
-        <p>①右上の「🔑 API」ボタンをタップ</p>
-        <p>②APIキー（sk-ant-api03-...）を入力</p>
-        <p>③ボタンが緑色になれば設定完了</p>
-        <p style="color:#6a5a4a;font-size:12px;margin-top:6px;">※ブラウザを閉じるたびに再入力が必要です</p>
-        <p style="color:#6a5a4a;font-size:12px;">※APIキーはconsole.anthropic.comで取得できます</p>
-        <p style="color:#6a5a4a;font-size:12px;">※特殊Chrome（--disable-web-security）で開いてください</p>
+        <p style="font-weight:500;color:#1a7a52;margin-bottom:8px;">🔑 さいしょに1回だけ</p>
+        <p>右上の「🔑 API」を押して、キーを貼り付けてください。</p>
+        <p>ボタンが緑になれば、準備完了です。</p>
+        <p style="color:#6a5a4a;font-size:12px;margin-top:6px;">※キーは console.anthropic.com で取れます（sk-ant- で始まります）</p>
+        <p style="color:#6a5a4a;font-size:12px;">※ブラウザを閉じたら、もう一度入れてください。</p>
       </div>
 
       <div style="background:var(--bg2);border-radius:8px;padding:14px;margin-bottom:16px;">
-        <p style="font-weight:500;color:var(--text);margin-bottom:8px;">🖥️ 特殊Chromeの起動方法</p>
-        <p>Windowsキー+Rで以下を実行：</p>
+        <p style="font-weight:500;color:var(--text);margin-bottom:8px;">🖥️ PCでの開き方（1回だけ設定）</p>
+        <p>Windowsキー+R を押して、下の1行を貼り付けて実行してください。</p>
         <p style="font-family:monospace;background:var(--bg);padding:6px;border-radius:4px;font-size:11px;margin-top:6px;word-break:break-all;">chrome.exe --disable-web-security --user-data-dir="%TEMP%\chrome_dev"</p>
-        <p style="color:var(--text3);font-size:12px;margin-top:6px;">※通常のChromeではAPIが動きません</p>
+        <p style="color:var(--text3);font-size:12px;margin-top:6px;">※この開き方でないと、アドバイスが出ません。</p>
       </div>
 
-      <div style="background:var(--bg2);border-radius:8px;padding:14px;margin-bottom:16px;">
-        <p style="font-weight:500;color:var(--text);margin-bottom:8px;">📋 基本の流れ</p>
-        <p>朝 → 随時メモ（日中） → 夜 → 出力</p>
-        <p style="color:var(--text3);font-size:12px;margin-top:4px;">この4ステップが毎日のルーティンです</p>
-      </div>
+      <p style="font-weight:500;color:var(--text);margin-bottom:6px;">📋 毎日はこの順番で</p>
+      <p style="margin-bottom:14px;">朝 → 随時メモ → 夜 → 出力　の順に進めてください。</p>
 
-      <p style="font-weight:500;color:var(--text);margin-bottom:6px;">🌅 朝の確認（2〜3分）</p>
-      <p>①就寝・起床時間を入力 → HPが自動計算されます</p>
-      <p>②体調・気分をスライダーで選択 → MPが自動計算されます</p>
-      <p>③ノイズをタップで選択、具体的な内容を入力</p>
-      <p>④タスクコース（1〜6）をスライダーで選択</p>
-      <p style="color:#b8860b;font-size:12px;">コース1超甘口〜コース6地獄。今日の負荷レベルを直感で選んでください</p>
-      <p>⑤「今日のモードを判定する」→ Claudeが一言アドバイスを出します</p>
+      <p style="font-weight:500;color:var(--text);margin-bottom:6px;">🌅 朝（2〜3分）</p>
+      <p>寝た時間・体調・気分・今日のキツさ（1〜6）を選んでください。</p>
+      <p>「今日のモードを判定する」を押してください。</p>
+      <p style="color:var(--text3);font-size:12px;">→ きょうの一言アドバイスが出ます。</p>
 
       <div style="height:1px;background:var(--border);margin:14px 0;"></div>
 
-      <p style="font-weight:500;color:var(--text);margin-bottom:6px;">📝 随時メモ（日中・都度）</p>
-      <p>Keepの代わりに使います。気づいたらすぐ記録。</p>
-      <p style="margin-top:6px;"><span style="color:#1a5a9a;font-weight:500;">#HP</span> 体調・睡眠・体の状態</p>
-      <p><span style="color:#1a7a52;font-weight:500;">#P</span> やったこと・ポモ数（実績）</p>
-      <p><span style="color:#c0392b;font-weight:500;">#V</span> ノイズ・削られたこと（追加するたび自動カウント）</p>
-      <p><span style="color:#b8860b;font-weight:500;">#G</span> 気づき・アイデア・ボヤキ</p>
-      <p style="margin-top:6px;">「今の時刻」ボタンで時刻を自動入力できます</p>
-      <p>📷 画像添付ボタンでスクリーンショットも一緒に記録できます</p>
-      <p style="color:var(--text3);font-size:12px;">NotebookLMのインフォグラフィックはここに貼ってください</p>
+      <p style="font-weight:500;color:var(--text);margin-bottom:6px;">📝 随時メモ（日中）</p>
+      <p>気づいたら、種類を選んですぐ書いてください。</p>
+      <p><span style="color:#1a5a9a;font-weight:500;">🛡️体調</span>／<span style="color:#1a7a52;font-weight:500;">⚡やったこと</span>／<span style="color:#c0392b;font-weight:500;">🔥削られたこと</span>／<span style="color:#b8860b;font-weight:500;">💡気づき</span></p>
+      <p style="color:var(--text3);font-size:12px;">写真も一緒に貼れます。</p>
 
       <div style="height:1px;background:var(--border);margin:14px 0;"></div>
 
-      <p style="font-weight:500;color:var(--text);margin-bottom:6px;">🌙 夜の振り返り（5〜10分）</p>
-      <p>①随時メモの内容が自動で表示されます（確認・補足）</p>
-      <p>②ノイズ回数・ポモ数は随時メモから自動集計されています</p>
-      <p>③Try100の達成数だけ手動で入力</p>
-      <p>④デバッグ5項目（〇△✕＋理由）を入力</p>
-      <p>⑤明日の確定アポを入力（形式：<span style="font-family:monospace;background:var(--bg2);padding:1px 4px;border-radius:2px;">0900 2 内容</span>）</p>
-      <p style="color:var(--text3);font-size:12px;">開始時刻4桁 ポモ数 イベント名の順で入力してください</p>
-      <p>⑥遅延タスク・Try100リスト・NotebookLMコメントを入力</p>
-      <p>⑦「翌日戦略を生成する」→ 出力タブに自動で移動します</p>
+      <p style="font-weight:500;color:var(--text);margin-bottom:6px;">🌙 夜（5〜10分）</p>
+      <p>昼のメモが自動でまとまります。足りない分を書き足してください。</p>
+      <p>5つの○△✕と、明日の予定を入れてください。</p>
+      <p>「翌日戦略を生成する」を押してください。→ 出力に進みます。</p>
 
       <div style="height:1px;background:var(--border);margin:14px 0;"></div>
 
-      <p style="font-weight:500;color:var(--text);margin-bottom:6px;">📤 出力（毎日の締め）</p>
-      <p>「翌日戦略を生成する」→ 出力タブに自動移動</p>
-      <p><span style="color:var(--accent);">NotebookLMにコピー</span> → そのままNotebookLMに貼り付け</p>
-      <p><span style="color:var(--green);">テキストで保存</span> → .txtファイルとしてダウンロード</p>
-      <p>カレンダーCSV → Googleカレンダーにインポート</p>
+      <p style="font-weight:500;color:var(--text);margin-bottom:6px;">📤 出力（しめ）</p>
+      <p>できた文章は、コピーして保存先に貼ってください。</p>
+      <p>明日の予定は「カレンダーCSV」でカレンダーに取り込めます。</p>
 
       <div style="height:1px;background:var(--border);margin:14px 0;"></div>
 
       <div style="background:#e8f0fb;border-radius:8px;padding:14px;margin-bottom:16px;border:0.5px solid #a8c4f0;">
-        <p style="font-weight:500;color:#1a4a8a;margin-bottom:8px;">☁️ マルチデバイス同期のルール</p>
-        <p style="font-weight:500;margin-top:4px;">【基本ルール】</p>
-        <p>「翌日戦略を生成する」は<span style="font-weight:500;color:#c0392b;">1日1回・1台だけ</span>で押す</p>
-        <p style="color:#c0392b;font-size:12px;">※複数の端末でそれぞれ押すと異なる結果が生成されます</p>
-        <p style="font-weight:500;margin-top:10px;">【他の端末で結果を見るには】</p>
-        <p>生成した端末以外は<span style="font-weight:500;">ブラウザの更新ボタン</span>を押すだけ</p>
-        <p>→ 出力タブに同じ内容が自動で表示されます</p>
-        <p style="font-weight:500;margin-top:10px;">【「今日のモードを判定する」は複数端末でOK】</p>
-        <p>このボタンはスライダーの入力値から自動計算するため、どの端末で押しても同じ結果になります</p>
-        <p style="font-weight:500;margin-top:10px;">【入力・メモは全端末でOK】</p>
-        <p>朝の入力・随時メモ・夜の入力は入力した瞬間にクラウドへ自動保存されます</p>
-        <p>別の端末で開き直せば最新の入力内容が復元されます</p>
+        <p style="font-weight:500;color:#1a4a8a;margin-bottom:8px;">📱 2台以上で使うとき</p>
+        <p>入力した瞬間に、自動で保存されます。</p>
+        <p>別の端末では、画面を更新すると最新が出ます。</p>
+        <p style="color:#c0392b;">「翌日戦略を生成する」は、1日1回・1台だけで押してください。</p>
       </div>
 
-      <div style="height:1px;background:var(--border);margin:14px 0;"></div>
-
-      <p style="font-weight:500;color:var(--text);margin-bottom:6px;">⚠️ 注意事項</p>
-      <p>・宵越し入力（0時を過ぎた場合）は朝・夜の「対象日」を前日に変更してください</p>
-      <p>・Claudeへの接続が必要です。オフライン時はアドバイス生成ができません</p>
-      <p>・オフライン中の入力は復帰後に自動でクラウドへ同期されます</p>
+      <p style="font-weight:500;color:var(--text);margin-bottom:6px;">⚠️ こんなときは</p>
+      <p>反映されないときは、設定タブの「今すぐ同期」を押してください。</p>
+      <p>0時を過ぎてからの入力は、日付を前日に変えてください。</p>
+      <p>アドバイスを出すときは、ネットにつないでください。</p>
 
       <div style="background:var(--bg2);border-radius:8px;padding:14px;margin-top:16px;">
         <p style="font-size:12px;color:var(--text3);text-align:center;">Fusion Partners ミツメル v2.0<br>柴山 靖章 × Claude</p>
