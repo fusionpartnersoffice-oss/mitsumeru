@@ -3,7 +3,7 @@
  * デプロイ方法: Cloudflare Dashboard > Workers & Pages > mitsumeru-sync > Quick Edit
  * または wrangler deploy
  *
- * KV namespace binding name: KV（Cloudflare設定と一致させること）
+ * KV namespace binding 変数名: MITSUMERU_KV または KV（どちらでも動く。getKV参照）
  *
  * 【Cron Triggers】毎朝7:00 JST に朝の編成を生成しKVへ書き込む。
  *   wrangler.toml:  [triggers]\n  crons = ["0 22 * * *"]   # 22:00 UTC = 07:00 JST
@@ -18,6 +18,11 @@
 
 // 編成生成に使うモデル（Anthropic Messages API）
 const DISPATCH_MODEL = 'claude-opus-4-8';
+
+// KV名前空間バインディング。変数名は MITSUMERU_KV / KV のどちらでも動くようにする。
+function getKV(env) {
+  return env.MITSUMERU_KV || env.KV;
+}
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -65,7 +70,7 @@ export default {
       }
 
       // KV保存（TTL: 90日 = 7776000秒）
-      await env.KV.put(key, body, { expirationTtl: 7776000 });
+      await getKV(env).put(key, body, { expirationTtl: 7776000 });
 
       return new Response(JSON.stringify({ ok: true }), {
         status: 200,
@@ -74,7 +79,7 @@ export default {
     }
 
     if (request.method === 'GET') {
-      const value = await env.KV.get(key);
+      const value = await getKV(env).get(key);
 
       return new Response(JSON.stringify({ value: value ?? null }), {
         status: 200,
@@ -107,7 +112,7 @@ function jstDateStr() {
 
 // KVに {"content":"..."} で保存された資料を読み出す
 async function readKnowledge(env, key) {
-  const raw = await env.KV.get(key);
+  const raw = await getKV(env).get(key);
   if (!raw) return '';
   try {
     const obj = JSON.parse(raw);
@@ -173,5 +178,5 @@ ${judgment || '（資料未登録）'}
   }
 
   const body = JSON.stringify({ text, _ts: Date.now() });
-  await env.KV.put('dispatch_' + date, body, { expirationTtl: 7776000 });
+  await getKV(env).put('dispatch_' + date, body, { expirationTtl: 7776000 });
 }
