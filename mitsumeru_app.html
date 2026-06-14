@@ -814,7 +814,7 @@
       <div class="section-title">参謀からの一言</div>
       <div class="loading-text" id="morning-loading">分析中...</div>
       <div class="output-box" id="morning-advice"></div>
-      <button class="btn-secondary" onclick="copyMorningAdvice()" style="margin-top:10px;">アドバイスをコピー（NotebookLM用）</button>
+      <button class="btn-secondary" onclick="copyMorningAdvice()" style="margin-top:10px;">アドバイスをコピー</button>
     </div>
   </div>
 </div>
@@ -966,7 +966,7 @@
     <div class="output-box" id="output-markdown"></div>
     <div style="display:flex;gap:8px;margin-top:10px;">
       <button class="btn-secondary" id="copy-nlm-btn" onclick="copyForNotebookLM()" style="flex:1;">📋 NotebookLMにコピー</button>
-      <button class="btn-secondary" onclick="downloadAsText()" style="flex:1;">💾 テキストで保存</button>
+      <button class="btn-secondary" id="copy-keep-btn" onclick="copyTextForKeep()" style="flex:1;">📋 テキスト版でコピー（Keep用）</button>
     </div>
   </div>
 
@@ -1690,7 +1690,7 @@ function copyMorningAdvice() {
 ## 参謀からの一言
 ${advice}`;
   navigator.clipboard.writeText(text).then(() => {
-    alert('コピーしました！NotebookLMに貼り付けてください。');
+    alert('アドバイスをコピーしました！');
   });
 }
 
@@ -2298,6 +2298,21 @@ function downloadAsText() {
   link.href = URL.createObjectURL(blob);
   link.download = `mitsumeru_${dateStr}.txt`;
   link.click();
+}
+
+// テキスト版をクリップボードへコピー（Google Keep等への貼り付け用）
+function copyTextForKeep() {
+  const text = document.getElementById('output-markdown').textContent;
+  if (!text) { alert('まだ出力がありません。「翌日戦略を生成する」を実行してください。'); return; }
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copy-keep-btn');
+    if (!btn) return;
+    const orig = btn.textContent;
+    btn.textContent = 'コピーしました ✓';
+    btn.style.color = 'var(--green)';
+    btn.style.borderColor = 'var(--green)';
+    setTimeout(() => { btn.textContent = orig; btn.style.color = ''; btn.style.borderColor = ''; }, 2500);
+  });
 }
 
 function downloadHTML() {
