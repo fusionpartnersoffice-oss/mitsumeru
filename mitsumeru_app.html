@@ -496,6 +496,12 @@
   <span id="sync-status" class="sync-badge"></span>
 </div>
 
+<!-- 日付ロールオーバー検知バナー（日付キーのズレ再発防止） -->
+<div id="date-rollover-bar" style="display:none;background:#fff3cd;border:0.5px solid #ffd970;color:#8a6a00;padding:9px 12px;font-size:13px;text-align:center;border-radius:6px;margin:8px 16px;line-height:1.5;">
+  日付が変わりました（<span id="rollover-date"></span>）。宵越し入力でなければ切り替えてください。
+  <button onclick="jumpToToday()" style="margin-left:8px;background:#8a6a00;color:#fff;border:none;border-radius:5px;padding:4px 12px;cursor:pointer;font-size:12px;font-weight:500;">今日に切り替える</button>
+</div>
+
 <!-- 随時メモ -->
 <div id="screen-memo" class="screen">
   <div class="date-display" id="memo-date"></div>
@@ -1504,6 +1510,33 @@ if (apiKey) {
   const btn = document.getElementById('api-btn');
   if (btn) btn.style.color = '#4caf82';
 }
+
+// ===== 日付ロールオーバー検知（日付キーのズレ再発防止）=====
+// TODAY/targetDate はページ読込時に一度だけ算出され凍結される。0時をまたいで
+// 開いたまま使うと、保存キー(新しい日)と読込キー(古い日)がズレてデータが
+// 「消えた」ように見える。日付が変わったらバナーで通知し、ユーザーが切替を選ぶ。
+// （宵越し入力で手動で過去日を選んでいる時は通知しない）
+let _appToday = TODAY;
+function checkDateRollover() {
+  if (document.hidden) return;
+  const fresh = localDateStr(new Date());
+  if (fresh === _appToday) return;                 // 日付は変わっていない
+  const wasOnToday = (targetDate === _appToday);   // 手動で過去日を選んでいなければ true
+  _appToday = fresh;
+  if (wasOnToday) {                                // 「今日」を見ていたのに日付が変わった
+    const bar = document.getElementById('date-rollover-bar');
+    const lbl = document.getElementById('rollover-date');
+    if (bar && lbl) { lbl.textContent = fresh; bar.style.display = 'block'; }
+  }
+}
+function jumpToToday() {
+  const bar = document.getElementById('date-rollover-bar');
+  if (bar) bar.style.display = 'none';
+  changeTargetDate(localDateStr(new Date()));
+}
+document.addEventListener('visibilitychange', checkDateRollover);
+window.addEventListener('focus', checkDateRollover);
+setInterval(checkDateRollover, 60000);
 
 function saveProfile() {
   const profile = {
