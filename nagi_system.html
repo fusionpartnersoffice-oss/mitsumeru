@@ -226,6 +226,8 @@ tr:hover td{background:rgba(79,195,247,0.03);}
     <button class="btn btn-secondary btn-sm" onclick="openModal('modal-bulk-import')">📥 手動インポート</button>
     <button class="btn btn-secondary btn-sm" onclick="openModal('modal-data')">⚙ データ管理</button>
     <button class="btn btn-warn btn-sm" onclick="loadSample()">📊 サンプル</button>
+    <button class="btn btn-secondary btn-sm" id="nagi-api-btn" onclick="nagiSetApiKey()">🔑 API</button>
+    <button class="btn btn-primary btn-sm" onclick="openNagiAdvice()" style="background:linear-gradient(135deg,#7b61ff,#4fc3f7);border:none;">🤖 AI経営アドバイス</button>
     <button class="btn btn-secondary btn-sm" onclick="printAll()">🖨 印刷/PDF</button>
   </div>
 </header>
@@ -578,6 +580,73 @@ tr:hover td{background:rgba(79,195,247,0.03);}
     </div>
   </div>
 </div>
+
+<!-- ══════════════════════════════════════
+     MODAL: APIキー設定
+══════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-nagi-apikey" onclick="if(event.target===this)closeModal('modal-nagi-apikey')">
+  <div class="modal" style="max-width:480px;">
+    <button class="modal-close" onclick="closeModal('modal-nagi-apikey')">✕</button>
+    <div class="modal-title">🔑 Anthropic APIキー設定</div>
+    <p style="font-size:0.78rem;color:var(--sub);margin-bottom:12px;line-height:1.7;">
+      取得先：<code style="background:var(--bg);padding:2px 6px;border-radius:4px;">console.anthropic.com</code> → API Keys → Create Key<br>
+      キーは <code style="background:var(--bg);padding:2px 6px;border-radius:4px;">sk-ant-</code> または <code style="background:var(--bg);padding:2px 6px;border-radius:4px;">sk-</code> で始まります。<br>
+      保存先：<code style="background:var(--bg);padding:2px 6px;border-radius:4px;">localStorage（mitsumeru_api_key）</code> ←ミツメルと共通
+    </p>
+    <div class="form-group">
+      <label style="font-size:0.78rem;color:var(--sub);">APIキー</label>
+      <input id="nagi-apikey-input" type="password" placeholder="sk-ant-api03-..." style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 12px;font-size:0.85rem;outline:none;font-family:monospace;">
+    </div>
+    <div id="nagi-apikey-status" style="font-size:0.78rem;margin-bottom:12px;min-height:20px;"></div>
+    <div style="display:flex;gap:10px;">
+      <button class="btn btn-primary" onclick="saveNagiApiKey()" style="flex:2;">💾 保存する</button>
+      <button class="btn btn-danger btn-sm" onclick="clearNagiApiKey()" style="flex:1;">🗑 クリア</button>
+      <button class="btn btn-secondary" onclick="closeModal('modal-nagi-apikey')" style="flex:1;">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     MODAL: AI経営アドバイス
+══════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-nagi-advice" onclick="if(event.target===this)closeModal('modal-nagi-advice')">
+  <div class="modal" style="max-width:720px;">
+    <button class="modal-close" onclick="closeModal('modal-nagi-advice')">✕</button>
+    <div class="modal-title" style="background:linear-gradient(135deg,#7b61ff22,#4fc3f722);padding:12px 16px;border-radius:8px;margin-bottom:16px;">
+      🤖 Claude 経営アドバイス
+      <span style="font-size:0.72rem;font-weight:400;color:var(--sub);margin-left:8px;">診断数値をもとにClaudeが経営改善提案を生成します</span>
+    </div>
+
+    <!-- 診断サマリー表示エリア -->
+    <div id="nagi-advice-summary" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:14px;font-size:0.78rem;line-height:1.8;color:var(--sub);">
+      法人・事業所を選択して「診断データを読み込む」を押してください。
+    </div>
+
+    <!-- 生成ボタン -->
+    <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+      <button class="btn btn-secondary" onclick="loadNagiSummary()" style="flex:1;">📊 診断データを読み込む</button>
+      <button class="btn btn-primary" onclick="generateNagiAdvice()" style="flex:2;background:linear-gradient(135deg,#7b61ff,#4fc3f7);border:none;">✨ Claudeに経営アドバイスを依頼する</button>
+    </div>
+
+    <!-- ローディング -->
+    <div id="nagi-advice-loading" style="display:none;text-align:center;padding:24px;color:var(--sub);font-size:0.82rem;">
+      <div style="font-size:1.4rem;margin-bottom:8px;animation:spin 1s linear infinite;display:inline-block;">⚙</div><br>
+      Claude が経営データを分析中です…
+    </div>
+
+    <!-- 出力エリア -->
+    <div id="nagi-advice-output" style="display:none;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:16px;font-size:0.82rem;line-height:1.9;color:var(--text);white-space:pre-wrap;max-height:480px;overflow-y:auto;"></div>
+
+    <div style="display:flex;gap:8px;margin-top:12px;">
+      <button class="btn btn-secondary btn-sm" onclick="copyNagiAdvice()" id="nagi-copy-btn" style="display:none;">📋 コピー</button>
+      <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-nagi-advice')" style="margin-left:auto;">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<style>
+@keyframes spin { from{transform:rotate(0deg);} to{transform:rotate(360deg);} }
+</style>
 
 <div class="modal-overlay" id="modal-bulk-import" onclick="if(event.target===this)closeModal('modal-bulk-import')">
   <div class="modal" style="max-width:680px;">
@@ -2238,51 +2307,123 @@ function closeModal(id){ document.getElementById(id).classList.remove('open'); }
 // ════════════════════════════════════════════════════
 
 function loadSample(){
-  if(!confirm('サンプルデータを読み込みますか？\n（既存データは上書きされます）')) return;
-  const c1=uid(),c2=uid();
+  if(!confirm('医療・福祉施設のサンプルデータを読み込みますか？\n（既存データは上書きされます）\n\n【サンプル構成】\n社会福祉法人 やまびこ会\n・デイサービス やまびこ\n・グループホーム こもれび\n・訪問介護ステーション')) return;
+
+  const c1=uid();
   const o1=uid(),o2=uid(),o3=uid();
-  save('nagi_corps',[{id:c1,name:'Fusion Partners株式会社'},{id:c2,name:'B法人'}]);
+
+  // ── 法人 ──
+  save('nagi_corps',[
+    {id:c1,name:'社会福祉法人 やまびこ会'},
+  ]);
+
+  // ── 事業所 ──
   save('nagi_offices',[
-    {id:o1,corpId:c1,name:'FusionOS Labo'},
-    {id:o2,corpId:c1,name:'ケアホームα'},
-    {id:o3,corpId:c1,name:'ケアホームβ'},
+    {id:o1,corpId:c1,name:'デイサービス やまびこ'},
+    {id:o2,corpId:c1,name:'グループホーム こもれび'},
+    {id:o3,corpId:c1,name:'訪問介護ステーション'},
   ]);
+
+  // ── 財務データ（月次） ──
+  // デイサービス：定員30名・稼働率85%・介護報酬単価約9,000円/日
+  // 売上PQ = 延べ利用者数 × 平均単価（介護報酬＋加算）
+  // 変動費VQ ≒ 売上の約20%（消耗品・送迎燃料・食材等）
+  // 固定費F ≒ 人件費（売上の65%前後が福祉の特性）
   save('nagi_fin',[
-    {officeId:o1,pq:4200000,q:420,vq:840000,mq:3360000,f:2500000,g:860000},
-    {officeId:o2,pq:3100000,q:310,vq:620000,mq:2480000,f:2000000,g:480000},
-    {officeId:o3,pq:5150000,q:515,vq:990000,mq:4120000,f:3300000,g:820000},
+    // デイサービス：稼働良好だが人件費率が高い
+    {officeId:o1, pq:4850000, q:485, vq:970000, mq:3880000, f:3250000, g:630000},
+    // グループホーム：定員9名×2ユニット、入居率94%、安定収益
+    {officeId:o2, pq:3420000, q:342, vq:410000, mq:3010000, f:2580000, g:430000},
+    // 訪問介護：ヘルパー不足・稼働率低迷・赤字ギリギリ
+    {officeId:o3, pq:1980000, q:198, vq:296000, mq:1684000, f:1720000, g:-36000},
   ]);
+
+  // ── NDB動線（新規利用者獲得パイプライン） ──
   save('nagi_pipe',[
-    {officeId:o1,approach:150,inquiry:20,visit:12,contract:7,repeat:6},
-    {officeId:o2,approach:100,inquiry:10,visit:5,contract:2,repeat:2},
-    {officeId:o3,approach:80,inquiry:8,visit:4,contract:1,repeat:1},
+    // デイサービス：居宅介護支援からの紹介が主。見学→成約率は高い
+    {officeId:o1, approach:60, inquiry:18, visit:12, contract:8, repeat:7},
+    // グループホーム：入居待ち状態。成約率は高いが母数が少ない
+    {officeId:o2, approach:24, inquiry:10, visit:7, contract:5, repeat:5},
+    // 訪問介護：営業不足・アプローチ数が少なく慢性的な稼働不足
+    {officeId:o3, approach:30, inquiry:6, visit:3, contract:1, repeat:1},
   ]);
-  const s1=uid(),s2=uid(),s3=uid(),s4=uid(),s5=uid(),s6=uid();
+
+  // ── スタッフデータ ──
+  const s1=uid(),s2=uid(),s3=uid(),s4=uid(),s5=uid(),s6=uid(),
+        s7=uid(),s8=uid(),s9=uid(),s10=uid(),s11=uid();
+
   save('nagi_staff',[
-    {id:s1,corpId:c1,officeId:o1,name:'田中 健太',role:'管理者クラス',task:44,social:42,p:32,m:28,ksa:75,
-     ego:{CP:6,NP:8,A:8,FC:7,AC:6},enn:[{type:'T3',name:'達成者',score:42},{type:'T1',name:'完璧主義',score:35},{type:'T8',name:'統率者',score:28}],
-     lsrp:{total:7,levelShort:'安全'}},
-    {id:s2,corpId:c1,officeId:o1,name:'鈴木 陽子',role:'リーダークラス',task:38,social:40,p:22,m:30,ksa:72,
-     ego:{CP:7,NP:9,A:7,FC:6,AC:5},enn:[{type:'T2',name:'献身家',score:40},{type:'T6',name:'堅実家',score:35},{type:'T9',name:'調停者',score:28}],
-     lsrp:{total:5,levelShort:'安全'}},
-    {id:s3,corpId:c1,officeId:o1,name:'中村 大輔',role:'一般職',task:26,social:30,p:14,m:18,ksa:52,
-     ego:{CP:5,NP:6,A:5,FC:7,AC:8},enn:[{type:'T7',name:'楽天家',score:38},{type:'T2',name:'献身家',score:30},{type:'T9',name:'調停者',score:22}],
+    // ━━ デイサービス やまびこ ━━
+    // 施設長：ベテラン・PM型。チームをよく見ている
+    {id:s1,corpId:c1,officeId:o1,name:'山本 和子',role:'管理者クラス',task:44,social:46,p:30,m:34,ksa:78,
+     ego:{CP:5,NP:9,A:8,FC:7,AC:5},
+     enn:[{type:'T2',name:'献身家'},{type:'T9',name:'調停者'},{type:'T6',name:'堅実家'}],
      lsrp:{total:4,levelShort:'安全'}},
-    {id:s4,corpId:c1,officeId:o2,name:'佐藤 誠',role:'管理者クラス',task:35,social:28,p:15,m:22,ksa:65,
-     ego:{CP:8,NP:6,A:7,FC:5,AC:4},enn:[{type:'T8',name:'統率者',score:35},{type:'T3',name:'達成者',score:28},{type:'T1',name:'完璧主義',score:22}],
-     lsrp:{total:12,levelShort:'警戒'}},
-    {id:s5,corpId:c1,officeId:o2,name:'田中 真由美',role:'一般職',task:28,social:15,p:12,m:10,ksa:45,
-     ego:{CP:10,NP:4,A:4,FC:5,AC:3},enn:[{type:'T4',name:'芸術家',score:38},{type:'T5',name:'研究者',score:30},{type:'T9',name:'調停者',score:25}],
-     lsrp:{total:18,levelShort:'危険'}},
-    {id:s6,corpId:c1,officeId:o3,name:'伊藤 淳',role:'管理者クラス',task:30,social:28,p:18,m:15,ksa:55,
-     ego:{CP:3,NP:8,A:5,FC:4,AC:9},enn:[{type:'T9',name:'調停者',score:35},{type:'T6',name:'堅実家',score:28},{type:'T2',name:'献身家',score:22}],
+    // リーダー介護士：Task強いがSocial低め。M3ゾーン
+    {id:s2,corpId:c1,officeId:o1,name:'佐々木 俊介',role:'リーダークラス',task:40,social:26,p:24,m:16,ksa:68,
+     ego:{CP:7,NP:5,A:8,FC:6,AC:4},
+     enn:[{type:'T3',name:'達成者'},{type:'T1',name:'完璧主義'},{type:'T8',name:'統率者'}],
+     lsrp:{total:8,levelShort:'安全'}},
+    // 中堅介護士：バランス良。育成中
+    {id:s3,corpId:c1,officeId:o1,name:'林 美咲',role:'一般職',task:32,social:36,p:0,m:0,ksa:62,
+     ego:{CP:4,NP:8,A:6,FC:8,AC:6},
+     enn:[{type:'T2',name:'献身家'},{type:'T7',name:'楽天家'},{type:'T9',name:'調停者'}],
+     lsrp:{total:3,levelShort:'安全'}},
+    // 新人介護士：M1。指示型アプローチが必要
+    {id:s4,corpId:c1,officeId:o1,name:'岡田 拓也',role:'一般職',task:18,social:22,p:0,m:0,ksa:38,
+     ego:{CP:3,NP:6,A:4,FC:7,AC:9},
+     enn:[{type:'T6',name:'堅実家'},{type:'T9',name:'調停者'},{type:'T2',name:'献身家'}],
+     lsrp:{total:5,levelShort:'安全'}},
+    // 問題スタッフ：RC危険・LSRP危険。クレームが多い
+    {id:s5,corpId:c1,officeId:o1,name:'三浦 圭介',role:'一般職',task:30,social:12,p:0,m:0,ksa:48,
+     ego:{CP:10,NP:3,A:5,FC:4,AC:2},
+     enn:[{type:'T8',name:'統率者'},{type:'T1',name:'完璧主義'},{type:'T4',name:'芸術家'}],
+     lsrp:{total:19,levelShort:'危険'}},
+
+    // ━━ グループホーム こもれび ━━
+    // 計画作成担当者（管理者）：安定型。現場に入りすぎる傾向あり
+    {id:s6,corpId:c1,officeId:o2,name:'高橋 恵子',role:'管理者クラス',task:36,social:40,p:20,m:28,ksa:70,
+     ego:{CP:4,NP:9,A:7,FC:6,AC:7},
+     enn:[{type:'T9',name:'調停者'},{type:'T2',name:'献身家'},{type:'T6',name:'堅実家'}],
+     lsrp:{total:6,levelShort:'安全'}},
+    // 夜勤専従：孤立傾向。I-U-（停滞OS）
+    {id:s7,corpId:c1,officeId:o2,name:'前田 真一',role:'一般職',task:22,social:16,p:0,m:0,ksa:40,
+     ego:{CP:3,NP:4,A:4,FC:3,AC:4},
+     enn:[{type:'T5',name:'研究者'},{type:'T4',name:'芸術家'},{type:'T9',name:'調停者'}],
+     lsrp:{total:10,levelShort:'安全'}},
+    // 認知症ケア専門員：高スキル・高パフォーマー
+    {id:s8,corpId:c1,officeId:o2,name:'松本 由紀',role:'リーダークラス',task:46,social:44,p:26,m:32,ksa:82,
+     ego:{CP:6,NP:8,A:9,FC:7,AC:5},
+     enn:[{type:'T1',name:'完璧主義'},{type:'T5',name:'研究者'},{type:'T2',name:'献身家'}],
+     lsrp:{total:3,levelShort:'安全'}},
+
+    // ━━ 訪問介護ステーション ━━
+    // サービス提供責任者：LSRP警戒・RC注意。部下との摩擦が多い
+    {id:s9,corpId:c1,officeId:o3,name:'吉田 浩二',role:'管理者クラス',task:38,social:24,p:16,m:12,ksa:58,
+     ego:{CP:9,NP:5,A:6,FC:3,AC:3},
+     enn:[{type:'T8',name:'統率者'},{type:'T1',name:'完璧主義'},{type:'T3',name:'達成者'}],
      lsrp:{total:14,levelShort:'警戒'}},
+    // 登録ヘルパー（週3日勤務）：意欲低め・M1-M2
+    {id:s10,corpId:c1,officeId:o3,name:'中田 京子',role:'一般職',task:20,social:28,p:0,m:0,ksa:35,
+     ego:{CP:2,NP:7,A:4,FC:6,AC:8},
+     enn:[{type:'T2',name:'献身家'},{type:'T9',name:'調停者'},{type:'T6',name:'堅実家'}],
+     lsrp:{total:4,levelShort:'安全'}},
+    // ベテランヘルパー：スキル高いが組織への不満あり・離職リスク
+    {id:s11,corpId:c1,officeId:o3,name:'石川 みどり',role:'一般職',task:40,social:30,p:0,m:0,ksa:70,
+     ego:{CP:5,NP:6,A:7,FC:4,AC:7},
+     enn:[{type:'T6',name:'堅実家'},{type:'T1',name:'完璧主義'},{type:'T5',name:'研究者'}],
+     lsrp:{total:7,levelShort:'安全'}},
   ]);
+
   refreshCorpSelector();
   document.getElementById('sel-corp').value=c1;
   onCorpChange();
+  // 事業所をデイサービスに設定
+  const offSel=document.getElementById('sel-office');
+  if(offSel.options.length>1) offSel.selectedIndex=1;
+  onOfficeChange();
   renderCurrentTab();
-  alert('サンプルデータを読み込みました！\n法人「Fusion Partners株式会社」を選択して各ダッシュボードを確認してください。');
+  alert('✅ サンプルデータを読み込みました！\n\n【社会福祉法人 やまびこ会】\n・デイサービス やまびこ（5名）\n・グループホーム こもれび（3名）\n・訪問介護ステーション（3名）\n\n⚠️ 見どころ：\n・三浦圭介（デイ）→ LSRP危険・RC危険\n・訪問介護 → 赤字・稼働不足\n・吉田浩二（訪問）→ LSRP警戒\n\n🤖 「AI経営アドバイス」ボタンでClaudeの分析を試してください！');
 }
 
 // ════════════════════════════════════════════════════
@@ -2526,13 +2667,303 @@ function printAll(){
   setTimeout(()=>window.print(),200);
 }
 
+// ════════════════════════════════════════════════════
+//  Claude API 統合
+// ════════════════════════════════════════════════════
+
+let nagiApiKey = localStorage.getItem('mitsumeru_api_key') || '';
+
+// APIキーボタンの色を状態に合わせて更新
+function updateNagiApiBtn(){
+  const btn = document.getElementById('nagi-api-btn');
+  if(!btn) return;
+  btn.style.color = nagiApiKey ? 'var(--accent2)' : '';
+  btn.title = nagiApiKey ? 'APIキー設定済み（クリックで変更）' : 'APIキー未設定（クリックして設定）';
+}
+
+// 🔑 APIボタン押下 → モーダルを開く
+function nagiSetApiKey(){
+  const inp = document.getElementById('nagi-apikey-input');
+  const status = document.getElementById('nagi-apikey-status');
+  if(inp) inp.value = '';
+  if(status){
+    if(nagiApiKey){
+      status.innerHTML = '<span style="color:var(--accent2);">✅ 設定済み：' + nagiApiKey.substring(0,14) + '...</span>';
+    } else {
+      status.innerHTML = '<span style="color:var(--warn);">⚠️ 未設定です。APIキーを入力してください。</span>';
+    }
+  }
+  openModal('modal-nagi-apikey');
+  setTimeout(()=>{ if(inp) inp.focus(); }, 100);
+}
+
+function saveNagiApiKey(){
+  const inp = document.getElementById('nagi-apikey-input');
+  const status = document.getElementById('nagi-apikey-status');
+  const raw = (inp ? inp.value : '').trim();
+  if(!raw){
+    if(status) status.innerHTML = '<span style="color:var(--danger);">❌ キーを入力してください。</span>';
+    return;
+  }
+  if(!raw.startsWith('sk-')){
+    if(status) status.innerHTML = '<span style="color:var(--danger);">❌ キーは「sk-」から始まる文字列です。</span>';
+    return;
+  }
+  nagiApiKey = raw;
+  localStorage.setItem('mitsumeru_api_key', nagiApiKey);
+  updateNagiApiBtn();
+  if(status) status.innerHTML = '<span style="color:var(--accent2);">✅ 保存しました：' + nagiApiKey.substring(0,14) + '...</span>';
+  if(inp) inp.value = '';
+  setTimeout(()=>closeModal('modal-nagi-apikey'), 800);
+}
+
+function clearNagiApiKey(){
+  nagiApiKey = '';
+  localStorage.removeItem('mitsumeru_api_key');
+  updateNagiApiBtn();
+  const inp = document.getElementById('nagi-apikey-input');
+  const status = document.getElementById('nagi-apikey-status');
+  if(inp) inp.value = '';
+  if(status) status.innerHTML = '<span style="color:var(--sub);">🗑 クリアしました。</span>';
+}
+
+function nagiGetApiKey(){
+  if(nagiApiKey) return nagiApiKey;
+  // APIキーが未設定の場合はモーダルを開いて処理を止める
+  nagiSetApiKey();
+  return null;
+}
+
+function callNagiClaude(prompt, onSuccess, onError){
+  const key = nagiGetApiKey();
+  if(!key){ onError('APIキーが設定されていません。'); return; }
+  fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': key,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 2500,
+      messages: [{ role: 'user', content: prompt }]
+    })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if(data.error){ onError(data.error.message || 'APIエラー'); return; }
+    const text = data.content?.[0]?.text || '';
+    onSuccess(text);
+  })
+  .catch(e => onError(e.message || 'ネットワークエラー'));
+}
+
+function openNagiAdvice(){
+  openModal('modal-nagi-advice');
+  loadNagiSummary();
+}
+
+function loadNagiSummary(){
+  const corpId = document.getElementById('sel-corp').value;
+  const officeId = document.getElementById('sel-office').value;
+  const corps = getCorps();
+  const offices = getAllOffices();
+  const allStaff = getAllStaff();
+
+  let lines = [];
+
+  if(!corpId && !officeId){
+    // 全法人集計
+    lines.push('【集計範囲】全法人・全事業所');
+    let tPQ=0,tMQ=0,tF=0,tG=0;
+    offices.forEach(o=>{ const f=getFin(o.id); if(f){tPQ+=n(f.pq);tMQ+=n(f.mq);tF+=n(f.f);tG+=n(f.g);} });
+    if(tPQ) lines.push(`財務：売上 ${yen(tPQ)} / 粗利 ${yen(tMQ)} / 固定費 ${yen(tF)} / 利益 ${yen(tG)} / f/m比率 ${tMQ?(tF/tMQ*100).toFixed(1):'-'}%`);
+    const rcD = allStaff.filter(s=>getRCStatus(s.ego).label==='危険★').length;
+    const lsrpD = allStaff.filter(s=>n(s.lsrp?.total)>=16).length;
+    lines.push(`スタッフ計：${allStaff.length}名 / RC危険 ${rcD}名 / LSRP危険 ${lsrpD}名`);
+  } else if(corpId && !officeId){
+    const corp = corps.find(c=>c.id===corpId);
+    lines.push(`【集計範囲】${corp?.name||''} 全事業所`);
+    const myOffices = getOffices(corpId);
+    myOffices.forEach(o=>{
+      const f=getFin(o.id), p=getPipe(o.id);
+      const st=getStaffByOffice(o.id);
+      let row = `■ ${o.name}：スタッフ${st.length}名`;
+      if(f){ const fm=n(f.mq)?n(f.f)/n(f.mq)*100:0; row+=` / 売上${yen(n(f.pq))} 粗利${yen(n(f.mq))} G${yen(n(f.g))} f/m${fm.toFixed(1)}%`; }
+      if(p){ row+=` / 成約率${n(p.visit)?(n(p.contract)/n(p.visit)*100).toFixed(0):'─'}%`; }
+      lines.push(row);
+    });
+    const st=getStaffByCorp(corpId);
+    const rcD=st.filter(s=>getRCStatus(s.ego).label==='危険★').length;
+    const lsrpD=st.filter(s=>n(s.lsrp?.total)>=16).length;
+    lines.push(`リスク：RC危険 ${rcD}名 / LSRP危険 ${lsrpD}名`);
+  } else if(officeId){
+    const off = offices.find(o=>o.id===officeId);
+    const corp = corps.find(c=>c.id===off?.corpId);
+    lines.push(`【集計範囲】${corp?.name||''} ／ ${off?.name||''}`);
+    const f=getFin(officeId), p=getPipe(officeId), st=getStaffByOffice(officeId);
+    if(f){
+      const fm=n(f.mq)?n(f.f)/n(f.mq)*100:0;
+      const sr=getSurvivalRating(n(f.mq)?n(f.f)/n(f.mq):0);
+      lines.push(`財務：売上 ${yen(n(f.pq))} / 粗利 ${yen(n(f.mq))} / 固定費 ${yen(n(f.f))} / 利益 ${yen(n(f.g))} / f/m ${fm.toFixed(1)}% / 生存格付 ${sr.label}`);
+    }
+    if(p){ lines.push(`パイプライン：アプローチ${n(p.approach)} → 問い合わせ${n(p.inquiry)} → 見学${n(p.visit)} → 成約${n(p.contract)} → リピート${n(p.repeat)}`); }
+    const taS=st.filter(s=>n(s.task)>0||n(s.social)>0);
+    if(taS.length){
+      const avgT=taS.reduce((a,s)=>a+n(s.task),0)/taS.length;
+      const avgS=taS.reduce((a,s)=>a+n(s.social),0)/taS.length;
+      lines.push(`チームTA：Task平均${avgT.toFixed(1)} / Social平均${avgS.toFixed(1)} / チームSL段階 ${getSLStage(avgT,avgS)}`);
+    }
+    const rcD=st.filter(s=>getRCStatus(s.ego).label==='危険★').length;
+    const rcW=st.filter(s=>getRCStatus(s.ego).label==='注意').length;
+    const lsrpD=st.filter(s=>n(s.lsrp?.total)>=16).length;
+    const lsrpW=st.filter(s=>n(s.lsrp?.total)>=11&&n(s.lsrp?.total)<16).length;
+    lines.push(`リスク：スタッフ${st.length}名 / RC危険 ${rcD}名 / RC注意 ${rcW}名 / LSRP危険 ${lsrpD}名 / LSRP警戒 ${lsrpW}名`);
+  }
+
+  const el = document.getElementById('nagi-advice-summary');
+  if(lines.length <= 1){
+    el.textContent = '法人または事業所を選択してください。';
+  } else {
+    el.innerHTML = lines.map(l=>`<div style="padding:2px 0;border-bottom:1px solid var(--border);">${l}</div>`).join('');
+  }
+}
+
+function generateNagiAdvice(){
+  const corpId = document.getElementById('sel-corp').value;
+  const officeId = document.getElementById('sel-office').value;
+  const corps = getCorps();
+  const offices = getAllOffices();
+
+  // 詳細プロンプト構築
+  let context = '【分析対象】';
+  let sections = [];
+
+  const buildFinSection = (officeId, officeName) => {
+    const f=getFin(officeId), p=getPipe(officeId), st=getStaffByOffice(officeId);
+    let s = `\n■ ${officeName}`;
+    if(f){
+      const pq=n(f.pq),mq=n(f.mq),vq=n(f.vq),ff=n(f.f),g=n(f.g),q=n(f.q);
+      const fm=mq?ff/mq*100:0;
+      const sr=getSurvivalRating(mq?ff/mq:0);
+      s += `\n  財務：売上PQ=${yen(pq)} Q=${q}人 変動費VQ=${yen(vq)} 粗利MQ=${yen(mq)} 固定費F=${yen(ff)} 利益G=${yen(g)} f/m比率=${fm.toFixed(1)}% 生存格付=${sr.label}`;
+      const sens=calcSensitivity(pq,mq,vq,ff,g);
+      if(sens) s += `\n  利益感度：P=${(sens.P*100).toFixed(0)}% Q=${(sens.Q*100).toFixed(0)}% V=${(sens.V*100).toFixed(0)}% F=${(sens.F*100).toFixed(0)}%`;
+    }
+    if(p) s += `\n  NDB動線：アプローチ${n(p.approach)}→問合${n(p.inquiry)}→見学${n(p.visit)}→成約${n(p.contract)}→リピート${n(p.repeat)} 成約率${n(p.visit)?(n(p.contract)/n(p.visit)*100).toFixed(0):'-'}%`;
+    if(st.length){
+      const taS=st.filter(x=>n(x.task)>0||n(x.social)>0);
+      if(taS.length){
+        const avgT=taS.reduce((a,x)=>a+n(x.task),0)/taS.length;
+        const avgS=taS.reduce((a,x)=>a+n(x.social),0)/taS.length;
+        s += `\n  チーム：${st.length}名 TA実施${taS.length}名 Task平均${avgT.toFixed(1)} Social平均${avgS.toFixed(1)} チームSL=${getSLStage(avgT,avgS)}`;
+      }
+      const rcD=st.filter(x=>getRCStatus(x.ego).label==='危険★');
+      const lsrpD=st.filter(x=>n(x.lsrp?.total)>=16);
+      const lsrpW=st.filter(x=>n(x.lsrp?.total)>=11&&n(x.lsrp?.total)<16);
+      if(rcD.length) s += `\n  RC危険者：${rcD.map(x=>x.name).join('、')}`;
+      if(lsrpD.length) s += `\n  LSRP危険者：${lsrpD.map(x=>x.name).join('、')}`;
+      if(lsrpW.length) s += `\n  LSRP警戒者：${lsrpW.map(x=>x.name).join('、')}`;
+    }
+    return s;
+  };
+
+  if(officeId){
+    const off=offices.find(o=>o.id===officeId);
+    const corp=corps.find(c=>c.id===off?.corpId);
+    context += `${corp?.name||''} ／ ${off?.name||''}`;
+    sections.push(buildFinSection(officeId, off?.name||''));
+  } else if(corpId){
+    const corp=corps.find(c=>c.id===corpId);
+    context += `${corp?.name||''} 法人全体`;
+    getOffices(corpId).forEach(o=>sections.push(buildFinSection(o.id, o.name)));
+  } else {
+    context += '全法人・全事業所';
+    offices.forEach(o=>sections.push(buildFinSection(o.id, o.name)));
+  }
+
+  const prompt = `あなたは医療・福祉業界（デイサービス・グループホーム・訪問介護等）に精通した経営コンサルタントです。
+Fusion Partnersの「凪システム」が収集した以下の診断数値を分析し、実践的な経営アドバイスを提供してください。
+
+${context}
+${sections.join('\n')}
+
+【分析の枠組み】
+・MQ会計（粗利マネジメント）の視点
+・NDB動線（アプローチ→問合→見学→成約→リピート）のボトルネック分析
+・生存格付（f/m比率）の改善余地
+・チームSL段階に応じたリーダーシップスタイルの適合
+・RC・LSRPリスク者への組織的対処
+
+【出力形式】
+以下の構成で、具体的・実践的に記述してください（精神論禁止、手作業を増やさない）：
+
+## 🔍 現状診断サマリー
+（数値をもとにした現状の3行要約）
+
+## ⚠️ 最優先の課題（TOP3）
+1. 課題名：具体的な根拠と数値
+2. 課題名：具体的な根拠と数値
+3. 課題名：具体的な根拠と数値
+
+## 💡 経営改善アクション（即時実行可能なもの）
+- アクション1：何を・誰が・いつまでに
+- アクション2
+- アクション3
+
+## 📈 MQ向上シナリオ
+（P単価・Q数量・V変動費・F固定費のどれを動かすか。感度の高い順に優先度付き）
+
+## 👥 組織・人材リスクへの対応
+（RC・LSRP該当者がいる場合の具体的介入方針）
+
+## 🎯 管理者へのリーダーシップ処方箋
+（チームSL段階に合わせた具体的行動指針）`;
+
+  // UI更新
+  document.getElementById('nagi-advice-output').style.display = 'none';
+  document.getElementById('nagi-advice-loading').style.display = 'block';
+  document.getElementById('nagi-copy-btn').style.display = 'none';
+
+  callNagiClaude(prompt,
+    text => {
+      document.getElementById('nagi-advice-loading').style.display = 'none';
+      const out = document.getElementById('nagi-advice-output');
+      out.textContent = text;
+      out.style.display = 'block';
+      document.getElementById('nagi-copy-btn').style.display = 'inline-block';
+    },
+    err => {
+      document.getElementById('nagi-advice-loading').style.display = 'none';
+      const out = document.getElementById('nagi-advice-output');
+      out.textContent = 'エラー：' + err + '\n\nAPIキーを確認してください（右上の「🔑 API」ボタン）。\nまた、ブラウザのCORSポリシーを回避するため、chrome --disable-web-security で起動する必要があります。';
+      out.style.display = 'block';
+    }
+  );
+}
+
+function copyNagiAdvice(){
+  const text = document.getElementById('nagi-advice-output').textContent;
+  navigator.clipboard.writeText(text).then(()=>alert('コピーしました！')).catch(()=>{
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+    alert('コピーしました！');
+  });
+}
+
 function init(){
   refreshCorpSelector();
   refreshOfficeSelectors();
   renderCorpsList();
   renderOfficesList();
   renderCurrentTab();
-  checkURLImport(); // URLパラメータチェック
+  checkURLImport();
+  updateNagiApiBtn();
+  // Enterキーでスキャン
+  const inp = document.getElementById('nagi-apikey-input');
+  if(inp) inp.addEventListener('keydown', e=>{ if(e.key==='Enter') saveNagiApiKey(); });
 }
 
 init();
