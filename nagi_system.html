@@ -896,7 +896,7 @@ function renderCorpDashboard(){
       const star=isBest?'<span style="color:var(--danger);margin-left:4px;">★最高感度</span>':'';
       // バー：感度が高い（値が小さい）ほど長く表示（min/pv で逆比例）
       const w=pv?Math.max(4,min/pv*100):4;
-      sensHTML+=`<div class="sens-row"><div class="sens-lbl">${k}（${k==='P'?'単価':k==='Q'?'数量':k==='V'?'変動費':'固定費'}）</div>
+      sensHTML+=`<div class="sens-row"><div class="sens-lbl">${k==='P'?'Pk↑':k==='Q'?'Qk↑':k==='V'?'Vk↓':'Fk↓'}</div>
         <div class="sens-track"><div class="sens-fill" style="width:${w}%;background:${isBest?'var(--danger)':cols[k]};"></div></div>
         <div class="sens-val" style="color:${isBest?'var(--danger)':cols[k]};">${(pv*100).toFixed(1)}%${star}</div></div>`;
     });
@@ -1027,7 +1027,7 @@ function renderOfficeDashboard(){
         const isBest=pv===min;
         const star=isBest?'<span style="color:var(--danger);">★</span>':'';
         const w=pv?Math.max(4,min/pv*100):4;
-        finHTML+=`<div class="sens-row"><div class="sens-lbl" style="width:80px;font-size:0.7rem;">${k}（${k==='P'?'単価':k==='Q'?'数量':k==='V'?'変動費':'固定費'}）</div>
+        finHTML+=`<div class="sens-row"><div class="sens-lbl" style="width:80px;font-size:0.7rem;">${k==='P'?'Pk↑':k==='Q'?'Qk↑':k==='V'?'Vk↓':'Fk↓'}</div>
           <div class="sens-track"><div class="sens-fill" style="width:${w}%;background:${isBest?'var(--danger)':cols[k]};"></div></div>
           <div class="sens-val" style="color:${isBest?'var(--danger)':cols[k]};">${(pv*100).toFixed(1)}%${star}</div></div>`;
       });
