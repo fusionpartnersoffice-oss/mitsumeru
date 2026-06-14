@@ -764,9 +764,11 @@ function getSurvivalRating(fm){
   return {label:'E',cls:'fmt-E'};
 }
 
+// 西式速算法：Pk=G/PQ, Qk=G/MQ, Vk=G/VQ, Fk=G/F
+// 値が小さいほど感度が高い（★は最小値 = 最優先改善対象）
 function calcSensitivity(pq,mq,vq,f,g){
-  if(!g) return null;
-  return {P:pq/g, Q:mq/g, V:vq/g, F:f/g};
+  if(!g||!pq||!mq||!vq||!f) return null;
+  return {P:g/pq, Q:g/mq, V:g/vq, F:g/f};
 }
 
 // KSAギャップ = 個人KSA% − 部署平均TA%（部署平均のtask+socialを渡す）
@@ -887,14 +889,16 @@ function renderCorpDashboard(){
     const min=Math.min(...Object.values(vals));
     const max=Math.max(...Object.values(vals));
     const cols={P:'#4fc3f7',Q:'#81c784',V:'#f06292',F:'#ffb74d'};
-    sensHTML+=`<div style="font-size:0.75rem;color:var(--sub);margin-bottom:8px;">利益感度（各要素を1%改善した時の利益増加率）</div>`;
+    sensHTML+=`<div style="font-size:0.75rem;color:var(--sub);margin-bottom:8px;">利益感度 k値（西式速算法）— 値が小さいほど感度高・★が最優先改善対象</div>`;
     ['P','Q','V','F'].forEach(k=>{
       const pv=vals[k];
-      const star=pv===min?'<span style="color:var(--warn);margin-left:4px;">★最鈍感</span>':'';
-      const w=max?Math.max(4,pv/max*100):4;
+      const isBest=pv===min;
+      const star=isBest?'<span style="color:var(--danger);margin-left:4px;">★最高感度</span>':'';
+      // バー：感度が高い（値が小さい）ほど長く表示（min/pv で逆比例）
+      const w=pv?Math.max(4,min/pv*100):4;
       sensHTML+=`<div class="sens-row"><div class="sens-lbl">${k}（${k==='P'?'単価':k==='Q'?'数量':k==='V'?'変動費':'固定費'}）</div>
-        <div class="sens-track"><div class="sens-fill" style="width:${w}%;background:${cols[k]};"></div></div>
-        <div class="sens-val" style="color:${cols[k]};">${(pv*100).toFixed(1)}%${star}</div></div>`;
+        <div class="sens-track"><div class="sens-fill" style="width:${w}%;background:${isBest?'var(--danger)':cols[k]};"></div></div>
+        <div class="sens-val" style="color:${isBest?'var(--danger)':cols[k]};">${(pv*100).toFixed(1)}%${star}</div></div>`;
     });
   } else { sensHTML+='<div class="empty" style="padding:12px;">財務データを入力してください</div>'; }
   sensHTML+='</div>';
@@ -1017,14 +1021,15 @@ function renderOfficeDashboard(){
       const min=Math.min(...Object.values(vals));
       const max=Math.max(...Object.values(vals));
       const cols={P:'#4fc3f7',Q:'#81c784',V:'#f06292',F:'#ffb74d'};
-      finHTML+=`<div style="font-size:0.68rem;color:var(--sub);margin-bottom:6px;">利益感度分析</div>`;
+      finHTML+=`<div style="font-size:0.68rem;color:var(--sub);margin-bottom:6px;">利益感度 k値（西式）— 値が小さいほど感度高・★最優先</div>`;
       ['P','Q','V','F'].forEach(k=>{
         const pv=vals[k];
-        const star=pv===min?'★':'';
-        const w=max?Math.max(4,pv/max*100):4;
+        const isBest=pv===min;
+        const star=isBest?'<span style="color:var(--danger);">★</span>':'';
+        const w=pv?Math.max(4,min/pv*100):4;
         finHTML+=`<div class="sens-row"><div class="sens-lbl" style="width:80px;font-size:0.7rem;">${k}（${k==='P'?'単価':k==='Q'?'数量':k==='V'?'変動費':'固定費'}）</div>
-          <div class="sens-track"><div class="sens-fill" style="width:${w}%;background:${cols[k]};"></div></div>
-          <div class="sens-val" style="color:${cols[k]};">${(pv*100).toFixed(1)}%${star?'<span style="color:var(--warn);">'+star+'</span>':''}</div></div>`;
+          <div class="sens-track"><div class="sens-fill" style="width:${w}%;background:${isBest?'var(--danger)':cols[k]};"></div></div>
+          <div class="sens-val" style="color:${isBest?'var(--danger)':cols[k]};">${(pv*100).toFixed(1)}%${star}</div></div>`;
       });
     }
   } else {
