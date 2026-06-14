@@ -2324,12 +2324,13 @@ function closeModal(id){ document.getElementById(id).classList.remove('open'); }
 function loadSample(){
   if(!confirm('医療・福祉施設のサンプルデータを読み込みますか？\n（既存データは上書きされます）\n\n【サンプル構成】\n社会福祉法人 やまびこ会\n・デイサービス やまびこ\n・グループホーム こもれび\n・訪問介護ステーション')) return;
 
-  const c1=uid();
-  const o1=uid(),o2=uid(),o3=uid();
+  const c1=uid(), c2=uid();
+  const o1=uid(),o2=uid(),o3=uid(),o4=uid();
 
   // ── 法人 ──
   save('nagi_corps',[
     {id:c1,name:'社会福祉法人 やまびこ会'},
+    {id:c2,name:'Fusion Partners'},
   ]);
 
   // ── 事業所 ──
@@ -2337,6 +2338,7 @@ function loadSample(){
     {id:o1,corpId:c1,name:'デイサービス やまびこ'},
     {id:o2,corpId:c1,name:'グループホーム こもれび'},
     {id:o3,corpId:c1,name:'訪問介護ステーション'},
+    {id:o4,corpId:c2,name:'FusionOS Labo'},
   ]);
 
   // ── 財務データ（月次） ──
@@ -2351,6 +2353,8 @@ function loadSample(){
     {officeId:o2, pq:3420000, q:342, vq:410000, mq:3010000, f:2580000, g:430000},
     // 訪問介護：ヘルパー不足・稼働率低迷・赤字ギリギリ
     {officeId:o3, pq:1980000, q:198, vq:296000, mq:1684000, f:1720000, g:-36000},
+    // FusionOS Labo：副業・コンサル収入。固定費は代表人件費のみ。成長フェーズ
+    {officeId:o4, pq:480000, q:12, vq:48000, mq:432000, f:380000, g:52000},
   ]);
 
   // ── NDB動線（新規利用者獲得パイプライン） ──
@@ -2361,11 +2365,14 @@ function loadSample(){
     {officeId:o2, approach:24, inquiry:10, visit:7, contract:5, repeat:5},
     // 訪問介護：営業不足・アプローチ数が少なく慢性的な稼働不足
     {officeId:o3, approach:30, inquiry:6, visit:3, contract:1, repeat:1},
+    // FusionOS Labo：note発信・SNS経由の問い合わせが主。成約率は高い
+    {officeId:o4, approach:40, inquiry:8, visit:5, contract:3, repeat:3},
   ]);
 
   // ── スタッフデータ ──
   const s1=uid(),s2=uid(),s3=uid(),s4=uid(),s5=uid(),s6=uid(),
-        s7=uid(),s8=uid(),s9=uid(),s10=uid(),s11=uid();
+        s7=uid(),s8=uid(),s9=uid(),s10=uid(),s11=uid(),
+        s12=uid(),s13=uid(),s14=uid();
 
   save('nagi_staff',[
     // ━━ デイサービス やまびこ ━━
@@ -2428,6 +2435,23 @@ function loadSample(){
      ego:{CP:5,NP:6,A:7,FC:4,AC:7},
      enn:[{type:'T6',name:'堅実家'},{type:'T1',name:'完璧主義'},{type:'T5',name:'研究者'}],
      lsrp:{total:7,levelShort:'安全'}},
+
+    // ━━ Fusion Partners / FusionOS Labo ━━
+    // 代表：組織再設計アーキテクト。設計思考・イントロバート。PM型リーダー
+    {id:s12,corpId:c2,officeId:o4,name:'柴山 靖章',role:'管理者クラス',task:48,social:38,p:32,m:28,ksa:88,
+     ego:{CP:7,NP:8,A:10,FC:6,AC:3},
+     enn:[{type:'T5',name:'研究者'},{type:'T1',name:'完璧主義'},{type:'T3',name:'達成者'}],
+     lsrp:{total:2,levelShort:'安全'}},
+    // AIパートナー（外部協力）：開発・実装担当。高スキル・成果志向
+    {id:s13,corpId:c2,officeId:o4,name:'AI開発パートナー',role:'リーダークラス',task:46,social:28,p:30,m:18,ksa:84,
+     ego:{CP:6,NP:5,A:10,FC:7,AC:2},
+     enn:[{type:'T5',name:'研究者'},{type:'T3',name:'達成者'},{type:'T8',name:'統率者'}],
+     lsrp:{total:3,levelShort:'安全'}},
+    // 外部アドバイザー（医療・福祉専門家）：現場知識が厚い。M4安定型
+    {id:s14,corpId:c2,officeId:o4,name:'外部アドバイザー',role:'リーダークラス',task:42,social:44,p:28,m:32,ksa:80,
+     ego:{CP:5,NP:9,A:8,FC:8,AC:4},
+     enn:[{type:'T2',name:'献身家'},{type:'T9',name:'調停者'},{type:'T6',name:'堅実家'}],
+     lsrp:{total:1,levelShort:'安全'}},
   ]);
 
   refreshCorpSelector();
@@ -2438,7 +2462,7 @@ function loadSample(){
   if(offSel.options.length>1) offSel.selectedIndex=1;
   onOfficeChange();
   renderCurrentTab();
-  alert('✅ サンプルデータを読み込みました！\n\n【社会福祉法人 やまびこ会】\n・デイサービス やまびこ（5名）\n・グループホーム こもれび（3名）\n・訪問介護ステーション（3名）\n\n⚠️ 見どころ：\n・三浦圭介（デイ）→ LSRP危険・RC危険\n・訪問介護 → 赤字・稼働不足\n・吉田浩二（訪問）→ LSRP警戒\n\n🤖 「AI経営アドバイス」ボタンでClaudeの分析を試してください！');
+  alert('✅ サンプルデータを読み込みました！\n\n【社会福祉法人 やまびこ会】\n・デイサービス やまびこ（5名）\n・グループホーム こもれび（3名）\n・訪問介護ステーション（3名）\n\n【Fusion Partners】\n・FusionOS Labo（3名）\n\n⚠️ 見どころ：\n・三浦圭介（デイ）→ LSRP危険・RC危険\n・訪問介護 → 赤字・稼働不足\n・吉田浩二（訪問）→ LSRP警戒\n\n🤖 「AI経営アドバイス」ボタンでClaudeの分析を試してください！');
 }
 
 // ════════════════════════════════════════════════════
