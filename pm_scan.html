@@ -256,6 +256,7 @@ tr:hover td{background:rgba(91,141,246,0.04);}
       <button class="btn btn-secondary btn-sm" onclick="goTo(0)">← 新規診断へ</button>
       <button class="btn btn-secondary btn-sm" onclick="exportCSV()">⬇️ CSV</button>
       <button class="btn btn-secondary btn-sm" style="color:var(--danger);border-color:var(--danger);" onclick="clearRoster()">🗑️ 全件削除</button>
+      <button class="btn btn-secondary btn-sm" style="color:#ffa726;border-color:#ffa726;" onclick="loadSampleData()">📊 サンプルデータ</button>
     </div>
     <div class="roster-wrap">
       <table>
@@ -586,6 +587,43 @@ function exportCSV(){
   const csv='﻿'+header+'\n'+rows.join('\n');
   const url=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
   const a=document.createElement('a'); a.href=url; a.download='pm_roster.csv'; a.click();
+}
+
+function loadSampleData(){
+  if(!confirm('医療・福祉施設のサンプルデータを読み込みますか？\n（既存データに追加されます）')) return;
+  const corp='社会福祉法人 やまびこ会';
+  const d='2026-06-14';
+  const samples=[
+    // PM型：施設長。P高・M高。理想的なリーダー
+    {type:'pm_assessment',name:'山本 和子',corp,office:'デイサービス やまびこ',role:'管理者クラス',date:d,
+     p:34,m:30,pmStyle:'PM',
+     pItems:[5,4,4,4,4,5,4,4],mItems:[4,4,3,4,4,4,3,4],savedAt:'2026-06-14T09:00:00.000Z'},
+    // Pm型：副施設長。P高・M低。業績重視で部下が疲弊気味
+    {type:'pm_assessment',name:'佐々木 俊介',corp,office:'デイサービス やまびこ',role:'リーダークラス',date:d,
+     p:29,m:15,pmStyle:'Pm',
+     pItems:[4,4,4,3,4,4,4,2],mItems:[2,2,2,1,2,2,2,2],savedAt:'2026-06-14T09:05:00.000Z'},
+    // pM型：グループホーム管理者。M高・P低。人間関係は良好だが目標達成が甘い
+    {type:'pm_assessment',name:'高橋 恵子',corp,office:'グループホーム こもれび',role:'管理者クラス',date:d,
+     p:16,m:28,pmStyle:'pM',
+     pItems:[2,2,2,2,2,2,3,1],mItems:[4,4,4,3,4,4,3,2],savedAt:'2026-06-14T09:10:00.000Z'},
+    // pm型：訪問介護 サービス提供責任者。PM両方低。要育成
+    {type:'pm_assessment',name:'吉田 浩二',corp,office:'訪問介護ステーション',role:'管理者クラス',date:d,
+     p:14,m:12,pmStyle:'pm',
+     pItems:[2,2,2,1,2,2,2,1],mItems:[2,1,2,1,2,1,2,1],savedAt:'2026-06-14T09:15:00.000Z'},
+    // PM型：認知症ケア専門員（リーダー兼任）
+    {type:'pm_assessment',name:'松本 由紀',corp,office:'グループホーム こもれび',role:'リーダークラス',date:d,
+     p:31,m:33,pmStyle:'PM',
+     pItems:[4,4,4,4,3,4,4,4],mItems:[5,4,4,4,4,4,4,4],savedAt:'2026-06-14T09:20:00.000Z'},
+  ];
+  let roster=loadRoster();
+  samples.forEach(s=>{
+    const dup=roster.findIndex(r=>r.name===s.name&&r.office===s.office);
+    if(dup>=0) roster[dup]=s; else roster.push(s);
+  });
+  saveRoster(roster);
+  renderRoster();
+  showRoster();
+  alert('✅ サンプルデータ5件を読み込みました。');
 }
 
 function clearRoster(){

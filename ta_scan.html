@@ -316,6 +316,7 @@ tr:hover td{background:rgba(79,195,247,0.03);}
     <button class="btn btn-secondary btn-sm" onclick="goTo(0)">← 新規診断へ</button>
     <button class="btn btn-secondary btn-sm" onclick="exportCSV()">⬇️ CSV</button>
     <button class="btn btn-secondary btn-sm" style="color:var(--danger);border-color:var(--danger);" onclick="clearRoster()">🗑️ 全件削除</button>
+      <button class="btn btn-secondary btn-sm" style="color:#ffa726;border-color:#ffa726;" onclick="loadSampleData()">📊 サンプルデータ</button>
   </div>
 
   <div class="roster-wrap">
@@ -716,6 +717,59 @@ function exportCSV() {
   const csv = '﻿' + header + '\n' + rows.join('\n');
   const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
   const a = document.createElement('a'); a.href = url; a.download = 'ta_roster.csv'; a.click();
+}
+
+function loadSampleData(){
+  if(!confirm('医療・福祉施設のサンプルデータを読み込みますか？\n（既存データに追加されます）')) return;
+  const corp='社会福祉法人 やまびこ会';
+  const d='2026-06-14';
+  // task/social: 8問×7段階(1-7) max56 / ksa: 16問×5段階(1-5) max80
+  const samples=[
+    // M4：ベテラン介護士。Task高・Social高。委任型でOK
+    {type:'team_assessment',name:'山本 和子',corp,office:'デイサービス やまびこ',role:'管理者クラス',date:d,
+     task:46,social:44,ksa:74,ksaGap:8.2,slStage:'M4',
+     taskItems:[6,6,5,6,6,5,6,6],socialItems:[6,5,6,5,6,5,5,6],
+     ksaItems:[5,4,5,5,4,5,5,4,5,4,4,5,4,5,5,4],savedAt:'2026-06-14T09:00:00.000Z'},
+    // M3：スキルは高いがSocialが低め。指示不要だが協調性の課題あり
+    {type:'team_assessment',name:'佐々木 俊介',corp,office:'デイサービス やまびこ',role:'リーダークラス',date:d,
+     task:41,social:24,ksa:68,ksaGap:15.3,slStage:'M3',
+     taskItems:[6,5,5,5,5,5,5,5],socialItems:[3,3,4,3,3,3,2,3],
+     ksaItems:[5,4,4,4,4,5,4,4,5,4,4,4,4,4,4,3],savedAt:'2026-06-14T09:05:00.000Z'},
+    // M2：中堅介護士。Socialは育ってきたがTaskが伸び悩み
+    {type:'team_assessment',name:'林 美咲',corp,office:'デイサービス やまびこ',role:'一般職',date:d,
+     task:28,social:38,ksa:55,ksaGap:3.1,slStage:'M2',
+     taskItems:[4,3,4,3,4,3,4,3],socialItems:[5,5,5,5,5,4,5,4],
+     ksaItems:[4,3,4,3,4,3,4,3,4,3,3,4,3,4,3,3],savedAt:'2026-06-14T09:10:00.000Z'},
+    // M1：新人介護士。Task・Social共に低い。指示型アプローチ必須
+    {type:'team_assessment',name:'岡田 拓也',corp,office:'デイサービス やまびこ',role:'一般職',date:d,
+     task:18,social:20,ksa:32,ksaGap:-5.4,slStage:'M1',
+     taskItems:[2,2,3,2,2,2,3,2],socialItems:[3,2,3,2,3,2,3,2],
+     ksaItems:[2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],savedAt:'2026-06-14T09:15:00.000Z'},
+    // M4：グループホーム認知症ケア専門員。高スペック人材
+    {type:'team_assessment',name:'松本 由紀',corp,office:'グループホーム こもれび',role:'リーダークラス',date:d,
+     task:48,social:46,ksa:80,ksaGap:12.5,slStage:'M4',
+     taskItems:[6,7,6,6,7,6,6,6],socialItems:[7,6,6,6,6,7,6,6],
+     ksaItems:[5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5],savedAt:'2026-06-14T09:20:00.000Z'},
+    // M1：孤立傾向の夜勤専従スタッフ。離職リスクあり
+    {type:'team_assessment',name:'前田 真一',corp,office:'グループホーム こもれび',role:'一般職',date:d,
+     task:20,social:16,ksa:38,ksaGap:-2.8,slStage:'M1',
+     taskItems:[3,2,3,2,3,2,3,2],socialItems:[2,2,2,2,2,2,2,2],
+     ksaItems:[3,2,3,2,3,2,2,2,2,2,3,2,2,2,2,2],savedAt:'2026-06-14T09:25:00.000Z'},
+    // M3：訪問介護ベテランヘルパー。スキル高・組織への不満あり
+    {type:'team_assessment',name:'石川 みどり',corp,office:'訪問介護ステーション',role:'一般職',date:d,
+     task:42,social:28,ksa:68,ksaGap:18.7,slStage:'M3',
+     taskItems:[5,6,5,5,5,6,5,5],socialItems:[4,3,4,4,3,4,3,3],
+     ksaItems:[5,4,5,4,4,5,4,4,4,4,5,4,4,4,4,4],savedAt:'2026-06-14T09:30:00.000Z'},
+  ];
+  let roster=loadRoster();
+  samples.forEach(s=>{
+    const dup=roster.findIndex(r=>r.name===s.name&&r.office===s.office);
+    if(dup>=0) roster[dup]=s; else roster.push(s);
+  });
+  saveRoster(roster);
+  renderRoster();
+  showRoster();
+  alert('✅ サンプルデータ7件を読み込みました。');
 }
 
 function clearRoster() {

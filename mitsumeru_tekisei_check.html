@@ -317,6 +317,7 @@
     <button class="btn btn-primary btn-sm" onclick="exportCSV()">⬇️ CSVダウンロード</button>
     <button class="btn btn-success btn-sm" onclick="exportRosterJSON()">📤 凪システムへ一括エクスポート</button>
     <button class="btn btn-danger btn-sm" onclick="clearRoster()">🗑️ 全件削除</button>
+    <button class="btn btn-secondary btn-sm" style="color:#ffa726;border-color:#ffa726;" onclick="loadSampleData()">📊 サンプルデータ</button>
   </div>
 
   <div class="roster-wrap">
@@ -789,6 +790,72 @@ function exportRosterJSON() {
     document.body.removeChild(ta);
     alert('✅ ' + roster.length + '件のデータをクリップボードにコピーしました。');
   });
+}
+
+function loadSampleData(){
+  if(!confirm('医療・福祉施設のサンプルデータを読み込みますか？\n（既存データに追加されます）')) return;
+  const corp='社会福祉法人 やまびこ会';
+  const d='2026-06-14';
+  const samples=[
+    // 安全圏・RC安全：施設長。理想的な組織適応
+    {sei:'山本',mei:'和子',seiKana:'ヤマモト',meiKana:'カズコ',name:'山本 和子',nameKana:'ヤマモト カズコ',
+     corp,office:'デイサービス やまびこ',date:d,
+     lsrp:{primary:3,secondary:2,total:4,level:'★☆☆ 安全圏（適合ピース）',cause:'問題なし'},
+     egogram:{CP:5,NP:9,A:8,FC:7,AC:5,I:12,U:14},
+     rc:{判定:'安全',RCリスク指標:'I+U+',補助判定:'組織適応リスク：なし'},
+     enneagram:{top3:[{type:'T2',name:'献身家',score:38},{type:'T9',name:'調停者',score:32},{type:'T6',name:'堅実家',score:28}],
+       allScores:{T1:22,T2:38,T3:26,T4:18,T5:20,T6:28,T7:24,T8:20,T9:32}},
+     lsrpLevelShort:'安全',rcShort:'安全',rcRaw:'I+U+',
+     ennTop1:'T2献身家',ennTop2:'T9調停者',ennTop3:'T6堅実家',savedAt:'2026-06-14T09:00:00.000Z'},
+    // 危険・RC危険：問題スタッフ。LSRP高・冷徹OS
+    {sei:'三浦',mei:'圭介',seiKana:'ミウラ',meiKana:'ケイスケ',name:'三浦 圭介',nameKana:'ミウラ ケイスケ',
+     corp,office:'デイサービス やまびこ',date:d,
+     lsrp:{primary:11,secondary:8,total:19,level:'★★★ 危険（防衛過剰）',cause:'共感欠如・操作傾向が高い'},
+     egogram:{CP:10,NP:3,A:5,FC:4,AC:2,I:14,U:5},
+     rc:{判定:'危険★',RCリスク指標:'I+U-',補助判定:'組織適応リスク：冷徹OS・即時介入要'},
+     enneagram:{top3:[{type:'T8',name:'統率者',score:42},{type:'T1',name:'完璧主義',score:35},{type:'T4',name:'芸術家',score:28}],
+       allScores:{T1:35,T2:12,T3:30,T4:28,T5:22,T6:18,T7:15,T8:42,T9:14}},
+     lsrpLevelShort:'危険',rcShort:'危険★',rcRaw:'I+U-',
+     ennTop1:'T8統率者',ennTop2:'T1完璧主義',ennTop3:'T4芸術家',savedAt:'2026-06-14T09:05:00.000Z'},
+    // 警戒・RC注意：停滞OS・孤立傾向
+    {sei:'前田',mei:'真一',seiKana:'マエダ',meiKana:'シンイチ',name:'前田 真一',nameKana:'マエダ シンイチ',
+     corp,office:'グループホーム こもれび',date:d,
+     lsrp:{primary:6,secondary:4,total:10,level:'★☆☆ 安全圏（適合ピース）',cause:'軽微な傾向あり'},
+     egogram:{CP:3,NP:4,A:4,FC:3,AC:4,I:6,U:7},
+     rc:{判定:'注意',RCリスク指標:'I-U-',補助判定:'組織適応リスク：停滞OS・継続的1on1が必要'},
+     enneagram:{top3:[{type:'T5',name:'研究者',score:36},{type:'T4',name:'芸術家',score:30},{type:'T9',name:'調停者',score:26}],
+       allScores:{T1:18,T2:16,T3:14,T4:30,T5:36,T6:22,T7:18,T8:12,T9:26}},
+     lsrpLevelShort:'安全',rcShort:'注意',rcRaw:'I-U-',
+     ennTop1:'T5研究者',ennTop2:'T4芸術家',ennTop3:'T9調停者',savedAt:'2026-06-14T09:10:00.000Z'},
+    // 警戒・RC危険：訪問介護サ責。LSRP警戒・部下摩擦
+    {sei:'吉田',mei:'浩二',seiKana:'ヨシダ',meiKana:'コウジ',name:'吉田 浩二',nameKana:'ヨシダ コウジ',
+     corp,office:'訪問介護ステーション',date:d,
+     lsrp:{primary:8,secondary:6,total:14,level:'★★☆ 要警戒（要確認フラグ）',cause:'支配欲求・共感低下の傾向'},
+     egogram:{CP:9,NP:5,A:6,FC:3,AC:3,I:12,U:8},
+     rc:{判定:'危険★',RCリスク指標:'I+U-',補助判定:'組織適応リスク：冷徹傾向・要モニタリング'},
+     enneagram:{top3:[{type:'T8',name:'統率者',score:38},{type:'T1',name:'完璧主義',score:32},{type:'T3',name:'達成者',score:26}],
+       allScores:{T1:32,T2:14,T3:26,T4:16,T5:20,T6:18,T7:16,T8:38,T9:14}},
+     lsrpLevelShort:'警戒',rcShort:'危険★',rcRaw:'I+U-',
+     ennTop1:'T8統率者',ennTop2:'T1完璧主義',ennTop3:'T3達成者',savedAt:'2026-06-14T09:15:00.000Z'},
+    // 安全・RC安全：高スペック認知症ケア専門員
+    {sei:'松本',mei:'由紀',seiKana:'マツモト',meiKana:'ユキ',name:'松本 由紀',nameKana:'マツモト ユキ',
+     corp,office:'グループホーム こもれび',date:d,
+     lsrp:{primary:2,secondary:1,total:3,level:'★☆☆ 安全圏（適合ピース）',cause:'問題なし'},
+     egogram:{CP:6,NP:8,A:9,FC:7,AC:5,I:13,U:13},
+     rc:{判定:'安全',RCリスク指標:'I+U+',補助判定:'組織適応リスク：なし'},
+     enneagram:{top3:[{type:'T1',name:'完璧主義',score:40},{type:'T5',name:'研究者',score:34},{type:'T2',name:'献身家',score:28}],
+       allScores:{T1:40,T2:28,T3:24,T4:18,T5:34,T6:26,T7:20,T8:16,T9:22}},
+     lsrpLevelShort:'安全',rcShort:'安全',rcRaw:'I+U+',
+     ennTop1:'T1完璧主義',ennTop2:'T5研究者',ennTop3:'T2献身家',savedAt:'2026-06-14T09:20:00.000Z'},
+  ];
+  let roster=loadRoster();
+  samples.forEach(s=>{
+    const dup=roster.findIndex(r=>r.name===s.name&&r.office===s.office);
+    if(dup>=0) roster[dup]=s; else roster.push(s);
+  });
+  saveRoster(roster);
+  showRoster();
+  alert('✅ サンプルデータ5件を読み込みました。');
 }
 
 function clearRoster() {
