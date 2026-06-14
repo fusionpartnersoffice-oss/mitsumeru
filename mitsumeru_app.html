@@ -823,12 +823,6 @@
 <div id="screen-evening" class="screen">
   <div class="date-display" id="evening-date"></div>
 
-  <div class="section">
-    <div class="section-title">対象日（宵越し・遅延入力の場合は変更）</div>
-    <div class="field">
-      <input type="date" id="e-date">
-    </div>
-  </div>
 
   <div class="section">
     <div class="section-title">本日の随時メモ確認</div>
@@ -1463,7 +1457,6 @@ async function changeTargetDate(newDate) {
   saveMorning(); saveEvening(); saveMemos();
   targetDate = newDate;
   document.getElementById('m-date').value = newDate;
-  const eDate = document.getElementById('e-date'); if (eDate) eDate.value = newDate;
 
   // UI初期化
   memos = []; counts = { noise:0, pomo:0, try100:0, 'memo-pomo':0 };
@@ -1501,7 +1494,6 @@ function setDates() {
   document.getElementById('evening-date').textContent = fmt(now);
   document.getElementById('memo-date').textContent = fmt(now);
   document.getElementById('m-date').value = targetDate;
-  document.getElementById('e-date').value = targetDate;
   setNowTime();
 }
 setDates();
