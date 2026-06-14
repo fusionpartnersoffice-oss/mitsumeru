@@ -350,7 +350,7 @@ tr:hover td{background:rgba(79,195,247,0.03);}
             <th>事業所</th><th>氏名</th><th>役割</th><th>RC判定</th>
             <th>Task</th><th>Social</th><th>KSA Gap</th>
             <th>CP</th><th>NP</th><th>A</th><th>FC</th><th>AC</th>
-            <th>エニア Top3</th><th>異常理由・介入指針</th>
+            <th>エニア Top3</th><th>異常理由・介入指針</th><th>操作</th>
           </tr>
         </thead>
         <tbody id="rc-tbody"></tbody>
@@ -368,7 +368,7 @@ tr:hover td{background:rgba(79,195,247,0.03);}
             <th>事業所</th><th>氏名</th><th>役割</th><th>LSRP判定</th><th>LSRPスコア</th>
             <th>RC判定</th><th>Task</th><th>Social</th><th>KSA Gap</th>
             <th>CP</th><th>NP</th><th>A</th><th>FC</th><th>AC</th>
-            <th>エニア Top3</th><th>リスク概要</th>
+            <th>エニア Top3</th><th>リスク概要</th><th>操作</th>
           </tr>
         </thead>
         <tbody id="lsrp-tbody"></tbody>
@@ -1357,6 +1357,11 @@ function renderRCList(){
         <td>${n(ego.CP)}</td><td>${n(ego.NP)}</td><td>${n(ego.A)}</td><td>${n(ego.FC)}</td><td>${n(ego.AC)}</td>
         <td>${ennLabel(enn)}</td>
         <td style="font-size:0.72rem;color:var(--sub);max-width:200px;">${reason}</td>
+        <td style="white-space:nowrap;">
+          <button class="btn btn-primary btn-xs" onclick="openStaffDetail('${s.id}')">詳細</button>
+          <button class="btn btn-secondary btn-xs" onclick="openEditStaff('${s.id}')">編集</button>
+          <button class="btn btn-danger btn-xs" onclick="deleteStaff('${s.id}')">削除</button>
+        </td>
       </tr>`;
     }).join('');
   }
@@ -1397,6 +1402,11 @@ function renderRCList(){
         <td>${n(ego.CP)}</td><td>${n(ego.NP)}</td><td>${n(ego.A)}</td><td>${n(ego.FC)}</td><td>${n(ego.AC)}</td>
         <td>${ennLabel(enn)}</td>
         <td style="font-size:0.72rem;color:${isDanger?'var(--danger)':'var(--warn)'};max-width:200px;">${riskStr}</td>
+        <td style="white-space:nowrap;">
+          <button class="btn btn-primary btn-xs" onclick="openStaffDetail('${s.id}')">詳細</button>
+          <button class="btn btn-secondary btn-xs" onclick="openEditStaff('${s.id}')">編集</button>
+          <button class="btn btn-danger btn-xs" onclick="deleteStaff('${s.id}')">削除</button>
+        </td>
       </tr>`;
     }).join('');
   }
@@ -2370,17 +2380,17 @@ function loadSample(){
      enn:[{type:'T3',name:'達成者'},{type:'T1',name:'完璧主義'},{type:'T8',name:'統率者'}],
      lsrp:{total:8,levelShort:'安全'}},
     // 中堅介護士：バランス良。育成中
-    {id:s3,corpId:c1,officeId:o1,name:'林 美咲',role:'一般職',task:32,social:36,p:0,m:0,ksa:62,
+    {id:s3,corpId:c1,officeId:o1,name:'林 美咲',role:'一般職',task:32,social:36,p:16,m:22,ksa:62,
      ego:{CP:4,NP:8,A:6,FC:8,AC:6},
      enn:[{type:'T2',name:'献身家'},{type:'T7',name:'楽天家'},{type:'T9',name:'調停者'}],
      lsrp:{total:3,levelShort:'安全'}},
     // 新人介護士：M1。指示型アプローチが必要
-    {id:s4,corpId:c1,officeId:o1,name:'岡田 拓也',role:'一般職',task:18,social:22,p:0,m:0,ksa:38,
+    {id:s4,corpId:c1,officeId:o1,name:'岡田 拓也',role:'一般職',task:18,social:22,p:12,m:14,ksa:38,
      ego:{CP:3,NP:6,A:4,FC:7,AC:9},
      enn:[{type:'T6',name:'堅実家'},{type:'T9',name:'調停者'},{type:'T2',name:'献身家'}],
      lsrp:{total:5,levelShort:'安全'}},
     // 問題スタッフ：RC危険・LSRP危険。クレームが多い
-    {id:s5,corpId:c1,officeId:o1,name:'三浦 圭介',role:'一般職',task:30,social:12,p:0,m:0,ksa:48,
+    {id:s5,corpId:c1,officeId:o1,name:'三浦 圭介',role:'一般職',task:30,social:12,p:24,m:10,ksa:48,
      ego:{CP:10,NP:3,A:5,FC:4,AC:2},
      enn:[{type:'T8',name:'統率者'},{type:'T1',name:'完璧主義'},{type:'T4',name:'芸術家'}],
      lsrp:{total:19,levelShort:'危険'}},
@@ -2392,7 +2402,7 @@ function loadSample(){
      enn:[{type:'T9',name:'調停者'},{type:'T2',name:'献身家'},{type:'T6',name:'堅実家'}],
      lsrp:{total:6,levelShort:'安全'}},
     // 夜勤専従：孤立傾向。I-U-（停滞OS）
-    {id:s7,corpId:c1,officeId:o2,name:'前田 真一',role:'一般職',task:22,social:16,p:0,m:0,ksa:40,
+    {id:s7,corpId:c1,officeId:o2,name:'前田 真一',role:'一般職',task:22,social:16,p:10,m:8,ksa:40,
      ego:{CP:3,NP:4,A:4,FC:3,AC:4},
      enn:[{type:'T5',name:'研究者'},{type:'T4',name:'芸術家'},{type:'T9',name:'調停者'}],
      lsrp:{total:10,levelShort:'安全'}},
@@ -2409,12 +2419,12 @@ function loadSample(){
      enn:[{type:'T8',name:'統率者'},{type:'T1',name:'完璧主義'},{type:'T3',name:'達成者'}],
      lsrp:{total:14,levelShort:'警戒'}},
     // 登録ヘルパー（週3日勤務）：意欲低め・M1-M2
-    {id:s10,corpId:c1,officeId:o3,name:'中田 京子',role:'一般職',task:20,social:28,p:0,m:0,ksa:35,
+    {id:s10,corpId:c1,officeId:o3,name:'中田 京子',role:'一般職',task:20,social:28,p:14,m:22,ksa:35,
      ego:{CP:2,NP:7,A:4,FC:6,AC:8},
      enn:[{type:'T2',name:'献身家'},{type:'T9',name:'調停者'},{type:'T6',name:'堅実家'}],
      lsrp:{total:4,levelShort:'安全'}},
     // ベテランヘルパー：スキル高いが組織への不満あり・離職リスク
-    {id:s11,corpId:c1,officeId:o3,name:'石川 みどり',role:'一般職',task:40,social:30,p:0,m:0,ksa:70,
+    {id:s11,corpId:c1,officeId:o3,name:'石川 みどり',role:'一般職',task:40,social:30,p:26,m:24,ksa:70,
      ego:{CP:5,NP:6,A:7,FC:4,AC:7},
      enn:[{type:'T6',name:'堅実家'},{type:'T1',name:'完璧主義'},{type:'T5',name:'研究者'}],
      lsrp:{total:7,levelShort:'安全'}},
