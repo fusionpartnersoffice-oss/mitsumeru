@@ -764,6 +764,49 @@ function getSurvivalRating(fm){
   return {label:'E',cls:'fmt-E'};
 }
 
+function renderSensBars(vals, compact){
+  const keys=['P','Q','V','F'];
+  const cols={P:'#4fc3f7',Q:'#81c784',V:'#f06292',F:'#ffb74d'};
+  const lbls={P:'Pk↑',Q:'Qk↑',V:'Vk↓',F:'Fk↓'};
+  const pvs=keys.map(k=>vals[k]);
+  const maxAbs=Math.max(...pvs.map(v=>Math.abs(v)));
+  const minAbs=Math.min(...pvs.map(v=>Math.abs(v)));
+  const allNeg=pvs.every(v=>v<0);
+  const fs=compact?'0.68rem':'0.75rem';
+  const lblW=compact?'width:80px;font-size:0.7rem;':'';
+  const note=allNeg
+    ?'⚠️ 赤字状態 — 0%に近いほど黒字転換インパクト大・★最優先'
+    :'利益感度 k値（西式）— 0%に近いほど感度高・★最優先改善対象';
+  let h=`<div style="font-size:${fs};color:var(--sub);margin-bottom:6px;">${note}</div>`;
+  keys.forEach(k=>{
+    const pv=vals[k];
+    const absV=Math.abs(pv);
+    const isBest=absV===minAbs;
+    const col=isBest?'var(--danger)':cols[k];
+    const pct=maxAbs?Math.max(2,absV/maxAbs*50):2;
+    const isNeg=pv<0;
+    const star=isBest?'<span style="margin-left:3px;color:var(--danger);">★</span>':'';
+    const negBar=isNeg
+      ?`<div style="width:${pct}%;height:100%;background:${col};margin-left:auto;border-radius:3px 0 0 3px;"></div>`
+      :'';
+    const posBar=!isNeg
+      ?`<div style="width:${pct}%;height:100%;background:${col};border-radius:0 3px 3px 0;"></div>`
+      :'';
+    h+=`<div class="sens-row">
+      <div class="sens-lbl" style="${lblW}">${lbls[k]}</div>
+      <div style="flex:1;display:flex;height:10px;border-radius:3px;overflow:hidden;background:rgba(255,255,255,0.05);">
+        <div style="width:50%;display:flex;justify-content:flex-end;">${negBar}</div>
+        <div style="width:1px;background:rgba(255,255,255,0.25);flex-shrink:0;"></div>
+        <div style="width:50%;display:flex;">${posBar}</div>
+      </div>
+      <div class="sens-val" style="color:${col};">${(pv*100).toFixed(1)}%${star}</div>
+    </div>`;
+  });
+  const lpad=compact?'85px':'70px';
+  h+=`<div style="display:flex;justify-content:space-between;font-size:0.58rem;color:var(--sub);margin-top:2px;padding:0 55px 0 ${lpad};"><span>← 負</span><span>0%</span><span>正 →</span></div>`;
+  return h;
+}
+
 function renderFmGauge(fm, sr){
   const pct=Math.min(fm*100,200);
   const fillPct=(pct/200*100).toFixed(1);
@@ -906,20 +949,7 @@ function renderCorpDashboard(){
   let sensHTML='<div class="card">';
   if(sens){
     const vals={P:sens.P,Q:sens.Q,V:sens.V,F:sens.F};
-    const min=Math.min(...Object.values(vals));
-    const max=Math.max(...Object.values(vals));
-    const cols={P:'#4fc3f7',Q:'#81c784',V:'#f06292',F:'#ffb74d'};
-    sensHTML+=`<div style="font-size:0.75rem;color:var(--sub);margin-bottom:8px;">利益感度 k値（西式速算法）— 値が小さいほど感度高・★が最優先改善対象</div>`;
-    ['P','Q','V','F'].forEach(k=>{
-      const pv=vals[k];
-      const isBest=pv===min;
-      const star=isBest?'<span style="color:var(--danger);margin-left:4px;">★最高感度</span>':'';
-      // バー：数値の大きさをそのまま表示（pv/max で正比例）。★は最小値＝最高感度
-      const w=max?Math.max(4,pv/max*100):4;
-      sensHTML+=`<div class="sens-row"><div class="sens-lbl">${k==='P'?'Pk↑':k==='Q'?'Qk↑':k==='V'?'Vk↓':'Fk↓'}</div>
-        <div class="sens-track"><div class="sens-fill" style="width:${w}%;background:${isBest?'var(--danger)':cols[k]};"></div></div>
-        <div class="sens-val" style="color:${isBest?'var(--danger)':cols[k]};">${(pv*100).toFixed(1)}%${star}</div></div>`;
-    });
+    sensHTML+=renderSensBars(vals,false);
   } else { sensHTML+='<div class="empty" style="padding:12px;">財務データを入力してください</div>'; }
   sensHTML+='</div>';
   document.getElementById('corp-fin-detail').innerHTML=sensHTML;
@@ -1033,20 +1063,7 @@ function renderOfficeDashboard(){
         ${[['Q(人数)',q,''],['VQ',vq,''],['F',f,'']].map(([l,v,c])=>`<div><div style="font-size:0.68rem;color:var(--sub);">${l}</div><div style="font-weight:700;font-size:0.82rem;${c}">${typeof v==='number'&&l!=='Q(人数)'?yen(v):v.toLocaleString()}</div></div>`).join('')}
       </div>`;
     if(sens){
-      const vals={P:sens.P,Q:sens.Q,V:sens.V,F:sens.F};
-      const min=Math.min(...Object.values(vals));
-      const max=Math.max(...Object.values(vals));
-      const cols={P:'#4fc3f7',Q:'#81c784',V:'#f06292',F:'#ffb74d'};
-      finHTML+=`<div style="font-size:0.68rem;color:var(--sub);margin-bottom:6px;">利益感度 k値（西式）— 値が小さいほど感度高・★最優先</div>`;
-      ['P','Q','V','F'].forEach(k=>{
-        const pv=vals[k];
-        const isBest=pv===min;
-        const star=isBest?'<span style="color:var(--danger);">★</span>':'';
-        const w=max?Math.max(4,pv/max*100):4;
-        finHTML+=`<div class="sens-row"><div class="sens-lbl" style="width:80px;font-size:0.7rem;">${k==='P'?'Pk↑':k==='Q'?'Qk↑':k==='V'?'Vk↓':'Fk↓'}</div>
-          <div class="sens-track"><div class="sens-fill" style="width:${w}%;background:${isBest?'var(--danger)':cols[k]};"></div></div>
-          <div class="sens-val" style="color:${isBest?'var(--danger)':cols[k]};">${(pv*100).toFixed(1)}%${star}</div></div>`;
-      });
+      finHTML+=renderSensBars({P:sens.P,Q:sens.Q,V:sens.V,F:sens.F},true);
     }
   } else {
     finHTML+='<div class="empty" style="padding:12px;">財務データを入力してください（⚙ データ管理 → 財務データ）</div>';
