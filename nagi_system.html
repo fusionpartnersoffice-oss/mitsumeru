@@ -243,7 +243,8 @@ tr:hover td{background:rgba(79,195,247,0.03);}
   <div class="nav-tab active" onclick="goTab('corp')"   id="tab-corp">📊 法人全体</div>
   <div class="nav-tab"        onclick="goTab('office')" id="tab-office">🏢 事業所別</div>
   <div class="nav-tab"        onclick="goTab('staff')"  id="tab-staff">👥 スタッフ一覧</div>
-  <div class="nav-tab"        onclick="goTab('rc')"     id="tab-rc">🚨 RC異常者</div>
+  <div class="nav-tab"        onclick="goTab('rc')"      id="tab-rc">🚨 RC異常者</div>
+  <div class="nav-tab"        onclick="goTab('retired')" id="tab-retired">📦 退職者</div>
 </div>
 
 <main>
@@ -375,6 +376,28 @@ tr:hover td{background:rgba(79,195,247,0.03);}
       </table>
     </div>
     <div id="lsrp-empty" class="empty" style="display:none;"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     PAGE: 退職者リスト
+══════════════════════════════════════ -->
+<div class="page" id="page-retired">
+  <div class="section">
+    <div class="section-title">📦 退職者アーカイブ（法定保存：5年）</div>
+    <div style="font-size:0.75rem;color:var(--sub);margin-bottom:12px;">労働関係書類の法定保存期間（5年）を経過した記録は、PDF出力後に完全削除できます。削除前に必ず確認アラートが表示されます。</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>事業所</th><th>氏名</th><th>役割</th><th>退職日</th><th>退職理由</th>
+            <th>保存期限</th><th>残り</th><th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="retired-tbody"></tbody>
+      </table>
+    </div>
+    <div id="retired-empty" class="empty" style="display:none;">退職者データはありません</div>
   </div>
 </div>
 
@@ -577,6 +600,71 @@ tr:hover td{background:rgba(79,195,247,0.03);}
     <div style="display:flex;gap:8px;margin-top:16px;" class="no-print">
       <button class="btn btn-secondary" onclick="printStaffCard()" style="flex:1;">🖨 この1枚を印刷/PDF</button>
       <button class="btn btn-secondary" onclick="closeModal('modal-staff-detail')" style="flex:1;">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     MODAL: 異動
+══════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-transfer" onclick="if(event.target===this)closeModal('modal-transfer')">
+  <div class="modal" style="max-width:420px;">
+    <button class="modal-close" onclick="closeModal('modal-transfer')">✕</button>
+    <div class="modal-title">🔄 異動処理</div>
+    <input type="hidden" id="transfer-staff-id">
+    <div style="font-size:0.82rem;color:var(--sub);margin-bottom:14px;">
+      <span id="transfer-staff-name" style="font-weight:700;color:var(--text);"></span> の異動先を選択してください。<br>
+      <span style="font-size:0.72rem;">診断データはそのまま引き継がれます。再受験不要です。</span>
+    </div>
+    <div style="margin-bottom:10px;">
+      <label style="font-size:0.75rem;color:var(--sub);display:block;margin-bottom:4px;">異動先 法人</label>
+      <select id="transfer-corp" onchange="onTransferCorpChange()" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:8px 10px;color:var(--text);font-size:0.85rem;">
+        <option value="">── 選択 ──</option>
+      </select>
+    </div>
+    <div style="margin-bottom:18px;">
+      <label style="font-size:0.75rem;color:var(--sub);display:block;margin-bottom:4px;">異動先 事業所</label>
+      <select id="transfer-office" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:8px 10px;color:var(--text);font-size:0.85rem;">
+        <option value="">── 法人を先に選択 ──</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button class="btn btn-secondary" onclick="closeModal('modal-transfer')">キャンセル</button>
+      <button class="btn btn-primary" onclick="saveTransfer()">🔄 異動を確定</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     MODAL: 退職処理
+══════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-retire" onclick="if(event.target===this)closeModal('modal-retire')">
+  <div class="modal" style="max-width:440px;">
+    <button class="modal-close" onclick="closeModal('modal-retire')">✕</button>
+    <div class="modal-title">📦 退職処理</div>
+    <input type="hidden" id="retire-staff-id">
+    <div style="font-size:0.82rem;color:var(--sub);margin-bottom:14px;">
+      <span id="retire-staff-name" style="font-weight:700;color:var(--text);"></span> を退職者アーカイブに移動します。<br>
+      <span style="font-size:0.72rem;">データは法令に基づき5年間保存されます。期限後にPDF出力→確認後に完全削除できます。</span>
+    </div>
+    <div style="margin-bottom:10px;">
+      <label style="font-size:0.75rem;color:var(--sub);display:block;margin-bottom:4px;">退職日 <span style="color:var(--danger);">*</span></label>
+      <input id="retire-date" type="date" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:8px 10px;color:var(--text);font-size:0.85rem;box-sizing:border-box;">
+    </div>
+    <div style="margin-bottom:18px;">
+      <label style="font-size:0.75rem;color:var(--sub);display:block;margin-bottom:4px;">退職理由（任意）</label>
+      <select id="retire-reason" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:8px 10px;color:var(--text);font-size:0.85rem;">
+        <option value="自己都合">自己都合</option>
+        <option value="会社都合">会社都合</option>
+        <option value="定年退職">定年退職</option>
+        <option value="契約期間満了">契約期間満了</option>
+        <option value="死亡退職">死亡退職</option>
+        <option value="その他">その他</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button class="btn btn-secondary" onclick="closeModal('modal-retire')">キャンセル</button>
+      <button class="btn btn-danger" onclick="saveRetire()">📦 退職処理を実行</button>
     </div>
   </div>
 </div>
@@ -1335,7 +1423,8 @@ function renderStaffList(){
       <td style="white-space:nowrap;">
         <button class="btn btn-primary btn-xs" onclick="openStaffDetail('${s.id}')">詳細</button>
         <button class="btn btn-secondary btn-xs" onclick="openEditStaff('${s.id}')">編集</button>
-        <button class="btn btn-danger btn-xs" onclick="deleteStaff('${s.id}')">削除</button>
+        <button class="btn btn-secondary btn-xs" onclick="openTransfer('${s.id}')">異動</button>
+        <button class="btn btn-danger btn-xs" onclick="openRetire('${s.id}')">退職</button>
       </td>
     </tr>`;
   }).join('');
@@ -1453,10 +1542,11 @@ let currentTab='corp';
 
 function goTab(tab){
   currentTab=tab;
-  ['corp','office','staff','rc'].forEach(t=>{
+  ['corp','office','staff','rc','retired'].forEach(t=>{
     document.getElementById(`page-${t}`).classList.toggle('active',t===tab);
     document.getElementById(`tab-${t}`).classList.toggle('active',t===tab);
   });
+  if(tab==='retired') renderRetiredList();
   renderCurrentTab();
 }
 
@@ -1752,6 +1842,207 @@ function deleteStaff(id){
   if(!confirm('このスタッフデータを削除しますか？')) return;
   save('nagi_staff',getAllStaff().filter(s=>s.id!==id));
   renderCurrentTab();
+}
+
+// ════════════════════════════════════════════════════
+//  異動機能
+// ════════════════════════════════════════════════════
+
+function openTransfer(id){
+  const s=getStaffById(id);
+  if(!s) return;
+  document.getElementById('transfer-staff-id').value=id;
+  document.getElementById('transfer-staff-name').textContent=s.name;
+  // 法人セレクタ生成
+  const corps=getAllCorps();
+  const corpSel=document.getElementById('transfer-corp');
+  corpSel.innerHTML='<option value="">── 選択 ──</option>'+
+    corps.map(c=>`<option value="${c.id}"${c.id===s.corpId?' selected':''}>${c.name}</option>`).join('');
+  // 事業所セレクタ生成（現在の法人で初期化）
+  populateTransferOffices(s.corpId, s.officeId);
+  openModal('modal-transfer');
+}
+
+function onTransferCorpChange(){
+  const corpId=document.getElementById('transfer-corp').value;
+  populateTransferOffices(corpId, '');
+}
+
+function populateTransferOffices(corpId, selectedOfficeId){
+  const sel=document.getElementById('transfer-office');
+  if(!corpId){ sel.innerHTML='<option value="">── 法人を先に選択 ──</option>'; return; }
+  const offices=getAllOffices().filter(o=>o.corpId===corpId);
+  sel.innerHTML='<option value="">── 選択 ──</option>'+
+    offices.map(o=>`<option value="${o.id}"${o.id===selectedOfficeId?' selected':''}>${o.name}</option>`).join('');
+}
+
+function saveTransfer(){
+  const id=document.getElementById('transfer-staff-id').value;
+  const newCorpId=document.getElementById('transfer-corp').value;
+  const newOfficeId=document.getElementById('transfer-office').value;
+  if(!newCorpId||!newOfficeId){ alert('異動先の法人と事業所を選択してください'); return; }
+  const staff=getAllStaff();
+  const s=staff.find(x=>x.id===id);
+  if(!s) return;
+  const fromOffice=getAllOffices().find(o=>o.id===s.officeId);
+  const toOffice=getAllOffices().find(o=>o.id===newOfficeId);
+  // 異動履歴を追記
+  if(!s.transferHistory) s.transferHistory=[];
+  s.transferHistory.push({
+    from: fromOffice?.name||'─',
+    to: toOffice?.name||'─',
+    date: new Date().toISOString().slice(0,10)
+  });
+  s.corpId=newCorpId;
+  s.officeId=newOfficeId;
+  save('nagi_staff',staff);
+  closeModal('modal-transfer');
+  renderCurrentTab();
+  alert(`✅ ${s.name} を「${toOffice?.name}」へ異動しました。\n診断データはそのまま引き継がれます。`);
+}
+
+// ════════════════════════════════════════════════════
+//  退職処理・退職者アーカイブ
+// ════════════════════════════════════════════════════
+
+function getRetired(){ try{ return JSON.parse(localStorage.getItem('nagi_retired')||'[]'); }catch{ return []; } }
+function saveRetiredList(r){ localStorage.setItem('nagi_retired',JSON.stringify(r)); }
+
+function openRetire(id){
+  const s=getStaffById(id);
+  if(!s) return;
+  document.getElementById('retire-staff-id').value=id;
+  document.getElementById('retire-staff-name').textContent=s.name;
+  document.getElementById('retire-date').value=new Date().toISOString().slice(0,10);
+  document.getElementById('retire-reason').value='自己都合';
+  openModal('modal-retire');
+}
+
+function saveRetire(){
+  const id=document.getElementById('retire-staff-id').value;
+  const retireDate=document.getElementById('retire-date').value;
+  const reason=document.getElementById('retire-reason').value;
+  if(!retireDate){ alert('退職日を入力してください'); return; }
+  const staff=getAllStaff();
+  const idx=staff.findIndex(s=>s.id===id);
+  if(idx<0) return;
+  const s=staff[idx];
+  const off=getAllOffices().find(o=>o.id===s.officeId);
+  const corp=getAllCorps().find(c=>c.id===s.corpId);
+  // 保存期限：退職日から5年（労働関係書類の法定保存期間）
+  const retentionUntil=new Date(retireDate);
+  retentionUntil.setFullYear(retentionUntil.getFullYear()+5);
+  // 退職者リストへ移動
+  const retired=getRetired();
+  retired.unshift({
+    ...s,
+    retireDate,
+    reason,
+    officeName: off?.name||'─',
+    corpName: corp?.name||'─',
+    retiredAt: new Date().toISOString(),
+    retentionUntil: retentionUntil.toISOString().slice(0,10)
+  });
+  saveRetiredList(retired);
+  // スタッフリストから除外
+  staff.splice(idx,1);
+  save('nagi_staff',staff);
+  closeModal('modal-retire');
+  renderCurrentTab();
+  alert(`📦 ${s.name} を退職者アーカイブに移動しました。\n保存期限：${retentionUntil.toISOString().slice(0,10)}（5年間）`);
+}
+
+function renderRetiredList(){
+  const retired=getRetired();
+  const tbody=document.getElementById('retired-tbody');
+  const empty=document.getElementById('retired-empty');
+  if(!retired.length){ tbody.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  const today=new Date();
+  tbody.innerHTML=retired.map((r,i)=>{
+    const until=new Date(r.retentionUntil);
+    const daysLeft=Math.ceil((until-today)/(1000*60*60*24));
+    const expired=daysLeft<=0;
+    const daysStr=expired
+      ?`<span style="color:var(--danger);font-weight:700;">期限超過</span>`
+      :`<span style="color:${daysLeft<365?'var(--warn)':'var(--sub)'};">${daysLeft}日</span>`;
+    const ops=expired
+      ?`<button class="btn btn-secondary btn-xs" onclick="exportRetiredPDF(${i})">📄 PDF</button>
+         <button class="btn btn-danger btn-xs" onclick="hardDeleteRetired(${i})">完全削除</button>`
+      :`<button class="btn btn-secondary btn-xs" onclick="exportRetiredPDF(${i})">📄 PDF</button>
+         <button class="btn btn-danger btn-xs" style="opacity:0.35;cursor:not-allowed;" title="保存期限内は削除できません">完全削除</button>`;
+    return `<tr>
+      <td style="font-size:0.78rem;">${r.officeName}</td>
+      <td style="font-weight:600;white-space:nowrap;">${r.name}</td>
+      <td><span class="tag tag-sub" style="font-size:0.65rem;">${r.role}</span></td>
+      <td style="white-space:nowrap;">${r.retireDate}</td>
+      <td style="font-size:0.78rem;color:var(--sub);">${r.reason||'─'}</td>
+      <td style="white-space:nowrap;">${r.retentionUntil}</td>
+      <td style="text-align:center;">${daysStr}</td>
+      <td style="white-space:nowrap;">${ops}</td>
+    </tr>`;
+  }).join('');
+}
+
+function exportRetiredPDF(idx){
+  const r=getRetired()[idx];
+  if(!r) return;
+  // 印刷用ウィンドウを開いてデータを出力
+  const w=window.open('','_blank','width=700,height=900');
+  const ego=r.ego||{};
+  const lsrp=r.lsrp||{};
+  const enn=(r.enn||[]).map(e=>e.name).join(' / ');
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>退職者記録 - ${r.name}</title>
+  <style>body{font-family:sans-serif;padding:32px;color:#222;}h1{font-size:1.2rem;border-bottom:2px solid #333;padding-bottom:8px;}
+  table{border-collapse:collapse;width:100%;margin:16px 0;}td,th{border:1px solid #ccc;padding:8px 12px;font-size:0.85rem;}
+  th{background:#f0f0f0;font-weight:600;text-align:left;width:35%;}
+  .warn{color:#e65100;font-weight:700;}.footer{margin-top:32px;font-size:0.72rem;color:#888;border-top:1px solid #ccc;padding-top:12px;}</style>
+  </head><body>
+  <h1>📦 退職者記録</h1>
+  <table>
+    <tr><th>氏名</th><td>${r.name}</td></tr>
+    <tr><th>法人</th><td>${r.corpName}</td></tr>
+    <tr><th>事業所</th><td>${r.officeName}</td></tr>
+    <tr><th>役割</th><td>${r.role}</td></tr>
+    <tr><th>退職日</th><td>${r.retireDate}</td></tr>
+    <tr><th>退職理由</th><td>${r.reason||'─'}</td></tr>
+    <tr><th>法定保存期限</th><td class="warn">${r.retentionUntil}（5年）</td></tr>
+    <tr><th>Task / Social</th><td>${r.task||'─'} / ${r.social||'─'}</td></tr>
+    <tr><th>PM理論</th><td>P:${r.p||'─'} M:${r.m||'─'} → ${r.pmStyle||'─'}型</td></tr>
+    <tr><th>エゴグラム</th><td>CP:${ego.CP||0} NP:${ego.NP||0} A:${ego.A||0} FC:${ego.FC||0} AC:${ego.AC||0}</td></tr>
+    <tr><th>LSRPスコア</th><td>${lsrp.total!=null?lsrp.total:'─'}（${lsrp.levelShort||'─'}）</td></tr>
+    <tr><th>エニアグラム</th><td>${enn||'─'}</td></tr>
+  </table>
+  <div class="footer">出力日：${new Date().toLocaleDateString('ja-JP')} ／ Fusion Partners 凪システム</div>
+  <script>window.onload=function(){window.print();}<\/script>
+  </body></html>`);
+  w.document.close();
+}
+
+function hardDeleteRetired(idx){
+  const retired=getRetired();
+  const r=retired[idx];
+  if(!r) return;
+  const until=new Date(r.retentionUntil);
+  const today=new Date();
+  const daysLeft=Math.ceil((until-today)/(1000*60*60*24));
+  if(daysLeft>0){
+    alert(`⚠️ 保存期限内のため削除できません。\n残り ${daysLeft} 日（期限：${r.retentionUntil}）`);
+    return;
+  }
+  const ok=confirm(
+    `【完全削除の確認】\n\n対象：${r.name}（${r.officeName}）\n退職日：${r.retireDate}\n\n` +
+    `このデータは完全に削除され、復元できません。\nPDFを出力済みであることを確認してから実行してください。\n\n` +
+    `本当に削除しますか？`
+  );
+  if(!ok) return;
+  // 2段階確認
+  const ok2=confirm(`最終確認：「${r.name}」のデータを完全に削除します。よろしいですか？`);
+  if(!ok2) return;
+  retired.splice(idx,1);
+  saveRetiredList(retired);
+  renderRetiredList();
+  alert(`🗑️ ${r.name} のデータを完全に削除しました。`);
 }
 
 // ════════════════════════════════════════════════════
