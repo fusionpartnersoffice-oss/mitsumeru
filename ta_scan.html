@@ -303,8 +303,12 @@ tr:hover td{background:rgba(79,195,247,0.03);}
   </div>
 
   <div class="roster-filter">
-    <input id="filter-corp" placeholder="法人名で絞込み" oninput="renderRoster()">
-    <input id="filter-office" placeholder="事業所名で絞込み" oninput="renderRoster()">
+    <select id="filter-corp" onchange="onFilterCorpChange()">
+      <option value="">法人: すべて</option>
+    </select>
+    <select id="filter-office" onchange="renderRoster()">
+      <option value="">事業所: すべて</option>
+    </select>
     <select id="filter-sl" onchange="renderRoster()">
       <option value="">SLすべて</option>
       <option value="M1">M1</option><option value="M2">M2</option>
@@ -791,14 +795,37 @@ function deleteEntry(idx) {
 //  受検者一覧レンダリング
 // ════════════════════════════════════════════════════
 
-function renderRoster() {
+function populateFilters() {
   const roster = loadRoster();
-  const fc = (document.getElementById('filter-corp')?.value || '').toLowerCase();
-  const fo = (document.getElementById('filter-office')?.value || '').toLowerCase();
+  const corps = [...new Set(roster.map(r => r.corp).filter(Boolean))].sort();
+  const corpSel = document.getElementById('filter-corp');
+  const curCorp = corpSel.value;
+  corpSel.innerHTML = '<option value="">法人: すべて</option>' + corps.map(c => `<option value="${c}"${c===curCorp?' selected':''}>${c}</option>`).join('');
+  populateOfficeFilter(curCorp);
+}
+
+function populateOfficeFilter(corpFilter) {
+  const roster = loadRoster();
+  const offices = [...new Set(roster.filter(r => !corpFilter || r.corp === corpFilter).map(r => r.office).filter(Boolean))].sort();
+  const offSel = document.getElementById('filter-office');
+  const curOff = offSel.value;
+  offSel.innerHTML = '<option value="">事業所: すべて</option>' + offices.map(o => `<option value="${o}"${o===curOff?' selected':''}>${o}</option>`).join('');
+}
+
+function onFilterCorpChange() {
+  populateOfficeFilter(document.getElementById('filter-corp').value);
+  renderRoster();
+}
+
+function renderRoster() {
+  populateFilters();
+  const roster = loadRoster();
+  const fc = document.getElementById('filter-corp')?.value || '';
+  const fo = document.getElementById('filter-office')?.value || '';
   const fs = document.getElementById('filter-sl')?.value || '';
   const filtered = roster.filter(r => {
-    if (fc && !(r.corp || '').toLowerCase().includes(fc)) return false;
-    if (fo && !(r.office || '').toLowerCase().includes(fo)) return false;
+    if (fc && r.corp !== fc) return false;
+    if (fo && r.office !== fo) return false;
     if (fs && r.slStage !== fs) return false;
     return true;
   });

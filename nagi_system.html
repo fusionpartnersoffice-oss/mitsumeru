@@ -566,6 +566,11 @@ tr:hover td{background:rgba(79,195,247,0.03);}
       <button class="btn btn-secondary btn-sm" onclick="openScanImportForStaff()">📋 スキャンJSONからインポート</button>
     </div>
 
+    <div style="border-top:1px solid var(--border);padding-top:10px;margin-bottom:10px;font-size:0.75rem;color:var(--sub);">● 備考・コメント（管理者メモ）</div>
+    <div class="form-group">
+      <textarea id="staff-note" rows="3" placeholder="面談内容、特記事項、引き継ぎ事項などを自由に記入できます..." style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-size:0.82rem;resize:vertical;box-sizing:border-box;"></textarea>
+    </div>
+
     <div style="display:flex;gap:10px;margin-top:4px;">
       <button class="btn btn-primary" onclick="saveStaff()" style="flex:1;">💾 保存</button>
       <button class="btn btn-secondary" onclick="closeModal('modal-staff')" style="flex:1;">キャンセル</button>
@@ -622,11 +627,25 @@ tr:hover td{background:rgba(79,195,247,0.03);}
         <option value="">── 選択 ──</option>
       </select>
     </div>
-    <div style="margin-bottom:18px;">
+    <div style="margin-bottom:10px;">
       <label style="font-size:0.75rem;color:var(--sub);display:block;margin-bottom:4px;">異動先 事業所</label>
       <select id="transfer-office" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:8px 10px;color:var(--text);font-size:0.85rem;">
         <option value="">── 法人を先に選択 ──</option>
       </select>
+    </div>
+    <div style="margin-bottom:10px;">
+      <label style="font-size:0.75rem;color:var(--sub);display:block;margin-bottom:4px;">異動理由</label>
+      <select id="transfer-reason-type" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:8px 10px;color:var(--text);font-size:0.85rem;">
+        <option value="本人希望">本人希望</option>
+        <option value="会社都合">会社都合</option>
+        <option value="人員配置">人員配置</option>
+        <option value="キャリアアップ">キャリアアップ</option>
+        <option value="その他">その他</option>
+      </select>
+    </div>
+    <div style="margin-bottom:18px;">
+      <label style="font-size:0.75rem;color:var(--sub);display:block;margin-bottom:4px;">詳細・備考（任意）</label>
+      <textarea id="transfer-reason-text" rows="2" placeholder="具体的な理由や経緯を記入..." style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:8px 10px;color:var(--text);font-size:0.82rem;resize:vertical;box-sizing:border-box;"></textarea>
     </div>
     <div style="display:flex;gap:8px;justify-content:flex-end;">
       <button class="btn btn-secondary" onclick="closeModal('modal-transfer')">キャンセル</button>
@@ -1421,10 +1440,12 @@ function renderStaffList(){
       <td class="${lsrpL.cls}" style="white-space:nowrap;">${lsrpL.label}</td>
       <td><span class="tag sl-${slStage}">${slStage}</span></td>
       <td style="white-space:nowrap;">
-        <button class="btn btn-primary btn-xs" onclick="openStaffDetail('${s.id}')">詳細</button>
-        <button class="btn btn-secondary btn-xs" onclick="openEditStaff('${s.id}')">編集</button>
-        <button class="btn btn-secondary btn-xs" onclick="openTransfer('${s.id}')">異動</button>
-        <button class="btn btn-danger btn-xs" onclick="openRetire('${s.id}')">退職</button>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:2px;min-width:96px;">
+          <button class="btn btn-primary btn-xs" onclick="openStaffDetail('${s.id}')">詳細</button>
+          <button class="btn btn-secondary btn-xs" onclick="openEditStaff('${s.id}')">編集</button>
+          <button class="btn btn-secondary btn-xs" onclick="openTransfer('${s.id}')">異動</button>
+          <button class="btn btn-danger btn-xs" onclick="openRetire('${s.id}')">退職</button>
+        </div>
       </td>
     </tr>`;
   }).join('');
@@ -1780,6 +1801,7 @@ function openEditStaff(id){
   ['enn1','enn2','enn3'].forEach((id,i)=>{ const el=document.getElementById(id); if(el) el.value=enn[i]?.type||''; });
   document.getElementById('lsrp-total').value=s.lsrp?.total||'';
   document.getElementById('lsrp-level').value=s.lsrp?.levelShort||'';
+  document.getElementById('staff-note').value=s.note||'';
   openModal('modal-staff');
 }
 
@@ -1823,15 +1845,23 @@ function saveStaff(){
   const lsrpLevelShort=document.getElementById('lsrp-level').value||getLSRPLabel(lsrpTotal).short;
   const lsrp=lsrpTotal>0?{total:lsrpTotal,levelShort:lsrpLevelShort}:null;
 
+  const note=document.getElementById('staff-note').value.trim();
+
   const rec={
     id:editId||uid(), corpId, officeId,
     name, role:document.getElementById('staff-role').value,
-    task, social, p, m, ksa, ego, enn, lsrp,
+    task, social, p, m, ksa, ego, enn, lsrp, note,
     updatedAt:new Date().toISOString()
   };
 
   const all=getAllStaff();
-  if(editId){ const idx=all.findIndex(s=>s.id===editId); if(idx>=0) all[idx]=rec; else all.push(rec); }
+  if(editId){
+    const idx=all.findIndex(s=>s.id===editId);
+    if(idx>=0){
+      const existing=all[idx];
+      all[idx]={...existing, ...rec, memos:existing.memos||[], transferHistory:existing.transferHistory||[]};
+    } else all.push(rec);
+  }
   else all.push(rec);
   save('nagi_staff',all);
   closeModal('modal-staff');
@@ -1887,11 +1917,14 @@ function saveTransfer(){
   const fromOffice=getAllOffices().find(o=>o.id===s.officeId);
   const toOffice=getAllOffices().find(o=>o.id===newOfficeId);
   // 異動履歴を追記
+  const reason=document.getElementById('transfer-reason-type').value||'その他';
+  const reasonDetail=document.getElementById('transfer-reason-text').value.trim();
   if(!s.transferHistory) s.transferHistory=[];
   s.transferHistory.push({
     from: fromOffice?.name||'─',
     to: toOffice?.name||'─',
-    date: new Date().toISOString().slice(0,10)
+    date: new Date().toISOString().slice(0,10),
+    reason, reasonDetail
   });
   s.corpId=newCorpId;
   s.officeId=newOfficeId;
@@ -2998,11 +3031,15 @@ function openStaffDetail(staffId){
       <div class="karte-block-title">🔄 異動履歴</div>
       <div style="font-size:0.8rem;">
         ${s.transferHistory.map(h=>`
-          <div style="display:flex;gap:12px;padding:5px 0;border-bottom:1px solid var(--border);align-items:center;">
-            <span style="color:var(--sub);white-space:nowrap;">${h.date}</span>
-            <span>${h.from}</span>
-            <span style="color:var(--sub);">→</span>
-            <span style="color:var(--accent2);font-weight:600;">${h.to}</span>
+          <div style="padding:5px 0;border-bottom:1px solid var(--border);">
+            <div style="display:flex;gap:12px;align-items:center;">
+              <span style="color:var(--sub);white-space:nowrap;">${h.date}</span>
+              <span>${h.from}</span>
+              <span style="color:var(--sub);">→</span>
+              <span style="color:var(--accent2);font-weight:600;">${h.to}</span>
+              ${h.reason?`<span style="font-size:0.72rem;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:1px 6px;color:var(--sub);">${h.reason}</span>`:''}
+            </div>
+            ${h.reasonDetail?`<div style="font-size:0.75rem;color:var(--sub);margin-top:2px;padding-left:2px;">${h.reasonDetail}</div>`:''}
           </div>`).join('')}
       </div>
     </div>`:''}
