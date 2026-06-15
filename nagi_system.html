@@ -1884,7 +1884,7 @@ function openTransfer(id){
   document.getElementById('transfer-staff-id').value=id;
   document.getElementById('transfer-staff-name').textContent=s.name;
   // 法人セレクタ生成
-  const corps=getAllCorps();
+  const corps=getCorps();
   const corpSel=document.getElementById('transfer-corp');
   corpSel.innerHTML='<option value="">── 選択 ──</option>'+
     corps.map(c=>`<option value="${c.id}"${c.id===s.corpId?' selected':''}>${c.name}</option>`).join('');
