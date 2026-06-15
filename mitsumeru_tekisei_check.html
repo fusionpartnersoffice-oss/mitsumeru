@@ -791,34 +791,25 @@ function renderRoster() {
       <td>${r.ennTop2 || r.enneagram?.top3?.[1]?.name?.split('｜')?.[1] || ''}</td>
       <td>${r.ennTop3 || r.enneagram?.top3?.[2]?.name?.split('｜')?.[1] || ''}</td>
       <td style="white-space:nowrap;">
-        <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();openEditEntry(${globalIdx})" style="margin-right:4px;">編集</button>
-        <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteEntry(${globalIdx})">削除</button>
+        <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();sendOneToNagi(${globalIdx})" style="margin-right:4px;font-size:0.65rem;">凪へ送る</button>
+        <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteEntry(${globalIdx})" style="font-size:0.65rem;">削除</button>
       </td>
     </tr>`;
   }).join('');
 }
 
-function openEditEntry(idx) {
+function sendOneToNagi(idx) {
   const roster = loadRoster();
   const r = roster[idx];
   if (!r) return;
-  document.getElementById('edit-entry-idx').value = idx;
-  document.getElementById('edit-entry-name').textContent = r.name || '';
-  document.getElementById('edit-result').value = r.result || '保留';
-  document.getElementById('edit-rejection-reason').value = r.rejectionReason || '';
-  document.getElementById('edit-rejection-area').style.display = (r.result === '不採用') ? 'block' : 'none';
-  document.getElementById('modal-edit-entry').style.display = 'flex';
-}
-
-function saveEditEntry() {
-  const idx = parseInt(document.getElementById('edit-entry-idx').value);
-  const roster = loadRoster();
-  if (!roster[idx]) return;
-  roster[idx].result = document.getElementById('edit-result').value;
-  roster[idx].rejectionReason = document.getElementById('edit-rejection-reason').value.trim();
-  localStorage.setItem(ROSTER_KEY, JSON.stringify(roster));
-  document.getElementById('modal-edit-entry').style.display = 'none';
-  renderRoster();
+  const existing = JSON.parse(localStorage.getItem('nagi_candidates') || '[]');
+  if (existing.some(c => c.savedAt === r.savedAt)) {
+    alert(`${r.name} はすでに候補者リストに送信済みです`);
+    return;
+  }
+  existing.unshift({ ...r, sentAt: new Date().toISOString(), source: 'mitsumeru' });
+  localStorage.setItem('nagi_candidates', JSON.stringify(existing));
+  alert(`${r.name} を凪システムの候補者リストに送りました`);
 }
 
 function deleteEntry(idx) {
@@ -1031,6 +1022,15 @@ function sendAllToAdmin(){
     const body = encodeURIComponent(`${roster.length}名（${nameList}）の診断データです。\n\n以下のリンクを開いてインポートしてください：\n${url}`);
     window.open(`mailto:?subject=${subject}&body=${body}`);
   }
+  // nagi_candidatesにも書き込む（同一origin）
+  const existing = JSON.parse(localStorage.getItem('nagi_candidates') || '[]');
+  const existingIds = new Set(existing.map(c => c.savedAt));
+  roster.forEach(r => {
+    if (!existingIds.has(r.savedAt)) {
+      existing.unshift({ ...r, sentAt: new Date().toISOString(), source: 'mitsumeru' });
+    }
+  });
+  localStorage.setItem('nagi_candidates', JSON.stringify(existing));
 }
 
 // ═══════════════════════════════════════════════
@@ -1192,30 +1192,5 @@ function deleteFromDetail(idx) {
   </div>
 </div>
 
-<!-- 編集モーダル -->
-<div id="modal-edit-entry" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center;">
-  <div style="background:var(--surface,#1e1e2e);border:1px solid var(--border,#333);border-radius:12px;padding:24px;max-width:420px;width:92%;position:relative;">
-    <button onclick="document.getElementById('modal-edit-entry').style.display='none'" style="position:absolute;top:12px;right:14px;background:none;border:none;color:var(--sub,#888);font-size:1.2rem;cursor:pointer;">✕</button>
-    <div style="font-weight:700;font-size:1rem;margin-bottom:16px;">✏️ 採用判定の編集</div>
-    <input type="hidden" id="edit-entry-idx">
-    <div style="font-size:0.82rem;color:var(--sub,#888);margin-bottom:14px;">対象：<span id="edit-entry-name" style="font-weight:700;color:var(--text,#eee);"></span></div>
-    <div style="margin-bottom:12px;">
-      <label style="font-size:0.75rem;color:var(--sub,#888);display:block;margin-bottom:4px;">採用判定</label>
-      <select id="edit-result" onchange="document.getElementById('edit-rejection-area').style.display=this.value==='不採用'?'block':'none'" style="width:100%;background:var(--bg,#111);border:1px solid var(--border,#333);border-radius:7px;padding:8px 10px;color:var(--text,#eee);font-size:0.85rem;">
-        <option value="採用">採用</option>
-        <option value="不採用">不採用</option>
-        <option value="保留">保留</option>
-      </select>
-    </div>
-    <div id="edit-rejection-area" style="display:none;margin-bottom:16px;">
-      <label style="font-size:0.75rem;color:var(--sub,#888);display:block;margin-bottom:4px;">不採用理由</label>
-      <textarea id="edit-rejection-reason" rows="3" placeholder="不採用の理由や懸念点を記入..." style="width:100%;background:var(--bg,#111);border:1px solid var(--border,#333);border-radius:7px;padding:8px 10px;color:var(--text,#eee);font-size:0.82rem;resize:vertical;box-sizing:border-box;"></textarea>
-    </div>
-    <div style="display:flex;gap:8px;justify-content:flex-end;">
-      <button onclick="document.getElementById('modal-edit-entry').style.display='none'" style="padding:8px 16px;background:none;border:1px solid var(--border,#333);border-radius:7px;color:var(--sub,#888);cursor:pointer;">キャンセル</button>
-      <button onclick="saveEditEntry()" style="padding:8px 20px;background:var(--accent,#0096ff);border:none;border-radius:7px;color:#fff;font-weight:600;cursor:pointer;">保存</button>
-    </div>
-  </div>
-</div>
 </body>
 </html>

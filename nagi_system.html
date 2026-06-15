@@ -244,7 +244,9 @@ tr:hover td{background:rgba(79,195,247,0.03);}
   <div class="nav-tab"        onclick="goTab('office')" id="tab-office">🏢 事業所別</div>
   <div class="nav-tab"        onclick="goTab('staff')"  id="tab-staff">👥 スタッフ一覧</div>
   <div class="nav-tab"        onclick="goTab('rc')"      id="tab-rc">🚨 RC異常者</div>
-  <div class="nav-tab"        onclick="goTab('retired')" id="tab-retired">📦 退職者</div>
+  <div class="nav-tab"        onclick="goTab('retired')"   id="tab-retired">📦 退職者</div>
+  <div class="nav-tab"        onclick="goTab('candidate')" id="tab-candidate">📋 候補者</div>
+  <div class="nav-tab"        onclick="goTab('blacklist')" id="tab-blacklist">🚫 ブラックリスト</div>
 </div>
 
 <main>
@@ -398,6 +400,53 @@ tr:hover td{background:rgba(79,195,247,0.03);}
       </table>
     </div>
     <div id="retired-empty" class="empty" style="display:none;">退職者データはありません</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     PAGE: 候補者リスト
+══════════════════════════════════════ -->
+<div class="page" id="page-candidate">
+  <div class="section">
+    <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;">
+      <span>📋 候補者リスト</span>
+      <span style="font-size:0.72rem;color:var(--sub);font-weight:400;">ミツメルスキャンから受け取ったデータ。採用判断を行ってください。</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>受検日</th><th>法人</th><th>事業所</th><th>氏名</th>
+            <th>LSRP</th><th>RC</th><th>EG:CP</th><th>EG:NP</th><th>EG:A</th><th>EG:FC</th><th>EG:AC</th>
+            <th>エニアTop1</th><th>採否判断</th>
+          </tr>
+        </thead>
+        <tbody id="candidate-tbody"></tbody>
+      </table>
+    </div>
+    <div id="candidate-empty" class="empty" style="display:none;">候補者データはありません。ミツメルスキャンの「凪へ送る」ボタンで追加できます。</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     PAGE: ブラックリスト
+══════════════════════════════════════ -->
+<div class="page" id="page-blacklist">
+  <div class="section">
+    <div class="section-title">🚫 不採用者アーカイブ（保存：5年）</div>
+    <div style="font-size:0.75rem;color:var(--sub);margin-bottom:12px;">不採用者のデータを5年間保管します。同一人物が再応募した際に自動アラートが表示されます。</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>不採用日</th><th>法人</th><th>事業所</th><th>氏名</th>
+            <th>LSRP</th><th>RC</th><th>不採用理由</th><th>保存期限</th><th>残り</th><th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="blacklist-tbody"></tbody>
+      </table>
+    </div>
+    <div id="blacklist-empty" class="empty" style="display:none;">ブラックリストはありません</div>
   </div>
 </div>
 
@@ -684,6 +733,69 @@ tr:hover td{background:rgba(79,195,247,0.03);}
     <div style="display:flex;gap:8px;justify-content:flex-end;">
       <button class="btn btn-secondary" onclick="closeModal('modal-retire')">キャンセル</button>
       <button class="btn btn-danger" onclick="saveRetire()">📦 退職処理を実行</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     MODAL: 候補者 採用確定
+══════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-hire" onclick="if(event.target===this)closeModal('modal-hire')">
+  <div class="modal" style="max-width:440px;">
+    <button class="modal-close" onclick="closeModal('modal-hire')">✕</button>
+    <div class="modal-title">✅ 採用確定</div>
+    <input type="hidden" id="hire-candidate-idx">
+    <div style="font-size:0.82rem;color:var(--sub);margin-bottom:14px;">
+      <span id="hire-candidate-name" style="font-weight:700;color:var(--text);"></span> をスタッフとして登録します。<br>
+      <span style="font-size:0.72rem;">診断データはそのままスタッフカルテに引き継がれます。</span>
+    </div>
+    <div style="margin-bottom:10px;">
+      <label style="font-size:0.75rem;color:var(--sub);display:block;margin-bottom:4px;">配属 法人 <span style="color:var(--danger);">*</span></label>
+      <select id="hire-corp" onchange="onHireCorpChange()" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:8px 10px;color:var(--text);font-size:0.85rem;">
+        <option value="">── 選択 ──</option>
+      </select>
+    </div>
+    <div style="margin-bottom:10px;">
+      <label style="font-size:0.75rem;color:var(--sub);display:block;margin-bottom:4px;">配属 事業所 <span style="color:var(--danger);">*</span></label>
+      <select id="hire-office" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:8px 10px;color:var(--text);font-size:0.85rem;">
+        <option value="">── 法人を先に選択 ──</option>
+      </select>
+    </div>
+    <div style="margin-bottom:18px;">
+      <label style="font-size:0.75rem;color:var(--sub);display:block;margin-bottom:4px;">役職</label>
+      <select id="hire-role" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:8px 10px;color:var(--text);font-size:0.85rem;">
+        <option value="一般職">一般職</option>
+        <option value="主任・リーダー">主任・リーダー</option>
+        <option value="管理職">管理職</option>
+        <option value="経営層">経営層</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button class="btn btn-secondary" onclick="closeModal('modal-hire')">キャンセル</button>
+      <button class="btn btn-primary" onclick="confirmHire()">✅ 採用登録を確定</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     MODAL: 候補者 不採用
+══════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-reject" onclick="if(event.target===this)closeModal('modal-reject')">
+  <div class="modal" style="max-width:420px;">
+    <button class="modal-close" onclick="closeModal('modal-reject')">✕</button>
+    <div class="modal-title">🚫 不採用処理</div>
+    <input type="hidden" id="reject-candidate-idx">
+    <div style="font-size:0.82rem;color:var(--sub);margin-bottom:14px;">
+      <span id="reject-candidate-name" style="font-weight:700;color:var(--text);"></span> をブラックリストに移動します。<br>
+      <span style="font-size:0.72rem;">データは法令に基づき5年間保管されます。再応募時に自動アラートが表示されます。</span>
+    </div>
+    <div style="margin-bottom:18px;">
+      <label style="font-size:0.75rem;color:var(--sub);display:block;margin-bottom:4px;">不採用理由（任意）</label>
+      <textarea id="reject-reason" rows="3" placeholder="スキルミスマッチ、態度、経歴に懸念あり、など..." style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:8px 10px;color:var(--text);font-size:0.82rem;resize:vertical;box-sizing:border-box;"></textarea>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button class="btn btn-secondary" onclick="closeModal('modal-reject')">キャンセル</button>
+      <button class="btn btn-danger" onclick="confirmReject()">🚫 不採用を確定</button>
     </div>
   </div>
 </div>
@@ -1563,12 +1675,14 @@ let currentTab='corp';
 
 function goTab(tab){
   currentTab=tab;
-  ['corp','office','staff','rc','retired'].forEach(t=>{
-    document.getElementById(`page-${t}`).classList.toggle('active',t===tab);
-    document.getElementById(`tab-${t}`).classList.toggle('active',t===tab);
+  ['corp','office','staff','rc','retired','candidate','blacklist'].forEach(t=>{
+    document.getElementById(`page-${t}`)?.classList.toggle('active',t===tab);
+    document.getElementById(`tab-${t}`)?.classList.toggle('active',t===tab);
   });
   if(tab==='retired') renderRetiredList();
-  renderCurrentTab();
+  else if(tab==='candidate') renderCandidates();
+  else if(tab==='blacklist') renderBlacklist();
+  else renderCurrentTab();
 }
 
 function renderCurrentTab(){
@@ -2076,6 +2190,198 @@ function hardDeleteRetired(idx){
   saveRetiredList(retired);
   renderRetiredList();
   alert(`🗑️ ${r.name} のデータを完全に削除しました。`);
+}
+
+// ════════════════════════════════════════════════════
+//  候補者リスト
+// ════════════════════════════════════════════════════
+
+function getCandidates(){ try{ return JSON.parse(localStorage.getItem('nagi_candidates')||'[]'); }catch{ return []; } }
+function saveCandidates(arr){ localStorage.setItem('nagi_candidates', JSON.stringify(arr)); }
+
+function getBlacklist(){ try{ return JSON.parse(localStorage.getItem('nagi_blacklist')||'[]'); }catch{ return []; } }
+function saveBlacklist(arr){ localStorage.setItem('nagi_blacklist', JSON.stringify(arr)); }
+
+function checkBlacklist(name){
+  const bl=getBlacklist();
+  return bl.find(b=>(b.name||'').trim()===(name||'').trim());
+}
+
+function renderCandidates(){
+  const list=getCandidates();
+  const tbody=document.getElementById('candidate-tbody');
+  const empty=document.getElementById('candidate-empty');
+  if(!list.length){ tbody.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  const LSRP_CLS={危険:'color:var(--danger);font-weight:700;', 警戒:'color:var(--warn);font-weight:700;', 安全:'color:var(--accent2);'};
+  tbody.innerHTML=list.map((c,i)=>{
+    const blMatch=checkBlacklist(c.name);
+    const blWarn=blMatch?`<span title="過去に不採用歴あり（${blMatch.rejectDate}）" style="color:var(--danger);font-weight:700;cursor:help;">⚠️ </span>`:'';
+    const lsrpStyle=LSRP_CLS[c.lsrpLevelShort]||'';
+    const eg=c.egogram||{};
+    return `<tr${blMatch?' style="background:rgba(198,40,40,0.08);"':''}>
+      <td style="font-size:0.75rem;color:var(--sub);">${(c.savedAt||'').slice(0,10)}</td>
+      <td style="font-size:0.78rem;">${c.corp||''}</td>
+      <td style="font-size:0.78rem;">${c.office||''}</td>
+      <td style="font-weight:600;">${blWarn}${c.name||''}<br><span style="font-size:0.68rem;color:var(--sub);font-weight:400;">${c.nameKana||''}</span></td>
+      <td style="${lsrpStyle}font-size:0.78rem;">${c.lsrpLevelShort||'─'}</td>
+      <td style="font-size:0.78rem;">${c.rcShort||'─'}</td>
+      <td style="text-align:center;">${eg.CP??'─'}</td>
+      <td style="text-align:center;">${eg.NP??'─'}</td>
+      <td style="text-align:center;">${eg.A??'─'}</td>
+      <td style="text-align:center;">${eg.FC??'─'}</td>
+      <td style="text-align:center;">${eg.AC??'─'}</td>
+      <td style="font-size:0.75rem;">${c.ennTop1||''}</td>
+      <td style="white-space:nowrap;">
+        <button class="btn btn-primary btn-xs" onclick="openHireCandidate(${i})" style="margin-bottom:2px;">✅ 採用</button>
+        <button class="btn btn-secondary btn-xs" onclick="holdCandidate(${i})" style="margin-bottom:2px;">⏸ 保留</button>
+        <button class="btn btn-danger btn-xs" onclick="openRejectCandidate(${i})">🚫 不採用</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function openHireCandidate(idx){
+  const c=getCandidates()[idx];
+  if(!c) return;
+  const blMatch=checkBlacklist(c.name);
+  if(blMatch){
+    const go=confirm(`⚠️ 過去の不採用歴があります\n\n氏名：${c.name}\n不採用日：${blMatch.rejectDate}\n理由：${blMatch.reason||'記載なし'}\n\nそれでも採用処理を続けますか？`);
+    if(!go) return;
+  }
+  document.getElementById('hire-candidate-idx').value=idx;
+  document.getElementById('hire-candidate-name').textContent=c.name||'';
+  const corpSel=document.getElementById('hire-corp');
+  corpSel.innerHTML='<option value="">── 選択 ──</option>'+
+    getCorps().map(corp=>`<option value="${corp.id}">${corp.name}</option>`).join('');
+  document.getElementById('hire-office').innerHTML='<option value="">── 法人を先に選択 ──</option>';
+  // 法人を候補者の法人名で自動選択
+  const matchCorp=getCorps().find(corp=>corp.name===c.corp);
+  if(matchCorp){
+    corpSel.value=matchCorp.id;
+    onHireCorpChange();
+    const matchOff=getOffices(matchCorp.id).find(o=>o.name===c.office);
+    if(matchOff) document.getElementById('hire-office').value=matchOff.id;
+  }
+  openModal('modal-hire');
+}
+
+function onHireCorpChange(){
+  const corpId=document.getElementById('hire-corp').value;
+  const sel=document.getElementById('hire-office');
+  if(!corpId){ sel.innerHTML='<option value="">── 法人を先に選択 ──</option>'; return; }
+  sel.innerHTML='<option value="">── 選択 ──</option>'+
+    getOffices(corpId).map(o=>`<option value="${o.id}">${o.name}</option>`).join('');
+}
+
+function confirmHire(){
+  const idx=parseInt(document.getElementById('hire-candidate-idx').value);
+  const corpId=document.getElementById('hire-corp').value;
+  const officeId=document.getElementById('hire-office').value;
+  const role=document.getElementById('hire-role').value;
+  if(!corpId||!officeId){ alert('法人と事業所を選択してください'); return; }
+  const candidates=getCandidates();
+  const c=candidates[idx];
+  if(!c) return;
+  // スタッフレコードを生成（診断データを引き継ぐ）
+  const staffRec={
+    id: uid(), corpId, officeId,
+    name: c.name, nameKana: c.nameKana||'', role,
+    lsrp: c.lsrp||( c.lsrpTotal?{total:c.lsrpTotal, levelShort:c.lsrpLevelShort}:null ),
+    ego: c.egogram ? {CP:c.egogram.CP,NP:c.egogram.NP,A:c.egogram.A,FC:c.egogram.FC,AC:c.egogram.AC} : {},
+    enn: c.enneagram?.top3?.map(t=>({type:t.type||'',name:t.name||'',score:t.score||0}))||[],
+    rcRaw: c.rcRaw||0,
+    task:0, social:0, p:0, m:0, ksa:0,
+    memos:[], transferHistory:[],
+    note:`ミツメルスキャンより採用登録（${new Date().toISOString().slice(0,10)}）`,
+    updatedAt: new Date().toISOString()
+  };
+  const allStaff=getAllStaff();
+  allStaff.push(staffRec);
+  save('nagi_staff', allStaff);
+  // 候補者リストから削除
+  candidates.splice(idx,1);
+  saveCandidates(candidates);
+  closeModal('modal-hire');
+  alert(`✅ ${c.name} をスタッフとして登録しました。\nスタッフ一覧タブで確認できます。`);
+  renderCandidates();
+}
+
+function holdCandidate(idx){
+  alert(`⏸ 保留しました。候補者リストに残ります。`);
+}
+
+function openRejectCandidate(idx){
+  const c=getCandidates()[idx];
+  if(!c) return;
+  document.getElementById('reject-candidate-idx').value=idx;
+  document.getElementById('reject-candidate-name').textContent=c.name||'';
+  document.getElementById('reject-reason').value='';
+  openModal('modal-reject');
+}
+
+function confirmReject(){
+  const idx=parseInt(document.getElementById('reject-candidate-idx').value);
+  const reason=document.getElementById('reject-reason').value.trim();
+  const candidates=getCandidates();
+  const c=candidates[idx];
+  if(!c) return;
+  const rejectDate=new Date().toISOString().slice(0,10);
+  const retentionUntil=new Date(new Date().setFullYear(new Date().getFullYear()+5)).toISOString().slice(0,10);
+  const blRec={...c, rejectDate, reason, retentionUntil};
+  const bl=getBlacklist();
+  bl.unshift(blRec);
+  saveBlacklist(bl);
+  candidates.splice(idx,1);
+  saveCandidates(candidates);
+  closeModal('modal-reject');
+  renderCandidates();
+}
+
+function renderBlacklist(){
+  const list=getBlacklist();
+  const tbody=document.getElementById('blacklist-tbody');
+  const empty=document.getElementById('blacklist-empty');
+  if(!list.length){ tbody.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  const today=new Date();
+  tbody.innerHTML=list.map((b,i)=>{
+    const until=new Date(b.retentionUntil);
+    const daysLeft=Math.ceil((until-today)/(1000*60*60*24));
+    const expired=daysLeft<=0;
+    const LSRP_CLS={危険:'color:var(--danger);font-weight:700;', 警戒:'color:var(--warn);font-weight:700;', 安全:'color:var(--accent2);'};
+    return `<tr>
+      <td style="font-size:0.75rem;">${b.rejectDate||''}</td>
+      <td style="font-size:0.78rem;">${b.corp||''}</td>
+      <td style="font-size:0.78rem;">${b.office||''}</td>
+      <td style="font-weight:600;">${b.name||''}</td>
+      <td style="${LSRP_CLS[b.lsrpLevelShort]||''}font-size:0.78rem;">${b.lsrpLevelShort||'─'}</td>
+      <td style="font-size:0.78rem;">${b.rcShort||'─'}</td>
+      <td style="font-size:0.75rem;color:var(--sub);max-width:160px;">${b.reason||'─'}</td>
+      <td style="font-size:0.75rem;">${b.retentionUntil||''}</td>
+      <td style="font-size:0.75rem;${expired?'color:var(--sub);':'color:var(--warn);'}">
+        ${expired?'期限切れ':`残${daysLeft}日`}
+      </td>
+      <td style="white-space:nowrap;">
+        <button class="btn btn-danger btn-xs" onclick="hardDeleteBlacklist(${i})"
+          ${expired?'':'disabled style="opacity:0.35;cursor:not-allowed;"'}>完全削除</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function hardDeleteBlacklist(idx){
+  const list=getBlacklist();
+  const b=list[idx];
+  if(!b) return;
+  const until=new Date(b.retentionUntil);
+  const daysLeft=Math.ceil((until-new Date())/(1000*60*60*24));
+  if(daysLeft>0){ alert(`⚠️ 保存期限内のため削除できません。残り${daysLeft}日`); return; }
+  if(!confirm(`【完全削除の確認】\n\n対象：${b.name}\n不採用日：${b.rejectDate}\n\nこのデータは完全に削除され、復元できません。\n本当に削除しますか？`)) return;
+  if(!confirm(`最終確認：「${b.name}」のデータを完全に削除します。よろしいですか？`)) return;
+  list.splice(idx,1);
+  saveBlacklist(list);
+  renderBlacklist();
 }
 
 // ════════════════════════════════════════════════════
