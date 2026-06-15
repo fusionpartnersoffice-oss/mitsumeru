@@ -2991,8 +2991,108 @@ function openStaffDetail(staffId){
         </div>
       </div>
     </div>
+
+    <!-- 異動履歴 -->
+    ${(s.transferHistory&&s.transferHistory.length)?`
+    <div class="karte-block" style="margin-top:12px;">
+      <div class="karte-block-title">🔄 異動履歴</div>
+      <div style="font-size:0.8rem;">
+        ${s.transferHistory.map(h=>`
+          <div style="display:flex;gap:12px;padding:5px 0;border-bottom:1px solid var(--border);align-items:center;">
+            <span style="color:var(--sub);white-space:nowrap;">${h.date}</span>
+            <span>${h.from}</span>
+            <span style="color:var(--sub);">→</span>
+            <span style="color:var(--accent2);font-weight:600;">${h.to}</span>
+          </div>`).join('')}
+      </div>
+    </div>`:''}
+
+    <!-- 記録・メモ -->
+    <div class="karte-block" style="margin-top:12px;" id="karte-memo-block-${staffId}">
+      <div class="karte-block-title">📝 記録・メモ</div>
+      <div id="karte-memo-list-${staffId}" style="margin-bottom:12px;">
+        ${renderMemosHTML(s)}
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="display:flex;gap:8px;">
+          <select id="karte-memo-type-${staffId}" style="flex-shrink:0;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:6px 10px;color:var(--text);font-size:0.78rem;">
+            <option value="面談記録">💬 面談記録</option>
+            <option value="異動記録">🔄 異動記録</option>
+            <option value="問題行動">⚠️ 問題行動</option>
+            <option value="改善記録">✅ 改善記録</option>
+            <option value="退職関連">📦 退職関連</option>
+            <option value="その他">📌 その他</option>
+          </select>
+          <input type="date" id="karte-memo-date-${staffId}" value="${new Date().toISOString().slice(0,10)}"
+            style="flex-shrink:0;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:6px 10px;color:var(--text);font-size:0.78rem;">
+        </div>
+        <textarea id="karte-memo-text-${staffId}" rows="3" placeholder="記録内容をここに入力してください..."
+          style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:8px 10px;color:var(--text);font-size:0.82rem;resize:vertical;box-sizing:border-box;"></textarea>
+        <button class="btn btn-primary btn-sm" onclick="addStaffMemo('${staffId}')" style="align-self:flex-end;">📝 記録を追加</button>
+      </div>
+    </div>
   `;
   openModal('modal-staff-detail');
+}
+
+// ════════════════════════════════════════════════════
+//  個人カルテ メモ機能
+// ════════════════════════════════════════════════════
+
+const MEMO_TYPE_ICON={
+  '面談記録':'💬','異動記録':'🔄','問題行動':'⚠️','改善記録':'✅','退職関連':'📦','その他':'📌'
+};
+const MEMO_TYPE_COLOR={
+  '面談記録':'var(--accent)','異動記録':'var(--accent2)','問題行動':'var(--danger)',
+  '改善記録':'#81c784','退職関連':'var(--warn)','その他':'var(--sub)'
+};
+
+function renderMemosHTML(s){
+  const memos=s.memos||[];
+  if(!memos.length) return '<div style="font-size:0.78rem;color:var(--sub);padding:6px 0;">記録はまだありません</div>';
+  return memos.slice().reverse().map((m,revIdx)=>{
+    const realIdx=memos.length-1-revIdx;
+    const icon=MEMO_TYPE_ICON[m.type]||'📌';
+    const col=MEMO_TYPE_COLOR[m.type]||'var(--sub)';
+    return `<div style="border-left:3px solid ${col};padding:8px 10px 8px 12px;margin-bottom:8px;background:rgba(255,255,255,0.03);border-radius:0 6px 6px 0;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
+        <span style="font-size:0.72rem;font-weight:700;color:${col};">${icon} ${m.type}</span>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <span style="font-size:0.68rem;color:var(--sub);">${m.date}</span>
+          <button onclick="deleteMemo('${s.id}',${realIdx})" style="background:none;border:none;color:var(--sub);cursor:pointer;font-size:0.7rem;padding:0;" title="削除">✕</button>
+        </div>
+      </div>
+      <div style="font-size:0.82rem;white-space:pre-wrap;line-height:1.6;">${m.text}</div>
+    </div>`;
+  }).join('');
+}
+
+function addStaffMemo(staffId){
+  const text=(document.getElementById(`karte-memo-text-${staffId}`)?.value||'').trim();
+  if(!text){ alert('記録内容を入力してください'); return; }
+  const type=document.getElementById(`karte-memo-type-${staffId}`)?.value||'その他';
+  const date=document.getElementById(`karte-memo-date-${staffId}`)?.value||new Date().toISOString().slice(0,10);
+  const allStaff=getAllStaff();
+  const s=allStaff.find(x=>x.id===staffId);
+  if(!s) return;
+  if(!s.memos) s.memos=[];
+  s.memos.push({type, date, text, createdAt:new Date().toISOString()});
+  save('nagi_staff',allStaff);
+  // テキストエリアをクリアしてリストを再描画（モーダルを閉じずに更新）
+  document.getElementById(`karte-memo-text-${staffId}`).value='';
+  const listEl=document.getElementById(`karte-memo-list-${staffId}`);
+  if(listEl) listEl.innerHTML=renderMemosHTML(s);
+}
+
+function deleteMemo(staffId, idx){
+  if(!confirm('この記録を削除しますか？')) return;
+  const allStaff=getAllStaff();
+  const s=allStaff.find(x=>x.id===staffId);
+  if(!s||!s.memos) return;
+  s.memos.splice(idx,1);
+  save('nagi_staff',allStaff);
+  const listEl=document.getElementById(`karte-memo-list-${staffId}`);
+  if(listEl) listEl.innerHTML=renderMemosHTML(s);
 }
 
 function printStaffCard(){
