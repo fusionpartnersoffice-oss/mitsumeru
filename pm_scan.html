@@ -658,13 +658,73 @@ function renderRoster(){
     <td style="text-align:center;">${r.p||0}</td>
     <td style="text-align:center;">${r.m||0}</td>
     <td><span class="tag tag-${r.pmStyle||'pm'}">${r.pmStyle||'─'}型</span></td>
-    <td><button class="btn btn-secondary btn-sm" style="color:var(--danger);border-color:var(--danger);font-size:0.65rem;padding:3px 8px;" onclick="deleteEntry(${i})">削除</button></td>
+    <td style="white-space:nowrap;">
+      <button class="btn btn-primary btn-sm" style="font-size:0.65rem;padding:3px 8px;" onclick="openDetail(${i})">詳細</button>
+      <button class="btn btn-secondary btn-sm" style="font-size:0.65rem;padding:3px 8px;" onclick="openEdit(${i})">編集</button>
+      <button class="btn btn-secondary btn-sm" style="color:var(--danger);border-color:var(--danger);font-size:0.65rem;padding:3px 8px;" onclick="deleteEntry(${i})">削除</button>
+    </td>
   </tr>`).join('');
 }
 
 // ════════════════════════════════════════════════════
 //  リセット
 // ════════════════════════════════════════════════════
+
+function openDetail(idx){
+  const roster=loadRoster();
+  const r=roster[idx];
+  if(!r) return;
+  const pmKey=r.pmStyle||'pm';
+  const info=PM_INFO[pmKey];
+  document.getElementById('name-display').textContent=`${r.name}｜${r.office}（${r.role}）`;
+  document.getElementById('pm-badge-display').innerHTML=`<div class="pm-badge ${info.cls}">${pmKey}型</div>`;
+  document.getElementById('pm-type-name').textContent=info.name;
+  document.getElementById('pm-short-desc').textContent=info.desc;
+  document.getElementById('p-score').textContent=r.p;
+  document.getElementById('m-score').textContent=r.m;
+  document.getElementById('p-bar').style.width=(r.p/40*100)+'%';
+  document.getElementById('m-bar').style.width=(r.m/40*100)+'%';
+  const advCls=info.danger?'advice-danger':info.warn?'advice-warn':'';
+  document.getElementById('pm-advice').innerHTML=`
+    <div class="advice-box ${advCls}">
+      <div class="advice-label">💡 リーダーへのアドバイス</div>
+      <div class="advice-text">${info.advice}</div>
+    </div>
+    <div class="advice-box" style="font-size:0.78rem;color:var(--sub);">
+      <div class="advice-label">📊 SL理論との照合</div>
+      <div class="advice-text">このPMスタイルと、チームのTA平均から算出されるSL推奨スタイルを<strong>凪システム</strong>で照合することで、リーダーシップのギャップが可視化されます。</div>
+    </div>`;
+  drawPMCross('pm-cross-chart',r.p,r.m,pmKey);
+  lastResult=r;
+  goTo(3);
+}
+
+function openEdit(idx){
+  const roster=loadRoster();
+  const r=roster[idx];
+  if(!r) return;
+  document.getElementById('edit-idx').value=idx;
+  document.getElementById('edit-name').value=r.name||'';
+  document.getElementById('edit-corp').value=r.corp||'';
+  document.getElementById('edit-office').value=r.office||'';
+  document.getElementById('edit-role').value=r.role||'一般職';
+  document.getElementById('edit-date').value=r.date||'';
+  document.getElementById('modal-pm-edit').style.display='flex';
+}
+
+function saveEdit(){
+  const idx=parseInt(document.getElementById('edit-idx').value);
+  const roster=loadRoster();
+  if(!roster[idx]) return;
+  roster[idx].name=document.getElementById('edit-name').value.trim();
+  roster[idx].corp=document.getElementById('edit-corp').value.trim();
+  roster[idx].office=document.getElementById('edit-office').value.trim();
+  roster[idx].role=document.getElementById('edit-role').value;
+  roster[idx].date=document.getElementById('edit-date').value;
+  saveRoster(roster);
+  document.getElementById('modal-pm-edit').style.display='none';
+  renderRoster();
+}
 
 function resetAll(){
   answers={p:new Array(8).fill(0), m:new Array(8).fill(0)};
@@ -683,5 +743,43 @@ document.addEventListener('DOMContentLoaded',()=>{
   renderQuestions();
 });
 </script>
+
+<!-- 編集モーダル -->
+<div id="modal-pm-edit" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;width:340px;max-width:92vw;">
+    <div style="font-size:0.95rem;font-weight:700;margin-bottom:16px;">✏️ データ編集</div>
+    <input type="hidden" id="edit-idx">
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div>
+        <div style="font-size:0.7rem;color:var(--sub);margin-bottom:3px;">氏名</div>
+        <input id="edit-name" type="text" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:8px 10px;color:var(--text);font-size:0.85rem;box-sizing:border-box;">
+      </div>
+      <div>
+        <div style="font-size:0.7rem;color:var(--sub);margin-bottom:3px;">法人名</div>
+        <input id="edit-corp" type="text" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:8px 10px;color:var(--text);font-size:0.85rem;box-sizing:border-box;">
+      </div>
+      <div>
+        <div style="font-size:0.7rem;color:var(--sub);margin-bottom:3px;">事業所名</div>
+        <input id="edit-office" type="text" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:8px 10px;color:var(--text);font-size:0.85rem;box-sizing:border-box;">
+      </div>
+      <div>
+        <div style="font-size:0.7rem;color:var(--sub);margin-bottom:3px;">役職</div>
+        <select id="edit-role" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:8px 10px;color:var(--text);font-size:0.85rem;box-sizing:border-box;">
+          <option>管理者クラス</option>
+          <option>リーダークラス</option>
+          <option>一般職</option>
+        </select>
+      </div>
+      <div>
+        <div style="font-size:0.7rem;color:var(--sub);margin-bottom:3px;">受験日</div>
+        <input id="edit-date" type="date" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:8px 10px;color:var(--text);font-size:0.85rem;box-sizing:border-box;">
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:18px;">
+      <button class="btn btn-secondary btn-sm" onclick="document.getElementById('modal-pm-edit').style.display='none'">キャンセル</button>
+      <button class="btn btn-primary btn-sm" onclick="saveEdit()">保存</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>

@@ -661,6 +661,7 @@ function showResults() {
 function loadRoster() {
   try { return JSON.parse(localStorage.getItem(ROSTER_KEY) || '[]'); } catch { return []; }
 }
+function saveRoster(r){ localStorage.setItem(ROSTER_KEY, JSON.stringify(r)); }
 
 function autoSave() {
   if (!lastResult) return;
