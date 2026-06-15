@@ -764,6 +764,26 @@ function getSurvivalRating(fm){
   return {label:'E',cls:'fmt-E'};
 }
 
+function renderFmGauge(fm, sr){
+  const pct=Math.min(fm*100,200);
+  const fillPct=(pct/200*100).toFixed(1);
+  const col=pct<60?'#4fc3f7':pct<80?'#81c784':pct<100?'#ffb74d':'var(--danger)';
+  return `<div>
+    <div style="display:flex;align-items:center;gap:6px;">
+      <span style="font-size:0.68rem;color:var(--sub);white-space:nowrap;min-width:48px;">f/m比率</span>
+      <div style="flex:1;height:13px;background:rgba(255,255,255,0.07);border-radius:7px;overflow:hidden;position:relative;">
+        <div style="width:${fillPct}%;height:100%;background:${col};border-radius:7px;transition:width 0.4s;"></div>
+        <div style="position:absolute;left:50%;top:0;width:1px;height:100%;background:rgba(255,255,255,0.3);"></div>
+      </div>
+      <span style="font-size:0.75rem;color:var(--sub);white-space:nowrap;">${pct.toFixed(1)}%</span>
+      <span class="${sr.cls}" style="font-size:1.15rem;font-weight:800;min-width:1.6rem;text-align:right;">${sr.label}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:0.58rem;color:var(--sub);padding:1px 0 0 50px;">
+      <span>0%</span><span>100%</span><span>200%</span>
+    </div>
+  </div>`;
+}
+
 // 西式速算法：Pk=G/PQ, Qk=G/MQ, Vk=G/VQ, Fk=G/F
 // 値が小さいほど感度が高い（★は最小値 = 最優先改善対象）
 function calcSensitivity(pq,mq,vq,f,g){
@@ -879,7 +899,7 @@ function renderCorpDashboard(){
     <div class="card"><div class="card-title">売上 PQ</div><div class="card-value" style="font-size:1.2rem;">${yen(tPQ)}</div><div class="card-sub">延べ人数 ${tQ.toLocaleString()}</div></div>
     <div class="card"><div class="card-title">粗利 MQ</div><div class="card-value" style="font-size:1.2rem;color:var(--accent2);">${yen(tMQ)}</div></div>
     <div class="card"><div class="card-title">利益 G</div><div class="card-value" style="font-size:1.2rem;color:var(--accent3);">${yen(tG)}</div></div>
-    <div class="card"><div class="card-title">f/m比率 ／ 生存格付</div><div class="card-value"><span class="${sr.cls}" style="font-size:1.4rem;">${sr.label}</span></div><div class="card-sub">${(fm*100).toFixed(1)}% (F:${yen(tF)})</div></div>
+    <div class="card"><div class="card-title">f/m比率 ／ 生存格付</div><div style="margin-top:8px;">${renderFmGauge(fm,sr)}</div><div class="card-sub" style="margin-top:4px;">F:${yen(tF)}</div></div>
   `;
 
   // 利益感度
@@ -894,8 +914,8 @@ function renderCorpDashboard(){
       const pv=vals[k];
       const isBest=pv===min;
       const star=isBest?'<span style="color:var(--danger);margin-left:4px;">★最高感度</span>':'';
-      // バー：感度が高い（値が小さい）ほど長く表示（min/pv で逆比例）
-      const w=pv?Math.max(4,min/pv*100):4;
+      // バー：数値の大きさをそのまま表示（pv/max で正比例）。★は最小値＝最高感度
+      const w=max?Math.max(4,pv/max*100):4;
       sensHTML+=`<div class="sens-row"><div class="sens-lbl">${k==='P'?'Pk↑':k==='Q'?'Qk↑':k==='V'?'Vk↓':'Fk↓'}</div>
         <div class="sens-track"><div class="sens-fill" style="width:${w}%;background:${isBest?'var(--danger)':cols[k]};"></div></div>
         <div class="sens-val" style="color:${isBest?'var(--danger)':cols[k]};">${(pv*100).toFixed(1)}%${star}</div></div>`;
@@ -1005,11 +1025,7 @@ function renderOfficeDashboard(){
     const sr=getSurvivalRating(fm);
     const sens=calcSensitivity(pq,mq,vq,f,g);
     finHTML+=`
-      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;">
-        <span style="font-size:0.78rem;color:var(--sub);">f/m比率</span>
-        <span style="font-size:1.4rem;font-weight:700;" class="${sr.cls}">${sr.label}</span>
-        <span style="font-size:0.82rem;color:var(--sub);">${(fm*100).toFixed(1)}%</span>
-      </div>
+      ${renderFmGauge(fm,sr)}
       <div class="grid-3" style="margin-bottom:10px;">
         ${[['PQ',pq,''],['MQ',mq,'color:var(--accent2)'],['G',g,'color:var(--accent3)']].map(([l,v,c])=>`<div><div style="font-size:0.68rem;color:var(--sub);">${l}</div><div style="font-weight:700;font-size:0.9rem;${c}">${yen(v)}</div></div>`).join('')}
       </div>
@@ -1026,7 +1042,7 @@ function renderOfficeDashboard(){
         const pv=vals[k];
         const isBest=pv===min;
         const star=isBest?'<span style="color:var(--danger);">★</span>':'';
-        const w=pv?Math.max(4,min/pv*100):4;
+        const w=max?Math.max(4,pv/max*100):4;
         finHTML+=`<div class="sens-row"><div class="sens-lbl" style="width:80px;font-size:0.7rem;">${k==='P'?'Pk↑':k==='Q'?'Qk↑':k==='V'?'Vk↓':'Fk↓'}</div>
           <div class="sens-track"><div class="sens-fill" style="width:${w}%;background:${isBest?'var(--danger)':cols[k]};"></div></div>
           <div class="sens-val" style="color:${isBest?'var(--danger)':cols[k]};">${(pv*100).toFixed(1)}%${star}</div></div>`;
