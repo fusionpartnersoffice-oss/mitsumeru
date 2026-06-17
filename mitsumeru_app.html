@@ -1187,6 +1187,7 @@ function saveEvening() {
     if (el) data[id] = el.value;
   });
   data['debugScores'] = debugScores;
+  data['try100-count'] = counts.try100;
   localStorage.setItem(lsKey('evening'), JSON.stringify(data));
   cloudSave('evening', data);
 }
@@ -1263,6 +1264,11 @@ function applyEveningData(d) {
    'd1-reason','d2-reason','d3-reason','d4-reason','d5-reason'].forEach(id => {
     const el = document.getElementById(id); if (el && d[id]!==undefined) el.value=d[id];
   });
+  if (d['try100-count'] !== undefined) {
+    counts.try100 = d['try100-count'];
+    const t = document.getElementById('try100-count');
+    if (t) t.textContent = counts.try100;
+  }
   if (d.debugScores) {
     debugScores = d.debugScores;
     ['d1','d2','d3','d4','d5'].forEach(key => {
@@ -1470,6 +1476,7 @@ async function changeTargetDate(newDate) {
   // UI初期化
   memos = []; counts = { noise:0, pomo:0, try100:0, 'memo-pomo':0 };
   debugScores = { d1:'', d2:'', d3:'', d4:'', d5:'' };
+  const _t100El = document.getElementById('try100-count'); if (_t100El) _t100El.textContent = '0';
   const bodyEl=document.getElementById('m-body'), moodEl=document.getElementById('m-mood'), courseEl=document.getElementById('m-course');
   if(bodyEl){bodyEl.value=3; document.getElementById('m-body-val').textContent=3;}
   if(moodEl){moodEl.value=3; document.getElementById('m-mood-val').textContent=3;}
@@ -1867,6 +1874,7 @@ function changeCount(key, delta) {
   if (key === 'pomo') {
     document.getElementById('lv-preview').textContent = counts.pomo * 10;
   }
+  if (key === 'try100') saveEvening();  // Try100達成数を夜の記録に永続化（リセット防止）
 }
 
 function selectDebug(btn, key, val) {
