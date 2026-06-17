@@ -922,6 +922,15 @@
   </div>
 
   <div class="section">
+    <div class="section-title">🌙 今日のHP/MPを締める</div>
+    <p style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:12px;">
+      朝の初期HP/MPから、今日のポモ・ノイズ(#V)・デバッグ(〇△✕)を差し引いて、一日を消耗した後の残量を算出します。データから再計算するので、いつ押しても同じ結果になります。
+    </p>
+    <button class="btn-primary" onclick="closeDayHPMP()">今日のHP/MPを締める</button>
+    <div id="hpmp-close-result" style="display:none;margin-top:14px;"></div>
+  </div>
+
+  <div class="section">
     <div class="section-title">明日の設計</div>
     <div class="field">
       <label>明日の確定アポ（時刻4桁・ポモ数・内容）</label>
@@ -1466,6 +1475,7 @@ async function changeTargetDate(newDate) {
   if(moodEl){moodEl.value=3; document.getElementById('m-mood-val').textContent=3;}
   if(courseEl){courseEl.value=3; updateCourse(3);}
   const resultEl=document.getElementById('morning-result'); if(resultEl) resultEl.style.display='none';
+  const hpmpCloseEl=document.getElementById('hpmp-close-result'); if(hpmpCloseEl) hpmpCloseEl.style.display='none';
   ['m-sleep','m-wake','m-noise-detail','m-want'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.value=id==='m-sleep'?'23:00':id==='m-wake'?'07:00':'';
   });
@@ -1867,6 +1877,50 @@ function selectDebug(btn, key, val) {
   btn.classList.add('selected-'+val);
   debugScores[key] = val === 'maru' ? '〇' : val === 'sankaku' ? '△' : '✕';
   saveEvening();
+}
+
+// ===== 夜：今日のHP/MPを締める（朝の初期値から一日の消耗を差し引く）=====
+function closeDayHPMP() {
+  const startHP = parseInt(document.getElementById('hp-val').textContent, 10);
+  const startMP = parseInt(document.getElementById('mp-val').textContent, 10);
+  if (isNaN(startHP) || isNaN(startMP)) {
+    alert('先に朝タブで「今日のモードを判定する」を押して、HP/MPを算出してください。');
+    return;
+  }
+  // 実績集計（随時メモから）
+  const pomoTotal  = memos.filter(m => m.tag === 'P').reduce((s, m) => s + (m.pomos || 0), 0);
+  const noiseCount = memos.filter(m => m.tag === 'V').length;
+
+  // ポモ：全数 HP-2/個、11個目以降のみ MP-3/個
+  const hpFromPomo = pomoTotal * 2;
+  const mpFromPomo = Math.max(0, pomoTotal - 10) * 3;
+  // ノイズ(#V)：MP-5/件
+  const mpFromNoise = noiseCount * 5;
+  // デバッグ：✕ HP-3/MP-8、△ HP0/MP-4、〇 変化なし
+  let hpFromDebug = 0, mpFromDebug = 0, cntBatsu = 0, cntSankaku = 0;
+  ['d1','d2','d3','d4','d5'].forEach(k => {
+    const s = debugScores[k];
+    if (!s || s === '〇') return;
+    if (s === '△') { mpFromDebug += 4; cntSankaku++; return; }
+    hpFromDebug += 3; mpFromDebug += 8; cntBatsu++; // ✕
+  });
+
+  const endHP = Math.max(0, startHP - hpFromPomo - hpFromDebug);
+  const endMP = Math.max(0, startMP - mpFromPomo - mpFromNoise - mpFromDebug);
+
+  const box = document.getElementById('hpmp-close-result');
+  box.style.display = 'block';
+  box.innerHTML = `
+    <div style="display:flex;gap:12px;margin-bottom:10px;">
+      <div class="status-card" style="flex:1;"><div class="label">HP（朝→夜）</div><div class="value hp-val">${startHP} → ${endHP}</div></div>
+      <div class="status-card" style="flex:1;"><div class="label">MP（朝→夜）</div><div class="value mp-val">${startMP} → ${endMP}</div></div>
+    </div>
+    <div style="font-size:11px;color:var(--text3);line-height:1.9;">
+      内訳：<br>
+      ・ポモ ${pomoTotal}個 → HP −${hpFromPomo}${mpFromPomo ? ` ／ MP −${mpFromPomo}（11個目以降）` : ''}<br>
+      ・ノイズ(#V) ${noiseCount}件 → MP −${mpFromNoise}<br>
+      ・デバッグ ✕${cntBatsu}・△${cntSankaku} → HP −${hpFromDebug} ／ MP −${mpFromDebug}
+    </div>`;
 }
 
 function calcSleepHP() {
