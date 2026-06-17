@@ -458,7 +458,7 @@
       <p>① 昼の随時メモが自動でまとまります。足りない分を書き足してください。</p>
       <p>② 「5つのデバッグ」に 〇△✕ と理由を入れてください。</p>
       <p>③ 「Try100 達成数」を ＋ で入れてください。</p>
-      <p>④ 「今日のHP/MPを締める」を押してください。（朝→夜のHP/MPとAIの一言が出ます）</p>
+      <p>④ 「今日のHP/MPを締める」を押してください。（朝→夜のHP/MP/LVが即・無料で出ます）</p>
       <p style="color:#c0392b;font-size:12px;margin-top:2px;">※必ず①〜③を入れてから④を押す。メモ・デバッグ・Try100から計算するので、先に押すと不正確になります。</p>
       <p>⑤ 「明日の設計」に予定・遅延を入れてください。</p>
       <p>⑥ 「翌日戦略を生成する」を押してください。→ 出力に進みます。</p>
@@ -928,7 +928,7 @@
   <div class="section">
     <div class="section-title">🌙 今日のHP/MPを締める</div>
     <p style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:12px;">
-      朝の初期HP/MPから、今日のポモ・ノイズ(#V)・デバッグ(〇△✕)を差し引いて、一日を消耗した後の残量を算出します。データから再計算するので、いつ押しても同じ結果になります。
+      朝の初期HP/MPから、今日のポモ・ノイズ(#V)・デバッグ(〇△✕)を差し引いて、一日を消耗した後の残量とLVを算出します。データから再計算するので、いつ押しても同じ結果・即時・無料です。質的評価は出力タブの「翌日戦略を生成する」で行われます。
     </p>
     <button class="btn-primary" onclick="closeDayHPMP()">今日のHP/MPを締める</button>
     <div id="hpmp-close-result" style="display:none;margin-top:14px;"></div>
@@ -1924,102 +1924,37 @@ function computeDayClose() {
            cntBatsu, cntSankaku, try100Done, mpFromTry100, lvBase, todayPts };
 }
 
-// ===== 夜：今日のHP/MPを締める（朝→夜の残量＋成長＋AI質的評価）=====
+// ===== 夜：今日のHP/MPを締める（決定論のみ。質的評価は出力タブの翌日戦略AIが担う）=====
+
+// HP/MP/LV 3カード＋内訳を描画（朝タブと同じstatus-grid並び）
+function renderDayClose(c, hp, mp) {
+  const box = document.getElementById('hpmp-close-result');
+  box.style.display = 'block';
+  const breakdown = `
+    <div style="font-size:11px;color:var(--text3);line-height:1.9;">
+      内訳：<br>
+      ・ポモ ${c.pomoTotal}個 → HP −${c.hpFromPomo}${c.mpFromPomo ? ` ／ MP −${c.mpFromPomo}（11個目以降）` : ''}<br>
+      ・ノイズ(#V) ${c.noiseCount}件 → MP −${c.mpFromNoise}<br>
+      ・デバッグ ✕${c.cntBatsu}・△${c.cntSankaku} → HP −${c.hpFromDebug} ／ MP −${c.mpFromDebug}<br>
+      ・Try100達成 ${c.try100Done}件 → <span style="color:var(--green);">MP ＋${c.mpFromTry100}</span>
+    </div>`;
+  box.innerHTML = `
+    <div class="status-grid" style="margin-bottom:10px;">
+      <div class="status-card"><div class="label">HP（朝→夜）</div><div class="value hp-val" style="font-size:18px;">${c.startHP} → ${hp}</div></div>
+      <div class="status-card"><div class="label">MP（朝→夜）</div><div class="value mp-val" style="font-size:18px;">${c.startMP} → ${mp}</div></div>
+      <div class="status-card"><div class="label">LV（朝→夜）</div><div class="value lv-val" style="font-size:14px;line-height:1.5;">${formatLV(c.lvBase)}<br>→ ${formatLV(c.lvBase + c.todayPts)}</div></div>
+    </div>
+    ${breakdown}`;
+}
+
+// 締める：即時・無料・何度押しても同じ結果
 function closeDayHPMP() {
   const c = computeDayClose();
   if (!c.hasMorning) {
     alert('先に朝タブで「今日のモードを判定する」を押して、HP/MPを算出してください。');
     return;
   }
-  const { startHP, startMP, endHP, endMP, pomoTotal, noiseCount, hpFromPomo, mpFromPomo,
-          mpFromNoise, hpFromDebug, mpFromDebug, cntBatsu, cntSankaku, try100Done, mpFromTry100,
-          lvBase, todayPts } = c;
-
-  const box = document.getElementById('hpmp-close-result');
-  box.style.display = 'block';
-
-  // 内訳（共通）
-  const breakdown = `
-    <div style="font-size:11px;color:var(--text3);line-height:1.9;">
-      内訳：<br>
-      ・ポモ ${pomoTotal}個 → HP −${hpFromPomo}${mpFromPomo ? ` ／ MP −${mpFromPomo}（11個目以降）` : ''}<br>
-      ・ノイズ(#V) ${noiseCount}件 → MP −${mpFromNoise}<br>
-      ・デバッグ ✕${cntBatsu}・△${cntSankaku} → HP −${hpFromDebug} ／ MP −${mpFromDebug}<br>
-      ・Try100達成 ${try100Done}件 → <span style="color:var(--green);">MP ＋${mpFromTry100}</span>
-    </div>`;
-
-  // 今日の成長（LV）：朝の累積 → 今日のポモ加算後
-  const lvHtml = `
-    <div style="background:#eef7f0;border:0.5px solid #a8dfc4;border-radius:6px;padding:8px 10px;margin-bottom:10px;font-size:12px;line-height:1.7;color:#1a7a52;">
-      🌱 今日の成長：<strong>${formatLV(lvBase)} → ${formatLV(lvBase + todayPts)}</strong>　（＋${todayPts}pt ＝ ポモ${pomoTotal}個）
-    </div>`;
-
-  // HP/MP・成長カード＋AI欄を描画するヘルパー
-  function render(hp, mp, aiHtml) {
-    box.innerHTML = `
-      <div style="display:flex;gap:12px;margin-bottom:10px;">
-        <div class="status-card" style="flex:1;"><div class="label">HP（朝→夜）</div><div class="value hp-val">${startHP} → ${hp}</div></div>
-        <div class="status-card" style="flex:1;"><div class="label">MP（朝→夜）</div><div class="value mp-val">${startMP} → ${mp}</div></div>
-      </div>
-      ${lvHtml}${aiHtml}${breakdown}`;
-  }
-
-  // ① 決定論の結果を即表示（AIは判定中）
-  render(endHP, endMP, '<div style="font-size:12px;color:var(--accent);margin-bottom:8px;">🤖 AIが今日の&quot;質&quot;を評価中…</div>');
-
-  // ② 質的記録を集めてAIに渡す
-  const dLabels = { d1:'役割', d2:'委譲', d3:'動機', d4:'資産', d5:'余白' };
-  const dReasons = ['d1','d2','d3','d4','d5'].map(k => {
-    const rEl = document.getElementById(k + '-reason');
-    const r = (rEl ? rEl.value : '').trim();
-    return `${dLabels[k]}(${debugScores[k] || '未'}): ${r || '—'}`;
-  }).join('\n');
-  const gMemos = memos.filter(m => m.tag === 'G').map(m => m.content).join(' / ') || 'なし';
-  const supEl = document.getElementById('e-supplement');
-  const supplement = (supEl ? supEl.value : '').trim() || 'なし';
-
-  const prompt = `あなたは柴山靖章さんの「夜の参謀」です。今日の"質的な"記録だけを読み、HP(体力)とMP(気力/メンタル)への微調整を判定してください。
-
-# 今日の質的記録
-## デバッグの理由・気づき（役割/委譲/動機/資産/余白）
-${dReasons}
-## 気づき(#G)メモ
-${gMemos}
-## 補足・振り返り
-${supplement}
-
-# 判定基準
-- ＋：深い内省・学び・前進の手応え・凪(余白)の確保・仕組み化の気づき → 気力が満ちる
-- −：自己批判のスパイラル・消耗の訴え・現場に飲み込まれた様子・徒労感 → 気力が削れる
-- 数字に出ない"質"だけを見る。ポモ・ノイズ・デバッグの量は別途加味済みなので二重に数えない。
-- 記録が薄い/空なら 0 でよい。無理に動かさない。
-
-# 出力（厳守・JSONのみ。前後に文章を付けない）
-{"hp_adj": <-10〜10の整数>, "mp_adj": <-10〜10の整数>, "reason": "<40字以内の一言>"}`;
-
-  callClaude(prompt, (resp) => {
-    let adj = { hp_adj: 0, mp_adj: 0, reason: '' };
-    try {
-      const mt = resp.match(/\{[\s\S]*\}/);
-      if (mt) {
-        const o = JSON.parse(mt[0]);
-        const clamp = v => Math.max(-10, Math.min(10, Math.round(Number(v) || 0)));
-        adj = { hp_adj: clamp(o.hp_adj), mp_adj: clamp(o.mp_adj), reason: String(o.reason || '').slice(0, 60) };
-      }
-    } catch (e) {}
-    const finalHP = Math.max(0, Math.min(100, endHP + adj.hp_adj));
-    const finalMP = Math.max(0, Math.min(110, endMP + adj.mp_adj));
-    const sgn = n => n > 0 ? '＋' + n : n < 0 ? '−' + Math.abs(n) : '±0';
-    const cl  = n => n > 0 ? 'var(--green)' : n < 0 ? '#c0392b' : 'var(--text3)';
-    const aiHtml = `
-      <div style="background:var(--bg2);border-radius:6px;padding:8px 10px;margin-bottom:10px;font-size:12px;line-height:1.7;">
-        🤖 AI質的評価：HP <span style="color:${cl(adj.hp_adj)};font-weight:600;">${sgn(adj.hp_adj)}</span> ／ MP <span style="color:${cl(adj.mp_adj)};font-weight:600;">${sgn(adj.mp_adj)}</span><br>
-        <span style="color:var(--text2);">${adj.reason || '（質的な増減なし）'}</span>
-      </div>`;
-    render(finalHP, finalMP, aiHtml);
-  }, (err) => {
-    render(endHP, endMP, `<div style="font-size:11px;color:var(--text3);margin-bottom:8px;">🤖 AI質的評価はスキップ（${err}）。上記は定量のみの結果です。</div>`);
-  });
+  renderDayClose(c, c.endHP, c.endMP);
 }
 
 function calcSleepHP() {
