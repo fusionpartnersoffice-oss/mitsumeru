@@ -1913,8 +1913,12 @@ function closeDayHPMP() {
     hpFromDebug += 3; mpFromDebug += 8; cntBatsu++; // ✕
   });
 
+  // Try100達成：MPプラス（探索・挑戦の達成は気力を満たす。消耗の対の回復要素）
+  const try100Done = counts.try100 || 0;
+  const mpFromTry100 = try100Done * 3;
+
   const endHP = Math.max(0, startHP - hpFromPomo - hpFromDebug);
-  const endMP = Math.max(0, startMP - mpFromPomo - mpFromNoise - mpFromDebug);
+  const endMP = Math.min(110, Math.max(0, startMP - mpFromPomo - mpFromNoise - mpFromDebug + mpFromTry100));
 
   const box = document.getElementById('hpmp-close-result');
   box.style.display = 'block';
@@ -1927,7 +1931,8 @@ function closeDayHPMP() {
       内訳：<br>
       ・ポモ ${pomoTotal}個 → HP −${hpFromPomo}${mpFromPomo ? ` ／ MP −${mpFromPomo}（11個目以降）` : ''}<br>
       ・ノイズ(#V) ${noiseCount}件 → MP −${mpFromNoise}<br>
-      ・デバッグ ✕${cntBatsu}・△${cntSankaku} → HP −${hpFromDebug} ／ MP −${mpFromDebug}
+      ・デバッグ ✕${cntBatsu}・△${cntSankaku} → HP −${hpFromDebug} ／ MP −${mpFromDebug}<br>
+      ・Try100達成 ${try100Done}件 → <span style="color:var(--green);">MP ＋${mpFromTry100}</span>
     </div>`;
 }
 
