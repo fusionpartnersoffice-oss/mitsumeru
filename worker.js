@@ -98,9 +98,16 @@ export default {
     });
   },
 
-  // ===== Cron Trigger（毎朝7:00 JST = 22:00 UTC）=====
+  // ===== Cron Trigger =====
+  // 毎朝7:00 JST (22:00 UTC)：朝の編成生成
+  // 毎週月曜7:05 JST (日曜22:05 UTC)：週次ログをGitHubにエクスポート
   async scheduled(event, env, ctx) {
-    ctx.waitUntil(generateDispatch(env));
+    const cron = event.cron;
+    if (cron === '5 22 * * 0') {
+      ctx.waitUntil(exportWeeklyLog(env));
+    } else {
+      ctx.waitUntil(generateDispatch(env));
+    }
   },
 };
 
@@ -140,6 +147,78 @@ async function callClaude(env, prompt) {
   const data = await res.json();
   if (data.error) throw new Error(data.error.message || 'anthropic error');
   return (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('').trim();
+}
+
+// 過去7日分のdispatchをKVから読んでGitHubへエクスポートする
+async function exportWeeklyLog(env) {
+  if (!env.GITHUB_TOKEN) return; // Secret未設定なら無音でスキップ
+
+  const today = new Date(Date.now() + 9 * 60 * 60 * 1000); // JST
+  const dateStr = today.toISOString().split('T')[0]; // YYYY-MM-DD
+
+  // 過去7日分のキーを生成
+  const days = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(today.getTime() - i * 24 * 60 * 60 * 1000);
+    days.push(d.toISOString().split('T')[0]);
+  }
+
+  // 各日のdispatchを取得
+  const entries = await Promise.all(
+    days.map(async (day) => {
+      const raw = await getKV(env).get('dispatch_' + day);
+      if (!raw) return null;
+      try {
+        const obj = JSON.parse(raw);
+        return { date: day, text: obj.text || '' };
+      } catch {
+        return null;
+      }
+    })
+  );
+
+  // Markdownに整形
+  const lines = [`# ミツメル 週次ログ（${dateStr}時点）\n`];
+  for (const entry of entries) {
+    if (!entry) continue;
+    lines.push(`## ${entry.date}\n`);
+    lines.push(entry.text);
+    lines.push('\n---\n');
+  }
+  const content = lines.join('\n');
+
+  // GitHub Contents APIでpush
+  const filename = `exports/週次ログ_${dateStr.replace(/-/g, '')}.md`;
+  const apiUrl = `https://api.github.com/repos/fusionpartnersoffice-oss/mitsumeru/contents/${encodeURIComponent(filename)}`;
+
+  // 既存ファイルのSHAを取得（更新の場合に必要）
+  let sha;
+  const existing = await fetch(apiUrl, {
+    headers: {
+      Authorization: `token ${env.GITHUB_TOKEN}`,
+      'User-Agent': 'mitsumeru-worker',
+    },
+  });
+  if (existing.ok) {
+    const data = await existing.json();
+    sha = data.sha;
+  }
+
+  const body = {
+    message: `週次ログ自動エクスポート ${dateStr}`,
+    content: btoa(unescape(encodeURIComponent(content))), // UTF-8 → base64
+    ...(sha ? { sha } : {}),
+  };
+
+  await fetch(apiUrl, {
+    method: 'PUT',
+    headers: {
+      Authorization: `token ${env.GITHUB_TOKEN}`,
+      'Content-Type': 'application/json',
+      'User-Agent': 'mitsumeru-worker',
+    },
+    body: JSON.stringify(body),
+  });
 }
 
 // 朝の編成を生成してKVへ保存
