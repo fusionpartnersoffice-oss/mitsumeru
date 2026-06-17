@@ -1891,18 +1891,14 @@ function selectDebug(btn, key, val) {
   saveEvening();
 }
 
-// ===== 夜：今日のHP/MPを締める（朝の初期値から一日の消耗を差し引く）=====
-function closeDayHPMP() {
-  const startHP = parseInt(document.getElementById('hp-val').textContent, 10);
-  const startMP = parseInt(document.getElementById('mp-val').textContent, 10);
-  if (isNaN(startHP) || isNaN(startMP)) {
-    alert('先に朝タブで「今日のモードを判定する」を押して、HP/MPを算出してください。');
-    return;
-  }
-  // 実績集計（随時メモから）
+// 夜の締め（決定論）をまとめて算出。締めボタンと翌日戦略の両方で使う共通関数。
+function computeDayClose() {
+  const mo = lsLoad('morning') || {};
+  const startHP = parseInt(mo['hp-val'], 10);
+  const startMP = parseInt(mo['mp-val'], 10);
+  const hasMorning = !isNaN(startHP) && !isNaN(startMP);
   const pomoTotal  = memos.filter(m => m.tag === 'P').reduce((s, m) => s + (m.pomos || 0), 0);
   const noiseCount = memos.filter(m => m.tag === 'V').length;
-
   // ポモ：全数 HP-2/個、11個目以降のみ MP-3/個
   const hpFromPomo = pomoTotal * 2;
   const mpFromPomo = Math.max(0, pomoTotal - 10) * 3;
@@ -1916,13 +1912,28 @@ function closeDayHPMP() {
     if (s === '△') { mpFromDebug += 4; cntSankaku++; return; }
     hpFromDebug += 3; mpFromDebug += 8; cntBatsu++; // ✕
   });
-
-  // Try100達成：MPプラス（探索・挑戦の達成は気力を満たす。消耗の対の回復要素）
+  // Try100達成：MPプラス（探索・挑戦の達成は気力を満たす）
   const try100Done = counts.try100 || 0;
   const mpFromTry100 = try100Done * 3;
+  const endHP = hasMorning ? Math.max(0, startHP - hpFromPomo - hpFromDebug) : NaN;
+  const endMP = hasMorning ? Math.min(110, Math.max(0, startMP - mpFromPomo - mpFromNoise - mpFromDebug + mpFromTry100)) : NaN;
+  const lvBase = getLVBase();
+  const todayPts = pomoTotal * 10;
+  return { hasMorning, startHP, startMP, endHP, endMP, pomoTotal, noiseCount,
+           hpFromPomo, mpFromPomo, mpFromNoise, hpFromDebug, mpFromDebug,
+           cntBatsu, cntSankaku, try100Done, mpFromTry100, lvBase, todayPts };
+}
 
-  const endHP = Math.max(0, startHP - hpFromPomo - hpFromDebug);
-  const endMP = Math.min(110, Math.max(0, startMP - mpFromPomo - mpFromNoise - mpFromDebug + mpFromTry100));
+// ===== 夜：今日のHP/MPを締める（朝→夜の残量＋成長＋AI質的評価）=====
+function closeDayHPMP() {
+  const c = computeDayClose();
+  if (!c.hasMorning) {
+    alert('先に朝タブで「今日のモードを判定する」を押して、HP/MPを算出してください。');
+    return;
+  }
+  const { startHP, startMP, endHP, endMP, pomoTotal, noiseCount, hpFromPomo, mpFromPomo,
+          mpFromNoise, hpFromDebug, mpFromDebug, cntBatsu, cntSankaku, try100Done, mpFromTry100,
+          lvBase, todayPts } = c;
 
   const box = document.getElementById('hpmp-close-result');
   box.style.display = 'block';
@@ -1937,14 +1948,20 @@ function closeDayHPMP() {
       ・Try100達成 ${try100Done}件 → <span style="color:var(--green);">MP ＋${mpFromTry100}</span>
     </div>`;
 
-  // HP/MPカード＋AI欄を描画するヘルパー
+  // 今日の成長（LV）：朝の累積 → 今日のポモ加算後
+  const lvHtml = `
+    <div style="background:#eef7f0;border:0.5px solid #a8dfc4;border-radius:6px;padding:8px 10px;margin-bottom:10px;font-size:12px;line-height:1.7;color:#1a7a52;">
+      🌱 今日の成長：<strong>${formatLV(lvBase)} → ${formatLV(lvBase + todayPts)}</strong>　（＋${todayPts}pt ＝ ポモ${pomoTotal}個）
+    </div>`;
+
+  // HP/MP・成長カード＋AI欄を描画するヘルパー
   function render(hp, mp, aiHtml) {
     box.innerHTML = `
       <div style="display:flex;gap:12px;margin-bottom:10px;">
         <div class="status-card" style="flex:1;"><div class="label">HP（朝→夜）</div><div class="value hp-val">${startHP} → ${hp}</div></div>
         <div class="status-card" style="flex:1;"><div class="label">MP（朝→夜）</div><div class="value mp-val">${startMP} → ${mp}</div></div>
       </div>
-      ${aiHtml}${breakdown}`;
+      ${lvHtml}${aiHtml}${breakdown}`;
   }
 
   // ① 決定論の結果を即表示（AIは判定中）
@@ -2141,25 +2158,28 @@ function buildDelayWithFlags(delayText, history) {
 }
 
 // AIによるアイゼンハワー分類
-async function runAICalendarAnalysis(tomorrow, delayWithFlags, hp, mp) {
+async function runAICalendarAnalysis(tomorrow, delayWithFlags, hp, mp, eveSummary) {
   const hpNum = parseInt(hp), mpNum = parseInt(mp);
   const isLowEnergy = (!isNaN(hpNum) && hpNum <= 70) || (!isNaN(mpNum) && mpNum <= 70);
   const limitNote = isLowEnergy
-    ? `※HP=${hp}/MP=${mp}で低エネルギー。明日の追加タスクは最大2つまでに絞ること。`
+    ? `※夜の締め後 HP=${hp}/MP=${mp} で低エネルギー。明日の追加タスクは最大2つまでに絞ること。`
     : '';
 
   const prompt = `あなたはFusion Partners代表の「SuccessOS 統合経営参謀」です。
+
+${eveSummary || ''}
+
 【明日の確定アポ】
 ${tomorrow || 'なし'}
 
 【先送りタスクリスト（⚠️は3日以上の長期先送り）】
 ${delayWithFlags || 'なし'}
 
-【エネルギー状態】HP:${hp}/100 MP:${mp}/100
+【明日に持ち越すエネルギー（夜の締め後）】HP:${hp}/100 MP:${mp}/100
 ${limitNote}
 
-以下の区切りマーカーを必ず使い、各セクションを出力してください。
-他のテキストは不要です。
+上の「今日の終わり方（消耗・成長・デバッグ結果）」を必ず踏まえ、明日の負荷を調整してください。
+以下の区切りマーカーを必ず使い、各セクションを出力してください。他のテキストは不要です。
 
 ===CALENDAR===
 確定アポ以外で①急・重要なタスクのみ。形式：HHMM ポモ数 タスク内容（1行1件）
@@ -2170,7 +2190,7 @@ ${limitNote}
 ===CUTLOSS===
 ④先送り3日以上（損切り提案）を箇条書き
 ===COMMENT===
-伴走コメント1〜2文。HP/MPや先送り状況に応じた具体的な一言。
+伴走コメント2〜3文。必ず「今日の終わり方」を根拠として具体的に引用して評価する（例：MPが○○まで落ちた／デバッグ✕が△件あった／Try100を△件達成した、等の事実を挙げ、だから明日をこう設計した、と述べる）。
 ===END===`;
 
   return new Promise(resolve => {
@@ -2246,6 +2266,18 @@ async function generateEvening() {
   const hp = lsMorningE['hp-val'] || '—';
   const mp = lsMorningE['mp-val'] || '—';
 
+  // 夜の締め（決定論）を再計算し、翌日戦略の基準・要約にする
+  const close = computeDayClose();
+  const endHP = close.hasMorning ? close.endHP : '—';
+  const endMP = close.hasMorning ? close.endMP : '—';
+  const eveSummary = `【今日の終わり方（夜の締め）】
+HP: ${hp}→${endHP} ／ MP: ${mp}→${endMP}
+消耗: ポモ${close.pomoTotal}個・ノイズ${close.noiseCount}件・デバッグ✕${close.cntBatsu}/△${close.cntSankaku}／回復: Try100 ${close.try100Done}件
+デバッグ5項目: ${debugText}
+ノイズ(#V): ${v}
+気づき(#G): ${g}
+今日の成長: ${formatLV(close.lvBase)}→${formatLV(close.lvBase + close.todayPts)}（ポモ${close.pomoTotal}個）`;
+
   const tomorrowDate = new Date(); tomorrowDate.setDate(tomorrowDate.getDate() + 1);
   const tomorrowDateStr = `${tomorrowDate.getFullYear()}/${String(tomorrowDate.getMonth()+1).padStart(2,'0')}/${String(tomorrowDate.getDate()).padStart(2,'0')}`;
   const delayDate2 = new Date(); delayDate2.setDate(delayDate2.getDate() + 2);
@@ -2276,7 +2308,7 @@ async function generateEvening() {
   if (commentBox) { commentBox.style.display='none'; commentBox.textContent=''; }
 
   // ① AI分類（アイゼンハワー）を先に実行
-  const aiResult = await runAICalendarAnalysis(tomorrow, delayWithFlags, hp, mp);
+  const aiResult = await runAICalendarAnalysis(tomorrow, delayWithFlags, endHP, endMP, eveSummary);
 
   // ② 確定アポ CSV（確定アポ + AI①）
   const { events: confirmedEvents } = parseSchedule(tomorrow);
