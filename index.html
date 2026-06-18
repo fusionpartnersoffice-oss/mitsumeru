@@ -426,8 +426,70 @@ function Screen3({ action, timeMin, onAction, onTime, onDone, onBack }) {
   );
 }
 
-// ── スクリーン4: 完了 ──────────────────────
-function Screen4({ session, onSave, saved, onAgain, onClose }) {
+// ── スクリーン4: ブラックアウト＋タイマー ────────
+function Screen4Timer({ session, onTimerEnd }) {
+  const totalSec = session.sodan.time_minutes * 60;
+  const [remaining, setRemaining] = useState(totalSec);
+
+  useEffect(() => {
+    if (remaining <= 0) { onTimerEnd(); return; }
+    const id = setTimeout(() => setRemaining(r => r - 1), 1000);
+    return () => clearTimeout(id);
+  }, [remaining]);
+
+  const mins = String(Math.floor(remaining / 60)).padStart(2, '0');
+  const secs = String(remaining % 60).padStart(2, '0');
+  const progress = remaining / totalSec;
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0,
+      background: '#000',
+      display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      gap: 40,
+    }}>
+      {/* 完了メッセージ */}
+      <div className="fade-in" style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: 48, marginBottom: 16, color: '#f59e0b' }}>✓</div>
+        <div style={{ fontSize: 24, fontWeight: 800, color: '#f1f5f9', lineHeight: 1.4 }}>
+          3分間、よくやった。
+        </div>
+      </div>
+
+      {/* カウントダウン */}
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: 64, fontWeight: 200, color: '#f1f5f9', letterSpacing: '0.05em', fontVariantNumeric: 'tabular-nums' }}>
+          {mins}:{secs}
+        </div>
+        {/* プログレスバー */}
+        <div style={{ width: 200, height: 2, background: '#1e2433', borderRadius: 1, marginTop: 16, overflow: 'hidden' }}>
+          <div style={{
+            height: '100%', borderRadius: 1,
+            background: '#f59e0b',
+            width: `${progress * 100}%`,
+            transition: 'width 1s linear',
+          }} />
+        </div>
+      </div>
+
+      <div style={{ fontSize: 12, color: '#334155', textAlign: 'center', lineHeight: 1.8 }}>
+        時間になったら自動で画面が戻ります<br />
+        <span style={{ color: '#1e2433' }}>タップしても戻れます</span>
+      </div>
+
+      {/* タップで早期スキップ */}
+      <button
+        onClick={onTimerEnd}
+        style={{ position: 'absolute', inset: 0, background: 'none', border: 'none', cursor: 'pointer' }}
+        aria-label="スキップ"
+      />
+    </div>
+  );
+}
+
+// ── スクリーン5: サマリー ──────────────────────
+function Screen5({ session, onSave, saved, onAgain, onClose }) {
   const topEmotion = () => {
     if (!session.renraku.emotions.length) return 'なし';
     const [ei, ii] = session.renraku.emotions[0].split('-').map(Number);
@@ -437,18 +499,10 @@ function Screen4({ session, onSave, saved, onAgain, onClose }) {
   return (
     <div className="fade-in" style={{ padding: '40px 24px', display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 32 }}>
-        {/* 完了メッセージ */}
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>✓</div>
-          <div style={{ fontSize: 22, fontWeight: 800, lineHeight: 1.4 }}>
-            3分間、よくやった。
-          </div>
-          <div style={{ fontSize: 14, color: '#64748b', marginTop: 8 }}>
-            {session.sodan.time_minutes}分後にもう一度確認しよう。
-          </div>
+          <div style={{ fontSize: 18, fontWeight: 800, color: '#f1f5f9' }}>記録を確認する</div>
         </div>
 
-        {/* サマリー */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <div className="record-card">
             <div style={{ fontSize: 11, color: '#64748b', marginBottom: 4 }}>報告</div>
@@ -465,20 +519,16 @@ function Screen4({ session, onSave, saved, onAgain, onClose }) {
             <div style={{ fontSize: 11, color: '#64748b', marginBottom: 4 }}>相談</div>
             <div style={{ fontSize: 14, color: '#f1f5f9' }}>
               {session.sodan.action}
-              <span style={{ color: '#64748b' }}>　{session.sodan.time_minutes}分後に確認</span>
+              <span style={{ color: '#64748b' }}>　{session.sodan.time_minutes}分</span>
             </div>
           </div>
         </div>
       </div>
 
       <div style={{ paddingBottom: 32, display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {!saved ? (
-          <button className="btn-primary" onClick={onSave}>この記録を保存する</button>
-        ) : (
-          <div style={{ textAlign: 'center', color: '#f59e0b', fontSize: 14, padding: '14px' }}>
-            ✓ 保存しました
-          </div>
-        )}
+        <div style={{ textAlign: 'center', color: '#475569', fontSize: 13, padding: '10px' }}>
+          ✓ 記録を保存しました
+        </div>
         <button className="btn-ghost" onClick={onAgain}>もう一度</button>
         <button className="btn-ghost" onClick={onClose}>閉じる（スタートに戻る）</button>
       </div>
@@ -525,14 +575,13 @@ function App() {
 
   function handleDone() {
     const s = buildSession();
+    saveSession(s);
+    setSessions(loadSessions());
     setCurrentSession(s);
     setScreen(4);
   }
 
   function handleSave() {
-    if (!currentSession) return;
-    saveSession(currentSession);
-    setSessions(loadSessions());
     setSaved(true);
   }
 
@@ -574,7 +623,13 @@ function App() {
         />
       )}
       {screen === 4 && currentSession && (
-        <Screen4
+        <Screen4Timer
+          session={currentSession}
+          onTimerEnd={() => setScreen(5)}
+        />
+      )}
+      {screen === 5 && currentSession && (
+        <Screen5
           session={currentSession}
           onSave={handleSave}
           saved={saved}
