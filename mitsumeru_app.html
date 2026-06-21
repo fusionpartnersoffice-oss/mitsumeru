@@ -975,6 +975,7 @@
       <button class="btn-secondary" id="copy-nlm-btn" onclick="copyForNotebookLM()" style="flex:1;">📋 NotebookLMにコピー</button>
       <button class="btn-secondary" id="copy-keep-btn" onclick="copyTextForKeep()" style="flex:1;">📋 テキスト版でコピー（Keep用）</button>
     </div>
+    <button id="copy-daily-btn" class="btn-secondary" onclick="copySummaryBox('output-markdown','copy-daily-btn')" style="margin-top:8px;display:none;width:100%;">📋 日次監査サマリーをコピー</button>
   </div>
 
   <div class="section">
@@ -2361,6 +2362,7 @@ HP：${endHP}/100　MP：${endMP}/100　LV：${formatLV(close.lvBase + close.tod
       const outputPayload = { text, _ts: Date.now() };
       localStorage.setItem(lsKey('output'), JSON.stringify(outputPayload));
       cloudSave('output', outputPayload);
+      document.getElementById('copy-daily-btn').style.display = 'block';
     },
     err => {
       loading.style.display = 'none';
