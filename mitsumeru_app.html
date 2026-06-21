@@ -461,7 +461,7 @@
       <p>④ 「今日のHP/MPを締める」を押してください。（朝→夜のHP/MP/LVが即・無料で出ます）</p>
       <p style="color:#c0392b;font-size:12px;margin-top:2px;">※必ず①〜③を入れてから④を押す。メモ・デバッグ・Try100から計算するので、先に押すと不正確になります。</p>
       <p>⑤ 「明日の設計」に予定・遅延を入れてください。</p>
-      <p>⑥ 「翌日戦略を生成する」を押してください。→ 出力に進みます。</p>
+      <p>⑥ 出力タブに移動して「翌日戦略を生成する」を押してください。</p>
 
       <div style="height:1px;background:var(--border);margin:14px 0;"></div>
 
@@ -962,13 +962,13 @@
     </div>
   </div>
 
-  <button class="btn-primary" onclick="generateEvening()">翌日戦略を生成する</button>
 </div>
 
 <!-- 出力モード -->
 <div id="screen-output" class="screen">
   <div class="section">
     <div class="section-title">① ミツメル行動監査サマリー</div>
+    <button class="btn-primary" onclick="generateEvening()" style="margin-bottom:12px;">翌日戦略を生成する</button>
     <div class="loading-text" id="output-loading">Claude が分析中です...</div>
     <div class="output-box" id="output-markdown"></div>
     <div id="output-copy-row" style="display:none;flex-direction:column;gap:8px;margin-top:10px;">
