@@ -1003,6 +1003,7 @@
     <button class="btn-secondary" onclick="generateWeeklySummary()" style="margin-bottom:8px;">今週をまとめる</button>
     <div class="loading-text" id="weekly-loading">週次データを分析中...</div>
     <div class="output-box" id="weekly-summary"></div>
+    <button id="copy-weekly-btn" class="btn-secondary" onclick="copySummaryBox('weekly-summary','copy-weekly-btn')" style="margin-top:8px;display:none;">週次サマリーをコピー</button>
   </div>
 
   <div class="section">
@@ -1011,6 +1012,7 @@
     <button class="btn-secondary" onclick="generateMonthlySummary()" style="margin-bottom:8px;">今月をまとめる</button>
     <div class="loading-text" id="monthly-loading">月次データを分析中...</div>
     <div class="output-box" id="monthly-summary"></div>
+    <button id="copy-monthly-btn" class="btn-secondary" onclick="copySummaryBox('monthly-summary','copy-monthly-btn')" style="margin-top:8px;display:none;">月次サマリーをコピー</button>
   </div>
 </div>
 
@@ -2373,6 +2375,20 @@ function copyOutput(id) {
   navigator.clipboard.writeText(text).then(() => { alert('コピーしました！'); });
 }
 
+function copySummaryBox(boxId, btnId) {
+  const text = document.getElementById(boxId).textContent;
+  if (!text) { alert('まだサマリーがありません。先にまとめるボタンを押してください。'); return; }
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById(btnId);
+    if (!btn) return;
+    const orig = btn.textContent;
+    btn.textContent = 'コピーしました ✓';
+    btn.style.color = 'var(--green)';
+    btn.style.borderColor = 'var(--green)';
+    setTimeout(() => { btn.textContent = orig; btn.style.color = ''; btn.style.borderColor = ''; }, 2500);
+  });
+}
+
 function copyForNotebookLM() {
   const text = document.getElementById('output-markdown').textContent;
   if (!text) { alert('まだ出力がありません。「翌日戦略を生成する」を実行してください。'); return; }
@@ -2613,8 +2629,8 @@ ${records.join('\n\n')}
 ## ひとこと所感`;
 
   callClaude(prompt,
-    text => { loading.style.display = 'none'; box.textContent = text; box.classList.add('visible'); },
-    err  => { loading.style.display = 'none'; box.textContent = 'エラー：' + err; box.classList.add('visible'); }
+    text => { loading.style.display='none'; box.textContent=text; box.classList.add('visible'); document.getElementById('copy-weekly-btn').style.display='inline-block'; },
+    err  => { loading.style.display='none'; box.textContent='エラー：'+err; box.classList.add('visible'); }
   );
 }
 
@@ -2664,7 +2680,7 @@ ${records.join('\n\n')}
 ## \u7FCC\u6708\u3078\u306E\u63D0\u8A00`;
 
   callClaude(prompt,
-    text => { loading.style.display='none'; box.textContent=text; box.classList.add('visible'); },
+    text => { loading.style.display='none'; box.textContent=text; box.classList.add('visible'); document.getElementById('copy-monthly-btn').style.display='inline-block'; },
     err  => { loading.style.display='none'; box.textContent='\u30A8\u30E9\u30FC\uFF1A'+err; box.classList.add('visible'); }
   );
 }
