@@ -971,11 +971,13 @@
     <div class="section-title">① ミツメル行動監査サマリー</div>
     <div class="loading-text" id="output-loading">Claude が分析中です...</div>
     <div class="output-box" id="output-markdown"></div>
-    <div style="display:flex;gap:8px;margin-top:10px;">
-      <button class="btn-secondary" id="copy-nlm-btn" onclick="copyForNotebookLM()" style="flex:1;">📋 NotebookLMにコピー</button>
-      <button class="btn-secondary" id="copy-keep-btn" onclick="copyTextForKeep()" style="flex:1;">📋 テキスト版でコピー（Keep用）</button>
+    <div id="output-copy-row" style="display:none;flex-direction:column;gap:8px;margin-top:10px;">
+      <div style="display:flex;gap:8px;">
+        <button class="btn-secondary" id="copy-nlm-btn" onclick="copyForNotebookLM()" style="flex:1;">📋 NotebookLMにコピー</button>
+        <button class="btn-secondary" id="copy-keep-btn" onclick="copyTextForKeep()" style="flex:1;">📋 テキスト版でコピー（Keep用）</button>
+      </div>
+      <button id="copy-daily-btn" class="btn-secondary" onclick="copySummaryBox('output-markdown','copy-daily-btn')" style="width:100%;">📋 日次監査サマリーをコピー</button>
     </div>
-    <button id="copy-daily-btn" class="btn-secondary" onclick="copySummaryBox('output-markdown','copy-daily-btn')" style="margin-top:8px;display:none;width:100%;">📋 日次監査サマリーをコピー</button>
   </div>
 
   <div class="section">
@@ -1318,7 +1320,7 @@ window.addEventListener('DOMContentLoaded', async function() {
 
   if (lsOutput && lsOutput.text) {
     const mdBox = document.getElementById('output-markdown');
-    if (mdBox) { mdBox.textContent = lsOutput.text; mdBox.classList.add('visible'); }
+    if (mdBox) { mdBox.textContent = lsOutput.text; mdBox.classList.add('visible'); showOutputCopyBtns(); }
   }
   if (lsCalendar && lsCalendar.csv) {
     calendarCSV = lsCalendar.csv;
@@ -1379,7 +1381,7 @@ window.addEventListener('DOMContentLoaded', async function() {
   const bestOutput = newerOf(lsOutput, kvOutput);
   if (bestOutput && bestOutput.text) {
     const mdBox = document.getElementById('output-markdown');
-    if (mdBox && !mdBox.textContent) { mdBox.textContent = bestOutput.text; mdBox.classList.add('visible'); }
+    if (mdBox && !mdBox.textContent) { mdBox.textContent = bestOutput.text; mdBox.classList.add('visible'); showOutputCopyBtns(); }
     if (bestOutput !== lsOutput) localStorage.setItem(lsKey('output'), JSON.stringify(bestOutput));
   }
   const bestCalendar = newerOf(lsCalendar, kvCalendar);
@@ -2362,7 +2364,7 @@ HP：${endHP}/100　MP：${endMP}/100　LV：${formatLV(close.lvBase + close.tod
       const outputPayload = { text, _ts: Date.now() };
       localStorage.setItem(lsKey('output'), JSON.stringify(outputPayload));
       cloudSave('output', outputPayload);
-      document.getElementById('copy-daily-btn').style.display = 'block';
+      showOutputCopyBtns();
     },
     err => {
       loading.style.display = 'none';
@@ -2375,6 +2377,11 @@ HP：${endHP}/100　MP：${endMP}/100　LV：${formatLV(close.lvBase + close.tod
 function copyOutput(id) {
   const text = document.getElementById(id).textContent;
   navigator.clipboard.writeText(text).then(() => { alert('コピーしました！'); });
+}
+
+function showOutputCopyBtns() {
+  const row = document.getElementById('output-copy-row');
+  if (row) row.style.display = 'flex';
 }
 
 function copySummaryBox(boxId, btnId) {
