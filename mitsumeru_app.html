@@ -2354,7 +2354,15 @@ ${aiScheduleSuggestion ? '\n' + aiScheduleSuggestion : ''}
 以下の形式で必ず記載してください：
 HP：${endHP}/100　MP：${endMP}/100　LV：${formatLV(close.lvBase + close.todayPts)}（本日+${lv}pt、${counts.pomo}ポモ）
 根拠：デバッグ評価（役割/委譲/動機/資産/余白の〇△✕）・ポモ数・ノイズ件数など上記の具体的な数値を引用して、HP/MPがこの値になった要因を1〜2文で記載（例：ポモ12個でHP-24、デバッグ✕2件でHP-6/MP-16、など）
-明日への一言：HP・MPの状態を踏まえて明日の動き方を一言でアドバイスする`;
+明日への一言：HP・MPの状態を踏まえて明日の動き方を一言でアドバイスする
+
+---
+【明日のVault管理Codeへの指示】
+以下をVault管理Codeに貼ってください：
+
+・ダッシュボード更新：[今日の完了タスクを箇条書きで列挙する]
+・アーカイブ移動：[済みファイルがあれば記載。なければ「なし」]
+・session_log追記：[今日のサマリーを1行で記載]`;
 
   callClaude(prompt,
     text => {
