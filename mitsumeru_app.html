@@ -1033,6 +1033,27 @@
   </div>
 
   <div class="section">
+    <div class="section-title">📅 先行予定マップ</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:10px;">複数日分の確定アポを一覧管理します。</p>
+    <div style="overflow-x:auto;">
+      <table id="advance-schedule-table" style="width:100%;border-collapse:collapse;font-size:12px;">
+        <thead>
+          <tr style="background:var(--bg2);border-bottom:1px solid var(--border);">
+            <th style="padding:6px 4px;text-align:center;color:var(--text2);font-weight:500;min-width:36px;">曜日</th>
+            <th style="padding:6px 4px;text-align:center;color:var(--text2);font-weight:500;min-width:80px;">日付</th>
+            <th style="padding:6px 4px;text-align:center;color:var(--text2);font-weight:500;min-width:80px;">ポモ数</th>
+            <th style="padding:6px 4px;text-align:center;color:var(--text2);font-weight:500;min-width:80px;">急重度</th>
+            <th style="padding:6px 4px;text-align:left;color:var(--text2);font-weight:500;">内容</th>
+            <th style="padding:6px 4px;text-align:center;color:var(--text2);font-weight:500;min-width:36px;"></th>
+          </tr>
+        </thead>
+        <tbody id="advance-schedule-body"></tbody>
+      </table>
+    </div>
+    <button onclick="addAdvanceRow()" style="margin-top:10px;padding:6px 14px;border-radius:6px;border:0.5px solid var(--border);background:var(--bg2);font-size:12px;cursor:pointer;color:var(--text);">＋ 行を追加</button>
+  </div>
+
+  <div class="section">
     <div class="section-title">フィードバック</div>
     <div class="field">
       <label>SuccessOSへのフィードバック</label>
@@ -1290,8 +1311,100 @@ function saveEvening() {
   });
   data['debugScores'] = debugScores;
   data['try100-count'] = counts.try100;
+  data['advanceSchedule'] = getAdvanceScheduleData();
   localStorage.setItem(lsKey('evening'), JSON.stringify(data));
   cloudSave('evening', data);
+}
+
+// ===== 先行予定マップ =====
+const DAYS = ['日','月','火','水','木','金','土'];
+function addAdvanceRow(row) {
+  const tbody = document.getElementById('advance-schedule-body');
+  const tr = document.createElement('tr');
+  tr.style.borderBottom = '0.5px solid var(--border)';
+  const day = row ? row.day : '';
+  const date = row ? row.date : '';
+  const pomo = row ? row.pomo : '';
+  const priority = row ? row.priority : '';
+  const content = row ? row.content : '';
+  tr.innerHTML = `
+    <td style="padding:4px 2px;text-align:center;">
+      <select onchange="saveEvening()" style="border:0.5px solid var(--border);background:var(--bg2);color:var(--text);border-radius:4px;font-size:11px;width:36px;padding:2px;">
+        <option value=""></option>
+        ${DAYS.map(d=>`<option value="${d}" ${day===d?'selected':''}>${d}</option>`).join('')}
+      </select>
+    </td>
+    <td style="padding:4px 2px;">
+      <input type="text" value="${date}" oninput="saveEvening()" placeholder="6/25" style="width:72px;border:0.5px solid var(--border);background:var(--bg2);color:var(--text);border-radius:4px;font-size:11px;padding:3px 4px;">
+    </td>
+    <td style="padding:4px 2px;text-align:center;">
+      <div style="display:flex;gap:2px;flex-wrap:wrap;justify-content:center;">
+        ${['1','2','3','未'].map(p=>`<button onclick="setAdvancePomo(this,'${p}')" class="adv-pomo-btn${pomo===p?' adv-active':''}" data-val="${p}" style="padding:2px 4px;border-radius:4px;border:0.5px solid var(--border);background:${pomo===p?'var(--accent)':'var(--bg2)'};color:${pomo===p?'#fff':'var(--text)'};font-size:10px;cursor:pointer;">${p}</button>`).join('')}
+      </div>
+    </td>
+    <td style="padding:4px 2px;text-align:center;">
+      <div style="display:flex;gap:2px;justify-content:center;">
+        ${['①','②','③','④'].map(p=>`<button onclick="setAdvancePriority(this,'${p}')" class="adv-pri-btn${priority===p?' adv-active':''}" data-val="${p}" style="padding:2px 4px;border-radius:4px;border:0.5px solid var(--border);background:${priority===p?'var(--accent)':'var(--bg2)'};color:${priority===p?'#fff':'var(--text)'};font-size:10px;cursor:pointer;">${p}</button>`).join('')}
+      </div>
+    </td>
+    <td style="padding:4px 2px;">
+      <input type="text" value="${content}" oninput="saveEvening()" placeholder="内容" style="width:100%;min-width:80px;border:0.5px solid var(--border);background:var(--bg2);color:var(--text);border-radius:4px;font-size:11px;padding:3px 4px;">
+    </td>
+    <td style="padding:4px 2px;text-align:center;">
+      <button onclick="removeAdvanceRow(this)" style="padding:2px 6px;border-radius:4px;border:0.5px solid var(--border);background:var(--bg2);color:#c0392b;font-size:11px;cursor:pointer;">✕</button>
+    </td>
+  `;
+  tbody.appendChild(tr);
+}
+function setAdvancePomo(btn, val) {
+  const td = btn.closest('td');
+  td.querySelectorAll('.adv-pomo-btn').forEach(b => {
+    b.style.background = 'var(--bg2)'; b.style.color = 'var(--text)';
+  });
+  btn.style.background = 'var(--accent)'; btn.style.color = '#fff';
+  saveEvening();
+}
+function setAdvancePriority(btn, val) {
+  const td = btn.closest('td');
+  td.querySelectorAll('.adv-pri-btn').forEach(b => {
+    b.style.background = 'var(--bg2)'; b.style.color = 'var(--text)';
+  });
+  btn.style.background = 'var(--accent)'; btn.style.color = '#fff';
+  saveEvening();
+}
+function removeAdvanceRow(btn) {
+  btn.closest('tr').remove();
+  saveEvening();
+}
+function getAdvanceScheduleData() {
+  const rows = [];
+  document.querySelectorAll('#advance-schedule-body tr').forEach(tr => {
+    const cells = tr.querySelectorAll('td');
+    const dayEl = cells[0].querySelector('select');
+    const dateEl = cells[1].querySelector('input');
+    const pomoBtn = cells[2].querySelector('[style*="var(--accent)"]');
+    const priBtn = cells[3].querySelector('[style*="var(--accent)"]');
+    const contentEl = cells[4].querySelector('input');
+    rows.push({
+      day: dayEl ? dayEl.value : '',
+      date: dateEl ? dateEl.value : '',
+      pomo: pomoBtn ? pomoBtn.dataset.val : '',
+      priority: priBtn ? priBtn.dataset.val : '',
+      content: contentEl ? contentEl.value : ''
+    });
+  });
+  return rows;
+}
+function initAdvanceSchedule(data) {
+  const tbody = document.getElementById('advance-schedule-body');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  const rows = Array.isArray(data) && data.length >= 7 ? data : (() => {
+    const base = Array.isArray(data) ? data : [];
+    while (base.length < 7) base.push({day:'',date:'',pomo:'',priority:'',content:''});
+    return base;
+  })();
+  rows.forEach(r => addAdvanceRow(r));
 }
 function saveMorning() {
   const data = { _ts: Date.now() };
@@ -1386,6 +1499,7 @@ function applyEveningData(d) {
       }
     });
   }
+  initAdvanceSchedule(d.advanceSchedule || []);
 }
 
 function applyMemosData(d) {
@@ -1408,6 +1522,7 @@ window.addEventListener('DOMContentLoaded', async function() {
 
   applyMorningData(lsMorning);
   applyEveningData(lsEvening);
+  if (!lsEvening || !lsEvening.advanceSchedule) initAdvanceSchedule([]);
   applyMemosData(lsMemos);
   applyDispatchData(lsDispatch);
 
