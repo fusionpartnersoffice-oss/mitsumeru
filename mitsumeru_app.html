@@ -589,10 +589,10 @@
     <div class="field">
       <label>タグを選択</label>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
-        <button class="tag-btn active" onclick="selectTag(this,'HP')" style="flex:1;padding:10px;border-radius:6px;border:0.5px solid var(--border);background:var(--bg2);font-size:13px;font-weight:500;cursor:pointer;color:#1a5a9a;">🛡️ #HP</button>
-        <button class="tag-btn" onclick="selectTag(this,'P')" style="flex:1;padding:10px;border-radius:6px;border:0.5px solid var(--border);background:var(--bg);font-size:13px;font-weight:500;cursor:pointer;color:var(--text2);">⚡ #P</button>
-        <button class="tag-btn" onclick="selectTag(this,'V')" style="flex:1;padding:10px;border-radius:6px;border:0.5px solid var(--border);background:var(--bg);font-size:13px;font-weight:500;cursor:pointer;color:var(--text2);">🌊 #V</button>
-        <button class="tag-btn" onclick="selectTag(this,'G')" style="flex:1;padding:10px;border-radius:6px;border:0.5px solid var(--border);background:var(--bg);font-size:13px;font-weight:500;cursor:pointer;color:var(--text2);">💡 #G</button>
+        <button class="tag-btn active" onclick="selectTag(this,'HP')" style="flex:1;padding:10px;border-radius:6px;border:0.5px solid var(--border);background:var(--bg2);font-size:13px;font-weight:500;cursor:pointer;color:#1a5a9a;">🛡️ #体調</button>
+        <button class="tag-btn" onclick="selectTag(this,'P')" style="flex:1;padding:10px;border-radius:6px;border:0.5px solid var(--border);background:var(--bg);font-size:13px;font-weight:500;cursor:pointer;color:var(--text2);">⚡ #実績</button>
+        <button class="tag-btn" onclick="selectTag(this,'V')" style="flex:1;padding:10px;border-radius:6px;border:0.5px solid var(--border);background:var(--bg);font-size:13px;font-weight:500;cursor:pointer;color:var(--text2);">🌊 #ノイズ</button>
+        <button class="tag-btn" onclick="selectTag(this,'G')" style="flex:1;padding:10px;border-radius:6px;border:0.5px solid var(--border);background:var(--bg);font-size:13px;font-weight:500;cursor:pointer;color:var(--text2);">💡 #思考</button>
       </div>
     </div>
 
@@ -1011,6 +1011,16 @@
     <div class="field">
       <label>明日の確定アポ（時刻4桁・ポモ数・内容）</label>
       <textarea id="e-tomorrow" class="tall" oninput="saveEvening()" placeholder="例：0900 2 Claude壁打ち ミツメルアプリ開発&#10;1400 2 LITALICO面接準備"></textarea>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
+        <button onclick="insertIntoTextarea('e-tomorrow','1 ')" style="padding:6px 10px;border-radius:6px;border:0.5px solid var(--border);background:var(--bg2);font-size:12px;cursor:pointer;color:var(--text);">1ポモ</button>
+        <button onclick="insertIntoTextarea('e-tomorrow','2 ')" style="padding:6px 10px;border-radius:6px;border:0.5px solid var(--border);background:var(--bg2);font-size:12px;cursor:pointer;color:var(--text);">2ポモ</button>
+        <button onclick="insertIntoTextarea('e-tomorrow','3 ')" style="padding:6px 10px;border-radius:6px;border:0.5px solid var(--border);background:var(--bg2);font-size:12px;cursor:pointer;color:var(--text);">3ポモ</button>
+        <button onclick="insertIntoTextarea('e-tomorrow','? ')" style="padding:6px 10px;border-radius:6px;border:0.5px solid var(--border);background:var(--bg2);font-size:12px;cursor:pointer;color:var(--text);">未定</button>
+        <button onclick="insertIntoTextarea('e-tomorrow','① ')" style="padding:6px 10px;border-radius:6px;border:0.5px solid var(--border);background:var(--bg2);font-size:12px;cursor:pointer;color:var(--text);">①</button>
+        <button onclick="insertIntoTextarea('e-tomorrow','② ')" style="padding:6px 10px;border-radius:6px;border:0.5px solid var(--border);background:var(--bg2);font-size:12px;cursor:pointer;color:var(--text);">②</button>
+        <button onclick="insertIntoTextarea('e-tomorrow','③ ')" style="padding:6px 10px;border-radius:6px;border:0.5px solid var(--border);background:var(--bg2);font-size:12px;cursor:pointer;color:var(--text);">③</button>
+        <button onclick="insertIntoTextarea('e-tomorrow','④ ')" style="padding:6px 10px;border-radius:6px;border:0.5px solid var(--border);background:var(--bg2);font-size:12px;cursor:pointer;color:var(--text);">④</button>
+      </div>
     </div>
     <div class="field">
       <label>遅延イベント（先送りタスク）</label>
@@ -1262,6 +1272,15 @@ function saveMemos() {
   localStorage.setItem(lsKey('memos'), JSON.stringify(payload));
   cloudSave('memos', payload);
 }
+function insertIntoTextarea(id, text) {
+  const el = document.getElementById(id);
+  const start = el.selectionStart, end = el.selectionEnd;
+  el.value = el.value.substring(0, start) + text + el.value.substring(end);
+  el.selectionStart = el.selectionEnd = start + text.length;
+  el.focus();
+  saveEvening();
+}
+
 function saveEvening() {
   const data = { _ts: Date.now() };
   ['e-supplement','e-tomorrow','e-delay','e-try100','e-feedback','e-notebooklm',
@@ -1807,6 +1826,7 @@ function toggleHelp() {
 }
 
 const tagIcons = { HP: '🛡️', P: '⚡', V: '🌊', G: '💡' };
+const tagLabels = { HP: '体調', P: '実績', V: 'ノイズ', G: '思考' };
 
 function calcAutoCount() {
   const noiseCount = memos.filter(m => m.tag === 'V').length;
@@ -1865,7 +1885,7 @@ function updateEveningMemoPreview() {
   const tagColors = { HP: '#1a5a9a', P: '#1a7a52', V: '#c0392b', G: '#b8860b' };
   preview.innerHTML = memos.map(m => `
     <div style="display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:0.5px solid var(--border);">
-      <span style="color:${tagColors[m.tag]};font-weight:500;min-width:44px;font-size:12px;">${tagIcons[m.tag]}#${m.tag}</span>
+      <span style="color:${tagColors[m.tag]};font-weight:500;min-width:44px;font-size:12px;">${tagIcons[m.tag]}#${tagLabels[m.tag]}</span>
       <span style="color:var(--text3);min-width:38px;font-size:12px;">${m.time||'--:--'}</span>
       ${m.pomos!==null?`<span style="color:var(--accent);min-width:36px;font-size:12px;">${m.pomos}ポモ</span>`:'<span style="min-width:36px;"></span>'}
       <div style="flex:1;">
@@ -1885,7 +1905,7 @@ function renderMemos() {
   const tagColors = { HP: '#1a5a9a', P: '#1a7a52', V: '#c0392b', G: '#b8860b' };
   list.innerHTML = memos.map((m, i) => `
     <div style="display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:0.5px solid var(--border);">
-      <span style="color:${tagColors[m.tag]};font-weight:500;min-width:44px;font-size:12px;">${tagIcons[m.tag]}#${m.tag}</span>
+      <span style="color:${tagColors[m.tag]};font-weight:500;min-width:44px;font-size:12px;">${tagIcons[m.tag]}#${tagLabels[m.tag]}</span>
       <span style="color:var(--text3);min-width:38px;font-size:12px;">${m.time||'--:--'}</span>
       ${m.pomos!==null?`<span style="color:var(--accent);min-width:36px;font-size:12px;">${m.pomos}ポモ</span>`:'<span style="min-width:36px;"></span>'}
       <div style="flex:1;">
@@ -2277,12 +2297,12 @@ function parseSchedule(text) {
 
 async function generateEvening() {
   saveEvening();
-  const supplement  = document.getElementById('e-supplement').value;
-  const tomorrow    = document.getElementById('e-tomorrow').value;
-  const delay       = document.getElementById('e-delay').value;
-  const try100      = document.getElementById('e-try100').value;
-  const feedback    = document.getElementById('e-feedback').value;
-  const notebooklm  = document.getElementById('e-notebooklm').value;
+  const supplement  = document.getElementById('e-supplement').value.trim();
+  const tomorrow    = document.getElementById('e-tomorrow').value.trim();
+  const delay       = document.getElementById('e-delay').value.trim();
+  const try100      = document.getElementById('e-try100').value.trim();
+  const feedback    = document.getElementById('e-feedback').value.trim();
+  const notebooklm  = document.getElementById('e-notebooklm').value.trim();
 
   const p = memos.filter(m=>m.tag==='P').map(m=>m.content).join(' / ') || 'なし';
   const v = memos.filter(m=>m.tag==='V').map(m=>m.content).join(' / ') || 'なし';
