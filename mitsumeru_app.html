@@ -1027,10 +1027,7 @@
         <tbody id="advance-schedule-body"></tbody>
       </table>
     </div>
-    <div style="display:flex;gap:8px;margin-top:10px;margin-bottom:16px;">
-      <button onclick="addAdvanceRow()" style="padding:6px 14px;border-radius:6px;border:0.5px solid var(--border);background:var(--bg2);font-size:12px;cursor:pointer;color:var(--text);">＋ 行を追加</button>
-      <button onclick="exportAdvanceScheduleCSV()" style="padding:6px 14px;border-radius:6px;border:0.5px solid var(--border);background:var(--bg2);font-size:12px;cursor:pointer;color:var(--text);">CSV出力</button>
-    </div>
+    <button onclick="addAdvanceRow()" style="margin-top:10px;margin-bottom:16px;padding:6px 14px;border-radius:6px;border:0.5px solid var(--border);background:var(--bg2);font-size:12px;cursor:pointer;color:var(--text);">＋ 行を追加</button>
     <div class="field">
       <label>遅延イベント（先送りタスク）</label>
       <textarea id="e-delay" oninput="saveEvening()" placeholder="先送りしたタスクを記録"></textarea>
@@ -1334,7 +1331,7 @@ function addAdvanceRow(row) {
       </select>
     </td>
     <td style="padding:4px 2px;">
-      <input class="adv-date" type="text" oninput="saveEvening()" placeholder="6/25" style="width:60px;border:0.5px solid var(--border);background:var(--bg2);color:var(--text);border-radius:4px;font-size:11px;padding:3px 4px;touch-action:manipulation;">
+      <input class="adv-date" type="date" onchange="saveEvening()" style="width:110px;border:0.5px solid var(--border);background:var(--bg2);color:var(--text);border-radius:4px;font-size:11px;padding:3px 4px;touch-action:manipulation;">
     </td>
     <td style="padding:4px 2px;text-align:center;">
       <div style="display:flex;gap:1px;align-items:center;justify-content:center;">
@@ -1415,28 +1412,17 @@ function initAdvanceSchedule(data) {
   const tbody = document.getElementById('advance-schedule-body');
   if (!tbody) return;
   tbody.innerHTML = '';
-  const rows = Array.isArray(data) && data.length >= 3 ? data : (() => {
-    const base = Array.isArray(data) ? data : [];
-    while (base.length < 3) base.push({day:'',date:'',startHour:'',startMinute:'',endHour:'',endMinute:'',pomo:'',priority:'',content:''});
-    return base;
-  })();
-  rows.forEach(r => addAdvanceRow(r));
-}
-function exportAdvanceScheduleCSV() {
-  const rows = getAdvanceScheduleData();
-  const header = ['曜日','日付','開始時間','終了時間','ポモ数','急重度','内容'];
-  const lines = [header.join(',')];
-  rows.forEach(r => {
-    const start = r.startHour ? r.startHour+':'+(r.startMinute||'00') : '';
-    const end   = r.endHour   ? r.endHour  +':'+(r.endMinute  ||'00') : '';
-    const c = (r.content||'').replace(/"/g,'""');
-    lines.push([r.day, r.date, start, end, r.pomo, r.priority, '"'+c+'"'].join(','));
-  });
-  const blob = new Blob(['﻿'+lines.join('\n')], {type:'text/csv;charset=utf-8;'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = '先行予定マップ.csv'; a.click();
-  setTimeout(()=>URL.revokeObjectURL(url), 1000);
+  const emptyRow = () => ({day:'',date:'',startHour:'',startMinute:'',endHour:'',endMinute:'',pomo:'',priority:'',content:''});
+  const base = Array.isArray(data) ? data.slice() : [];
+  // 末尾の完全空行を除去（旧7行デフォルトの移行対応）
+  while (base.length > 0) {
+    const r = base[base.length - 1];
+    if (!r.day && !r.date && !r.startHour && !r.hour && !r.endHour && !r.pomo && !r.priority && !r.content) {
+      base.pop();
+    } else { break; }
+  }
+  while (base.length < 3) base.push(emptyRow());
+  base.forEach(r => addAdvanceRow(r));
 }
 function saveMorning() {
   const data = { _ts: Date.now() };
@@ -2524,6 +2510,16 @@ HP: ${hp}→${endHP} ／ MP: ${mp}→${endMP}
       csvRows.push(`"【①急重要】${e.title}（${e.pomos}ポモ）",${e.date},${e.start},${e.date},${e.end},False,"AI判断：急・重要"`);
     });
   }
+  // 先行予定マップを calendarCSV に追加
+  getAdvanceScheduleData().filter(r => r.date && r.content && /^\d{4}-\d{2}-\d{2}$/.test(r.date)).forEach(r => {
+    const d = r.date.replace(/-/g, '/');
+    const sh = r.startHour ? r.startHour + ':' + (r.startMinute || '00') : '';
+    const eh = r.endHour   ? r.endHour   + ':' + (r.endMinute   || '00') : '';
+    const allDay = sh ? 'False' : 'True';
+    const label = '【先行予定】' + r.content + (r.pomo ? '（' + r.pomo + 'ポモ）' : '') + (r.priority || '');
+    const c = (r.content || '').replace(/"/g, '""');
+    csvRows.push('"' + label + '",' + d + ',' + sh + ',' + d + ',' + eh + ',' + allDay + ',"' + c + '"');
+  });
   calendarCSV = csvRows.join('\n');
   const calendarPayload = { csv: calendarCSV, _ts: Date.now() };
   localStorage.setItem(lsKey('calendar'), JSON.stringify(calendarPayload));
