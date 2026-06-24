@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fusion Partners — 会社紹介</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy:      #0b1a2e;
+    --navy2:     #132340;
+    --navy3:     #1c3258;
+    --gold:      #c9a84c;
+    --gold2:     #e8c97a;
+    --white:     #f4f6fa;
+    --text2:     #a8b8cc;
+    --accent:    #4a9eda;
+    --border:    rgba(201,168,76,0.25);
+    --shadow:    0 8px 40px rgba(0,0,0,0.45);
+  }
+
+  html, body {
+    height: 100%;
+    background: #060e1a;
+    font-family: 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', 'Yu Gothic', sans-serif;
+    color: var(--white);
+    overflow: hidden;
+  }
+
+  .deck {
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* === SLIDE === */
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 48px 60px;
+    opacity: 0;
+    transform: translateX(60px);
+    transition: opacity 0.45s cubic-bezier(.4,0,.2,1), transform 0.45s cubic-bezier(.4,0,.2,1);
+    pointer-events: none;
+  }
+  .slide.active {
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: all;
+  }
+  .slide.out {
+    opacity: 0;
+    transform: translateX(-60px);
+  }
+
+  /* === BACKGROUNDS === */
+  .slide-1 { background: radial-gradient(ellipse at 30% 50%, #1c3258 0%, #0b1a2e 60%, #060e1a 100%); }
+  .slide-2 { background: linear-gradient(145deg, #0b1a2e 0%, #0f2540 50%, #0b1a2e 100%); }
+  .slide-3 { background: linear-gradient(160deg, #0b1a2e 0%, #13243e 55%, #0b1a2e 100%); }
+  .slide-4 { background: radial-gradient(ellipse at 70% 40%, #1c3258 0%, #0b1a2e 65%, #060e1a 100%); }
+  .slide-5 { background: linear-gradient(145deg, #0b1a2e 0%, #0f2540 50%, #0b1a2e 100%); }
+  .slide-6 { background: linear-gradient(160deg, #0b1a2e 0%, #13243e 55%, #0b1a2e 100%); }
+  .slide-7 { background: radial-gradient(ellipse at 50% 50%, #1c3258 0%, #0b1a2e 65%, #060e1a 100%); }
+
+  /* Decorative line */
+  .slide::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    opacity: 0.7;
+  }
+
+  /* === TYPOGRAPHY === */
+  .label {
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 16px;
+    font-weight: 500;
+  }
+  .title-xl {
+    font-size: clamp(36px, 6vw, 64px);
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    line-height: 1.15;
+    color: var(--white);
+  }
+  .title-lg {
+    font-size: clamp(26px, 4vw, 44px);
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--white);
+  }
+  .title-md {
+    font-size: clamp(18px, 2.5vw, 28px);
+    font-weight: 600;
+    color: var(--white);
+    line-height: 1.4;
+  }
+  .subtitle {
+    font-size: clamp(13px, 1.6vw, 18px);
+    color: var(--text2);
+    line-height: 1.8;
+    margin-top: 8px;
+  }
+  .mission {
+    font-size: clamp(16px, 2.2vw, 24px);
+    color: var(--gold2);
+    font-weight: 600;
+    letter-spacing: 1px;
+    line-height: 1.6;
+  }
+  .divider {
+    width: 48px;
+    height: 2px;
+    background: var(--gold);
+    margin: 20px 0;
+    opacity: 0.8;
+  }
+
+  /* === LAYOUT === */
+  .content {
+    width: 100%;
+    max-width: 880px;
+  }
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    width: 100%;
+    max-width: 880px;
+  }
+  .three-col {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    width: 100%;
+    max-width: 880px;
+  }
+
+  /* === CARDS === */
+  .card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    backdrop-filter: blur(4px);
+  }
+  .card-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--gold);
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+  }
+  .card-body {
+    font-size: 13px;
+    color: var(--text2);
+    line-height: 1.9;
+  }
+  .card-body strong {
+    color: var(--white);
+  }
+
+  /* === TIMELINE === */
+  .timeline { list-style: none; }
+  .timeline li {
+    display: flex;
+    gap: 16px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    font-size: 13px;
+    line-height: 1.7;
+  }
+  .timeline li:last-child { border-bottom: none; }
+  .tl-date {
+    min-width: 100px;
+    color: var(--gold);
+    font-weight: 600;
+    font-size: 12px;
+    padding-top: 2px;
+  }
+  .tl-body { color: var(--text2); }
+  .tl-body strong { color: var(--white); }
+
+  /* === STATS === */
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  .stat {
+    background: rgba(201,168,76,0.08);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .stat-num {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--gold2);
+    line-height: 1.2;
+    margin-bottom: 4px;
+  }
+  .stat-desc {
+    font-size: 11px;
+    color: var(--text2);
+    line-height: 1.5;
+  }
+
+  /* === OS MODULES === */
+  .module-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    width: 100%;
+    max-width: 880px;
+  }
+  .module {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(74,158,218,0.2);
+    border-radius: 12px;
+    padding: 18px;
+  }
+  .module-name {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+  .module-kana {
+    font-size: 10px;
+    color: var(--text2);
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+  }
+  .module-desc {
+    font-size: 12px;
+    color: var(--text2);
+    line-height: 1.7;
+  }
+
+  /* === COVER === */
+  .logo-mark {
+    font-size: 56px;
+    margin-bottom: 16px;
+    opacity: 0.9;
+  }
+  .tagline {
+    font-size: clamp(12px, 1.5vw, 15px);
+    color: var(--text2);
+    letter-spacing: 2px;
+    margin-top: 24px;
+  }
+
+  /* === CONTACT === */
+  .contact-list { list-style: none; }
+  .contact-list li {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    font-size: 14px;
+  }
+  .contact-list li:last-child { border-bottom: none; }
+  .contact-icon { font-size: 18px; min-width: 24px; }
+  .contact-label { color: var(--text2); min-width: 80px; font-size: 12px; }
+  .contact-val { color: var(--white); font-weight: 500; }
+
+  /* === SERVICE LIST === */
+  .service-list { list-style: none; }
+  .service-list li {
+    display: flex;
+    gap: 14px;
+    padding: 11px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    font-size: 13px;
+    line-height: 1.7;
+    align-items: flex-start;
+  }
+  .service-list li:last-child { border-bottom: none; }
+  .service-icon { color: var(--gold); font-size: 16px; min-width: 20px; padding-top: 1px; }
+  .service-text { color: var(--text2); }
+  .service-text strong { color: var(--white); display: block; margin-bottom: 2px; }
+
+  /* === NAV === */
+  .nav {
+    position: fixed;
+    bottom: 32px;
+    left: 0; right: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    z-index: 100;
+  }
+  .nav-btn {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border);
+    background: rgba(11,26,46,0.85);
+    color: var(--gold);
+    font-size: 18px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+    backdrop-filter: blur(6px);
+  }
+  .nav-btn:hover { background: var(--gold); color: var(--navy); border-color: var(--gold); }
+  .nav-btn:disabled { opacity: 0.25; cursor: default; }
+  .nav-btn:disabled:hover { background: rgba(11,26,46,0.85); color: var(--gold); border-color: var(--border); }
+
+  .dots {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: rgba(201,168,76,0.25);
+    transition: all 0.3s;
+    cursor: pointer;
+  }
+  .dot.active {
+    background: var(--gold);
+    width: 22px;
+    border-radius: 4px;
+  }
+
+  /* SLIDE NUMBER */
+  .slide-num {
+    position: fixed;
+    top: 24px; right: 32px;
+    font-size: 11px;
+    color: rgba(201,168,76,0.4);
+    letter-spacing: 2px;
+    z-index: 100;
+    font-weight: 500;
+  }
+
+  /* BOTTOM FADE */
+  .deck::after {
+    content: '';
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: 100px;
+    background: linear-gradient(transparent, rgba(6,14,26,0.5));
+    pointer-events: none;
+    z-index: 50;
+  }
+
+  /* HIGHLIGHT */
+  .hl { color: var(--gold2); font-weight: 600; }
+  .hl-blue { color: var(--accent); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<div class="deck" id="deck">
+
+  <!-- ===== SLIDE 1: 表紙 ===== -->
+  <div class="slide slide-1 active" data-slide="1">
+    <div class="content" style="text-align:center;">
+      <div class="logo-mark">⬡</div>
+      <div class="label">Company Profile</div>
+      <div class="title-xl">Fusion Partners</div>
+      <div class="divider" style="margin:20px auto;"></div>
+      <div class="mission">
+        「背丈の低い人の生活を、<br>その背丈のまま守る」
+      </div>
+      <div class="tagline">
+        医療・福祉業界特化　組織再設計コンサルティング
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SLIDE 2: 創業ストーリー ===== -->
+  <div class="slide slide-2" data-slide="2">
+    <div class="content">
+      <div class="label">Founding Story</div>
+      <div class="title-lg" style="margin-bottom:6px;">怨念から、凪へ。</div>
+      <div class="subtitle" style="margin-bottom:24px;">
+        25年の現場が、仕組みになった。
+      </div>
+      <ul class="timeline">
+        <li>
+          <span class="tl-date">2024年2月</span>
+          <span class="tl-body"><strong>適応障害・休職開始</strong><br>
+          ハラスメント・組織的問題に直面。傷病手当受給。2年間の闘病と内省が始まる。</span>
+        </li>
+        <li>
+          <span class="tl-date">2026年3月</span>
+          <span class="tl-body"><strong>「凪」という言葉が生まれる</strong><br>
+          休職中の回復状態を「凪」と表現。ノイズが消えた状態こそ福祉現場の最高価値。</span>
+        </li>
+        <li>
+          <span class="tl-date">2026年4月</span>
+          <span class="tl-body"><strong>アーキテクト宣言・ミッション明文化</strong><br>
+          「仕組みを設計するアーキテクト」へ再定義。<span class="hl">「背丈の低い人の生活を守る」</span>を掲げる。</span>
+        </li>
+        <li>
+          <span class="tl-date">2026年4月25日</span>
+          <span class="tl-body"><strong>Fusion Partners 建国記念日</strong><br>
+          公式Gmail・noteアカウント開設。SuccessOSとして本格始動。</span>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ===== SLIDE 3: 代表プロフィール ===== -->
+  <div class="slide slide-3" data-slide="3">
+    <div class="two-col">
+      <div>
+        <div class="label">Representative</div>
+        <div class="title-lg" style="margin-bottom:4px;">柴山　靖章</div>
+        <div style="font-size:13px;color:var(--text2);margin-bottom:20px;">しばやま やすあき</div>
+        <div class="divider"></div>
+        <div class="card-body" style="margin-bottom:16px;">
+          <div style="margin-bottom:8px;">
+            金融機関を経て、医療・福祉業界へ。<br>
+            介護職・管理職を通じて25年間、現場に立ち続ける。
+          </div>
+          <div>グロービス経営大学院 在学中</div>
+        </div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.8;">
+          MQ会計 / チームアセスメント<br>
+          エゴグラム / エニアグラム / ICF×氷山モデル<br>
+          DX推進 / 新規施設立ち上げ / 指定申請
+        </div>
+      </div>
+      <div>
+        <div class="card-title">実績（数字）</div>
+        <div class="stat-grid">
+          <div class="stat">
+            <div class="stat-num">▲90万 → 黒字</div>
+            <div class="stat-desc">赤字施設を6ヶ月で<br>黒字化</div>
+          </div>
+          <div class="stat">
+            <div class="stat-num">+400万/月</div>
+            <div class="stat-desc">新規開設施設を<br>半年で純利益達成</div>
+          </div>
+          <div class="stat">
+            <div class="stat-num">1/3に削減</div>
+            <div class="stat-desc">オーダリング導入で<br>超過勤務を圧縮</div>
+          </div>
+          <div class="stat">
+            <div class="stat-num">1/10に削減</div>
+            <div class="stat-desc">レセプト解析で<br>返戻を激減</div>
+          </div>
+          <div class="stat">
+            <div class="stat-num">4名 → 40名</div>
+            <div class="stat-desc">1年で入居者を<br>10倍に増加</div>
+          </div>
+          <div class="stat">
+            <div class="stat-num">200人中4位</div>
+            <div class="stat-desc">銀行渉外成績<br>理事長賞受賞</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SLIDE 4: Fusion Partnersとは ===== -->
+  <div class="slide slide-4" data-slide="4">
+    <div class="content">
+      <div class="label">About Us</div>
+      <div class="title-lg" style="margin-bottom:8px;">Fusion Partnersとは</div>
+      <div class="subtitle" style="margin-bottom:28px;">
+        医療・福祉業界特化型の組織再設計コンサルティング。<br>
+        属人化というバグを、仕組みで解決する。
+      </div>
+      <div class="three-col">
+        <div class="card">
+          <div class="card-title">対象</div>
+          <div class="card-body">
+            赤字施設・離職率が高い組織・
+            管理職が疲弊している現場。<br><br>
+            <strong>「もう限界」と言えない<br>現場のための会社。</strong>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">アプローチ</div>
+          <div class="card-body">
+            気合・根性論を排除。<br>
+            MQ会計×チームアセスメント×<br>AIで<br><br>
+            <strong>誰でも再現できる<br>仕組みを設計する。</strong>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">約束</div>
+          <div class="card-body">
+            「前からそうなっています」を<br>
+            終わらせる。<br><br>
+            <strong>現場が自走できる<br>状態をつくる。</strong>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:24px;text-align:center;" class="mission">
+        「背丈の低い人の生活を、その背丈のまま守る」
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SLIDE 5: FusionOSの全体像 ===== -->
+  <div class="slide slide-5" data-slide="5">
+    <div style="width:100%;max-width:880px;">
+      <div class="label">System Architecture</div>
+      <div class="title-lg" style="margin-bottom:6px;">Fusion OS — 全体像</div>
+      <div class="subtitle" style="margin-bottom:24px;">6モジュールが連動し、組織の「凪」を実現する。</div>
+      <div class="module-grid">
+        <div class="module">
+          <div class="module-name">凪</div>
+          <div class="module-kana">Nagi</div>
+          <div class="module-desc">組織診断エンジン。現場のノイズを可視化し、経営を数字で把握する。</div>
+        </div>
+        <div class="module">
+          <div class="module-name">009スキャナー</div>
+          <div class="module-kana">009 Scanner</div>
+          <div class="module-desc">気質計測・精密採用。135パターン分析で適材を正確に見極める。</div>
+        </div>
+        <div class="module">
+          <div class="module-name">奏</div>
+          <div class="module-kana">Kanade</div>
+          <div class="module-desc">適材適所・チームビルディング。自律駆動するチームを設計する。</div>
+        </div>
+        <div class="module">
+          <div class="module-name">ミツメル</div>
+          <div class="module-kana">Mitsumeru</div>
+          <div class="module-desc">個人ジャーナリング×HRM。日次の自己監査でセルフマネジメントを支援。</div>
+        </div>
+        <div class="module">
+          <div class="module-name">響</div>
+          <div class="module-kana">Hibiki</div>
+          <div class="module-desc">現場改善・収益向上。紙一枚ツールとナッジ設計で現場を動かす。</div>
+        </div>
+        <div class="module">
+          <div class="module-name">弦</div>
+          <div class="module-kana">Yuzuru</div>
+          <div class="module-desc">地域連携・営業。外部との接点を設計し、事業を面で広げる。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SLIDE 6: 提供できること ===== -->
+  <div class="slide slide-6" data-slide="6">
+    <div class="two-col">
+      <div>
+        <div class="label">Services</div>
+        <div class="title-lg" style="margin-bottom:20px;">提供できること</div>
+        <ul class="service-list">
+          <li>
+            <span class="service-icon">◈</span>
+            <span class="service-text">
+              <strong>組織再設計コンサルティング</strong>
+              MQ会計×チームアセスメントで現状を数値化し、6ヶ月で結果を出す。
+            </span>
+          </li>
+          <li>
+            <span class="service-icon">◈</span>
+            <span class="service-text">
+              <strong>採用・定着支援（奏）</strong>
+              135パターン分析で採用ミスを減らし、離職率を下げる仕組みを構築。
+            </span>
+          </li>
+          <li>
+            <span class="service-icon">◈</span>
+            <span class="service-text">
+              <strong>現場改善・収益向上（響）</strong>
+              超過勤務・返戻・稼働率など、KPIを特定して即実行できる改善策を設計。
+            </span>
+          </li>
+          <li>
+            <span class="service-icon">◈</span>
+            <span class="service-text">
+              <strong>ミツメル（個人向けアプリ）</strong>
+              管理職のセルフマネジメントと日次監査をAIで自動化。アプリ販売予定。
+            </span>
+          </li>
+        </ul>
+      </div>
+      <div>
+        <div class="card" style="margin-bottom:16px;">
+          <div class="card-title">この一文が核心です</div>
+          <div style="font-size:14px;color:var(--white);line-height:1.9;font-weight:500;">
+            「再現性のある仕組みで、機能していない組織を立て直すことが得意です。<br>
+            銀行でも、医療でも、介護でも、やってきたことは同じです。<br>
+            数字で把握して、ムダを取り除いて、誰でも成果が出る仕組みを作る。それだけです。」
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">対象となる組織</div>
+          <div class="card-body">
+            ・赤字が続いている介護・医療施設<br>
+            ・管理職が現場の穴埋めに追われている組織<br>
+            ・採用してもすぐ辞める、定着しない職場<br>
+            ・「前からそうなっています」が口癖の現場
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SLIDE 7: 連絡先 ===== -->
+  <div class="slide slide-7" data-slide="7">
+    <div class="content" style="text-align:center;">
+      <div class="logo-mark" style="font-size:40px;">⬡</div>
+      <div class="label">Contact</div>
+      <div class="title-lg" style="margin-bottom:6px;">お問い合わせ</div>
+      <div class="subtitle" style="margin-bottom:32px;">
+        ご相談・ご質問はお気軽にどうぞ。<br>
+        「まず話を聞いてみたい」から始められます。
+      </div>
+      <div style="max-width:480px;margin:0 auto;">
+        <ul class="contact-list">
+          <li>
+            <span class="contact-icon">✉</span>
+            <span class="contact-label">メール</span>
+            <span class="contact-val">fusion.partners.office@gmail.com</span>
+          </li>
+          <li>
+            <span class="contact-icon">📝</span>
+            <span class="contact-label">note</span>
+            <span class="contact-val">note.com/fusion_os</span>
+          </li>
+          <li>
+            <span class="contact-icon">💼</span>
+            <span class="contact-label">LinkedIn</span>
+            <span class="contact-val">linkedin.com/in/yasuaki-shibayama</span>
+          </li>
+          <li>
+            <span class="contact-icon">🌐</span>
+            <span class="contact-label">ミツメル</span>
+            <span class="contact-val">fusionpartnersoffice-oss.github.io/mitsumeru</span>
+          </li>
+        </ul>
+      </div>
+      <div style="margin-top:32px;" class="mission">
+        「背丈の低い人の生活を、その背丈のまま守る」
+      </div>
+    </div>
+  </div>
+
+</div><!-- /deck -->
+
+<!-- Slide Number -->
+<div class="slide-num" id="slide-num">01 / 07</div>
+
+<!-- Navigation -->
+<nav class="nav">
+  <button class="nav-btn" id="prev-btn" onclick="changeSlide(-1)" disabled>‹</button>
+  <div class="dots" id="dots"></div>
+  <button class="nav-btn" id="next-btn" onclick="changeSlide(1)">›</button>
+</nav>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const totalSlides = slides.length;
+  let current = 0;
+
+  const dotsEl = document.getElementById('dots');
+  const slideNum = document.getElementById('slide-num');
+  const prevBtn = document.getElementById('prev-btn');
+  const nextBtn = document.getElementById('next-btn');
+
+  // Build dots
+  for (let i = 0; i < totalSlides; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 0 ? ' active' : '');
+    d.onclick = () => goTo(i);
+    dotsEl.appendChild(d);
+  }
+
+  function goTo(idx) {
+    if (idx === current) return;
+    slides[current].classList.remove('active');
+    slides[current].classList.add('out');
+    setTimeout(() => slides[current].classList.remove('out'), 500);
+
+    current = idx;
+    slides[current].classList.add('active');
+
+    document.querySelectorAll('.dot').forEach((d, i) => {
+      d.classList.toggle('active', i === current);
+    });
+
+    const n = String(current + 1).padStart(2, '0');
+    const t = String(totalSlides).padStart(2, '0');
+    slideNum.textContent = n + ' / ' + t;
+
+    prevBtn.disabled = current === 0;
+    nextBtn.disabled = current === totalSlides - 1;
+  }
+
+  function changeSlide(dir) {
+    const next = current + dir;
+    if (next < 0 || next >= totalSlides) return;
+    goTo(next);
+  }
+
+  // Keyboard navigation
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') changeSlide(1);
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')                     changeSlide(-1);
+  });
+
+  // Touch/swipe
+  let touchX = null;
+  document.addEventListener('touchstart', e => { touchX = e.changedTouches[0].clientX; });
+  document.addEventListener('touchend', e => {
+    if (touchX === null) return;
+    const dx = e.changedTouches[0].clientX - touchX;
+    if (Math.abs(dx) > 50) changeSlide(dx < 0 ? 1 : -1);
+    touchX = null;
+  });
+</script>
+
+</body>
+</html>
