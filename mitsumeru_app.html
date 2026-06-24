@@ -1016,7 +1016,8 @@
           <tr style="background:var(--bg2);border-bottom:1px solid var(--border);">
             <th style="padding:6px 4px;text-align:center;color:var(--text2);font-weight:500;min-width:36px;">曜日</th>
             <th style="padding:6px 4px;text-align:center;color:var(--text2);font-weight:500;min-width:80px;">日付</th>
-            <th style="padding:6px 4px;text-align:center;color:var(--text2);font-weight:500;min-width:80px;">ポモ数</th>
+            <th style="padding:6px 4px;text-align:center;color:var(--text2);font-weight:500;min-width:90px;">時間</th>
+            <th style="padding:6px 4px;text-align:center;color:var(--text2);font-weight:500;min-width:60px;">ポモ数</th>
             <th style="padding:6px 4px;text-align:center;color:var(--text2);font-weight:500;min-width:80px;">急重度</th>
             <th style="padding:6px 4px;text-align:left;color:var(--text2);font-weight:500;">内容</th>
             <th style="padding:6px 4px;text-align:center;color:var(--text2);font-weight:500;min-width:36px;"></th>
@@ -1307,6 +1308,8 @@ function addAdvanceRow(row) {
   tr.style.borderBottom = '0.5px solid var(--border)';
   const day = row ? row.day : '';
   const date = row ? row.date : '';
+  const hour = row ? (row.hour || '') : '';
+  const minute = row ? (row.minute || '') : '';
   const pomo = row ? row.pomo : '';
   const priority = row ? row.priority : '';
   const content = row ? row.content : '';
@@ -1321,9 +1324,23 @@ function addAdvanceRow(row) {
       <input type="text" value="${date}" oninput="saveEvening()" placeholder="6/25" style="width:72px;border:0.5px solid var(--border);background:var(--bg2);color:var(--text);border-radius:4px;font-size:11px;padding:3px 4px;">
     </td>
     <td style="padding:4px 2px;text-align:center;">
-      <div style="display:flex;gap:2px;flex-wrap:wrap;justify-content:center;">
-        ${['1','2','3','未'].map(p=>`<button onclick="setAdvancePomo(this,'${p}')" class="adv-pomo-btn${pomo===p?' adv-active':''}" data-val="${p}" style="padding:2px 4px;border-radius:4px;border:0.5px solid var(--border);background:${pomo===p?'var(--accent)':'var(--bg2)'};color:${pomo===p?'#fff':'var(--text)'};font-size:10px;cursor:pointer;">${p}</button>`).join('')}
+      <div style="display:flex;gap:2px;align-items:center;justify-content:center;">
+        <select onchange="saveEvening()" style="border:0.5px solid var(--border);background:var(--bg2);color:var(--text);border-radius:4px;font-size:11px;padding:2px;">
+          <option value=""></option>
+          ${Array.from({length:24},(_,i)=>{const v=String(i).padStart(2,'0');return `<option value="${v}" ${hour===v?'selected':''}>${v}</option>`;}).join('')}
+        </select>
+        <span style="color:var(--text2);font-size:11px;">:</span>
+        <select onchange="saveEvening()" style="border:0.5px solid var(--border);background:var(--bg2);color:var(--text);border-radius:4px;font-size:11px;padding:2px;">
+          ${['00','15','30','45'].map(m=>`<option value="${m}" ${minute===m?'selected':''}>${m}</option>`).join('')}
+        </select>
       </div>
+    </td>
+    <td style="padding:4px 2px;text-align:center;">
+      <select onchange="saveEvening()" style="border:0.5px solid var(--border);background:var(--bg2);color:var(--text);border-radius:4px;font-size:11px;padding:2px;width:48px;">
+        <option value=""></option>
+        ${['1','2','3','4','5','6','7','8','9','10'].map(p=>`<option value="${p}" ${pomo===p?'selected':''}>${p}</option>`).join('')}
+        <option value="未定" ${pomo==='未定'?'selected':''}>未定</option>
+      </select>
     </td>
     <td style="padding:4px 2px;text-align:center;">
       <div style="display:flex;gap:2px;justify-content:center;">
@@ -1365,13 +1382,17 @@ function getAdvanceScheduleData() {
     const cells = tr.querySelectorAll('td');
     const dayEl = cells[0].querySelector('select');
     const dateEl = cells[1].querySelector('input');
-    const pomoBtn = cells[2].querySelector('[style*="var(--accent)"]');
-    const priBtn = cells[3].querySelector('[style*="var(--accent)"]');
-    const contentEl = cells[4].querySelector('input');
+    const hourEl = cells[2] ? cells[2].querySelectorAll('select')[0] : null;
+    const minEl = cells[2] ? cells[2].querySelectorAll('select')[1] : null;
+    const pomoEl = cells[3] ? cells[3].querySelector('select') : null;
+    const priBtn = cells[4] ? cells[4].querySelector('[style*="var(--accent)"]') : null;
+    const contentEl = cells[5] ? cells[5].querySelector('input') : null;
     rows.push({
       day: dayEl ? dayEl.value : '',
       date: dateEl ? dateEl.value : '',
-      pomo: pomoBtn ? pomoBtn.dataset.val : '',
+      hour: hourEl ? hourEl.value : '',
+      minute: minEl ? minEl.value : '',
+      pomo: pomoEl ? pomoEl.value : '',
       priority: priBtn ? priBtn.dataset.val : '',
       content: contentEl ? contentEl.value : ''
     });
@@ -1384,7 +1405,7 @@ function initAdvanceSchedule(data) {
   tbody.innerHTML = '';
   const rows = Array.isArray(data) && data.length >= 7 ? data : (() => {
     const base = Array.isArray(data) ? data : [];
-    while (base.length < 7) base.push({day:'',date:'',pomo:'',priority:'',content:''});
+    while (base.length < 7) base.push({day:'',date:'',hour:'',minute:'',pomo:'',priority:'',content:''});
     return base;
   })();
   rows.forEach(r => addAdvanceRow(r));
