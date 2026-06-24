@@ -8,8 +8,8 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 
 :root{
-  --bg:     #f5f6f8;
-  --bg2:    #ffffff;
+  --bg:     #F0EDE8;
+  --bg2:    #FAF8F4;
   --navy:   #0b1929;
   --navy2:  #1c3248;
   --gold:   #7d6428;
@@ -18,9 +18,9 @@
   --text:   #1a2535;
   --dim:    #536070;
   --dim2:   #8a98a8;
-  --border: #dde1e8;
+  --border: #d8d2c8;
   --line:   rgba(125,100,40,.2);
-  --shadow: 0 2px 16px rgba(0,0,0,.07);
+  --shadow: 0 2px 16px rgba(0,0,0,.06);
 }
 
 html,body{
@@ -54,13 +54,7 @@ html,body{
 .slide.out   {opacity:0;transform:translateY(-16px);}
 
 /* ── BACKGROUNDS ── */
-.s1{background:linear-gradient(145deg,#eef1f6 0%,#f5f6f8 40%,#eef1f6 100%);}
-.s2{background:#ffffff;}
-.s3{background:#f5f6f8;}
-.s4{background:#ffffff;}
-.s5{background:#f5f6f8;}
-.s6{background:#ffffff;}
-.s7{background:linear-gradient(160deg,#f0f2f6 0%,#f7f8fb 60%,#eef1f6 100%);}
+.s1,.s2,.s3,.s4,.s5,.s6,.s7{background:#F0EDE8;}
 
 /* Navy top rule */
 .slide::before{
@@ -123,48 +117,21 @@ html,body{
   width:100%;
   max-width:900px;
   align-items:center;
-  gap:0;
+  gap:40px;
 }
 .cover-left{
   flex:1;
-  padding-right:40px;
 }
-.cover-nagi{
+.cover-logo-wrap{
   flex:0 0 auto;
-  font-size:clamp(120px,20vw,230px);
-  font-weight:200;
-  color:transparent;
-  -webkit-text-stroke:1.5px rgba(11,25,41,.12);
-  line-height:1;
-  letter-spacing:-6px;
-  user-select:none;
-  align-self:center;
-}
-/* Text logo */
-.logo-block{
-  display:inline-flex;
+  display:flex;
   align-items:center;
-  gap:12px;
-  margin-bottom:28px;
+  justify-content:center;
 }
-.logo-hex{
-  width:42px;height:42px;
-  background:var(--navy);
-  clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);
-  display:flex;align-items:center;justify-content:center;
-  flex-shrink:0;
-}
-.logo-hex span{
-  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
-  font-size:14px;font-weight:700;
-  color:var(--gold3);
-  letter-spacing:0;
-}
-.logo-text{
-  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
-  font-size:16px;font-weight:700;
-  letter-spacing:3px;
-  color:var(--navy);
+.cover-logo-img{
+  width:clamp(180px,26vw,340px);
+  height:auto;
+  display:block;
 }
 .cover-tagline{
   font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
@@ -463,10 +430,6 @@ html,body{
   <div class="slide s1 active" data-i="0">
     <div class="cover-wrap">
       <div class="cover-left">
-        <div class="logo-block">
-          <div class="logo-hex"><span>FP</span></div>
-          <div class="logo-text">FUSION PARTNERS</div>
-        </div>
         <div class="eyebrow">Organizational Design</div>
         <div class="h1">組織に、<br>静けさを<br>設計する。</div>
         <div class="rule"></div>
@@ -474,7 +437,9 @@ html,body{
           背丈の低い人の生活を、<br>その背丈のまま守る。
         </div>
       </div>
-      <div class="cover-nagi" aria-hidden="true">凪</div>
+      <div class="cover-logo-wrap">
+        <img src="logo.png" alt="Fusion Partners" class="cover-logo-img">
+      </div>
     </div>
   </div>
 
@@ -666,9 +631,8 @@ html,body{
   <!-- 07 ─ 連絡先 -->
   <div class="slide s7" data-i="6">
     <div class="contact-wrap">
-      <div class="logo-block" style="justify-content:center;margin-bottom:24px;">
-        <div class="logo-hex"><span>FP</span></div>
-        <div class="logo-text">FUSION PARTNERS</div>
+      <div style="display:flex;justify-content:center;margin-bottom:24px;">
+        <img src="logo.png" alt="Fusion Partners" style="height:100px;width:auto;">
       </div>
       <div class="eyebrow">Contact</div>
       <div class="h2">対話から、始めましょう。</div>
