@@ -3,728 +3,773 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Fusion Partners — 会社紹介</title>
+<title>Fusion Partners</title>
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 
-  :root {
-    --navy:      #0b1a2e;
-    --navy2:     #132340;
-    --navy3:     #1c3258;
-    --gold:      #c9a84c;
-    --gold2:     #e8c97a;
-    --white:     #f4f6fa;
-    --text2:     #a8b8cc;
-    --accent:    #4a9eda;
-    --border:    rgba(201,168,76,0.25);
-    --shadow:    0 8px 40px rgba(0,0,0,0.45);
-  }
+:root{
+  --navy:   #08131f;
+  --navy2:  #0e1e30;
+  --navy3:  #152840;
+  --gold:   #b89a50;
+  --gold2:  #d4b97a;
+  --gold3:  #ecdaa8;
+  --white:  #eef1f6;
+  --dim:    #7a92a8;
+  --dim2:   #4a6070;
+  --accent: #3d85b8;
+  --line:   rgba(184,154,80,.18);
+}
 
-  html, body {
-    height: 100%;
-    background: #060e1a;
-    font-family: 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', 'Yu Gothic', sans-serif;
-    color: var(--white);
-    overflow: hidden;
-  }
+html,body{
+  height:100%;
+  background:var(--navy);
+  font-family:'Hiragino Mincho ProN','Yu Mincho','Georgia',serif;
+  color:var(--white);
+  overflow:hidden;
+  -webkit-font-smoothing:antialiased;
+}
 
-  .deck {
-    width: 100vw;
-    height: 100vh;
-    position: relative;
-    overflow: hidden;
-  }
+/* ───── DECK ───── */
+.deck{
+  width:100vw;
+  height:100vh;
+  position:relative;
+}
 
-  /* === SLIDE === */
-  .slide {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    padding: 48px 60px;
-    opacity: 0;
-    transform: translateX(60px);
-    transition: opacity 0.45s cubic-bezier(.4,0,.2,1), transform 0.45s cubic-bezier(.4,0,.2,1);
-    pointer-events: none;
-  }
-  .slide.active {
-    opacity: 1;
-    transform: translateX(0);
-    pointer-events: all;
-  }
-  .slide.out {
-    opacity: 0;
-    transform: translateX(-60px);
-  }
+/* ───── SLIDE ───── */
+.slide{
+  position:absolute;
+  inset:0;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  padding:56px 72px 80px;
+  opacity:0;
+  transform:translateY(18px);
+  transition:opacity .55s cubic-bezier(.25,.46,.45,.94),
+              transform .55s cubic-bezier(.25,.46,.45,.94);
+  pointer-events:none;
+  will-change:opacity,transform;
+}
+.slide.active{opacity:1;transform:translateY(0);pointer-events:all;}
+.slide.out   {opacity:0;transform:translateY(-18px);}
 
-  /* === BACKGROUNDS === */
-  .slide-1 { background: radial-gradient(ellipse at 30% 50%, #1c3258 0%, #0b1a2e 60%, #060e1a 100%); }
-  .slide-2 { background: linear-gradient(145deg, #0b1a2e 0%, #0f2540 50%, #0b1a2e 100%); }
-  .slide-3 { background: linear-gradient(160deg, #0b1a2e 0%, #13243e 55%, #0b1a2e 100%); }
-  .slide-4 { background: radial-gradient(ellipse at 70% 40%, #1c3258 0%, #0b1a2e 65%, #060e1a 100%); }
-  .slide-5 { background: linear-gradient(145deg, #0b1a2e 0%, #0f2540 50%, #0b1a2e 100%); }
-  .slide-6 { background: linear-gradient(160deg, #0b1a2e 0%, #13243e 55%, #0b1a2e 100%); }
-  .slide-7 { background: radial-gradient(ellipse at 50% 50%, #1c3258 0%, #0b1a2e 65%, #060e1a 100%); }
+/* ───── BACKGROUNDS ───── */
+.s1{background:
+  radial-gradient(ellipse 70% 60% at 20% 55%, #10243a 0%, transparent 65%),
+  radial-gradient(ellipse 50% 40% at 80% 30%, #0e1e30 0%, transparent 60%),
+  var(--navy);}
+.s2{background:linear-gradient(165deg,#0d1d2e 0%,#09151f 55%,#0d1d2e 100%);}
+.s3{background:
+  radial-gradient(ellipse 60% 55% at 75% 60%, #0f2237 0%, transparent 65%),
+  var(--navy);}
+.s4{background:linear-gradient(145deg,#08131f 0%,#0d1e2e 50%,#08131f 100%);}
+.s5{background:
+  radial-gradient(ellipse 55% 50% at 25% 40%, #0f2237 0%, transparent 65%),
+  var(--navy);}
+.s6{background:linear-gradient(165deg,#08131f 0%,#0e1e30 50%,#08131f 100%);}
+.s7{background:
+  radial-gradient(ellipse 70% 60% at 50% 50%, #10243a 0%, transparent 65%),
+  var(--navy);}
 
-  /* Decorative line */
-  .slide::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 3px;
-    background: linear-gradient(90deg, transparent, var(--gold), transparent);
-    opacity: 0.7;
-  }
+/* Gold top rule */
+.slide::before{
+  content:'';
+  position:absolute;
+  top:0;left:0;right:0;
+  height:1px;
+  background:linear-gradient(90deg,transparent 0%,var(--gold) 30%,var(--gold) 70%,transparent 100%);
+  opacity:.5;
+}
 
-  /* === TYPOGRAPHY === */
-  .label {
-    font-size: 11px;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    color: var(--gold);
-    margin-bottom: 16px;
-    font-weight: 500;
-  }
-  .title-xl {
-    font-size: clamp(36px, 6vw, 64px);
-    font-weight: 700;
-    letter-spacing: -0.5px;
-    line-height: 1.15;
-    color: var(--white);
-  }
-  .title-lg {
-    font-size: clamp(26px, 4vw, 44px);
-    font-weight: 700;
-    line-height: 1.2;
-    color: var(--white);
-  }
-  .title-md {
-    font-size: clamp(18px, 2.5vw, 28px);
-    font-weight: 600;
-    color: var(--white);
-    line-height: 1.4;
-  }
-  .subtitle {
-    font-size: clamp(13px, 1.6vw, 18px);
-    color: var(--text2);
-    line-height: 1.8;
-    margin-top: 8px;
-  }
-  .mission {
-    font-size: clamp(16px, 2.2vw, 24px);
-    color: var(--gold2);
-    font-weight: 600;
-    letter-spacing: 1px;
-    line-height: 1.6;
-  }
-  .divider {
-    width: 48px;
-    height: 2px;
-    background: var(--gold);
-    margin: 20px 0;
-    opacity: 0.8;
-  }
+/* ───── TYPOGRAPHY ───── */
+.eyebrow{
+  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
+  font-size:10px;
+  letter-spacing:4px;
+  text-transform:uppercase;
+  color:var(--gold);
+  margin-bottom:18px;
+  font-weight:400;
+}
+.h1{
+  font-size:clamp(48px,7vw,80px);
+  font-weight:300;
+  letter-spacing:-1px;
+  line-height:1.1;
+  color:var(--white);
+}
+.h2{
+  font-size:clamp(28px,4vw,46px);
+  font-weight:300;
+  letter-spacing:-.5px;
+  line-height:1.25;
+  color:var(--white);
+}
+.h3{
+  font-size:clamp(17px,2.2vw,24px);
+  font-weight:400;
+  color:var(--white);
+  line-height:1.5;
+}
+.body{
+  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
+  font-size:clamp(12px,1.3vw,14px);
+  color:var(--dim);
+  line-height:2;
+}
+.rule{
+  width:40px;height:1px;
+  background:var(--gold);
+  opacity:.7;
+  margin:22px 0;
+}
 
-  /* === LAYOUT === */
-  .content {
-    width: 100%;
-    max-width: 880px;
-  }
-  .two-col {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 32px;
-    width: 100%;
-    max-width: 880px;
-  }
-  .three-col {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
-    width: 100%;
-    max-width: 880px;
-  }
+/* ───── SLIDE 1 ───── */
+.cover-nagi{
+  font-size:clamp(100px,18vw,200px);
+  font-weight:200;
+  color:transparent;
+  -webkit-text-stroke:1px rgba(184,154,80,.55);
+  line-height:1;
+  letter-spacing:-4px;
+  position:absolute;
+  right:8vw;
+  top:50%;
+  transform:translateY(-50%);
+  pointer-events:none;
+  user-select:none;
+}
+.cover-left{
+  position:relative;
+  z-index:1;
+  align-self:flex-start;
+  margin-top:auto;
+  margin-bottom:auto;
+}
+.cover-tagline{
+  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
+  font-size:clamp(13px,1.5vw,16px);
+  color:var(--dim);
+  letter-spacing:1.5px;
+  margin-top:6px;
+}
+.cover-company{
+  font-size:clamp(22px,3vw,34px);
+  font-weight:300;
+  letter-spacing:4px;
+  color:var(--gold2);
+  margin-top:28px;
+}
 
-  /* === CARDS === */
-  .card {
-    background: rgba(255,255,255,0.04);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 24px;
-    backdrop-filter: blur(4px);
-  }
-  .card-title {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--gold);
-    letter-spacing: 1px;
-    margin-bottom: 10px;
-  }
-  .card-body {
-    font-size: 13px;
-    color: var(--text2);
-    line-height: 1.9;
-  }
-  .card-body strong {
-    color: var(--white);
-  }
+/* ───── SLIDE 2: NARRATIVE ───── */
+.narrative{
+  max-width:660px;
+  text-align:center;
+}
+.narrative-quote{
+  font-size:clamp(17px,2.5vw,28px);
+  font-weight:300;
+  line-height:1.9;
+  color:var(--white);
+  letter-spacing:.5px;
+}
+.narrative-quote em{
+  font-style:normal;
+  color:var(--gold2);
+}
+.narrative-sub{
+  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
+  font-size:clamp(12px,1.3vw,14px);
+  color:var(--dim);
+  margin-top:28px;
+  letter-spacing:1px;
+  line-height:1.8;
+}
 
-  /* === TIMELINE === */
-  .timeline { list-style: none; }
-  .timeline li {
-    display: flex;
-    gap: 16px;
-    padding: 10px 0;
-    border-bottom: 1px solid rgba(255,255,255,0.06);
-    font-size: 13px;
-    line-height: 1.7;
-  }
-  .timeline li:last-child { border-bottom: none; }
-  .tl-date {
-    min-width: 100px;
-    color: var(--gold);
-    font-weight: 600;
-    font-size: 12px;
-    padding-top: 2px;
-  }
-  .tl-body { color: var(--text2); }
-  .tl-body strong { color: var(--white); }
+/* ───── SLIDE 3: OVERVIEW ───── */
+.overview-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px;
+  width:100%;
+  max-width:800px;
+}
+.ov-card{
+  padding:24px 26px;
+  border:1px solid var(--line);
+  border-radius:3px;
+  background:rgba(255,255,255,.025);
+}
+.ov-label{
+  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
+  font-size:10px;
+  letter-spacing:3px;
+  color:var(--gold);
+  margin-bottom:10px;
+}
+.ov-body{
+  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
+  font-size:13px;
+  color:var(--dim);
+  line-height:1.95;
+}
+.ov-body strong{color:var(--white);font-weight:500;}
 
-  /* === STATS === */
-  .stat-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-  }
-  .stat {
-    background: rgba(201,168,76,0.08);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 14px 16px;
-  }
-  .stat-num {
-    font-size: 22px;
-    font-weight: 700;
-    color: var(--gold2);
-    line-height: 1.2;
-    margin-bottom: 4px;
-  }
-  .stat-desc {
-    font-size: 11px;
-    color: var(--text2);
-    line-height: 1.5;
-  }
+/* ───── SLIDE 4: PHILOSOPHY ───── */
+.phil-grid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:1px;
+  background:var(--line);
+  border:1px solid var(--line);
+  border-radius:3px;
+  overflow:hidden;
+  width:100%;
+  max-width:760px;
+}
+.phil-cell{
+  padding:28px 30px;
+  background:rgba(8,19,31,.95);
+}
+.phil-num{
+  font-size:11px;
+  color:var(--gold);
+  letter-spacing:3px;
+  margin-bottom:10px;
+  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
+}
+.phil-title{
+  font-size:clamp(15px,2vw,19px);
+  font-weight:300;
+  color:var(--white);
+  margin-bottom:10px;
+  line-height:1.4;
+}
+.phil-body{
+  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
+  font-size:12px;
+  color:var(--dim);
+  line-height:1.9;
+}
 
-  /* === OS MODULES === */
-  .module-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 14px;
-    width: 100%;
-    max-width: 880px;
-  }
-  .module {
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(74,158,218,0.2);
-    border-radius: 12px;
-    padding: 18px;
-  }
-  .module-name {
-    font-size: 16px;
-    font-weight: 700;
-    color: var(--accent);
-    margin-bottom: 4px;
-  }
-  .module-kana {
-    font-size: 10px;
-    color: var(--text2);
-    letter-spacing: 1px;
-    margin-bottom: 10px;
-  }
-  .module-desc {
-    font-size: 12px;
-    color: var(--text2);
-    line-height: 1.7;
-  }
+/* ───── SLIDE 5: SERVICES ───── */
+.svc-grid{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:10px;
+  width:100%;
+  max-width:860px;
+}
+.svc{
+  padding:18px 14px;
+  border:1px solid var(--line);
+  border-radius:3px;
+  background:rgba(255,255,255,.02);
+  text-align:center;
+}
+.svc-icon{
+  font-size:20px;
+  margin-bottom:10px;
+  display:block;
+  color:var(--gold);
+}
+.svc-name{
+  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
+  font-size:12px;
+  color:var(--white);
+  font-weight:500;
+  line-height:1.5;
+  margin-bottom:6px;
+}
+.svc-desc{
+  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
+  font-size:10.5px;
+  color:var(--dim2);
+  line-height:1.7;
+}
 
-  /* === COVER === */
-  .logo-mark {
-    font-size: 56px;
-    margin-bottom: 16px;
-    opacity: 0.9;
-  }
-  .tagline {
-    font-size: clamp(12px, 1.5vw, 15px);
-    color: var(--text2);
-    letter-spacing: 2px;
-    margin-top: 24px;
-  }
+/* ───── SLIDE 6: RESULTS ───── */
+.result-grid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:16px;
+  width:100%;
+  max-width:760px;
+}
+.result-card{
+  padding:28px 30px;
+  border:1px solid var(--line);
+  border-radius:3px;
+  background:rgba(255,255,255,.02);
+  position:relative;
+  overflow:hidden;
+}
+.result-card::after{
+  content:'';
+  position:absolute;
+  bottom:0;left:0;right:0;
+  height:2px;
+  background:linear-gradient(90deg,var(--gold),transparent);
+  opacity:.5;
+}
+.result-before{
+  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
+  font-size:11px;
+  color:var(--dim2);
+  margin-bottom:8px;
+  letter-spacing:1px;
+}
+.result-after{
+  font-size:clamp(22px,3vw,32px);
+  font-weight:200;
+  color:var(--gold2);
+  line-height:1.2;
+  margin-bottom:8px;
+}
+.result-desc{
+  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
+  font-size:12px;
+  color:var(--dim);
+  line-height:1.8;
+}
 
-  /* === CONTACT === */
-  .contact-list { list-style: none; }
-  .contact-list li {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 12px 0;
-    border-bottom: 1px solid rgba(255,255,255,0.06);
-    font-size: 14px;
-  }
-  .contact-list li:last-child { border-bottom: none; }
-  .contact-icon { font-size: 18px; min-width: 24px; }
-  .contact-label { color: var(--text2); min-width: 80px; font-size: 12px; }
-  .contact-val { color: var(--white); font-weight: 500; }
+/* ───── SLIDE 7: CONTACT ───── */
+.contact-wrap{
+  text-align:center;
+  width:100%;
+  max-width:560px;
+}
+.contact-rows{
+  list-style:none;
+  margin-top:32px;
+  text-align:left;
+}
+.contact-rows li{
+  display:flex;
+  gap:20px;
+  padding:13px 0;
+  border-bottom:1px solid var(--line);
+  align-items:baseline;
+}
+.contact-rows li:last-child{border-bottom:none;}
+.ct-label{
+  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
+  font-size:10px;
+  letter-spacing:2px;
+  color:var(--gold);
+  min-width:80px;
+  text-transform:uppercase;
+}
+.ct-val{
+  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
+  font-size:13px;
+  color:var(--dim);
+}
+.contact-mission{
+  margin-top:32px;
+  font-size:clamp(13px,1.6vw,16px);
+  font-weight:300;
+  color:var(--gold2);
+  letter-spacing:1px;
+  line-height:1.8;
+}
 
-  /* === SERVICE LIST === */
-  .service-list { list-style: none; }
-  .service-list li {
-    display: flex;
-    gap: 14px;
-    padding: 11px 0;
-    border-bottom: 1px solid rgba(255,255,255,0.06);
-    font-size: 13px;
-    line-height: 1.7;
-    align-items: flex-start;
-  }
-  .service-list li:last-child { border-bottom: none; }
-  .service-icon { color: var(--gold); font-size: 16px; min-width: 20px; padding-top: 1px; }
-  .service-text { color: var(--text2); }
-  .service-text strong { color: var(--white); display: block; margin-bottom: 2px; }
+/* ───── NAV ───── */
+.nav{
+  position:fixed;
+  bottom:28px;
+  left:0;right:0;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:14px;
+  z-index:200;
+}
+.nav-btn{
+  width:40px;height:40px;
+  border-radius:50%;
+  border:1px solid rgba(184,154,80,.3);
+  background:rgba(8,19,31,.8);
+  color:var(--gold);
+  font-size:17px;
+  cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .2s;
+  backdrop-filter:blur(8px);
+  line-height:1;
+}
+.nav-btn:hover{background:var(--gold);color:var(--navy);}
+.nav-btn:disabled{opacity:.2;cursor:default;}
+.nav-btn:disabled:hover{background:rgba(8,19,31,.8);color:var(--gold);}
 
-  /* === NAV === */
-  .nav {
-    position: fixed;
-    bottom: 32px;
-    left: 0; right: 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 16px;
-    z-index: 100;
-  }
-  .nav-btn {
-    width: 44px; height: 44px;
-    border-radius: 50%;
-    border: 1.5px solid var(--border);
-    background: rgba(11,26,46,0.85);
-    color: var(--gold);
-    font-size: 18px;
-    cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    transition: all 0.2s;
-    backdrop-filter: blur(6px);
-  }
-  .nav-btn:hover { background: var(--gold); color: var(--navy); border-color: var(--gold); }
-  .nav-btn:disabled { opacity: 0.25; cursor: default; }
-  .nav-btn:disabled:hover { background: rgba(11,26,46,0.85); color: var(--gold); border-color: var(--border); }
+.dots{display:flex;gap:7px;align-items:center;}
+.dot{
+  width:5px;height:5px;
+  border-radius:50%;
+  background:rgba(184,154,80,.25);
+  cursor:pointer;
+  transition:all .35s;
+}
+.dot.on{background:var(--gold);width:20px;border-radius:3px;}
 
-  .dots {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-  }
-  .dot {
-    width: 7px; height: 7px;
-    border-radius: 50%;
-    background: rgba(201,168,76,0.25);
-    transition: all 0.3s;
-    cursor: pointer;
-  }
-  .dot.active {
-    background: var(--gold);
-    width: 22px;
-    border-radius: 4px;
-  }
+/* Slide number */
+.slide-no{
+  position:fixed;
+  bottom:35px;right:40px;
+  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
+  font-size:10px;
+  color:rgba(184,154,80,.3);
+  letter-spacing:2px;
+  z-index:200;
+}
 
-  /* SLIDE NUMBER */
-  .slide-num {
-    position: fixed;
-    top: 24px; right: 32px;
-    font-size: 11px;
-    color: rgba(201,168,76,0.4);
-    letter-spacing: 2px;
-    z-index: 100;
-    font-weight: 500;
-  }
-
-  /* BOTTOM FADE */
-  .deck::after {
-    content: '';
-    position: fixed;
-    bottom: 0; left: 0; right: 0;
-    height: 100px;
-    background: linear-gradient(transparent, rgba(6,14,26,0.5));
-    pointer-events: none;
-    z-index: 50;
-  }
-
-  /* HIGHLIGHT */
-  .hl { color: var(--gold2); font-weight: 600; }
-  .hl-blue { color: var(--accent); font-weight: 600; }
+/* ───── RESPONSIVE ───── */
+@media(max-width:700px){
+  .slide{padding:40px 28px 80px;}
+  .overview-grid,.phil-grid,.result-grid{grid-template-columns:1fr;}
+  .svc-grid{grid-template-columns:repeat(2,1fr);}
+  .cover-nagi{font-size:100px;right:4vw;}
+}
 </style>
 </head>
 <body>
-
 <div class="deck" id="deck">
 
-  <!-- ===== SLIDE 1: 表紙 ===== -->
-  <div class="slide slide-1 active" data-slide="1">
-    <div class="content" style="text-align:center;">
-      <div class="logo-mark">⬡</div>
-      <div class="label">Company Profile</div>
-      <div class="title-xl">Fusion Partners</div>
-      <div class="divider" style="margin:20px auto;"></div>
-      <div class="mission">
-        「背丈の低い人の生活を、<br>その背丈のまま守る」
+  <!-- 01 ─ 表紙 -->
+  <div class="slide s1 active" data-i="0">
+    <div class="cover-nagi" aria-hidden="true">凪</div>
+    <div class="cover-left">
+      <div class="eyebrow">Organizational Design</div>
+      <div class="h1">組織に、<br>静けさを<br>設計する。</div>
+      <div class="rule"></div>
+      <div class="cover-tagline">
+        背丈の低い人の生活を、その背丈のまま守る。
       </div>
-      <div class="tagline">
-        医療・福祉業界特化　組織再設計コンサルティング
+      <div class="cover-company">Fusion Partners</div>
+    </div>
+  </div>
+
+  <!-- 02 ─ ナラティブ -->
+  <div class="slide s2" data-i="1">
+    <div class="narrative">
+      <div class="eyebrow">Why we exist</div>
+      <div class="narrative-quote">
+        25年間、変わらない現場を見続けた。<br>
+        怒りがあった。悲しみがあった。<br>
+        それでも<em>「Yes、できる」</em>と信じて<br>
+        設計し続けた。
+      </div>
+      <div class="rule" style="margin:24px auto;"></div>
+      <div class="narrative-quote" style="font-size:clamp(14px,1.8vw,20px);color:var(--dim);">
+        その<em>怨念</em>が、Fusion Partnersになった。
+      </div>
+      <div class="narrative-sub">
+        仕組みがないのではない。動かしていないだけ。<br>
+        「前からそうなっています」——この言葉を終わらせるために、私たちはいる。
       </div>
     </div>
   </div>
 
-  <!-- ===== SLIDE 2: 創業ストーリー ===== -->
-  <div class="slide slide-2" data-slide="2">
-    <div class="content">
-      <div class="label">Founding Story</div>
-      <div class="title-lg" style="margin-bottom:6px;">怨念から、凪へ。</div>
-      <div class="subtitle" style="margin-bottom:24px;">
-        25年の現場が、仕組みになった。
+  <!-- 03 ─ 全体感 -->
+  <div class="slide s3" data-i="2">
+    <div style="width:100%;max-width:800px;">
+      <div class="eyebrow">What we are</div>
+      <div class="h2" style="margin-bottom:24px;">Fusion Partnersとは</div>
+      <div class="overview-grid">
+        <div class="ov-card">
+          <div class="ov-label">私たちの立ち位置</div>
+          <div class="ov-body">
+            <strong>システム屋ではない。組織設計者です。</strong><br>
+            MQ会計・トヨタ式・チームビルディング・
+            クリティカルシンキング——全部使う。
+            ツールは手段。目的は<strong>「凪」</strong>——
+            現場に静けさを設計すること。
+          </div>
+        </div>
+        <div class="ov-card">
+          <div class="ov-label">対象</div>
+          <div class="ov-body">
+            <strong>組織のバグに困っている<br>すべての管理職・経営者。</strong><br>
+            業種を問わない。ただし私たちが最もよく知っているのは、
+            誰かの24時間を預かっている現場のリアルです。
+          </div>
+        </div>
+        <div class="ov-card">
+          <div class="ov-label">「凪」とは何か</div>
+          <div class="ov-body">
+            ノイズが消えた状態。<br>
+            気合・根性論を排除し、
+            <strong>誰でも再現できる仕組み</strong>が
+            自走している状態——それが私たちの定義する
+            「最高の現場」です。
+          </div>
+        </div>
+        <div class="ov-card">
+          <div class="ov-label">スタンス</div>
+          <div class="ov-body">
+            精神論は出力しない。<br>
+            依存させない。<br>
+            <strong>仕組みが自走したら、<br>私たちの仕事は終わり。</strong>
+            それが正解。
+          </div>
+        </div>
       </div>
-      <ul class="timeline">
+    </div>
+  </div>
+
+  <!-- 04 ─ 思想 -->
+  <div class="slide s4" data-i="3">
+    <div style="width:100%;max-width:760px;">
+      <div class="eyebrow">Philosophy — Fusion OS</div>
+      <div class="h2" style="margin-bottom:24px;">組織設計の思想</div>
+      <div class="phil-grid">
+        <div class="phil-cell">
+          <div class="phil-num">01</div>
+          <div class="phil-title">組織のバグは<br>設計で直す</div>
+          <div class="phil-body">
+            人を責めない。仕組みを変える。
+            現場で起きていることは、ほぼ必ず
+            上流の設計ミスに原因がある。
+          </div>
+        </div>
+        <div class="phil-cell">
+          <div class="phil-num">02</div>
+          <div class="phil-title">精神論を<br>排除する</div>
+          <div class="phil-body">
+            「もっと頑張れ」は出力しない。
+            数字で現状を把握して、
+            ムダを取り除いて、仕組みを作る。
+          </div>
+        </div>
+        <div class="phil-cell">
+          <div class="phil-num">03</div>
+          <div class="phil-title">自走したら<br>終わりが正解</div>
+          <div class="phil-body">
+            私たちの目標は「いなくなること」。
+            依存が生まれたら失敗。
+            現場が自走できる設計だけを渡す。
+          </div>
+        </div>
+        <div class="phil-cell">
+          <div class="phil-num">04</div>
+          <div class="phil-title">依存させない<br>コンサルティング</div>
+          <div class="phil-body">
+            仕組みを持ち帰れる形で渡す。
+            「これがないと動けない」は
+            Fusion Partnersの敗北。
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 05 ─ 提供できること -->
+  <div class="slide s5" data-i="4">
+    <div style="width:100%;max-width:860px;">
+      <div class="eyebrow">Services</div>
+      <div class="h2" style="margin-bottom:22px;">提供できること</div>
+      <div class="svc-grid">
+        <div class="svc">
+          <span class="svc-icon">◉</span>
+          <div class="svc-name">組織診断<br>凪スキャン</div>
+          <div class="svc-desc">現場のノイズを構造化し、バグの上流を特定する</div>
+        </div>
+        <div class="svc">
+          <span class="svc-icon">◉</span>
+          <div class="svc-name">管理職<br>耐久設計</div>
+          <div class="svc-desc">ミツメルで管理職のHPを守り、消耗を止める</div>
+        </div>
+        <div class="svc">
+          <span class="svc-icon">◉</span>
+          <div class="svc-name">新規開設<br>支援</div>
+          <div class="svc-desc">ゼロイチ立ち上げ。指定申請から収益化まで</div>
+        </div>
+        <div class="svc">
+          <span class="svc-icon">◉</span>
+          <div class="svc-name">組織再生<br>支援</div>
+          <div class="svc-desc">赤字・人員不足・組織崩壊。半年で変える</div>
+        </div>
+        <div class="svc">
+          <span class="svc-icon">◉</span>
+          <div class="svc-name">採用設計<br>RJP</div>
+          <div class="svc-desc">正直に伝えて定着率を上げる採用の再設計</div>
+        </div>
+        <div class="svc">
+          <span class="svc-icon">◉</span>
+          <div class="svc-name">報告文化<br>の設計</div>
+          <div class="svc-desc">AAR・CRMで「隠す文化」を「話す文化」へ</div>
+        </div>
+        <div class="svc">
+          <span class="svc-icon">◉</span>
+          <div class="svc-name">MQ会計<br>導入支援</div>
+          <div class="svc-desc">限界利益の日次管理で経営の解像度を上げる</div>
+        </div>
+        <div class="svc">
+          <span class="svc-icon">◉</span>
+          <div class="svc-name">クリシン<br>導入支援</div>
+          <div class="svc-desc">クリティカルシンキングで判断力のある組織をつくる</div>
+        </div>
+        <div class="svc">
+          <span class="svc-icon">◉</span>
+          <div class="svc-name">ミッション<br>設計</div>
+          <div class="svc-desc">言葉にならなかった「なぜ存在するか」を言語化する</div>
+        </div>
+        <div class="svc">
+          <span class="svc-icon">◉</span>
+          <div class="svc-name">仕組み化<br>ミニマム設計</div>
+          <div class="svc-desc">最少の手順で最大の再現性。誰でも動ける設計に</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 06 ─ 実績 -->
+  <div class="slide s6" data-i="5">
+    <div style="width:100%;max-width:760px;">
+      <div class="eyebrow">Track Record</div>
+      <div class="h2" style="margin-bottom:6px;">数字が語る</div>
+      <div class="body" style="margin-bottom:22px;">2施設連続・半年で変えた。</div>
+      <div class="result-grid">
+        <div class="result-card">
+          <div class="result-before">Before — 誰も来なかった施設</div>
+          <div class="result-after">79施設中<br>1位</div>
+          <div class="result-desc">新規開設から半年。<br>何もない状態からゼロイチで設計した。</div>
+        </div>
+        <div class="result-card">
+          <div class="result-before">Before — 毎月▲90万円の赤字</div>
+          <div class="result-after">半年で<br>黒字化</div>
+          <div class="result-desc">MQ会計×現場改善。<br>仕組みを入れた翌月から数字が動いた。</div>
+        </div>
+        <div class="result-card">
+          <div class="result-before">Before — 超過勤務が慢性化</div>
+          <div class="result-after">超過勤務<br>1/3に</div>
+          <div class="result-desc">オーダリング導入。<br>「やり方」を変えただけで、すぐに効いた。</div>
+        </div>
+        <div class="result-card">
+          <div class="result-before">Before — 返戻が止まらない</div>
+          <div class="result-after">返戻<br>1/10に</div>
+          <div class="result-desc">レセプト解析を導入した<br>翌月。数字は嘘をつかない。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 07 ─ 連絡先 -->
+  <div class="slide s7" data-i="6">
+    <div class="contact-wrap">
+      <div class="eyebrow">Contact</div>
+      <div class="h2">対話から、始めましょう。</div>
+      <div class="body" style="margin-top:10px;">
+        「まず話を聞きたい」——それで十分です。
+      </div>
+      <ul class="contact-rows">
         <li>
-          <span class="tl-date">2024年2月</span>
-          <span class="tl-body"><strong>適応障害・休職開始</strong><br>
-          ハラスメント・組織的問題に直面。傷病手当受給。2年間の闘病と内省が始まる。</span>
+          <span class="ct-label">Email</span>
+          <span class="ct-val">fusion.partners.office@gmail.com</span>
         </li>
         <li>
-          <span class="tl-date">2026年3月</span>
-          <span class="tl-body"><strong>「凪」という言葉が生まれる</strong><br>
-          休職中の回復状態を「凪」と表現。ノイズが消えた状態こそ福祉現場の最高価値。</span>
+          <span class="ct-label">note</span>
+          <span class="ct-val">note.com/fusion_os</span>
         </li>
         <li>
-          <span class="tl-date">2026年4月</span>
-          <span class="tl-body"><strong>アーキテクト宣言・ミッション明文化</strong><br>
-          「仕組みを設計するアーキテクト」へ再定義。<span class="hl">「背丈の低い人の生活を守る」</span>を掲げる。</span>
+          <span class="ct-label">LinkedIn</span>
+          <span class="ct-val">linkedin.com/in/yasuaki-shibayama</span>
         </li>
         <li>
-          <span class="tl-date">2026年4月25日</span>
-          <span class="tl-body"><strong>Fusion Partners 建国記念日</strong><br>
-          公式Gmail・noteアカウント開設。SuccessOSとして本格始動。</span>
+          <span class="ct-label">ミツメル</span>
+          <span class="ct-val">fusionpartnersoffice-oss.github.io/mitsumeru</span>
         </li>
       </ul>
-    </div>
-  </div>
-
-  <!-- ===== SLIDE 3: 代表プロフィール ===== -->
-  <div class="slide slide-3" data-slide="3">
-    <div class="two-col">
-      <div>
-        <div class="label">Representative</div>
-        <div class="title-lg" style="margin-bottom:4px;">柴山　靖章</div>
-        <div style="font-size:13px;color:var(--text2);margin-bottom:20px;">しばやま やすあき</div>
-        <div class="divider"></div>
-        <div class="card-body" style="margin-bottom:16px;">
-          <div style="margin-bottom:8px;">
-            金融機関を経て、医療・福祉業界へ。<br>
-            介護職・管理職を通じて25年間、現場に立ち続ける。
-          </div>
-          <div>グロービス経営大学院 在学中</div>
-        </div>
-        <div style="font-size:12px;color:var(--text2);line-height:1.8;">
-          MQ会計 / チームアセスメント<br>
-          エゴグラム / エニアグラム / ICF×氷山モデル<br>
-          DX推進 / 新規施設立ち上げ / 指定申請
-        </div>
-      </div>
-      <div>
-        <div class="card-title">実績（数字）</div>
-        <div class="stat-grid">
-          <div class="stat">
-            <div class="stat-num">▲90万 → 黒字</div>
-            <div class="stat-desc">赤字施設を6ヶ月で<br>黒字化</div>
-          </div>
-          <div class="stat">
-            <div class="stat-num">+400万/月</div>
-            <div class="stat-desc">新規開設施設を<br>半年で純利益達成</div>
-          </div>
-          <div class="stat">
-            <div class="stat-num">1/3に削減</div>
-            <div class="stat-desc">オーダリング導入で<br>超過勤務を圧縮</div>
-          </div>
-          <div class="stat">
-            <div class="stat-num">1/10に削減</div>
-            <div class="stat-desc">レセプト解析で<br>返戻を激減</div>
-          </div>
-          <div class="stat">
-            <div class="stat-num">4名 → 40名</div>
-            <div class="stat-desc">1年で入居者を<br>10倍に増加</div>
-          </div>
-          <div class="stat">
-            <div class="stat-num">200人中4位</div>
-            <div class="stat-desc">銀行渉外成績<br>理事長賞受賞</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ===== SLIDE 4: Fusion Partnersとは ===== -->
-  <div class="slide slide-4" data-slide="4">
-    <div class="content">
-      <div class="label">About Us</div>
-      <div class="title-lg" style="margin-bottom:8px;">Fusion Partnersとは</div>
-      <div class="subtitle" style="margin-bottom:28px;">
-        医療・福祉業界特化型の組織再設計コンサルティング。<br>
-        属人化というバグを、仕組みで解決する。
-      </div>
-      <div class="three-col">
-        <div class="card">
-          <div class="card-title">対象</div>
-          <div class="card-body">
-            赤字施設・離職率が高い組織・
-            管理職が疲弊している現場。<br><br>
-            <strong>「もう限界」と言えない<br>現場のための会社。</strong>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-title">アプローチ</div>
-          <div class="card-body">
-            気合・根性論を排除。<br>
-            MQ会計×チームアセスメント×<br>AIで<br><br>
-            <strong>誰でも再現できる<br>仕組みを設計する。</strong>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-title">約束</div>
-          <div class="card-body">
-            「前からそうなっています」を<br>
-            終わらせる。<br><br>
-            <strong>現場が自走できる<br>状態をつくる。</strong>
-          </div>
-        </div>
-      </div>
-      <div style="margin-top:24px;text-align:center;" class="mission">
-        「背丈の低い人の生活を、その背丈のまま守る」
-      </div>
-    </div>
-  </div>
-
-  <!-- ===== SLIDE 5: FusionOSの全体像 ===== -->
-  <div class="slide slide-5" data-slide="5">
-    <div style="width:100%;max-width:880px;">
-      <div class="label">System Architecture</div>
-      <div class="title-lg" style="margin-bottom:6px;">Fusion OS — 全体像</div>
-      <div class="subtitle" style="margin-bottom:24px;">6モジュールが連動し、組織の「凪」を実現する。</div>
-      <div class="module-grid">
-        <div class="module">
-          <div class="module-name">凪</div>
-          <div class="module-kana">Nagi</div>
-          <div class="module-desc">組織診断エンジン。現場のノイズを可視化し、経営を数字で把握する。</div>
-        </div>
-        <div class="module">
-          <div class="module-name">009スキャナー</div>
-          <div class="module-kana">009 Scanner</div>
-          <div class="module-desc">気質計測・精密採用。135パターン分析で適材を正確に見極める。</div>
-        </div>
-        <div class="module">
-          <div class="module-name">奏</div>
-          <div class="module-kana">Kanade</div>
-          <div class="module-desc">適材適所・チームビルディング。自律駆動するチームを設計する。</div>
-        </div>
-        <div class="module">
-          <div class="module-name">ミツメル</div>
-          <div class="module-kana">Mitsumeru</div>
-          <div class="module-desc">個人ジャーナリング×HRM。日次の自己監査でセルフマネジメントを支援。</div>
-        </div>
-        <div class="module">
-          <div class="module-name">響</div>
-          <div class="module-kana">Hibiki</div>
-          <div class="module-desc">現場改善・収益向上。紙一枚ツールとナッジ設計で現場を動かす。</div>
-        </div>
-        <div class="module">
-          <div class="module-name">弦</div>
-          <div class="module-kana">Yuzuru</div>
-          <div class="module-desc">地域連携・営業。外部との接点を設計し、事業を面で広げる。</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ===== SLIDE 6: 提供できること ===== -->
-  <div class="slide slide-6" data-slide="6">
-    <div class="two-col">
-      <div>
-        <div class="label">Services</div>
-        <div class="title-lg" style="margin-bottom:20px;">提供できること</div>
-        <ul class="service-list">
-          <li>
-            <span class="service-icon">◈</span>
-            <span class="service-text">
-              <strong>組織再設計コンサルティング</strong>
-              MQ会計×チームアセスメントで現状を数値化し、6ヶ月で結果を出す。
-            </span>
-          </li>
-          <li>
-            <span class="service-icon">◈</span>
-            <span class="service-text">
-              <strong>採用・定着支援（奏）</strong>
-              135パターン分析で採用ミスを減らし、離職率を下げる仕組みを構築。
-            </span>
-          </li>
-          <li>
-            <span class="service-icon">◈</span>
-            <span class="service-text">
-              <strong>現場改善・収益向上（響）</strong>
-              超過勤務・返戻・稼働率など、KPIを特定して即実行できる改善策を設計。
-            </span>
-          </li>
-          <li>
-            <span class="service-icon">◈</span>
-            <span class="service-text">
-              <strong>ミツメル（個人向けアプリ）</strong>
-              管理職のセルフマネジメントと日次監査をAIで自動化。アプリ販売予定。
-            </span>
-          </li>
-        </ul>
-      </div>
-      <div>
-        <div class="card" style="margin-bottom:16px;">
-          <div class="card-title">この一文が核心です</div>
-          <div style="font-size:14px;color:var(--white);line-height:1.9;font-weight:500;">
-            「再現性のある仕組みで、機能していない組織を立て直すことが得意です。<br>
-            銀行でも、医療でも、介護でも、やってきたことは同じです。<br>
-            数字で把握して、ムダを取り除いて、誰でも成果が出る仕組みを作る。それだけです。」
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-title">対象となる組織</div>
-          <div class="card-body">
-            ・赤字が続いている介護・医療施設<br>
-            ・管理職が現場の穴埋めに追われている組織<br>
-            ・採用してもすぐ辞める、定着しない職場<br>
-            ・「前からそうなっています」が口癖の現場
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ===== SLIDE 7: 連絡先 ===== -->
-  <div class="slide slide-7" data-slide="7">
-    <div class="content" style="text-align:center;">
-      <div class="logo-mark" style="font-size:40px;">⬡</div>
-      <div class="label">Contact</div>
-      <div class="title-lg" style="margin-bottom:6px;">お問い合わせ</div>
-      <div class="subtitle" style="margin-bottom:32px;">
-        ご相談・ご質問はお気軽にどうぞ。<br>
-        「まず話を聞いてみたい」から始められます。
-      </div>
-      <div style="max-width:480px;margin:0 auto;">
-        <ul class="contact-list">
-          <li>
-            <span class="contact-icon">✉</span>
-            <span class="contact-label">メール</span>
-            <span class="contact-val">fusion.partners.office@gmail.com</span>
-          </li>
-          <li>
-            <span class="contact-icon">📝</span>
-            <span class="contact-label">note</span>
-            <span class="contact-val">note.com/fusion_os</span>
-          </li>
-          <li>
-            <span class="contact-icon">💼</span>
-            <span class="contact-label">LinkedIn</span>
-            <span class="contact-val">linkedin.com/in/yasuaki-shibayama</span>
-          </li>
-          <li>
-            <span class="contact-icon">🌐</span>
-            <span class="contact-label">ミツメル</span>
-            <span class="contact-val">fusionpartnersoffice-oss.github.io/mitsumeru</span>
-          </li>
-        </ul>
-      </div>
-      <div style="margin-top:32px;" class="mission">
-        「背丈の低い人の生活を、その背丈のまま守る」
+      <div class="contact-mission">
+        「背丈の低い人の生活を、その背丈のまま守る。」<br>
+        <span style="font-size:13px;color:var(--dim2);letter-spacing:2px;font-family:'Hiragino Kaku Gothic ProN',sans-serif;">— Fusion Partners</span>
       </div>
     </div>
   </div>
 
 </div><!-- /deck -->
 
-<!-- Slide Number -->
-<div class="slide-num" id="slide-num">01 / 07</div>
+<!-- Slide number -->
+<div class="slide-no" id="sno">01 / 07</div>
 
-<!-- Navigation -->
-<nav class="nav">
-  <button class="nav-btn" id="prev-btn" onclick="changeSlide(-1)" disabled>‹</button>
-  <div class="dots" id="dots"></div>
-  <button class="nav-btn" id="next-btn" onclick="changeSlide(1)">›</button>
+<!-- Nav -->
+<nav class="nav" aria-label="スライドナビゲーション">
+  <button class="nav-btn" id="btn-prev" onclick="move(-1)" disabled aria-label="前へ">‹</button>
+  <div class="dots" id="dots" role="tablist"></div>
+  <button class="nav-btn" id="btn-next" onclick="move(1)" aria-label="次へ">›</button>
 </nav>
 
 <script>
-  const slides = document.querySelectorAll('.slide');
-  const totalSlides = slides.length;
-  let current = 0;
+(function(){
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const N = slides.length;
+  let cur = 0, busy = false;
 
-  const dotsEl = document.getElementById('dots');
-  const slideNum = document.getElementById('slide-num');
-  const prevBtn = document.getElementById('prev-btn');
-  const nextBtn = document.getElementById('next-btn');
+  const dotsEl  = document.getElementById('dots');
+  const snoEl   = document.getElementById('sno');
+  const btnPrev = document.getElementById('btn-prev');
+  const btnNext = document.getElementById('btn-next');
 
-  // Build dots
-  for (let i = 0; i < totalSlides; i++) {
-    const d = document.createElement('div');
-    d.className = 'dot' + (i === 0 ? ' active' : '');
-    d.onclick = () => goTo(i);
+  // build dots
+  slides.forEach((_,i)=>{
+    const d = document.createElement('button');
+    d.className = 'dot' + (i===0?' on':'');
+    d.setAttribute('role','tab');
+    d.setAttribute('aria-label', (i+1)+'枚目');
+    d.onclick = ()=>goTo(i);
     dotsEl.appendChild(d);
-  }
-
-  function goTo(idx) {
-    if (idx === current) return;
-    slides[current].classList.remove('active');
-    slides[current].classList.add('out');
-    setTimeout(() => slides[current].classList.remove('out'), 500);
-
-    current = idx;
-    slides[current].classList.add('active');
-
-    document.querySelectorAll('.dot').forEach((d, i) => {
-      d.classList.toggle('active', i === current);
-    });
-
-    const n = String(current + 1).padStart(2, '0');
-    const t = String(totalSlides).padStart(2, '0');
-    slideNum.textContent = n + ' / ' + t;
-
-    prevBtn.disabled = current === 0;
-    nextBtn.disabled = current === totalSlides - 1;
-  }
-
-  function changeSlide(dir) {
-    const next = current + dir;
-    if (next < 0 || next >= totalSlides) return;
-    goTo(next);
-  }
-
-  // Keyboard navigation
-  document.addEventListener('keydown', e => {
-    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') changeSlide(1);
-    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')                     changeSlide(-1);
   });
 
-  // Touch/swipe
-  let touchX = null;
-  document.addEventListener('touchstart', e => { touchX = e.changedTouches[0].clientX; });
-  document.addEventListener('touchend', e => {
-    if (touchX === null) return;
-    const dx = e.changedTouches[0].clientX - touchX;
-    if (Math.abs(dx) > 50) changeSlide(dx < 0 ? 1 : -1);
-    touchX = null;
+  function goTo(idx){
+    if(idx===cur||busy) return;
+    busy=true;
+    slides[cur].classList.remove('active');
+    slides[cur].classList.add('out');
+    const prev=cur;
+    cur=idx;
+    slides[cur].classList.add('active');
+    setTimeout(()=>{
+      slides[prev].classList.remove('out');
+      busy=false;
+    },600);
+    sync();
+  }
+
+  function sync(){
+    const n=String(cur+1).padStart(2,'0');
+    const t=String(N).padStart(2,'0');
+    snoEl.textContent=n+' / '+t;
+    btnPrev.disabled=(cur===0);
+    btnNext.disabled=(cur===N-1);
+    document.querySelectorAll('.dot').forEach((d,i)=>
+      d.classList.toggle('on',i===cur));
+  }
+
+  function move(d){goTo(cur+d);}
+  window.move=move;
+
+  // keyboard
+  document.addEventListener('keydown',e=>{
+    if(['ArrowRight','ArrowDown',' '].includes(e.key)){e.preventDefault();move(1);}
+    if(['ArrowLeft','ArrowUp'].includes(e.key)){e.preventDefault();move(-1);}
   });
+
+  // swipe / drag
+  let sx=null,sy=null;
+  document.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY;},{passive:true});
+  document.addEventListener('touchend',e=>{
+    if(sx===null)return;
+    const dx=e.changedTouches[0].clientX-sx;
+    const dy=e.changedTouches[0].clientY-sy;
+    if(Math.abs(dx)>Math.abs(dy)&&Math.abs(dx)>45) move(dx<0?1:-1);
+    sx=sy=null;
+  });
+
+  sync();
+})();
 </script>
-
 </body>
 </html>
