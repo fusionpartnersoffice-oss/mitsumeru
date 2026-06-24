@@ -385,9 +385,81 @@
     background: var(--card); border-top: 0.5px solid var(--border);
   }
   .past-record-body.open { display: block; }
+
+  /* ===== デモモード ===== */
+  .demo-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(30, 24, 18, 0.92);
+    z-index: 500;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .demo-overlay.active { display: flex; }
+  .demo-card {
+    background: var(--card);
+    border: 0.5px solid var(--border);
+    border-radius: 12px;
+    max-width: 420px;
+    width: 100%;
+    padding: 28px 24px;
+    text-align: center;
+  }
+  .demo-card h2 {
+    font-family: 'Noto Serif JP', serif;
+    font-size: 18px;
+    font-weight: 400;
+    letter-spacing: 3px;
+    margin-bottom: 12px;
+    color: var(--text);
+  }
+  .demo-card p { font-size: 13px; color: var(--text2); line-height: 1.8; margin-bottom: 16px; }
+  .demo-input {
+    width: 100%; padding: 12px 16px; font-size: 16px;
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--bg); border: 0.5px solid var(--border);
+    border-radius: 6px; color: var(--text);
+    text-align: center; letter-spacing: 4px;
+    margin-bottom: 8px; outline: none;
+  }
+  .demo-input:focus { border-color: var(--accent); }
+  .demo-badge {
+    display: inline-block;
+    background: #fff3cd; color: var(--gold);
+    border: 0.5px solid #ffd970; border-radius: 20px;
+    padding: 3px 12px; font-size: 11px; letter-spacing: 1px;
+    margin-bottom: 16px;
+  }
+  .demo-error { color: var(--red); font-size: 12px; margin-top: 4px; margin-bottom: 8px; display: none; }
 </style>
 </head>
 <body>
+
+<!-- デモモード：招待コード入力 -->
+<div class="demo-overlay" id="invite-overlay">
+  <div class="demo-card">
+    <div class="demo-badge">DEMO MODE</div>
+    <h2>ミツメル</h2>
+    <p>招待コードを入力してください。<br>コードは招待者からお受け取りください。</p>
+    <input type="text" class="demo-input" id="invite-code-input" placeholder="招待コードを入力" autocomplete="off" onkeydown="if(event.key==='Enter')submitInviteCode()">
+    <p id="invite-error" class="demo-error">招待コードが正しくありません。</p>
+    <button class="btn-primary" onclick="submitInviteCode()" style="margin-bottom:8px;">確認する</button>
+    <button class="btn-secondary" onclick="useOwnApiKey()" style="margin-bottom:0;">🔑 APIキーで利用する</button>
+  </div>
+</div>
+
+<!-- デモモード：回数上限 -->
+<div class="demo-overlay" id="limit-overlay">
+  <div class="demo-card">
+    <div class="demo-badge">DEMO 終了</div>
+    <h2>デモ体験終了</h2>
+    <p>本格利用にはAnthropicのAPIキーの設定が必要です。<br><br>APIキーは <strong>console.anthropic.com</strong> で取得できます。<br>「sk-ant-」から始まる文字列です。</p>
+    <button class="btn-primary" onclick="useOwnApiKey()">🔑 APIキーを設定して使う</button>
+    <p style="font-size:11px;color:var(--text3);margin-top:16px;">ミツメルに興味をお持ちいただきありがとうございます。<br>Fusion Partners 柴山靖章</p>
+  </div>
+</div>
 
 <div class="header">
   <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;">
@@ -1045,6 +1117,8 @@ function lsKey(type, date) {
 let memos = [];
 let selectedTag = 'HP';
 let apiKey = localStorage.getItem('mitsumeru_api_key') || '';
+const DEMO_CODE = 'FUSION2026'; // 招待コード（変更可）
+let demoActive = false;
 
 // ===== 旧データ移行 =====
 (function migrateOldData() {
@@ -1441,6 +1515,20 @@ function getApiKey() {
 }
 
 function callClaude(prompt, onSuccess, onError) {
+  if (demoActive) {
+    let demoText;
+    if (prompt.includes('【参謀からの一言】')) {
+      demoText = DEMO_MORNING_TEXT;
+    } else if (prompt.includes('===CALENDAR===')) {
+      demoText = DEMO_CALENDAR_TEXT;
+    } else if (prompt.includes('【1】本日のP')) {
+      demoText = DEMO_EVENING_TEXT;
+    } else {
+      demoText = '（デモモードでは週次・月次サマリーは利用できません。APIキーを設定してお使いください。）';
+    }
+    setTimeout(() => onSuccess(demoText), 1000);
+    return;
+  }
   const key = getApiKey();
   if (!key) { onError('APIキーが設定されていません。'); return; }
   fetch('https://api.anthropic.com/v1/messages', {
@@ -1525,6 +1613,7 @@ function setDates() {
 setDates();
 loadProfile();
 updateSyncTargetDisplay();
+checkDemoOrApiKey();
 if (apiKey) {
   const btn = document.getElementById('api-btn');
   if (btn) btn.style.color = '#4caf82';
@@ -2780,6 +2869,103 @@ async function testWorkerConnection() {
   if (!allOk) {
     resultEl.textContent += '\n\n\u26A0\uFE0F CORS\u30A8\u30E9\u30FC\u304C\u51FA\u3066\u3044\u308B\u5834\u5408\u306F\nWorker\u306B\u4EE5\u4E0B\u306E\u30D8\u30C3\u30C0\u30FC\u304C\u5FC5\u8981\u3067\u3059\uFF1A\nAccess-Control-Allow-Origin: *\nAccess-Control-Allow-Methods: GET, PUT, OPTIONS\nAccess-Control-Allow-Headers: Content-Type';
   }
+}
+
+// ===== デモモード =====
+const DEMO_MORNING_TEXT = `【参謀からの一言】
+入力されたHP/MPとコースを見る限り、今日は動ける地盤がある。ノイズはあるが、それより自分の設計に集中できる状態だ。一つユーモアを添えるとすれば——MPが少し低いのは昨夜のオールドファッションが足りなかっただけだ。今日も進もう。いつもと同じように、一歩ずつ。あなたのペースで動く日が、一番積み上がる。
+
+【今日のTop3タスク】
+1. 最優先プロジェクトのスコープを1ポモで確定し「今日やること・やらないこと」を1枚に整理する
+2. 発信コンテンツのドラフトを30分で書いて、AIに壁打ちして次稿の土台を作る
+3. 返信待ち・確認待ちのメールを2分タスクで処理し、頭の引っかかりをゼロにする`;
+
+const DEMO_CALENDAR_TEXT = `===CALENDAR===
+0900 2 スコープ確定・実装準備
+1400 1 進捗確認・調整
+===REVIEW===
+・コンテンツ前編の仕上げ（今週中）
+・次フェーズの設計メモ作成
+===DELEGATE===
+・定型メール返信（テンプレート化候補）
+・資料整理（仕組み化できる作業）
+===CUTLOSS===
+（なし）
+===COMMENT===
+今日の消耗は想定内だった。MPがほどよく残っている状態で夜を迎えられた。明日は設計に集中できる日なので、朝一番に今日やること・やらないことを決めてから動き出すといい。余白を意図的に作ることで、午後のアウトプットが生きる。
+===END===`;
+
+const DEMO_EVENING_TEXT = `【1】本日のP（実施事項）
+・最優先プロジェクトのスコープ確定（2ポモ）
+・コンテンツ構成ドラフト作成（1ポモ）
+・Claude壁打ちセッション・方針確定（1ポモ）
+
+【2】本日のV（ノイズ・ボトルネック）
+・返事待ち案件が頭に残り、集中が一部分散した
+・タスクの優先順位づけで設計より実装に入りすぎる場面があった
+
+【3】本日のG（気づき・アイデア・Tryの種）
+・「設計に徹する」というアーキテクト・シフトの原則を今日の現場で再確認できた
+・仕組み化の余地があるルーティンを1つ特定。来週中にテンプレート化する
+
+【4】明日の行動戦略
+最優先タスク（急重度①）：確定事項の実装着手（3ポモ）
+重要タスク（急重度②）：コンテンツ前編完成・投稿（2ポモ）
+軽微タスク（急重度③）：進捗確認メール送信（1ポモ）
+保留・将来タスク（急重度④）：次期システム連携設計（ポモ未定）
+
+【5】本日のステータスと明日への一言
+HP：72/100　MP：65/100　LV：LV4/80（本日+40pt、4ポモ）
+根拠：ポモ4個でHP-8、ノイズ2件でMP-10、デバッグ△1件でMP-4。Try100達成2件でMP+6。消耗は想定内で、Try100が下支えしている。
+明日への一言：今日の手応えはちゃんとある。同じテンポで明日も入れ。HPもMPも十分残っている——むしろ今週一番動ける日かもしれない。「できそうな気がする」じゃなくて「やる」で入ろう。うまくいかなくてもミツメルがいる。
+
+---
+【明日のVault管理Codeへの指示】
+以下をVault管理Codeに貼ってください：
+
+・ダッシュボード更新：スコープ確定完了 / コンテンツ構成ドラフト作成
+・アーカイブ移動：なし
+・session_log追記：本日のサマリーを1行で記載`;
+
+function checkDemoOrApiKey() {
+  if (apiKey) return;
+  const demoCount = parseInt(localStorage.getItem('mitsumeru_demo_count') || '0');
+  if (demoCount >= 2) {
+    document.getElementById('limit-overlay').classList.add('active');
+    return;
+  }
+  document.getElementById('invite-overlay').classList.add('active');
+}
+
+function submitInviteCode() {
+  const input = document.getElementById('invite-code-input').value.trim().toUpperCase();
+  const errEl = document.getElementById('invite-error');
+  if (input !== DEMO_CODE) {
+    errEl.style.display = 'block';
+    document.getElementById('invite-code-input').value = '';
+    return;
+  }
+  errEl.style.display = 'none';
+  const demoCount = parseInt(localStorage.getItem('mitsumeru_demo_count') || '0');
+  if (demoCount >= 2) {
+    document.getElementById('invite-overlay').classList.remove('active');
+    document.getElementById('limit-overlay').classList.add('active');
+    return;
+  }
+  localStorage.setItem('mitsumeru_demo_count', demoCount + 1);
+  demoActive = true;
+  document.getElementById('invite-overlay').classList.remove('active');
+  const badge = document.createElement('span');
+  badge.textContent = 'DEMO ' + (demoCount + 1) + '/2';
+  badge.style.cssText = 'background:#fff3cd;color:#8a6a00;border:0.5px solid #ffd970;border-radius:20px;padding:3px 10px;font-size:11px;letter-spacing:1px;margin-left:8px;';
+  document.querySelector('.header').appendChild(badge);
+}
+
+function useOwnApiKey() {
+  document.getElementById('invite-overlay').classList.remove('active');
+  document.getElementById('limit-overlay').classList.remove('active');
+  setApiKey();
+  if (apiKey) demoActive = false;
 }
 </script>
 
