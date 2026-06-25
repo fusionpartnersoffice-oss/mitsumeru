@@ -569,6 +569,9 @@ async function askNextQuestion() {
     }
   }
 
+  // DOM更新をブラウザに描画させてからfetchを開始する（フリーズ防止）
+  await new Promise(r => setTimeout(r, 0));
+
   try {
     const reply = await callClaude(conversation, buildSystemPrompt());
     clearInterval(loadTimer);
