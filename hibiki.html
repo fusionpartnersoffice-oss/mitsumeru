@@ -661,7 +661,55 @@ async function nextRound() {
   }
 }
 
-// ── 最終出力生成 ──
+// ── JSONパース試行ヘルパー ──
+function tryParseFlat(raw) {
+  try {
+    let jsonStr = raw;
+    const blockMatch = raw.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+    if (blockMatch) jsonStr = blockMatch[1];
+    const objMatch = jsonStr.match(/\{[\s\S]*\}/);
+    if (!objMatch) return null;
+    // 文字列値内の改行・タブを空白に置換（JSON.parseは生の改行を受け付けない）
+    const cleaned = objMatch[0].replace(/[\r\n\t]+/g, ' ');
+    const flat = JSON.parse(cleaned);
+    // 必須キーがあるか確認
+    if (!flat.surface || !flat.root || !flat.action1) return null;
+    return flat;
+  } catch { return null; }
+}
+
+// ── プレーンテキストをセクションごとにパース ──
+function parsePlainTextResult(raw) {
+  const get = (label) => {
+    const re = new RegExp('【' + label + '】\\s*([\\s\\S]*?)(?=【|$)');
+    const m = raw.match(re);
+    return m ? m[1].trim().replace(/\n+/g, ' ') : '（分析データなし）';
+  };
+  return {
+    iceberg: {
+      surface:      get('今見えていること'),
+      pattern:      get('繰り返しているくせ・傾向'),
+      structure:    get('組織の仕組みの問題'),
+      mental_model: get('思い込み・慣習'),
+      root:         get('本当の原因')
+    },
+    field_actions: [
+      get('明日からやること①'),
+      get('明日からやること②'),
+      get('明日からやること③')
+    ],
+    planner: {
+      analysis: get('なぜこの組織で起きているか'),
+      proposals: [
+        get('仕組み・ルールで変えること'),
+        get('話し合い・情報共有の場を変えること'),
+        get('半年〜1年の組織づくり')
+      ]
+    }
+  };
+}
+
+// ── 最終出力生成（①JSONリトライ → ②プレーンテキストフォールバック）──
 async function generateOutput() {
   showPhase('phase1');
   document.getElementById('aiQuestion').innerHTML = '<span class="loading-dots">問題の根っこを分析中</span>';
@@ -669,46 +717,84 @@ async function generateOutput() {
   document.getElementById('nextBtn').style.display = 'none';
   document.getElementById('summaryBox').style.display = 'none';
 
-  // JSONプロンプト：改行禁止を明示、フラット構造で渡す
-  const outputSystemPrompt = `あなたは医療・福祉現場の組織分析の専門家です。
+  const summaryConv = [{ role: 'user', content: conversation.map(m => `[${m.role}] ${m.content}`).join('\n\n') }];
+
+  // ── プロンプトA：JSONモード（特殊文字を避けるよう強化）──
+  const jsonPrompt = `あなたは医療・福祉現場の組織分析の専門家です。
 以下の会話から分析結果を生成してください。
 
-【重要】必ず以下のJSON形式のみで出力してください。
-- 前後に文章・説明・コードブロック記号は一切不要
-- 各値は1行で書く（文字列の中に改行を入れない）
-- 日本語で、現場の人が読んでわかる言葉で書く
+【絶対に守るルール】
+- 出力はJSONのみ。前後に文章・説明・コードブロック記号（\`\`\`）は一切書かない
+- 各値は1行で（改行・タブを入れない）
+- 値の中にダブルクォート（"）を使わない。使いたい場合は「」で代替する
+- 値の中にバックスラッシュ（\\）を使わない
+- コロン（:）は文末に使わない（「〜すること」「〜を行う」で締める）
 
 {"surface":"今見えていること（1〜2文）","pattern":"繰り返しているくせや傾向（1〜2文）","structure":"組織の仕組みの問題（1〜2文）","mental_model":"思い込みや慣習（1〜2文）","root":"本当の原因を1文で","action1":"明日の朝礼で伝えること","action2":"今週中に手を動かしてやること","action3":"関係者への関わり方で変えること","analysis":"なぜこの組織でこれが起きているか（3〜4文）","proposal1":"仕組みやルールで変えること","proposal2":"話し合いや情報共有の場を変えること","proposal3":"半年〜1年かけて取り組む組織づくり"}`;
 
+  // ── プロンプトB：プレーンテキストフォールバック ──
+  const plainPrompt = `あなたは医療・福祉現場の組織分析の専門家です。
+以下の会話から分析結果を生成してください。
+各セクションを【】の見出しのあとに改行して書いてください。
+
+【今見えていること】
+（1〜2文）
+
+【繰り返しているくせ・傾向】
+（1〜2文）
+
+【組織の仕組みの問題】
+（1〜2文）
+
+【思い込み・慣習】
+（1〜2文）
+
+【本当の原因】
+（1文で）
+
+【明日からやること①】
+（明日の朝礼で伝えること）
+
+【明日からやること②】
+（今週中に手を動かしてやること）
+
+【明日からやること③】
+（関係者への関わり方で変えること）
+
+【なぜこの組織で起きているか】
+（3〜4文）
+
+【仕組み・ルールで変えること】
+（具体的な提案）
+
+【話し合い・情報共有の場を変えること】
+（具体的な提案）
+
+【半年〜1年の組織づくり】
+（長期的な取り組み）`;
+
+  // ── 試行①：JSON（1回目）──
+  document.getElementById('aiQuestion').innerHTML = '<span class="loading-dots">分析中（1/3）</span>';
   try {
-    const summaryConv = [{ role: 'user', content: conversation.map(m => `[${m.role}] ${m.content}`).join('\n\n') }];
-    // max_tokens 4096：JSON出力の途中切れを防ぐ
-    const raw = await callClaude(summaryConv, outputSystemPrompt, 4096);
+    const raw1 = await callClaude(summaryConv, jsonPrompt, 4096);
+    const flat1 = tryParseFlat(raw1);
+    if (flat1) { _renderAndShow(flat1); return; }
+  } catch { /* fall through */ }
 
-    // JSON抽出: コードブロック・プレーン両対応、制御文字を除去してからparse
-    let jsonStr = raw;
-    const blockMatch = raw.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-    if (blockMatch) jsonStr = blockMatch[1];
-    const objMatch = jsonStr.match(/\{[\s\S]*\}/);
-    if (!objMatch) throw new Error('分析結果を取り出せませんでした。\n\n【AIの返答の先頭】\n' + raw.substring(0, 300));
-    // 文字列値内の改行・タブを空白に置換してからparse（JSON.parseは生の改行を受け付けない）
-    const cleaned = objMatch[0].replace(/[\r\n\t]+/g, ' ');
-    const flat = JSON.parse(cleaned);
+  // ── 試行②：JSON（自動リトライ）──
+  document.getElementById('aiQuestion').innerHTML = '<span class="loading-dots">再分析中（2/3）</span>';
+  try {
+    const raw2 = await callClaude(summaryConv, jsonPrompt, 4096);
+    const flat2 = tryParseFlat(raw2);
+    if (flat2) { _renderAndShow(flat2); return; }
+  } catch { /* fall through */ }
 
-    // フラットJSONを既存のrenderOutput形式に変換
-    const result = {
-      iceberg: {
-        surface: flat.surface, pattern: flat.pattern,
-        structure: flat.structure, mental_model: flat.mental_model, root: flat.root
-      },
-      field_actions: [flat.action1, flat.action2, flat.action3],
-      planner: {
-        analysis: flat.analysis,
-        proposals: [flat.proposal1, flat.proposal2, flat.proposal3]
-      }
-    };
-
-    renderOutput(result);
+  // ── 試行③：プレーンテキストフォールバック ──
+  document.getElementById('aiQuestion').innerHTML = '<span class="loading-dots">別形式で分析中（3/3）</span>';
+  try {
+    const raw3 = await callClaude(summaryConv, plainPrompt, 4096);
+    const result3 = parsePlainTextResult(raw3);
+    renderOutput(result3);
     showPhase('phase2');
     updateProgress(6);
   } catch (e) {
@@ -719,9 +805,25 @@ async function generateOutput() {
     nextBtn.textContent = 'もう一度生成する';
     nextBtn.style.display = 'block';
     nextBtn.onclick = generateOutput;
-    // 前の質問に戻るボタンを表示
     document.getElementById('backBtn').style.display = 'block';
   }
+}
+
+// ── フラットJSONをrenderOutputに渡す内部ヘルパー ──
+function _renderAndShow(flat) {
+  renderOutput({
+    iceberg: {
+      surface: flat.surface, pattern: flat.pattern,
+      structure: flat.structure, mental_model: flat.mental_model, root: flat.root
+    },
+    field_actions: [flat.action1, flat.action2, flat.action3],
+    planner: {
+      analysis: flat.analysis,
+      proposals: [flat.proposal1, flat.proposal2, flat.proposal3]
+    }
+  });
+  showPhase('phase2');
+  updateProgress(6);
 }
 
 // ── 出力レンダリング ──
