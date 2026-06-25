@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>響（Hibiki）| 現場アセスメント | Fusion Partners</title>
+<title>響（Hibiki）| 現場分析 | Fusion Partners</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔔</text></svg>">
 <style>
   :root {
@@ -195,6 +195,37 @@
   .reset-btn:hover { border-color: var(--sub); color: var(--text); }
 
   .error-msg { background: rgba(239,83,80,0.1); border: 1px solid var(--danger); border-radius: var(--radius); padding: 12px 14px; font-size: 0.85rem; color: var(--danger); margin-bottom: 14px; }
+
+  /* ── 印刷・PDF保存ボタン ── */
+  .print-btns { display: flex; gap: 8px; margin-top: 12px; }
+  .print-btn {
+    flex: 1; padding: 11px; border-radius: var(--radius); font-size: 0.85rem;
+    cursor: pointer; font-weight: 600; transition: opacity 0.2s;
+  }
+  .print-btn-pdf { background: var(--accent); color: #1a0029; border: none; }
+  .print-btn-print { background: transparent; border: 1px solid var(--accent); color: var(--accent); }
+  .print-btn:hover { opacity: 0.82; }
+
+  /* ── 印刷用スタイル ── */
+  @media print {
+    header, .progress-wrap, .output-tabs, .reset-btn, .print-btns, .section-badge { display: none !important; }
+    body { background: #fff; color: #000; }
+    main { padding: 0; max-width: 100%; }
+    .phase { display: block !important; }
+    #phase0, #phase1 { display: none !important; }
+    #phase2 { display: block !important; }
+    .out-panel { display: block !important; page-break-inside: avoid; margin-bottom: 16px; }
+    .section-title { font-size: 1.2rem; font-weight: 700; margin-bottom: 4px; color: #000; }
+    .section-desc { color: #555; margin-bottom: 12px; }
+    .iceberg-card, .action-card, .proposal-card {
+      background: #f9f9f9; border: 1px solid #ccc; border-radius: 6px;
+      padding: 10px 14px; margin-bottom: 10px; page-break-inside: avoid;
+    }
+    .layer-label, .action-card h3, .proposal-card h3 { color: #333 !important; }
+    .layer-text, .action-text, .proposal-text, .analysis-text { color: #000; }
+    .print-date { display: block !important; font-size: 0.8rem; color: #666; margin-bottom: 16px; }
+  }
+  .print-date { display: none; }
 </style>
 </head>
 <body>
@@ -202,7 +233,7 @@
 <header>
   <div style="font-size:1.4rem">🔔</div>
   <h1>響（Hibiki）</h1>
-  <span class="header-sub">現場アセスメント</span>
+  <span class="header-sub">現場分析ツール</span>
   <span id="apiStatus" class="api-status ng">APIキー未設定</span>
   <button class="api-btn" onclick="setApiKey()">🔑 APIキー</button>
 </header>
@@ -226,7 +257,7 @@
   <div class="phase active" id="phase0">
     <span class="section-badge">STEP 1</span>
     <div class="section-title">今、現場で何が起きていますか？</div>
-    <p class="section-desc">困っていること・気になっていることを、思ったまま話してください。<br>「なんで？」を5回繰り返して、氷山の底まで掘り下げます。</p>
+    <p class="section-desc">困っていること・気になっていることを、思ったまま話してください。<br>「なんで？」を5回繰り返して、問題の根っこまで掘り下げます。</p>
 
     <div class="info-form">
       <div class="form-group">
@@ -307,54 +338,59 @@
 
   <!-- Phase 2: 出力 -->
   <div class="phase" id="phase2">
-    <span class="section-badge">アセスメント完了</span>
-    <div class="section-title">氷山モデル ＋ アクションプラン</div>
+    <span class="section-badge">分析完了</span>
+    <div class="section-title">問題の根っこ分析 ＋ やることリスト</div>
     <p class="section-desc" style="margin-bottom:16px">2つの視点で結果を出しています。切り替えてご確認ください。</p>
+    <div class="print-date" id="printDate"></div>
 
     <div class="output-tabs">
-      <div class="out-tab active" id="tabIceberg" onclick="switchTab('iceberg')">🏔 氷山モデル</div>
+      <div class="out-tab active" id="tabIceberg" onclick="switchTab('iceberg')">🏔 問題の根っこ</div>
       <div class="out-tab" id="tabField" onclick="switchTab('field')">👷 現場向け</div>
-      <div class="out-tab" id="tabPlanner" onclick="switchTab('planner')">📋 計画者向け</div>
+      <div class="out-tab" id="tabPlanner" onclick="switchTab('planner')">📋 管理者向け</div>
     </div>
 
     <div class="out-panel active" id="panelIceberg">
       <div class="iceberg-card layer-surface">
-        <div class="layer-label">🌊 水面上（現象）</div>
+        <div class="layer-label">🌊 今、見えていること</div>
         <div class="layer-text" id="outSurface"></div>
       </div>
       <div class="iceberg-card layer-pattern">
-        <div class="layer-label">🔄 パターン</div>
+        <div class="layer-label">🔄 繰り返しているくせ・傾向</div>
         <div class="layer-text" id="outPattern"></div>
       </div>
       <div class="iceberg-card layer-structure">
-        <div class="layer-label">🏗 構造</div>
+        <div class="layer-label">🏗 組織の仕組みの問題</div>
         <div class="layer-text" id="outStructure"></div>
       </div>
       <div class="iceberg-card layer-mental">
-        <div class="layer-label">💭 メンタルモデル</div>
+        <div class="layer-label">💭 思い込み・慣習</div>
         <div class="layer-text" id="outMental"></div>
       </div>
       <div class="iceberg-card layer-root">
-        <div class="layer-label">🎯 根本原因（水面底）</div>
+        <div class="layer-label">🎯 本当の原因（根っこ）</div>
         <div class="layer-text" id="outRoot"></div>
       </div>
     </div>
 
     <div class="out-panel" id="panelField">
       <div class="action-card">
-        <h3>👷 今日の現場アクション</h3>
+        <h3>👷 明日からやること</h3>
         <div id="fieldActions"></div>
       </div>
     </div>
 
     <div class="out-panel" id="panelPlanner">
       <div class="proposal-card">
-        <h3>📋 組織改善提案</h3>
+        <h3>📋 組織の仕組みを変えるために</h3>
         <div class="analysis-text" id="plannerAnalysis"></div>
         <div id="plannerProposals"></div>
       </div>
     </div>
 
+    <div class="print-btns">
+      <button class="print-btn print-btn-pdf" onclick="printDoc()">📄 PDFで保存</button>
+      <button class="print-btn print-btn-print" onclick="printDoc()">🖨 印刷する</button>
+    </div>
     <button class="reset-btn" onclick="resetAll()">↩ 最初からやり直す</button>
   </div>
 
@@ -396,8 +432,8 @@ let initialText = '';
 let orgName = '';
 let userRole = '';
 
-// 氷山の層ラベル（表示用）
-const icebergLabels = ['現象を確認', 'パターンを探る', '構造を見る', 'メンタルモデルへ', '根本に到達'];
+// 掘り下げ段階のラベル（表示用）
+const icebergLabels = ['出来事を確認', '繰り返しを探る', '仕組みを見る', '思い込みへ', '根っこに到達'];
 
 // ── プログレス更新 ──
 function updateProgress(step) {
@@ -436,15 +472,15 @@ async function callClaude(messages, systemPrompt, maxTokens = 1024) {
 
 // ── システムプロンプト ──
 function buildSystemPrompt() {
-  return `あなたは医療・福祉現場の組織アセスメント専門家「響（Hibiki）」です。
-役割：${userRole || '管理職'}の方が話す「現場の困りごと」を起点に、「なんでそうなっているのか？」を掘り下げて氷山モデルを形成します。
+  return `あなたは医療・福祉現場の組織分析の専門家「響（Hibiki）」です。
+役割：${userRole || '管理職'}の方が話す「現場の困りごと」を起点に、「なんでそうなっているのか？」を繰り返し掘り下げて問題の根っこを見つけます。
 
-【氷山モデルの階層】
-水面上（現象）: 目に見える出来事・行動
-パターン: 繰り返されている傾向
-構造: 組織的・システム的な要因
-メンタルモデル: 信念・思い込み・職場文化
-根本原因: 本質的な問題
+【掘り下げの階層】
+①今、見えていること: 目に見える出来事・行動
+②繰り返しているくせ・傾向: 同じことが何度も起きていないか
+③組織の仕組みの問題: 制度・役割・流れの問題
+④思い込み・慣習: 「当たり前」になっている信念や文化
+⑤本当の原因: 根っこにある本質的な問題
 
 【ルール】
 - 質問は1つだけ。短く。現場の言葉で。
@@ -549,34 +585,34 @@ async function nextRound() {
 // ── 最終出力生成 ──
 async function generateOutput() {
   showPhase('phase1');
-  document.getElementById('aiQuestion').innerHTML = '<span class="loading-dots">氷山モデルを生成中</span>';
+  document.getElementById('aiQuestion').innerHTML = '<span class="loading-dots">問題の根っこを分析中</span>';
   document.getElementById('answerArea').style.display = 'none';
   document.getElementById('nextBtn').style.display = 'none';
   document.getElementById('summaryBox').style.display = 'none';
 
-  const outputSystemPrompt = `あなたは医療・福祉現場の組織アセスメント専門家です。
-以下の会話から氷山モデルとアクションプランを生成してください。
+  const outputSystemPrompt = `あなたは医療・福祉現場の組織分析の専門家です。
+以下の会話から問題の根っこ分析とやることリストを生成してください。
 
 必ず以下のJSON形式のみで出力してください（前後に余計なテキストは不要）：
 {
   "iceberg": {
-    "surface": "現象（水面上）の説明。具体的な行動・出来事を1〜2文で",
-    "pattern": "繰り返されているパターンを1〜2文で",
-    "structure": "組織的・システム的な構造要因を1〜2文で",
-    "mental_model": "背景にある信念・思い込み・文化を1〜2文で",
-    "root": "根本原因を1文で明確に"
+    "surface": "今、見えていること。具体的な行動・出来事を1〜2文で",
+    "pattern": "繰り返しているくせ・傾向を1〜2文で",
+    "structure": "組織の仕組みの問題を1〜2文で",
+    "mental_model": "背景にある思い込み・慣習を1〜2文で",
+    "root": "本当の原因（根っこ）を1文で明確に"
   },
   "field_actions": [
     "明日の朝礼で伝えること（具体的な言葉）",
-    "今週中にやること（物理的なアクション）",
-    "スタッフへの関わり方の変化（行動レベル）"
+    "今週中にやること（手を動かすレベルで）",
+    "関係者への関わり方で変えること"
   ],
   "planner": {
-    "analysis": "なぜこの組織でこれが起きているかの構造分析（3〜4文）",
+    "analysis": "なぜこの組織でこれが起きているかを平易な言葉で（3〜4文）",
     "proposals": [
-      "仕組み・制度レベルの改善提案",
-      "コミュニケーション設計の改善提案",
-      "中長期的な組織設計の提案"
+      "仕組み・ルールレベルで変えること",
+      "話し合いや情報共有の場として変えること",
+      "半年〜1年かけて取り組む組織づくり"
     ]
   }
 }`;
@@ -653,6 +689,17 @@ function resetAll() {
   switchTab('iceberg');
   showPhase('phase0');
   updateProgress(0);
+}
+
+// ── 印刷・PDF保存 ──
+function printDoc() {
+  // 印刷前に全パネルを一時表示してから印刷ダイアログを開く
+  // @media print で全パネル表示・不要要素非表示を制御
+  const d = new Date();
+  const dateStr = `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日 分析結果` +
+    (orgName ? `（${orgName}）` : '');
+  document.getElementById('printDate').textContent = dateStr;
+  window.print();
 }
 
 // ── 初期化 ──
