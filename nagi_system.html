@@ -243,6 +243,7 @@ tr:hover td{background:rgba(79,195,247,0.03);}
   <div class="nav-tab active" onclick="goTab('compass')" id="tab-compass">🧭 羅針盤</div>
   <div class="nav-tab"        onclick="goTab('corp')"    id="tab-corp">📊 法人全体</div>
   <div class="nav-tab"        onclick="goTab('office')" id="tab-office">🏢 事業所別</div>
+  <div class="nav-tab"        onclick="goTab('pipe')"   id="tab-pipe">📈 営業</div>
   <div class="nav-tab"        onclick="goTab('staff')"  id="tab-staff">👥 スタッフ一覧</div>
   <div class="nav-tab"        onclick="goTab('rc')"      id="tab-rc">🚨 RC異常者</div>
   <div class="nav-tab"        onclick="goTab('retired')"   id="tab-retired">📦 退職者</div>
@@ -292,15 +293,9 @@ tr:hover td{background:rgba(79,195,247,0.03);}
     <div class="grid-4" id="corp-fin-kpis"></div>
     <div style="margin-top:14px;" id="corp-fin-detail"></div>
   </div>
-  <div class="grid-2">
-    <div class="section">
-      <div class="section-title">🔀 Corporate Pipeline（NDB動線）</div>
-      <div id="corp-pipeline"></div>
-    </div>
-    <div class="section">
-      <div class="section-title">⚠️ RC リスクサマリー</div>
-      <div id="corp-rc-summary"></div>
-    </div>
+  <div class="section">
+    <div class="section-title">⚠️ RC リスクサマリー</div>
+    <div id="corp-rc-summary"></div>
   </div>
   <div class="grid-2">
     <div class="section">
@@ -337,6 +332,27 @@ tr:hover td{background:rgba(79,195,247,0.03);}
     <div class="section">
       <div class="section-title">👤 Leader Personality（管理者分析）</div>
       <div id="off-leader"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     PAGE: 営業パイプライン
+══════════════════════════════════════ -->
+<div class="page" id="page-pipe">
+  <div class="print-page-title">📈 営業パイプライン</div>
+  <div class="section">
+    <div class="section-title">📊 全事業所 パイプライン一覧</div>
+    <div id="pipe-summary"></div>
+  </div>
+  <div class="grid-2">
+    <div class="section">
+      <div class="section-title">🏆 成約率ランキング</div>
+      <div id="pipe-ranking"></div>
+    </div>
+    <div class="section">
+      <div class="section-title">📋 案件ステータス（全事業所計）</div>
+      <div id="pipe-status"></div>
     </div>
   </div>
 </div>
@@ -1173,6 +1189,101 @@ function drawCross(containerId, points, opts){
 //  ダッシュボードレンダリング
 // ════════════════════════════════════════════════════
 
+// ── 営業パイプライン ──
+function renderPipeTab(){
+  const allOffices=getAllOffices();
+  const pipeRows=allOffices.map(o=>{
+    const p=getPipe(o.id);
+    if(!p) return null;
+    const corp=getCorps().find(c=>c.id===o.corpId);
+    const rate=n(p.visit)?n(p.contract)/n(p.visit):null;
+    return {corpName:corp?corp.name:'─',officeName:o.name,p,rate};
+  }).filter(Boolean);
+
+  // 全事業所パイプライン一覧
+  if(!pipeRows.length){
+    document.getElementById('pipe-summary').innerHTML='<div class="card"><div class="empty">パイプラインデータがありません。データ管理からパイプラインを入力してください。</div></div>';
+    document.getElementById('pipe-ranking').innerHTML='';
+    document.getElementById('pipe-status').innerHTML='';
+    return;
+  }
+
+  let summaryHTML='<div class="card"><div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:0.78rem;">';
+  summaryHTML+='<thead><tr style="border-bottom:1px solid var(--border);color:var(--sub);">';
+  summaryHTML+='<th style="text-align:left;padding:6px 8px;">法人</th><th style="text-align:left;padding:6px 8px;">事業所</th>';
+  summaryHTML+='<th style="text-align:center;padding:6px 8px;">アプローチ</th><th style="text-align:center;padding:6px 8px;">問い合わせ</th>';
+  summaryHTML+='<th style="text-align:center;padding:6px 8px;">見学</th><th style="text-align:center;padding:6px 8px;">成約</th>';
+  summaryHTML+='<th style="text-align:center;padding:6px 8px;">リピート</th><th style="text-align:center;padding:6px 8px;">成約率</th>';
+  summaryHTML+='</tr></thead><tbody>';
+  pipeRows.forEach(({corpName,officeName,p,rate})=>{
+    const rateStr=rate!==null?`<span style="font-weight:700;color:${rate>=0.3?'var(--accent2)':rate>=0.1?'var(--warn)':'var(--danger)'};">${(rate*100).toFixed(1)}%</span>`:'─';
+    summaryHTML+=`<tr style="border-bottom:1px solid var(--border);">
+      <td style="padding:6px 8px;color:var(--sub);">${corpName}</td>
+      <td style="padding:6px 8px;font-weight:600;">${officeName}</td>
+      <td style="text-align:center;padding:6px 8px;">${n(p.approach)}</td>
+      <td style="text-align:center;padding:6px 8px;">${n(p.inquiry)}</td>
+      <td style="text-align:center;padding:6px 8px;">${n(p.visit)}</td>
+      <td style="text-align:center;padding:6px 8px;">${n(p.contract)}</td>
+      <td style="text-align:center;padding:6px 8px;">${n(p.repeat)}</td>
+      <td style="text-align:center;padding:6px 8px;">${rateStr}</td>
+    </tr>`;
+  });
+  summaryHTML+='</tbody></table></div></div>';
+  document.getElementById('pipe-summary').innerHTML=summaryHTML;
+
+  // 成約率ランキング
+  const ranked=[...pipeRows].filter(r=>r.rate!==null).sort((a,b)=>b.rate-a.rate);
+  let rankHTML='<div class="card">';
+  if(!ranked.length){
+    rankHTML+='<div class="empty">成約データなし</div>';
+  } else {
+    ranked.forEach(({officeName,rate},i)=>{
+      const medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}位`;
+      const col=rate>=0.3?'var(--accent2)':rate>=0.1?'var(--warn)':'var(--danger)';
+      rankHTML+=`<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border);font-size:0.82rem;">
+        <span style="min-width:28px;text-align:center;">${medal}</span>
+        <span style="flex:1;">${officeName}</span>
+        <span style="font-weight:700;color:${col};">${(rate*100).toFixed(1)}%</span>
+      </div>`;
+    });
+  }
+  rankHTML+='</div>';
+  document.getElementById('pipe-ranking').innerHTML=rankHTML;
+
+  // 案件ステータス集計
+  const totals={approach:0,inquiry:0,visit:0,contract:0,repeat:0};
+  pipeRows.forEach(({p})=>{
+    totals.approach+=n(p.approach);
+    totals.inquiry+=n(p.inquiry);
+    totals.visit+=n(p.visit);
+    totals.contract+=n(p.contract);
+    totals.repeat+=n(p.repeat);
+  });
+  const stages=[
+    {label:'アプローチ',key:'approach',icon:'📞'},
+    {label:'問い合わせ',key:'inquiry',icon:'📧'},
+    {label:'見学',key:'visit',icon:'👁'},
+    {label:'成約',key:'contract',icon:'✅'},
+    {label:'リピート',key:'repeat',icon:'🔄'},
+  ];
+  const maxVal=Math.max(...stages.map(s=>totals[s.key]),1);
+  let statusHTML='<div class="card">';
+  stages.forEach(s=>{
+    const v=totals[s.key];
+    const pct=Math.round(v/maxVal*100);
+    statusHTML+=`<div style="margin-bottom:10px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px;font-size:0.8rem;">
+        <span>${s.icon}</span><span style="flex:1;">${s.label}</span><span style="font-weight:700;">${v}件</span>
+      </div>
+      <div style="background:var(--surface);border-radius:4px;height:8px;overflow:hidden;">
+        <div style="background:var(--accent);height:8px;width:${pct}%;border-radius:4px;transition:width 0.3s;"></div>
+      </div>
+    </div>`;
+  });
+  statusHTML+='</div>';
+  document.getElementById('pipe-status').innerHTML=statusHTML;
+}
+
 // ── 法人全体 ──
 function renderCorpDashboard(){
   const corpId=document.getElementById('sel-corp').value;
@@ -1203,36 +1314,6 @@ function renderCorpDashboard(){
   } else { sensHTML+='<div class="empty" style="padding:12px;">財務データを入力してください</div>'; }
   sensHTML+='</div>';
   document.getElementById('corp-fin-detail').innerHTML=sensHTML;
-
-  // パイプライン
-  let best=null,bestRate=Infinity;
-  const pipeRows=offices.map(o=>{
-    const p=getPipe(o.id);
-    if(!p) return null;
-    const rate=p.visit?n(p.contract)/n(p.visit):null;
-    if(rate!==null&&rate<bestRate){bestRate=rate;best=o.name+'（'+(rate*100).toFixed(1)+'%）';}
-    return {name:o.name,p};
-  }).filter(Boolean);
-  let pipeHTML=`<div class="card"><div style="font-size:0.72rem;color:var(--sub);margin-bottom:8px;">成約率ワースト事業所：<span style="color:var(--danger);">${best||'データなし'}</span></div>`;
-  pipeRows.forEach(({name,p})=>{
-    const rates=[
-      {label:'アプローチ',v:n(p.approach),r:null},
-      {label:'問い合わせ',v:n(p.inquiry),r:p.approach?n(p.inquiry)/n(p.approach):null},
-      {label:'見学',v:n(p.visit),r:p.approach?n(p.visit)/n(p.approach):null},
-      {label:'成約',v:n(p.contract),r:p.visit?n(p.contract)/n(p.visit):null},
-      {label:'リピート',v:n(p.repeat),r:p.contract?n(p.repeat)/n(p.contract):null},
-    ];
-    pipeHTML+=`<div style="font-size:0.72rem;color:var(--sub);margin-bottom:2px;">${name}</div>`;
-    pipeHTML+=`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">`;
-    rates.forEach(r=>{
-      const rStr=r.r!==null?`<span style="color:var(--accent3);font-size:0.65rem;">${(r.r*100).toFixed(0)}%</span>`:'';
-      pipeHTML+=`<div style="background:var(--surface);border-radius:6px;padding:4px 8px;font-size:0.72rem;text-align:center;"><div style="color:var(--sub);">${r.label}</div><div style="font-weight:700;">${r.v}${rStr}</div></div>`;
-    });
-    pipeHTML+='</div>';
-  });
-  if(!pipeRows.length) pipeHTML+='<div class="empty" style="padding:12px;">パイプラインデータなし</div>';
-  pipeHTML+='</div>';
-  document.getElementById('corp-pipeline').innerHTML=pipeHTML;
 
   // RC サマリー
   const rcCounts={safe:0,danger:0,caution:0,dep:0};
@@ -1706,11 +1787,12 @@ let currentTab='compass';
 
 function goTab(tab){
   currentTab=tab;
-  ['compass','corp','office','staff','rc','retired','candidate','blacklist'].forEach(t=>{
+  ['compass','corp','office','pipe','staff','rc','retired','candidate','blacklist'].forEach(t=>{
     document.getElementById(`page-${t}`)?.classList.toggle('active',t===tab);
     document.getElementById(`tab-${t}`)?.classList.toggle('active',t===tab);
   });
   if(tab==='compass') renderCompass();
+  else if(tab==='pipe') renderPipeTab();
   else if(tab==='retired') renderRetiredList();
   else if(tab==='candidate') renderCandidates();
   else if(tab==='blacklist') renderBlacklist();
@@ -2298,7 +2380,7 @@ function renderCompass(){
 
   const axes=[
     {key:'fin',  icon:'💰', title:'資金',       signal:finSignal,  label:finLabel,  desc:finDesc,  tab:'corp'},
-    {key:'pipe', icon:'📈', title:'営業',       signal:pipeSignal, label:pipeLabel, desc:pipeDesc, tab:'corp'},
+    {key:'pipe', icon:'📈', title:'営業',       signal:pipeSignal, label:pipeLabel, desc:pipeDesc, tab:'pipe'},
     {key:'team', icon:'👥', title:'チーム',     signal:teamSignal, label:teamLabel, desc:teamDesc, tab:'rc'},
     {key:'staff',icon:'🧬', title:'スタッフ性質',signal:staffSignal,label:staffLabel,desc:staffDesc,tab:'staff'},
   ];
@@ -2322,8 +2404,8 @@ function renderCompass(){
   if(lsrpDangerCount>0) actions.push({sys:'ミツメル',icon:'📓',text:`LSRP危険者${lsrpDangerCount}名に日次ジャーナリングを導入してください`,signal:'red',tab:'rc'});
   if(lsrpWarnCount>0) actions.push({sys:'奏',icon:'🎵',text:`LSRP警戒者${lsrpWarnCount}名の配置見直しを検討してください`,signal:'yellow',tab:'staff'});
   if(finItems.some(i=>i.level==='red')) actions.push({sys:'響',icon:'💸',text:`f/m130%超：固定費構造のヒアリングが必要です`,signal:'red',tab:'corp'});
-  if(pipeCount===0&&allPipe.length) actions.push({sys:'弦',icon:'📞',text:'商談中案件がゼロです。次の営業先リストを用意してください',signal:'red',tab:'corp'});
-  else if(pipeCount<=2&&allPipe.length) actions.push({sys:'弦',icon:'📋',text:`商談案件が${pipeCount}件と少ない状態です。アプローチを強化してください`,signal:'yellow',tab:'corp'});
+  if(pipeCount===0&&allPipe.length) actions.push({sys:'弦',icon:'📞',text:'商談中案件がゼロです。次の営業先リストを用意してください',signal:'red',tab:'pipe'});
+  else if(pipeCount<=2&&allPipe.length) actions.push({sys:'弦',icon:'📋',text:`商談案件が${pipeCount}件と少ない状態です。アプローチを強化してください`,signal:'yellow',tab:'pipe'});
   if(candidates.length>0) actions.push({sys:'凪',icon:'👤',text:`採用判断待ちの候補者が${candidates.length}名います`,signal:'yellow',tab:'candidate'});
   if(!finData.length) actions.push({sys:'凪',icon:'⚙',text:'財務データが未入力です。データ管理から入力してください',signal:'gray',tab:'corp'});
   if(!allStaff.length) actions.push({sys:'凪',icon:'⚙',text:'スタッフデータが未入力です。スタッフ一覧から登録してください',signal:'gray',tab:'staff'});
