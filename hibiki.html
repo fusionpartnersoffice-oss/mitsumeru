@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>響（Hibiki）| 現場アセスメント | Fusion Partners</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔔</text></svg>">
+<style>
+  :root {
+    --bg: #0f1923; --surface: #1a2634; --card: #223044;
+    --accent: #ce93d8; --accent2: #81c784; --accent3: #ffb74d; --accent4: #f06292;
+    --danger: #ef5350; --warn: #ffa726; --text: #e8eaf0; --sub: #8fa3b8;
+    --border: #2e4460; --radius: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Hiragino Kaku Gothic Pro', 'Meiryo', sans-serif; min-height: 100vh; }
+
+  header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 12px 20px; display: flex; align-items: center; gap: 10px; }
+  header h1 { font-size: 1.1rem; font-weight: 700; color: var(--accent); flex: 1; }
+  .header-sub { font-size: 0.75rem; color: var(--sub); }
+  .api-btn { background: var(--card); border: 1px solid var(--border); color: var(--sub); border-radius: 6px; padding: 5px 12px; font-size: 0.75rem; cursor: pointer; }
+  .api-btn:hover { color: var(--text); border-color: var(--sub); }
+  .api-status { font-size: 0.7rem; padding: 3px 8px; border-radius: 10px; }
+  .api-status.ok { background: rgba(129,199,132,0.2); color: var(--accent2); }
+  .api-status.ng { background: rgba(239,83,80,0.2); color: var(--danger); }
+
+  .progress-wrap { background: var(--surface); border-bottom: 1px solid var(--border); padding: 10px 20px; }
+  .progress-steps { display: flex; gap: 6px; margin-bottom: 5px; }
+  .step-dot { flex: 1; height: 4px; border-radius: 2px; background: var(--border); transition: background 0.3s; }
+  .step-dot.done { background: var(--accent2); }
+  .step-dot.active { background: var(--accent); }
+  .progress-label { font-size: 0.73rem; color: var(--sub); }
+
+  main { max-width: 720px; margin: 0 auto; padding: 20px 16px 80px; }
+
+  .phase { display: none; }
+  .phase.active { display: block; }
+
+  .section-badge { display: inline-block; background: var(--accent); color: #1a0029; font-size: 0.68rem; font-weight: 700; padding: 2px 10px; border-radius: 20px; margin-bottom: 10px; }
+  .section-title { font-size: 1.1rem; color: var(--text); margin-bottom: 4px; }
+  .section-desc { font-size: 0.82rem; color: var(--sub); margin-bottom: 20px; line-height: 1.6; }
+
+  /* ── Phase 0: 情報入力 ── */
+  .info-form { display: flex; flex-direction: column; gap: 14px; }
+  .form-group label { font-size: 0.82rem; color: var(--sub); display: block; margin-bottom: 5px; }
+  .form-group input, .form-group select {
+    width: 100%; background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); color: var(--text); padding: 10px 14px;
+    font-size: 0.92rem; outline: none;
+  }
+  .form-group input:focus, .form-group select:focus { border-color: var(--accent); }
+  .form-group select option { background: var(--card); }
+
+  /* 音声入力エリア */
+  .voice-input-wrap { position: relative; }
+  .voice-input-wrap textarea {
+    width: 100%; background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); color: var(--text); padding: 12px 50px 12px 14px;
+    font-size: 0.92rem; outline: none; resize: vertical; min-height: 90px;
+    font-family: inherit; line-height: 1.6;
+  }
+  .voice-input-wrap textarea:focus { border-color: var(--accent); }
+  /* ── 音声入力ボタン（プレースホルダー）──
+     ここに音声入力APIを追加する
+     候補: Web Speech API (SpeechRecognition) または外部サービス (PLAUDE, Whisper等)
+     実装手順:
+       1. SpeechRecognition を初期化
+       2. ボタンクリックで録音開始→stopで結果をtextareaにセット
+       3. 対応ブラウザ: Chrome/Edge (webkit prefix), Firefox は非対応
+  */
+  .voice-btn {
+    position: absolute; right: 10px; top: 10px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--sub); width: 34px; height: 34px;
+    cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+  }
+  .voice-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .voice-btn.recording { border-color: var(--danger); color: var(--danger); animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+  .voice-hint { font-size: 0.7rem; color: var(--sub); margin-top: 4px; }
+
+  .start-btn {
+    width: 100%; padding: 14px; background: var(--accent); color: #1a0029;
+    border: none; border-radius: var(--radius); font-size: 1rem; font-weight: 700;
+    cursor: pointer; margin-top: 6px; transition: opacity 0.2s;
+  }
+  .start-btn:hover { opacity: 0.88; }
+  .start-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ── Phase 1: 氷山ドリル ── */
+  .drill-round { font-size: 0.75rem; color: var(--sub); margin-bottom: 14px; }
+  .drill-round span { color: var(--accent); font-weight: 700; }
+
+  .iceberg-visual { display: flex; gap: 3px; margin-bottom: 18px; }
+  .iceberg-layer {
+    flex: 1; height: 6px; border-radius: 3px; background: var(--border); transition: background 0.4s;
+  }
+  .iceberg-layer.lit-0 { background: var(--accent3); }
+  .iceberg-layer.lit-1 { background: #ba68c8; }
+  .iceberg-layer.lit-2 { background: #9575cd; }
+  .iceberg-layer.lit-3 { background: #7986cb; }
+  .iceberg-layer.lit-4 { background: var(--accent); }
+
+  .ai-bubble {
+    background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 16px; margin-bottom: 14px;
+  }
+  .ai-bubble .ai-label { font-size: 0.7rem; color: var(--accent); margin-bottom: 6px; font-weight: 700; }
+  .ai-bubble .ai-text { font-size: 0.92rem; line-height: 1.7; }
+
+  .summary-box {
+    background: rgba(206,147,216,0.07); border: 1px solid rgba(206,147,216,0.2);
+    border-radius: var(--radius); padding: 10px 14px; margin-bottom: 14px;
+    font-size: 0.8rem; color: var(--sub); line-height: 1.5;
+  }
+  .summary-box strong { color: var(--accent); }
+
+  .answer-area { position: relative; margin-bottom: 10px; }
+  .answer-area textarea {
+    width: 100%; background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); color: var(--text); padding: 12px 50px 12px 14px;
+    font-size: 0.92rem; outline: none; resize: vertical; min-height: 80px;
+    font-family: inherit; line-height: 1.6;
+  }
+  .answer-area textarea:focus { border-color: var(--accent); }
+  /* ── 音声入力ボタン（ドリル中）──
+     ここに音声入力APIを追加する（Phase 0 の voice-btn と同じ実装を使い回す）
+  */
+  .answer-area .voice-btn { top: 8px; }
+
+  .next-btn {
+    width: 100%; padding: 12px; background: var(--accent); color: #1a0029;
+    border: none; border-radius: var(--radius); font-size: 0.95rem; font-weight: 700;
+    cursor: pointer; transition: opacity 0.2s;
+  }
+  .next-btn:hover { opacity: 0.88; }
+  .next-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .loading-indicator { text-align: center; padding: 20px; color: var(--sub); font-size: 0.85rem; }
+  .loading-dots::after { content: ''; animation: dots 1.2s infinite; }
+  @keyframes dots { 0%{content:'.'} 33%{content:'..'} 66%{content:'...'} }
+
+  /* ── Phase 2: 二層出力 ── */
+  .output-tabs { display: flex; gap: 6px; margin-bottom: 16px; }
+  .out-tab {
+    flex: 1; padding: 9px; background: var(--card); border: 1px solid var(--border);
+    border-radius: 8px; text-align: center; cursor: pointer; font-size: 0.82rem; color: var(--sub);
+    transition: all 0.2s;
+  }
+  .out-tab.active { background: rgba(206,147,216,0.12); border-color: var(--accent); color: var(--accent); font-weight: 700; }
+
+  .out-panel { display: none; }
+  .out-panel.active { display: block; }
+
+  .iceberg-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 14px; margin-bottom: 12px;
+  }
+  .iceberg-card .layer-label { font-size: 0.7rem; font-weight: 700; margin-bottom: 4px; }
+  .iceberg-card .layer-text { font-size: 0.88rem; line-height: 1.6; color: var(--text); }
+  .layer-surface .layer-label { color: var(--accent3); }
+  .layer-pattern .layer-label { color: #ba68c8; }
+  .layer-structure .layer-label { color: #9575cd; }
+  .layer-mental .layer-label { color: #7986cb; }
+  .layer-root .layer-label { color: var(--accent); }
+  .layer-root { border-color: rgba(206,147,216,0.4); }
+
+  .action-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 14px; margin-bottom: 10px;
+  }
+  .action-card h3 { font-size: 0.85rem; color: var(--accent2); margin-bottom: 10px; font-weight: 700; }
+  .action-item { display: flex; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .action-item:last-child { border-bottom: none; }
+  .action-num { font-size: 0.75rem; font-weight: 700; color: var(--accent2); min-width: 20px; }
+  .action-text { font-size: 0.88rem; line-height: 1.5; }
+
+  .proposal-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 14px; margin-bottom: 10px;
+  }
+  .proposal-card h3 { font-size: 0.85rem; color: var(--accent); margin-bottom: 8px; font-weight: 700; }
+  .analysis-text { font-size: 0.85rem; color: var(--sub); line-height: 1.7; margin-bottom: 12px; }
+  .proposal-item { display: flex; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--border); }
+  .proposal-item:last-child { border-bottom: none; }
+  .proposal-mark { color: var(--accent); font-weight: 700; font-size: 0.82rem; min-width: 16px; }
+  .proposal-text { font-size: 0.87rem; line-height: 1.5; }
+
+  .reset-btn {
+    width: 100%; padding: 11px; background: transparent; border: 1px solid var(--border);
+    color: var(--sub); border-radius: var(--radius); font-size: 0.85rem; cursor: pointer;
+    margin-top: 20px; transition: all 0.2s;
+  }
+  .reset-btn:hover { border-color: var(--sub); color: var(--text); }
+
+  .error-msg { background: rgba(239,83,80,0.1); border: 1px solid var(--danger); border-radius: var(--radius); padding: 12px 14px; font-size: 0.85rem; color: var(--danger); margin-bottom: 14px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div style="font-size:1.4rem">🔔</div>
+  <h1>響（Hibiki）</h1>
+  <span class="header-sub">現場アセスメント</span>
+  <span id="apiStatus" class="api-status ng">APIキー未設定</span>
+  <button class="api-btn" onclick="setApiKey()">🔑 APIキー</button>
+</header>
+
+<div class="progress-wrap">
+  <div class="progress-steps" id="progressDots">
+    <div class="step-dot active" id="dot0"></div>
+    <div class="step-dot" id="dot1"></div>
+    <div class="step-dot" id="dot2"></div>
+    <div class="step-dot" id="dot3"></div>
+    <div class="step-dot" id="dot4"></div>
+    <div class="step-dot" id="dot5"></div>
+    <div class="step-dot" id="dot6"></div>
+  </div>
+  <div class="progress-label" id="progressLabel">STEP 1 / 7 ─ 状況入力</div>
+</div>
+
+<main>
+
+  <!-- Phase 0: 情報入力 -->
+  <div class="phase active" id="phase0">
+    <span class="section-badge">STEP 1</span>
+    <div class="section-title">今、現場で何が起きていますか？</div>
+    <p class="section-desc">困っていること・気になっていることを、思ったまま話してください。<br>「なんで？」を5回繰り返して、氷山の底まで掘り下げます。</p>
+
+    <div class="info-form">
+      <div class="form-group">
+        <label>施設名・組織名（任意）</label>
+        <input type="text" id="orgName" placeholder="例：〇〇介護老人保健施設">
+      </div>
+      <div class="form-group">
+        <label>あなたの役職</label>
+        <select id="role">
+          <option value="">選択してください</option>
+          <option value="管理者">管理者</option>
+          <option value="サービス提供責任者">サービス提供責任者</option>
+          <option value="リーダー・主任">リーダー・主任</option>
+          <option value="現場スタッフ">現場スタッフ</option>
+          <option value="経営者">経営者</option>
+          <option value="その他">その他</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>今、現場で一番困っていること</label>
+        <div class="voice-input-wrap">
+          <textarea id="initialInput" placeholder="例：スタッフが報告を上げてこない。何度言っても改善しない。なぜそうなっているのかわからない。"></textarea>
+          <!-- ── 音声入力ボタン（プレースホルダー）──
+               ここに音声入力APIを追加する
+               実装例（Web Speech API）:
+               voiceBtn.onclick = () => {
+                 const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+                 rec.lang = 'ja-JP'; rec.interimResults = false;
+                 rec.onresult = e => { initialInput.value += e.results[0][0].transcript; };
+                 rec.start();
+               };
+          -->
+          <button class="voice-btn" id="voiceBtnInit" title="音声入力（準備中）" onclick="alertVoiceNotReady()">🎤</button>
+        </div>
+        <div class="voice-hint">🎤 音声入力は近日対応予定です</div>
+      </div>
+      <button class="start-btn" id="startBtn" onclick="startDrill()">掘り下げを始める →</button>
+    </div>
+  </div>
+
+  <!-- Phase 1: 氷山ドリル -->
+  <div class="phase" id="phase1">
+    <span class="section-badge" id="drillBadge">STEP 2</span>
+    <div class="section-title" id="drillTitle">なんでそうなってるの？（1回目）</div>
+
+    <div class="iceberg-visual">
+      <div class="iceberg-layer" id="iceLayer0"></div>
+      <div class="iceberg-layer" id="iceLayer1"></div>
+      <div class="iceberg-layer" id="iceLayer2"></div>
+      <div class="iceberg-layer" id="iceLayer3"></div>
+      <div class="iceberg-layer" id="iceLayer4"></div>
+    </div>
+
+    <div class="drill-round">掘り下げ <span id="roundNum">1</span> / 5</div>
+
+    <div id="errorMsg" class="error-msg" style="display:none"></div>
+
+    <div id="summaryBox" class="summary-box" style="display:none">
+      <strong>ここまで分かったこと：</strong><br>
+      <span id="summaryText"></span>
+    </div>
+
+    <div class="ai-bubble" id="aiBubble">
+      <div class="ai-label">🔔 響</div>
+      <div class="ai-text" id="aiQuestion"><span class="loading-dots">考えています</span></div>
+    </div>
+
+    <div class="answer-area" id="answerArea" style="display:none">
+      <textarea id="drillAnswer" placeholder="思ったまま答えてください。短くても大丈夫です。"></textarea>
+      <!-- ── 音声入力ボタン（ドリル中）──
+           ここに音声入力APIを追加する（Phase 0 の実装を使い回す）
+      -->
+      <button class="voice-btn" title="音声入力（準備中）" onclick="alertVoiceNotReady()">🎤</button>
+    </div>
+
+    <button class="next-btn" id="nextBtn" style="display:none" onclick="nextRound()">次へ →</button>
+  </div>
+
+  <!-- Phase 2: 出力 -->
+  <div class="phase" id="phase2">
+    <span class="section-badge">アセスメント完了</span>
+    <div class="section-title">氷山モデル ＋ アクションプラン</div>
+    <p class="section-desc" style="margin-bottom:16px">2つの視点で結果を出しています。切り替えてご確認ください。</p>
+
+    <div class="output-tabs">
+      <div class="out-tab active" id="tabIceberg" onclick="switchTab('iceberg')">🏔 氷山モデル</div>
+      <div class="out-tab" id="tabField" onclick="switchTab('field')">👷 現場向け</div>
+      <div class="out-tab" id="tabPlanner" onclick="switchTab('planner')">📋 計画者向け</div>
+    </div>
+
+    <div class="out-panel active" id="panelIceberg">
+      <div class="iceberg-card layer-surface">
+        <div class="layer-label">🌊 水面上（現象）</div>
+        <div class="layer-text" id="outSurface"></div>
+      </div>
+      <div class="iceberg-card layer-pattern">
+        <div class="layer-label">🔄 パターン</div>
+        <div class="layer-text" id="outPattern"></div>
+      </div>
+      <div class="iceberg-card layer-structure">
+        <div class="layer-label">🏗 構造</div>
+        <div class="layer-text" id="outStructure"></div>
+      </div>
+      <div class="iceberg-card layer-mental">
+        <div class="layer-label">💭 メンタルモデル</div>
+        <div class="layer-text" id="outMental"></div>
+      </div>
+      <div class="iceberg-card layer-root">
+        <div class="layer-label">🎯 根本原因（水面底）</div>
+        <div class="layer-text" id="outRoot"></div>
+      </div>
+    </div>
+
+    <div class="out-panel" id="panelField">
+      <div class="action-card">
+        <h3>👷 今日の現場アクション</h3>
+        <div id="fieldActions"></div>
+      </div>
+    </div>
+
+    <div class="out-panel" id="panelPlanner">
+      <div class="proposal-card">
+        <h3>📋 組織改善提案</h3>
+        <div class="analysis-text" id="plannerAnalysis"></div>
+        <div id="plannerProposals"></div>
+      </div>
+    </div>
+
+    <button class="reset-btn" onclick="resetAll()">↩ 最初からやり直す</button>
+  </div>
+
+</main>
+
+<script>
+// ── APIキー管理 ──
+let apiKey = localStorage.getItem('hibiki_api_key') || '';
+updateApiStatus();
+
+function updateApiStatus() {
+  const el = document.getElementById('apiStatus');
+  if (apiKey) { el.textContent = 'APIキー設定済'; el.className = 'api-status ok'; }
+  else { el.textContent = 'APIキー未設定'; el.className = 'api-status ng'; }
+}
+
+function setApiKey() {
+  const k = prompt('AnthropicのAPIキーを入力してください（sk-ant-...）\n\n取得：console.anthropic.com → API Keys\n\n現在：' + (apiKey ? apiKey.substring(0,12)+'...' : '未設定'));
+  if (k && k.startsWith('sk-ant-')) {
+    apiKey = k.trim();
+    localStorage.setItem('hibiki_api_key', apiKey);
+    updateApiStatus();
+  } else if (k !== null) {
+    alert('キーの形式が正しくありません。「sk-ant-」で始まるキーを入力してください。');
+  }
+}
+
+// ── 音声入力プレースホルダー ──
+// ここに音声入力の初期化処理を追加する
+function alertVoiceNotReady() {
+  alert('音声入力は近日対応予定です。\nテキストで入力してください。');
+}
+
+// ── 状態管理 ──
+let round = 0;
+const MAX_ROUNDS = 5;
+let conversation = []; // { role: 'user'|'assistant', content: string }
+let initialText = '';
+let orgName = '';
+let userRole = '';
+
+// 氷山の層ラベル（表示用）
+const icebergLabels = ['現象を確認', 'パターンを探る', '構造を見る', 'メンタルモデルへ', '根本に到達'];
+
+// ── プログレス更新 ──
+function updateProgress(step) {
+  for (let i = 0; i <= 6; i++) {
+    const dot = document.getElementById('dot' + i);
+    if (i < step) dot.className = 'step-dot done';
+    else if (i === step) dot.className = 'step-dot active';
+    else dot.className = 'step-dot';
+  }
+  const labels = ['状況入力', '1回目', '2回目', '3回目', '4回目', '5回目', '結果表示'];
+  document.getElementById('progressLabel').textContent = `STEP ${step + 1} / 7 ─ ${labels[step]}`;
+}
+
+// ── Claude API呼び出し ──
+async function callClaude(messages, systemPrompt) {
+  if (!apiKey) { setApiKey(); if (!apiKey) throw new Error('APIキーが設定されていません'); }
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1024, system: systemPrompt, messages })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error?.message || `APIエラー (${res.status})`);
+  }
+  const data = await res.json();
+  return data.content[0].text;
+}
+
+// ── システムプロンプト ──
+function buildSystemPrompt() {
+  return `あなたは医療・福祉現場の組織アセスメント専門家「響（Hibiki）」です。
+役割：${userRole || '管理職'}の方が話す「現場の困りごと」を起点に、「なんでそうなっているのか？」を掘り下げて氷山モデルを形成します。
+
+【氷山モデルの階層】
+水面上（現象）: 目に見える出来事・行動
+パターン: 繰り返されている傾向
+構造: 組織的・システム的な要因
+メンタルモデル: 信念・思い込み・職場文化
+根本原因: 本質的な問題
+
+【ルール】
+- 質問は1つだけ。短く。現場の言葉で。
+- 「なぜ〜なのでしょうか？」ではなく「なんで〜なんですか？」という口調で
+- 相手の言葉をまず受け止めてから掘り下げる
+- 責めるような言い方はしない
+- 1文で状況を要約してから次の質問を投げる
+- 出力形式: 「（要約1文）\n\nなんで〜なんですか？」`;
+}
+
+// ── ドリル開始 ──
+async function startDrill() {
+  initialText = document.getElementById('initialInput').value.trim();
+  orgName = document.getElementById('orgName').value.trim();
+  userRole = document.getElementById('role').value;
+
+  if (!initialText) { alert('困っていることを入力してください。'); return; }
+
+  document.getElementById('startBtn').disabled = true;
+  showPhase('phase1');
+  round = 0;
+  conversation = [];
+  updateProgress(1);
+
+  // 最初のユーザー発言をセット
+  const firstMsg = (orgName ? `【${orgName}】` : '') + `【${userRole || '管理職'}】\n\n${initialText}`;
+  conversation.push({ role: 'user', content: firstMsg });
+
+  await askNextQuestion();
+}
+
+// ── 次の質問を取得 ──
+async function askNextQuestion() {
+  const questionEl = document.getElementById('aiQuestion');
+  const answerArea = document.getElementById('answerArea');
+  const nextBtn = document.getElementById('nextBtn');
+  const errorEl = document.getElementById('errorMsg');
+
+  errorEl.style.display = 'none';
+  questionEl.innerHTML = '<span class="loading-dots">考えています</span>';
+  answerArea.style.display = 'none';
+  nextBtn.style.display = 'none';
+
+  // 氷山ビジュアル更新
+  for (let i = 0; i < 5; i++) {
+    document.getElementById('iceLayer' + i).className = 'iceberg-layer' + (i < round ? ' lit-' + i : '');
+  }
+
+  document.getElementById('drillBadge').textContent = `STEP ${round + 2}`;
+  document.getElementById('drillTitle').textContent = `なんでそうなってるの？（${round + 1}回目）`;
+  document.getElementById('roundNum').textContent = round + 1;
+
+  // サマリー表示（2回目以降）
+  if (round > 0 && conversation.length >= 2) {
+    const lastAssistant = conversation.filter(m => m.role === 'assistant').slice(-1)[0];
+    if (lastAssistant) {
+      document.getElementById('summaryText').textContent = lastAssistant.content.split('\n')[0];
+      document.getElementById('summaryBox').style.display = 'block';
+    }
+  }
+
+  try {
+    const reply = await callClaude(conversation, buildSystemPrompt());
+    conversation.push({ role: 'assistant', content: reply });
+
+    questionEl.textContent = reply;
+    document.getElementById('drillAnswer').value = '';
+    answerArea.style.display = 'block';
+    nextBtn.style.display = 'block';
+    nextBtn.textContent = round < MAX_ROUNDS - 1 ? '次へ →' : '結果を見る →';
+    document.getElementById('drillAnswer').focus();
+  } catch (e) {
+    errorEl.textContent = 'エラー: ' + e.message;
+    errorEl.style.display = 'block';
+    questionEl.textContent = '';
+    // リトライボタン
+    nextBtn.textContent = 'もう一度試す';
+    nextBtn.style.display = 'block';
+    nextBtn.onclick = askNextQuestion;
+  }
+}
+
+// ── 次ラウンドへ ──
+async function nextRound() {
+  const answer = document.getElementById('drillAnswer').value.trim();
+  if (!answer) { alert('回答を入力してください。'); return; }
+
+  document.getElementById('nextBtn').onclick = nextRound;
+  conversation.push({ role: 'user', content: answer });
+  round++;
+
+  if (round >= MAX_ROUNDS) {
+    updateProgress(6);
+    await generateOutput();
+  } else {
+    updateProgress(round + 1);
+    await askNextQuestion();
+  }
+}
+
+// ── 最終出力生成 ──
+async function generateOutput() {
+  showPhase('phase1');
+  document.getElementById('aiQuestion').innerHTML = '<span class="loading-dots">氷山モデルを生成中</span>';
+  document.getElementById('answerArea').style.display = 'none';
+  document.getElementById('nextBtn').style.display = 'none';
+  document.getElementById('summaryBox').style.display = 'none';
+
+  const outputSystemPrompt = `あなたは医療・福祉現場の組織アセスメント専門家です。
+以下の会話から氷山モデルとアクションプランを生成してください。
+
+必ず以下のJSON形式のみで出力してください（前後に余計なテキストは不要）：
+{
+  "iceberg": {
+    "surface": "現象（水面上）の説明。具体的な行動・出来事を1〜2文で",
+    "pattern": "繰り返されているパターンを1〜2文で",
+    "structure": "組織的・システム的な構造要因を1〜2文で",
+    "mental_model": "背景にある信念・思い込み・文化を1〜2文で",
+    "root": "根本原因を1文で明確に"
+  },
+  "field_actions": [
+    "明日の朝礼で伝えること（具体的な言葉）",
+    "今週中にやること（物理的なアクション）",
+    "スタッフへの関わり方の変化（行動レベル）"
+  ],
+  "planner": {
+    "analysis": "なぜこの組織でこれが起きているかの構造分析（3〜4文）",
+    "proposals": [
+      "仕組み・制度レベルの改善提案",
+      "コミュニケーション設計の改善提案",
+      "中長期的な組織設計の提案"
+    ]
+  }
+}`;
+
+  try {
+    const summaryConv = [{ role: 'user', content: conversation.map(m => `[${m.role}] ${m.content}`).join('\n\n') }];
+    const raw = await callClaude(summaryConv, outputSystemPrompt);
+
+    // JSONを抽出
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('出力の形式が正しくありませんでした。もう一度お試しください。');
+    const result = JSON.parse(jsonMatch[0]);
+
+    renderOutput(result);
+    showPhase('phase2');
+    updateProgress(6);
+  } catch (e) {
+    document.getElementById('errorMsg').textContent = 'エラー: ' + e.message;
+    document.getElementById('errorMsg').style.display = 'block';
+    document.getElementById('aiQuestion').textContent = '出力の生成に失敗しました。';
+    const btn = document.getElementById('nextBtn');
+    btn.textContent = 'もう一度生成する';
+    btn.style.display = 'block';
+    btn.onclick = generateOutput;
+  }
+}
+
+// ── 出力レンダリング ──
+function renderOutput(result) {
+  document.getElementById('outSurface').textContent = result.iceberg.surface;
+  document.getElementById('outPattern').textContent = result.iceberg.pattern;
+  document.getElementById('outStructure').textContent = result.iceberg.structure;
+  document.getElementById('outMental').textContent = result.iceberg.mental_model;
+  document.getElementById('outRoot').textContent = result.iceberg.root;
+
+  const fieldEl = document.getElementById('fieldActions');
+  fieldEl.innerHTML = result.field_actions.map((a, i) =>
+    `<div class="action-item"><div class="action-num">${i + 1}</div><div class="action-text">${a}</div></div>`
+  ).join('');
+
+  document.getElementById('plannerAnalysis').textContent = result.planner.analysis;
+  const plannerEl = document.getElementById('plannerProposals');
+  plannerEl.innerHTML = result.planner.proposals.map(p =>
+    `<div class="proposal-item"><div class="proposal-mark">▶</div><div class="proposal-text">${p}</div></div>`
+  ).join('');
+}
+
+// ── タブ切り替え ──
+function switchTab(name) {
+  ['iceberg', 'field', 'planner'].forEach(t => {
+    document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1)).classList.toggle('active', t === name);
+    document.getElementById('panel' + t.charAt(0).toUpperCase() + t.slice(1)).classList.toggle('active', t === name);
+  });
+}
+
+// ── フェーズ切り替え ──
+function showPhase(id) {
+  ['phase0', 'phase1', 'phase2'].forEach(p => {
+    document.getElementById(p).className = 'phase' + (p === id ? ' active' : '');
+  });
+}
+
+// ── リセット ──
+function resetAll() {
+  round = 0; conversation = []; initialText = ''; orgName = ''; userRole = '';
+  document.getElementById('initialInput').value = '';
+  document.getElementById('orgName').value = '';
+  document.getElementById('role').value = '';
+  document.getElementById('startBtn').disabled = false;
+  document.getElementById('errorMsg').style.display = 'none';
+  document.getElementById('summaryBox').style.display = 'none';
+  document.getElementById('nextBtn').onclick = nextRound;
+  switchTab('iceberg');
+  showPhase('phase0');
+  updateProgress(0);
+}
+
+// ── 初期化 ──
+updateProgress(0);
+</script>
+</body>
+</html>
