@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>響（Hibiki）| 現場分析 | Fusion Partners</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔔</text></svg>">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
   :root {
     --bg: #0f1923; --surface: #1a2634; --card: #223044;
@@ -390,7 +391,7 @@
     </div>
 
     <div class="print-btns">
-      <button class="print-btn print-btn-pdf" onclick="printDoc()">📄 PDFで保存</button>
+      <button class="print-btn print-btn-pdf" id="pdfBtn" onclick="downloadPdf()">📄 PDFで保存</button>
       <button class="print-btn print-btn-print" onclick="printDoc()">🖨 印刷する</button>
     </div>
     <button class="reset-btn" onclick="resetAll()">↩ 最初からやり直す</button>
@@ -901,10 +902,45 @@ function goBackToPrevQuestion() {
   document.getElementById('drillAnswer').focus();
 }
 
-// ── 印刷・PDF保存 ──
+// ── PDFダウンロード（html2pdf.js） ──
+async function downloadPdf() {
+  const btn = document.getElementById('pdfBtn');
+  btn.disabled = true;
+  btn.textContent = '生成中...';
+
+  const d = new Date();
+  const dateStr = `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日 分析結果` +
+    (orgName ? `（${orgName}）` : '');
+  document.getElementById('printDate').textContent = dateStr;
+
+  // 全パネルを一時的に表示してからキャプチャ
+  const panels = ['panelIceberg', 'panelField', 'panelPlanner'];
+  const origDisplay = panels.map(id => document.getElementById(id).style.display);
+  panels.forEach(id => { document.getElementById(id).style.display = 'block'; });
+
+  const fileName = `響_分析結果_${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}.pdf`;
+
+  const element = document.getElementById('phase2');
+  const opt = {
+    margin: [10, 10, 10, 10],
+    filename: fileName,
+    image: { type: 'jpeg', quality: 0.95 },
+    html2canvas: { scale: 2, useCORS: true, backgroundColor: '#0f1923' },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  };
+
+  try {
+    await html2pdf().set(opt).from(element).save();
+  } finally {
+    // パネル表示を元に戻す
+    panels.forEach((id, i) => { document.getElementById(id).style.display = origDisplay[i]; });
+    btn.disabled = false;
+    btn.textContent = '📄 PDFで保存';
+  }
+}
+
+// ── 印刷 ──
 function printDoc() {
-  // 印刷前に全パネルを一時表示してから印刷ダイアログを開く
-  // @media print で全パネル表示・不要要素非表示を制御
   const d = new Date();
   const dateStr = `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日 分析結果` +
     (orgName ? `（${orgName}）` : '');
