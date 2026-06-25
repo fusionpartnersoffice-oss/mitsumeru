@@ -433,6 +433,19 @@
     margin-bottom: 16px;
   }
   .demo-error { color: var(--red); font-size: 12px; margin-top: 4px; margin-bottom: 8px; display: none; }
+
+  /* ===== 同意取得 ===== */
+  .consent-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(30, 24, 18, 0.96);
+    z-index: 600;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .consent-overlay.active { display: flex; }
 </style>
 </head>
 <body>
@@ -461,6 +474,21 @@
   </div>
 </div>
 
+<!-- 同意取得モーダル -->
+<div class="consent-overlay" id="consent-overlay">
+  <div class="demo-card">
+    <div class="demo-badge">初回確認</div>
+    <h2>ミツメル</h2>
+    <p>ご利用の前に以下をご確認ください。<br>「同意して始める」を押すことで同意したとみなします。</p>
+    <p style="font-size:12px;margin-bottom:20px;">
+      <a href="./mitsumeru_privacy.html" target="_blank" style="color:var(--accent);text-decoration:underline;">プライバシーポリシー</a>
+      　｜
+      <a href="./mitsumeru_terms.html" target="_blank" style="color:var(--accent);text-decoration:underline;">利用規約</a>
+    </p>
+    <button class="btn-primary" onclick="giveConsent()">同意して始める</button>
+  </div>
+</div>
+
 <div class="header">
   <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;">
     <!-- 外六角形 -->
@@ -478,7 +506,7 @@
   <span>FUSION PARTNERS</span>
   <button onclick="toggleHelp()" style="margin-left:auto;background:none;border:0.5px solid var(--border);color:var(--bg);border-radius:20px;padding:4px 12px;font-size:11px;cursor:pointer;letter-spacing:1px;">？ ヘルプ</button>
   <button onclick="setApiKey()" style="margin-left:8px;background:none;border:0.5px solid var(--border);color:var(--bg);border-radius:20px;padding:4px 12px;font-size:11px;cursor:pointer;letter-spacing:1px;" id="api-btn">🔑 API</button>
-  <a href="./mitsumeru_scan.html" target="_blank" style="margin-left:8px;background:none;border:0.5px solid #4fc3f7;color:#4fc3f7;border-radius:20px;padding:4px 12px;font-size:11px;cursor:pointer;letter-spacing:1px;text-decoration:none;">🔍 スキャン</a>
+  <a href="#" onclick="openScanWithConsent();return false;" style="margin-left:8px;background:none;border:0.5px solid #4fc3f7;color:#4fc3f7;border-radius:20px;padding:4px 12px;font-size:11px;cursor:pointer;letter-spacing:1px;text-decoration:none;">🔍 スキャン</a>
 </div>
 
 <!-- 画像プレビューモーダル -->
@@ -1667,6 +1695,7 @@ function getApiKey() {
 }
 
 function callClaude(prompt, onSuccess, onError) {
+  if (!hasConsent()) { onError('利用規約・プライバシーポリシーへの同意が必要です。ページを再読み込みしてください。'); return; }
   if (demoActive) {
     let demoText;
     if (prompt.includes('【参謀からの一言】')) {
@@ -1765,7 +1794,7 @@ function setDates() {
 setDates();
 loadProfile();
 updateSyncTargetDisplay();
-checkDemoOrApiKey();
+checkConsent();
 if (apiKey) {
   const btn = document.getElementById('api-btn');
   if (btn) btn.style.color = '#4caf82';
@@ -3129,6 +3158,29 @@ function useOwnApiKey() {
   document.getElementById('limit-overlay').classList.remove('active');
   setApiKey();
   if (apiKey) demoActive = false;
+}
+
+function hasConsent() {
+  return !!localStorage.getItem('mitsumeru_consent_date');
+}
+
+function giveConsent() {
+  localStorage.setItem('mitsumeru_consent_date', new Date().toISOString());
+  document.getElementById('consent-overlay').classList.remove('active');
+  checkDemoOrApiKey();
+}
+
+function checkConsent() {
+  if (!hasConsent()) {
+    document.getElementById('consent-overlay').classList.add('active');
+  } else {
+    checkDemoOrApiKey();
+  }
+}
+
+function openScanWithConsent() {
+  if (!confirm('心理アセスメントには要配慮個人情報が含まれます。\n\n入力した情報はAI分析のためAnthropicのサーバーに送信されます。\n\n続けますか？')) return;
+  window.open('./mitsumeru_scan.html', '_blank');
 }
 </script>
 
