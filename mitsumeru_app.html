@@ -3122,7 +3122,7 @@ HP：72/100　MP：65/100　LV：LV4/80（本日+40pt、4ポモ）
 function checkDemoOrApiKey() {
   if (apiKey) return;
   const demoCount = parseInt(localStorage.getItem('mitsumeru_demo_count') || '0');
-  if (demoCount >= 2) {
+  if (demoCount >= 5) {
     document.getElementById('limit-overlay').classList.add('active');
     return;
   }
@@ -3139,7 +3139,7 @@ function submitInviteCode() {
   }
   errEl.style.display = 'none';
   const demoCount = parseInt(localStorage.getItem('mitsumeru_demo_count') || '0');
-  if (demoCount >= 2) {
+  if (demoCount >= 5) {
     document.getElementById('invite-overlay').classList.remove('active');
     document.getElementById('limit-overlay').classList.add('active');
     return;
@@ -3148,7 +3148,7 @@ function submitInviteCode() {
   demoActive = true;
   document.getElementById('invite-overlay').classList.remove('active');
   const badge = document.createElement('span');
-  badge.textContent = 'DEMO ' + (demoCount + 1) + '/2';
+  badge.textContent = 'DEMO ' + (demoCount + 1) + '/5';
   badge.style.cssText = 'background:#fff3cd;color:#8a6a00;border:0.5px solid #ffd970;border-radius:20px;padding:3px 10px;font-size:11px;letter-spacing:1px;margin-left:8px;';
   document.querySelector('.header').appendChild(badge);
 }
