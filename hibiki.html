@@ -449,19 +449,34 @@ function updateProgress(step) {
   document.getElementById('progressLabel').textContent = `STEP ${step + 1} / 7 ─ ${labels[step]}`;
 }
 
-// ── Claude API呼び出し ──
+// ── Claude API呼び出し（AbortController 60秒タイムアウト付き）──
 async function callClaude(messages, systemPrompt, maxTokens = 1024) {
   if (!apiKey) { setApiKey(); if (!apiKey) throw new Error('APIキーが設定されていません'); }
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true'
-    },
-    body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: maxTokens, system: systemPrompt, messages })
-  });
+
+  const controller = new AbortController();
+  // 60秒でタイムアウト：fetchが無限に待機するのを防ぐ
+  const timer = setTimeout(() => controller.abort(), 60000);
+
+  let res;
+  try {
+    res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      signal: controller.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: maxTokens, system: systemPrompt, messages })
+    });
+  } catch (err) {
+    clearTimeout(timer);
+    if (err.name === 'AbortError') throw new Error('タイムアウト（60秒）しました。通信環境を確認してもう一度試してください。');
+    throw new Error('通信エラー: ' + err.message);
+  }
+  clearTimeout(timer);
+
   if (!res.ok) {
     const errBody = await res.json().catch(() => ({}));
     const detail = errBody.error?.message || '';
@@ -522,9 +537,19 @@ async function askNextQuestion() {
   const errorEl = document.getElementById('errorMsg');
 
   errorEl.style.display = 'none';
-  questionEl.innerHTML = '<span class="loading-dots">考えています</span>';
   answerArea.style.display = 'none';
   nextBtn.style.display = 'none';
+  nextBtn.disabled = false;
+
+  // 経過時間カウンター（BUG-002対応：長い待機をフリーズと誤認させない）
+  let elapsed = 0;
+  const loadTimer = setInterval(() => {
+    elapsed++;
+    const msg = elapsed < 10 ? '考えています' : `考えています（${elapsed}秒）`;
+    const hint = elapsed >= 20 ? '<br><span style="font-size:0.75rem;color:var(--sub)">AIが深く考えています。もう少しお待ちください。</span>' : '';
+    questionEl.innerHTML = `<span class="loading-dots">${msg}</span>${hint}`;
+  }, 1000);
+  questionEl.innerHTML = '<span class="loading-dots">考えています</span>';
 
   // 氷山ビジュアル更新
   for (let i = 0; i < 5; i++) {
@@ -546,20 +571,23 @@ async function askNextQuestion() {
 
   try {
     const reply = await callClaude(conversation, buildSystemPrompt());
+    clearInterval(loadTimer);
     conversation.push({ role: 'assistant', content: reply });
 
     questionEl.textContent = reply;
     document.getElementById('drillAnswer').value = '';
     answerArea.style.display = 'block';
+    nextBtn.disabled = false;
     nextBtn.style.display = 'block';
     nextBtn.textContent = round < MAX_ROUNDS - 1 ? '次へ →' : '結果を見る →';
-    // Bug1修正: エラーリトライ後にonclickがaskNextQuestionのままになるのを防ぐ
     nextBtn.onclick = nextRound;
     document.getElementById('drillAnswer').focus();
   } catch (e) {
+    clearInterval(loadTimer);
     errorEl.textContent = 'エラー: ' + e.message;
     errorEl.style.display = 'block';
     questionEl.textContent = 'AIへの接続に失敗しました。';
+    nextBtn.disabled = false;
     nextBtn.textContent = 'もう一度試す';
     nextBtn.style.display = 'block';
     nextBtn.onclick = askNextQuestion;
@@ -571,7 +599,12 @@ async function nextRound() {
   const answer = document.getElementById('drillAnswer').value.trim();
   if (!answer) { alert('回答を入力してください。'); return; }
 
-  document.getElementById('nextBtn').onclick = nextRound;
+  // クリック直後にボタンを封鎖（二重クリック・CDPフリーズ防止）
+  const nextBtn = document.getElementById('nextBtn');
+  nextBtn.disabled = true;
+  nextBtn.textContent = '送信中...';
+  nextBtn.onclick = nextRound;
+
   conversation.push({ role: 'user', content: answer });
   round++;
 
