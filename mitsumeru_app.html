@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>ミツメル v8 — Fusion Partners</title>
+<title>ミツメル v7 — Fusion Partners</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%233a3028'/><polygon points='16,3 27,9.5 27,22.5 16,29 5,22.5 5,9.5' fill='none' stroke='%23c8b89a' stroke-width='1.2'/><polygon points='9,10 15,14 9,22' fill='%238a7a6a'/><polygon points='23,10 17,14 23,22' fill='%238a7a6a'/><circle cx='16' cy='16' r='3.5' fill='%23c8b89a'/></svg>">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;500&family=Noto+Sans+JP:wght@300;400;500&display=swap');
@@ -433,19 +433,6 @@
     margin-bottom: 16px;
   }
   .demo-error { color: var(--red); font-size: 12px; margin-top: 4px; margin-bottom: 8px; display: none; }
-
-  /* ===== 同意取得 ===== */
-  .consent-overlay {
-    position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(30, 24, 18, 0.96);
-    z-index: 600;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-  }
-  .consent-overlay.active { display: flex; }
 </style>
 </head>
 <body>
@@ -474,21 +461,6 @@
   </div>
 </div>
 
-<!-- 同意取得モーダル -->
-<div class="consent-overlay" id="consent-overlay">
-  <div class="demo-card">
-    <div class="demo-badge">初回確認</div>
-    <h2>ミツメル</h2>
-    <p>ご利用の前に以下をご確認ください。<br>「同意して始める」を押すことで同意したとみなします。</p>
-    <p style="font-size:12px;margin-bottom:20px;">
-      <a href="./mitsumeru_privacy.html" target="_blank" style="color:var(--accent);text-decoration:underline;">プライバシーポリシー</a>
-      　｜
-      <a href="./mitsumeru_terms.html" target="_blank" style="color:var(--accent);text-decoration:underline;">利用規約</a>
-    </p>
-    <button class="btn-primary" onclick="giveConsent()">同意して始める</button>
-  </div>
-</div>
-
 <div class="header">
   <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;">
     <!-- 外六角形 -->
@@ -506,7 +478,7 @@
   <span>FUSION PARTNERS</span>
   <button onclick="toggleHelp()" style="margin-left:auto;background:none;border:0.5px solid var(--border);color:var(--bg);border-radius:20px;padding:4px 12px;font-size:11px;cursor:pointer;letter-spacing:1px;">？ ヘルプ</button>
   <button onclick="setApiKey()" style="margin-left:8px;background:none;border:0.5px solid var(--border);color:var(--bg);border-radius:20px;padding:4px 12px;font-size:11px;cursor:pointer;letter-spacing:1px;" id="api-btn">🔑 API</button>
-  <a href="#" onclick="openScanWithConsent();return false;" style="margin-left:8px;background:none;border:0.5px solid #4fc3f7;color:#4fc3f7;border-radius:20px;padding:4px 12px;font-size:11px;cursor:pointer;letter-spacing:1px;text-decoration:none;">🔍 スキャン</a>
+  <a href="./mitsumeru_scan.html" target="_blank" style="margin-left:8px;background:none;border:0.5px solid #4fc3f7;color:#4fc3f7;border-radius:20px;padding:4px 12px;font-size:11px;cursor:pointer;letter-spacing:1px;text-decoration:none;">🔍 スキャン</a>
 </div>
 
 <!-- 画像プレビューモーダル -->
@@ -1036,26 +1008,20 @@
 
   <div class="section">
     <div class="section-title">明日の設計</div>
-    <div class="section-title" style="font-size:13px;margin-bottom:8px;">📅 先行予定マップ</div>
-    <p style="font-size:12px;color:var(--text2);margin-bottom:10px;">複数日分の確定アポを一覧管理します。</p>
-    <div style="overflow-x:auto;">
-      <table id="advance-schedule-table" style="width:100%;border-collapse:collapse;font-size:12px;">
-        <thead>
-          <tr style="background:var(--bg2);border-bottom:1px solid var(--border);">
-            <th style="padding:6px 4px;text-align:center;color:var(--text2);font-weight:500;min-width:36px;">曜日</th>
-            <th style="padding:6px 4px;text-align:center;color:var(--text2);font-weight:500;min-width:80px;">日付</th>
-            <th style="padding:6px 4px;text-align:center;color:var(--text2);font-weight:500;min-width:72px;">開始</th>
-            <th style="padding:6px 4px;text-align:center;color:var(--text2);font-weight:500;min-width:72px;">終了</th>
-            <th style="padding:6px 4px;text-align:center;color:var(--text2);font-weight:500;min-width:50px;">ポモ数</th>
-            <th style="padding:6px 4px;text-align:center;color:var(--text2);font-weight:500;min-width:80px;">急重度</th>
-            <th style="padding:6px 4px;text-align:left;color:var(--text2);font-weight:500;">内容</th>
-            <th style="padding:6px 4px;text-align:center;color:var(--text2);font-weight:500;min-width:36px;"></th>
-          </tr>
-        </thead>
-        <tbody id="advance-schedule-body"></tbody>
-      </table>
+    <div class="field">
+      <label>明日の確定アポ（時刻4桁・ポモ数・内容）</label>
+      <textarea id="e-tomorrow" class="tall" oninput="saveEvening()" placeholder="例：0900 2 Claude壁打ち ミツメルアプリ開発&#10;1400 2 LITALICO面接準備"></textarea>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
+        <button onclick="insertIntoTextarea('e-tomorrow','1 ')" style="padding:6px 10px;border-radius:6px;border:0.5px solid var(--border);background:var(--bg2);font-size:12px;cursor:pointer;color:var(--text);">1ポモ</button>
+        <button onclick="insertIntoTextarea('e-tomorrow','2 ')" style="padding:6px 10px;border-radius:6px;border:0.5px solid var(--border);background:var(--bg2);font-size:12px;cursor:pointer;color:var(--text);">2ポモ</button>
+        <button onclick="insertIntoTextarea('e-tomorrow','3 ')" style="padding:6px 10px;border-radius:6px;border:0.5px solid var(--border);background:var(--bg2);font-size:12px;cursor:pointer;color:var(--text);">3ポモ</button>
+        <button onclick="insertIntoTextarea('e-tomorrow','? ')" style="padding:6px 10px;border-radius:6px;border:0.5px solid var(--border);background:var(--bg2);font-size:12px;cursor:pointer;color:var(--text);">未定</button>
+        <button onclick="insertIntoTextarea('e-tomorrow','① ')" style="padding:6px 10px;border-radius:6px;border:0.5px solid var(--border);background:var(--bg2);font-size:12px;cursor:pointer;color:var(--text);">①</button>
+        <button onclick="insertIntoTextarea('e-tomorrow','② ')" style="padding:6px 10px;border-radius:6px;border:0.5px solid var(--border);background:var(--bg2);font-size:12px;cursor:pointer;color:var(--text);">②</button>
+        <button onclick="insertIntoTextarea('e-tomorrow','③ ')" style="padding:6px 10px;border-radius:6px;border:0.5px solid var(--border);background:var(--bg2);font-size:12px;cursor:pointer;color:var(--text);">③</button>
+        <button onclick="insertIntoTextarea('e-tomorrow','④ ')" style="padding:6px 10px;border-radius:6px;border:0.5px solid var(--border);background:var(--bg2);font-size:12px;cursor:pointer;color:var(--text);">④</button>
+      </div>
     </div>
-    <button onclick="addAdvanceRow()" style="margin-top:10px;margin-bottom:16px;padding:6px 14px;border-radius:6px;border:0.5px solid var(--border);background:var(--bg2);font-size:12px;cursor:pointer;color:var(--text);">＋ 行を追加</button>
     <div class="field">
       <label>遅延イベント（先送りタスク）</label>
       <textarea id="e-delay" oninput="saveEvening()" placeholder="先送りしたタスクを記録"></textarea>
@@ -1324,133 +1290,8 @@ function saveEvening() {
   });
   data['debugScores'] = debugScores;
   data['try100-count'] = counts.try100;
-  data['advanceSchedule'] = getAdvanceScheduleData();
   localStorage.setItem(lsKey('evening'), JSON.stringify(data));
   cloudSave('evening', data);
-}
-
-// ===== 先行予定マップ =====
-const DAYS = ['日','月','火','水','木','金','土'];
-function addAdvanceRow(row) {
-  const tbody = document.getElementById('advance-schedule-body');
-  const tr = document.createElement('tr');
-  tr.style.borderBottom = '0.5px solid var(--border)';
-  const day        = row ? (row.day        || '') : '';
-  const date       = row ? (row.date       || '') : '';
-  const startHour  = row ? (row.startHour  || row.hour   || '') : '';
-  const startMin   = row ? (row.startMinute|| row.minute || '') : '';
-  const endHour    = row ? (row.endHour    || '') : '';
-  const endMin     = row ? (row.endMinute  || '') : '';
-  const pomo       = row ? (row.pomo       || '') : '';
-  const priority   = row ? (row.priority   || '') : '';
-  const content    = row ? (row.content    || '') : '';
-
-  const ss = 'border:0.5px solid var(--border);background:var(--bg2);color:var(--text);border-radius:4px;font-size:10px;padding:1px;';
-  const hOpts = '<option value=""></option>' + Array.from({length:24},(_,i)=>{const v=String(i).padStart(2,'0');return '<option>'+v+'</option>';}).join('');
-  const mOpts = '<option value=""></option>'+['00','15','30','45'].map(m=>'<option>'+m+'</option>').join('');
-  const priHtml = ['①','②','③','④'].map(p=>'<button onclick="setAdvancePriority(this,\''+p+'\')" class="adv-pri-btn" data-val="'+p+'" style="padding:2px 4px;border-radius:4px;border:0.5px solid var(--border);background:var(--bg2);color:var(--text);font-size:10px;cursor:pointer;">'+p+'</button>').join('');
-  const pomoOpts = '<option value=""></option>'+['1','2','3','4','5','6','7','8','9','10'].map(p=>'<option>'+p+'</option>').join('')+'<option>未定</option>';
-
-  tr.innerHTML = `
-    <td style="padding:4px 2px;text-align:center;">
-      <select class="adv-day" onchange="saveEvening()" style="border:0.5px solid var(--border);background:var(--bg2);color:var(--text);border-radius:4px;font-size:11px;width:36px;padding:2px;">
-        <option value=""></option>
-        ${DAYS.map(d=>'<option>'+d+'</option>').join('')}
-      </select>
-    </td>
-    <td style="padding:4px 2px;">
-      <input class="adv-date" type="date" onchange="saveEvening()" style="width:110px;border:0.5px solid var(--border);background:var(--bg2);color:var(--text);border-radius:4px;font-size:11px;padding:3px 4px;touch-action:manipulation;">
-    </td>
-    <td style="padding:4px 2px;text-align:center;">
-      <div style="display:flex;gap:1px;align-items:center;justify-content:center;">
-        <select class="adv-sh" onchange="saveEvening()" style="${ss}width:32px;">${hOpts}</select><span style="font-size:10px;color:var(--text2);">:</span><select class="adv-sm" onchange="saveEvening()" style="${ss}width:30px;">${mOpts}</select>
-      </div>
-    </td>
-    <td style="padding:4px 2px;text-align:center;">
-      <div style="display:flex;gap:1px;align-items:center;justify-content:center;">
-        <select class="adv-eh" onchange="saveEvening()" style="${ss}width:32px;">${hOpts}</select><span style="font-size:10px;color:var(--text2);">:</span><select class="adv-em" onchange="saveEvening()" style="${ss}width:30px;">${mOpts}</select>
-      </div>
-    </td>
-    <td style="padding:4px 2px;text-align:center;">
-      <select class="adv-pomo" onchange="saveEvening()" style="border:0.5px solid var(--border);background:var(--bg2);color:var(--text);border-radius:4px;font-size:11px;padding:2px;width:44px;">${pomoOpts}</select>
-    </td>
-    <td style="padding:4px 2px;text-align:center;">
-      <div style="display:flex;gap:2px;justify-content:center;">${priHtml}</div>
-    </td>
-    <td style="padding:4px 2px;">
-      <input class="adv-content" type="text" oninput="saveEvening()" placeholder="内容" style="width:100%;min-width:80px;border:0.5px solid var(--border);background:var(--bg2);color:var(--text);border-radius:4px;font-size:11px;padding:3px 4px;">
-    </td>
-    <td style="padding:4px 2px;text-align:center;">
-      <button onclick="removeAdvanceRow(this)" style="padding:2px 6px;border-radius:4px;border:0.5px solid var(--border);background:var(--bg2);color:#c0392b;font-size:11px;cursor:pointer;">✕</button>
-    </td>
-  `;
-  tbody.appendChild(tr);
-  tr.querySelector('.adv-day').value   = day;
-  tr.querySelector('.adv-date').value  = date;
-  tr.querySelector('.adv-sh').value    = startHour;
-  tr.querySelector('.adv-sm').value    = startMin || (startHour ? '00' : '');
-  tr.querySelector('.adv-eh').value    = endHour;
-  tr.querySelector('.adv-em').value    = endMin   || (endHour   ? '00' : '');
-  tr.querySelector('.adv-pomo').value  = pomo;
-  tr.querySelector('.adv-content').value = content;
-  if (priority) {
-    const btn = tr.querySelector('.adv-pri-btn[data-val="'+priority+'"]');
-    if (btn) { btn.style.background = 'var(--accent)'; btn.style.color = '#fff'; }
-  }
-}
-function setAdvancePomo(btn, val) {
-  const td = btn.closest('td');
-  td.querySelectorAll('.adv-pomo-btn').forEach(b => {
-    b.style.background = 'var(--bg2)'; b.style.color = 'var(--text)';
-  });
-  btn.style.background = 'var(--accent)'; btn.style.color = '#fff';
-  saveEvening();
-}
-function setAdvancePriority(btn, val) {
-  const td = btn.closest('td');
-  td.querySelectorAll('.adv-pri-btn').forEach(b => {
-    b.style.background = 'var(--bg2)'; b.style.color = 'var(--text)';
-  });
-  btn.style.background = 'var(--accent)'; btn.style.color = '#fff';
-  saveEvening();
-}
-function removeAdvanceRow(btn) {
-  btn.closest('tr').remove();
-  saveEvening();
-}
-function getAdvanceScheduleData() {
-  const rows = [];
-  document.querySelectorAll('#advance-schedule-body tr').forEach(tr => {
-    const priBtn = tr.querySelector('.adv-pri-btn[style*="var(--accent)"]');
-    rows.push({
-      day:         (tr.querySelector('.adv-day')    ||{value:''}).value,
-      date:        (tr.querySelector('.adv-date')   ||{value:''}).value,
-      startHour:   (tr.querySelector('.adv-sh')     ||{value:''}).value,
-      startMinute: (tr.querySelector('.adv-sm')     ||{value:''}).value,
-      endHour:     (tr.querySelector('.adv-eh')     ||{value:''}).value,
-      endMinute:   (tr.querySelector('.adv-em')     ||{value:''}).value,
-      pomo:        (tr.querySelector('.adv-pomo')   ||{value:''}).value,
-      priority:    priBtn ? priBtn.dataset.val : '',
-      content:     (tr.querySelector('.adv-content')||{value:''}).value
-    });
-  });
-  return rows;
-}
-function initAdvanceSchedule(data) {
-  const tbody = document.getElementById('advance-schedule-body');
-  if (!tbody) return;
-  tbody.innerHTML = '';
-  const emptyRow = () => ({day:'',date:'',startHour:'',startMinute:'',endHour:'',endMinute:'',pomo:'',priority:'',content:''});
-  const base = Array.isArray(data) ? data.slice() : [];
-  // 末尾の完全空行を除去（旧7行デフォルトの移行対応）
-  while (base.length > 0) {
-    const r = base[base.length - 1];
-    if (!r.day && !r.date && !r.startHour && !r.hour && !r.endHour && !r.pomo && !r.priority && !r.content) {
-      base.pop();
-    } else { break; }
-  }
-  while (base.length < 3) base.push(emptyRow());
-  base.forEach(r => addAdvanceRow(r));
 }
 function saveMorning() {
   const data = { _ts: Date.now() };
@@ -1545,7 +1386,6 @@ function applyEveningData(d) {
       }
     });
   }
-  initAdvanceSchedule(d.advanceSchedule || []);
 }
 
 function applyMemosData(d) {
@@ -1568,7 +1408,6 @@ window.addEventListener('DOMContentLoaded', async function() {
 
   applyMorningData(lsMorning);
   applyEveningData(lsEvening);
-  if (!lsEvening || !lsEvening.advanceSchedule) initAdvanceSchedule([]);
   applyMemosData(lsMemos);
   applyDispatchData(lsDispatch);
 
@@ -1695,7 +1534,6 @@ function getApiKey() {
 }
 
 function callClaude(prompt, onSuccess, onError) {
-  if (!hasConsent()) { onError('利用規約・プライバシーポリシーへの同意が必要です。ページを再読み込みしてください。'); return; }
   if (demoActive) {
     let demoText;
     if (prompt.includes('【参謀からの一言】')) {
@@ -1794,7 +1632,7 @@ function setDates() {
 setDates();
 loadProfile();
 updateSyncTargetDisplay();
-checkConsent();
+checkDemoOrApiKey();
 if (apiKey) {
   const btn = document.getElementById('api-btn');
   if (btn) btn.style.color = '#4caf82';
@@ -2460,7 +2298,7 @@ function parseSchedule(text) {
 async function generateEvening() {
   saveEvening();
   const supplement  = document.getElementById('e-supplement').value.trim();
-  const tomorrow    = (document.getElementById('e-tomorrow') || {value:''}).value.trim();
+  const tomorrow    = document.getElementById('e-tomorrow').value.trim();
   const delay       = document.getElementById('e-delay').value.trim();
   const try100      = document.getElementById('e-try100').value.trim();
   const feedback    = document.getElementById('e-feedback').value.trim();
@@ -2539,16 +2377,6 @@ HP: ${hp}→${endHP} ／ MP: ${mp}→${endMP}
       csvRows.push(`"【①急重要】${e.title}（${e.pomos}ポモ）",${e.date},${e.start},${e.date},${e.end},False,"AI判断：急・重要"`);
     });
   }
-  // 先行予定マップを calendarCSV に追加
-  getAdvanceScheduleData().filter(r => r.date && r.content && /^\d{4}-\d{2}-\d{2}$/.test(r.date)).forEach(r => {
-    const d = r.date.replace(/-/g, '/');
-    const sh = r.startHour ? r.startHour + ':' + (r.startMinute || '00') : '';
-    const eh = r.endHour   ? r.endHour   + ':' + (r.endMinute   || '00') : '';
-    const allDay = sh ? 'False' : 'True';
-    const label = '【先行予定】' + r.content + (r.pomo ? '（' + r.pomo + 'ポモ）' : '') + (r.priority || '');
-    const c = (r.content || '').replace(/"/g, '""');
-    csvRows.push('"' + label + '",' + d + ',' + sh + ',' + d + ',' + eh + ',' + allDay + ',"' + c + '"');
-  });
   calendarCSV = csvRows.join('\n');
   const calendarPayload = { csv: calendarCSV, _ts: Date.now() };
   localStorage.setItem(lsKey('calendar'), JSON.stringify(calendarPayload));
@@ -3122,7 +2950,7 @@ HP：72/100　MP：65/100　LV：LV4/80（本日+40pt、4ポモ）
 function checkDemoOrApiKey() {
   if (apiKey) return;
   const demoCount = parseInt(localStorage.getItem('mitsumeru_demo_count') || '0');
-  if (demoCount >= 5) {
+  if (demoCount >= 2) {
     document.getElementById('limit-overlay').classList.add('active');
     return;
   }
@@ -3139,7 +2967,7 @@ function submitInviteCode() {
   }
   errEl.style.display = 'none';
   const demoCount = parseInt(localStorage.getItem('mitsumeru_demo_count') || '0');
-  if (demoCount >= 5) {
+  if (demoCount >= 2) {
     document.getElementById('invite-overlay').classList.remove('active');
     document.getElementById('limit-overlay').classList.add('active');
     return;
@@ -3148,7 +2976,7 @@ function submitInviteCode() {
   demoActive = true;
   document.getElementById('invite-overlay').classList.remove('active');
   const badge = document.createElement('span');
-  badge.textContent = 'DEMO ' + (demoCount + 1) + '/5';
+  badge.textContent = 'DEMO ' + (demoCount + 1) + '/2';
   badge.style.cssText = 'background:#fff3cd;color:#8a6a00;border:0.5px solid #ffd970;border-radius:20px;padding:3px 10px;font-size:11px;letter-spacing:1px;margin-left:8px;';
   document.querySelector('.header').appendChild(badge);
 }
@@ -3158,29 +2986,6 @@ function useOwnApiKey() {
   document.getElementById('limit-overlay').classList.remove('active');
   setApiKey();
   if (apiKey) demoActive = false;
-}
-
-function hasConsent() {
-  return !!localStorage.getItem('mitsumeru_consent_date');
-}
-
-function giveConsent() {
-  localStorage.setItem('mitsumeru_consent_date', new Date().toISOString());
-  document.getElementById('consent-overlay').classList.remove('active');
-  checkDemoOrApiKey();
-}
-
-function checkConsent() {
-  if (!hasConsent()) {
-    document.getElementById('consent-overlay').classList.add('active');
-  } else {
-    checkDemoOrApiKey();
-  }
-}
-
-function openScanWithConsent() {
-  if (!confirm('心理アセスメントには要配慮個人情報が含まれます。\n\n入力した情報はAI分析のためAnthropicのサーバーに送信されます。\n\n続けますか？')) return;
-  window.open('./mitsumeru_scan.html', '_blank');
 }
 </script>
 

@@ -412,7 +412,7 @@ function updateProgress(step) {
 }
 
 // ── Claude API呼び出し ──
-async function callClaude(messages, systemPrompt) {
+async function callClaude(messages, systemPrompt, maxTokens = 1024) {
   if (!apiKey) { setApiKey(); if (!apiKey) throw new Error('APIキーが設定されていません'); }
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -422,13 +422,15 @@ async function callClaude(messages, systemPrompt) {
       'anthropic-version': '2023-06-01',
       'anthropic-dangerous-direct-browser-access': 'true'
     },
-    body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1024, system: systemPrompt, messages })
+    body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: maxTokens, system: systemPrompt, messages })
   });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.error?.message || `APIエラー (${res.status})`);
+    const errBody = await res.json().catch(() => ({}));
+    const detail = errBody.error?.message || '';
+    throw new Error(`APIエラー (${res.status})${detail ? ': ' + detail : ''}`);
   }
   const data = await res.json();
+  if (!data.content || !data.content[0]) throw new Error('APIから空のレスポンスが返りました');
   return data.content[0].text;
 }
 
@@ -513,12 +515,13 @@ async function askNextQuestion() {
     answerArea.style.display = 'block';
     nextBtn.style.display = 'block';
     nextBtn.textContent = round < MAX_ROUNDS - 1 ? '次へ →' : '結果を見る →';
+    // Bug1修正: エラーリトライ後にonclickがaskNextQuestionのままになるのを防ぐ
+    nextBtn.onclick = nextRound;
     document.getElementById('drillAnswer').focus();
   } catch (e) {
     errorEl.textContent = 'エラー: ' + e.message;
     errorEl.style.display = 'block';
-    questionEl.textContent = '';
-    // リトライボタン
+    questionEl.textContent = 'AIへの接続に失敗しました。';
     nextBtn.textContent = 'もう一度試す';
     nextBtn.style.display = 'block';
     nextBtn.onclick = askNextQuestion;
@@ -580,12 +583,13 @@ async function generateOutput() {
 
   try {
     const summaryConv = [{ role: 'user', content: conversation.map(m => `[${m.role}] ${m.content}`).join('\n\n') }];
-    const raw = await callClaude(summaryConv, outputSystemPrompt);
+    // Bug2修正: 最終出力JSONは1024トークンを超えるため2048に引き上げ
+    const raw = await callClaude(summaryConv, outputSystemPrompt, 2048);
 
-    // JSONを抽出
-    const jsonMatch = raw.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error('出力の形式が正しくありませんでした。もう一度お試しください。');
-    const result = JSON.parse(jsonMatch[0]);
+    // Bug3修正: ```json...``` ブロックとプレーンJSONの両方に対応
+    const jsonMatch = raw.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/) || raw.match(/(\{[\s\S]*\})/);
+    if (!jsonMatch) throw new Error('出力の形式が正しくありませんでした。もう一度お試しください。\n\n【生のレスポンス】\n' + raw.substring(0, 200));
+    const result = JSON.parse(jsonMatch[1] || jsonMatch[0]);
 
     renderOutput(result);
     showPhase('phase2');
