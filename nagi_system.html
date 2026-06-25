@@ -240,7 +240,8 @@ tr:hover td{background:rgba(79,195,247,0.03);}
 </div>
 
 <div class="nav-tabs">
-  <div class="nav-tab active" onclick="goTab('corp')"   id="tab-corp">📊 法人全体</div>
+  <div class="nav-tab active" onclick="goTab('compass')" id="tab-compass">🧭 羅針盤</div>
+  <div class="nav-tab"        onclick="goTab('corp')"    id="tab-corp">📊 法人全体</div>
   <div class="nav-tab"        onclick="goTab('office')" id="tab-office">🏢 事業所別</div>
   <div class="nav-tab"        onclick="goTab('staff')"  id="tab-staff">👥 スタッフ一覧</div>
   <div class="nav-tab"        onclick="goTab('rc')"      id="tab-rc">🚨 RC異常者</div>
@@ -252,9 +253,39 @@ tr:hover td{background:rgba(79,195,247,0.03);}
 <main>
 
 <!-- ══════════════════════════════════════
+     PAGE: 羅針盤ダッシュボード
+══════════════════════════════════════ -->
+<div class="page active" id="page-compass">
+  <div style="margin-bottom:18px;">
+    <div style="font-size:0.78rem;color:var(--sub);">更新：<span id="compass-updated">─</span>　対象：<span id="compass-scope">全法人</span></div>
+  </div>
+
+  <!-- 4軸シグナルカード -->
+  <div class="grid-4" id="compass-signals" style="margin-bottom:20px;"></div>
+
+  <!-- 次の手パネル -->
+  <div class="section">
+    <div class="section-title">⚡ 次の手（優先アクション）</div>
+    <div id="compass-actions"></div>
+  </div>
+
+  <!-- サマリーバー -->
+  <div class="grid-2" style="margin-top:4px;">
+    <div class="section">
+      <div class="section-title">💰 資金サマリー</div>
+      <div id="compass-fin-summary"></div>
+    </div>
+    <div class="section">
+      <div class="section-title">🧬 スタッフサマリー</div>
+      <div id="compass-staff-summary"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
      PAGE: 法人全体ダッシュボード
 ══════════════════════════════════════ -->
-<div class="page active" id="page-corp">
+<div class="page" id="page-corp">
   <div class="print-page-title">📊 法人全体ダッシュボード</div>
   <div class="section">
     <div class="section-title">📈 Corporate Financials（法人全体計数）</div>
@@ -1671,15 +1702,16 @@ function renderRCList(){
 //  ナビゲーション
 // ════════════════════════════════════════════════════
 
-let currentTab='corp';
+let currentTab='compass';
 
 function goTab(tab){
   currentTab=tab;
-  ['corp','office','staff','rc','retired','candidate','blacklist'].forEach(t=>{
+  ['compass','corp','office','staff','rc','retired','candidate','blacklist'].forEach(t=>{
     document.getElementById(`page-${t}`)?.classList.toggle('active',t===tab);
     document.getElementById(`tab-${t}`)?.classList.toggle('active',t===tab);
   });
-  if(tab==='retired') renderRetiredList();
+  if(tab==='compass') renderCompass();
+  else if(tab==='retired') renderRetiredList();
   else if(tab==='candidate') renderCandidates();
   else if(tab==='blacklist') renderBlacklist();
   else renderCurrentTab();
@@ -2190,6 +2222,180 @@ function hardDeleteRetired(idx){
   saveRetiredList(retired);
   renderRetiredList();
   alert(`🗑️ ${r.name} のデータを完全に削除しました。`);
+}
+
+// ════════════════════════════════════════════════════
+//  羅針盤ダッシュボード
+// ════════════════════════════════════════════════════
+
+function renderCompass(){
+  const corps=getCorps();
+  const allStaff=getAllStaff();
+  const allFin=load('nagi_fin');
+  const allPipe=load('nagi_pipe');
+  const candidates=getCandidates();
+
+  // ── 軸A：資金 ──
+  const finData=allFin.filter(f=>f&&(f.mq||f.pq||f.f));
+  let finSignal='green', finLabel='良好', finDesc='全事業所の収益は安定圏', finItems=[];
+  if(finData.length){
+    finData.forEach(f=>{
+      const fm=f.fm||0;
+      const offices=getAllOffices();
+      const off=offices.find(o=>o.id===f.officeId);
+      if(fm>1.3) finItems.push({name:off?.name||'─',fm,level:'red'});
+      else if(fm>1.0) finItems.push({name:off?.name||'─',fm,level:'yellow'});
+    });
+    if(finItems.some(i=>i.level==='red')){ finSignal='red'; finLabel='要緊急対応'; finDesc='f/m比率130%超の事業所あり'; }
+    else if(finItems.some(i=>i.level==='yellow')){ finSignal='yellow'; finLabel='要注意'; finDesc='f/m比率100%超の事業所あり'; }
+    else { finSignal='green'; finLabel='良好'; finDesc='全事業所 f/m比率100%以下'; }
+  } else {
+    finSignal='gray'; finLabel='データなし'; finDesc='財務データを入力してください';
+  }
+
+  // ── 軸B：営業 ──
+  let pipeSignal='green', pipeLabel='順調', pipeDesc='', pipeCount=0;
+  if(allPipe.length){
+    allPipe.forEach(p=>{
+      const stages=p.stages||[];
+      stages.forEach(s=>{ if(s.count&&s.stage!=='成約'&&s.stage!=='失注') pipeCount+=n(s.count); });
+    });
+    if(pipeCount===0){ pipeSignal='red'; pipeLabel='案件なし'; pipeDesc='商談中の案件がゼロです'; }
+    else if(pipeCount<=2){ pipeSignal='yellow'; pipeLabel='案件少'; pipeDesc=`商談中 ${pipeCount}件`; }
+    else { pipeSignal='green'; pipeLabel='順調'; pipeDesc=`商談中 ${pipeCount}件`; }
+  } else {
+    pipeSignal='gray'; pipeLabel='データなし'; pipeDesc='パイプラインデータを入力してください';
+  }
+
+  // ── 軸C：チーム ──
+  const rcAnomalyCount=allStaff.filter(s=>{
+    const rc=getRCStatus(s.ego);
+    return rc.label!=='安全' && rc.label!=='─';
+  }).length;
+  const lsrpDangerCount=allStaff.filter(s=>n(s.lsrp?.total)>=16).length;
+  const lsrpWarnCount=allStaff.filter(s=>n(s.lsrp?.total)>=11&&n(s.lsrp?.total)<16).length;
+  const teamIssueCount=rcAnomalyCount+lsrpDangerCount;
+  let teamSignal, teamLabel, teamDesc;
+  if(!allStaff.length){ teamSignal='gray'; teamLabel='データなし'; teamDesc='スタッフデータを入力してください'; }
+  else if(teamIssueCount===0){ teamSignal='green'; teamLabel='安全'; teamDesc='RC・LSRP異常者ゼロ ✅'; }
+  else if(teamIssueCount<=2){ teamSignal='yellow'; teamLabel='要注意'; teamDesc=`RC異常${rcAnomalyCount}名・LSRP危険${lsrpDangerCount}名`; }
+  else { teamSignal='red'; teamLabel='要対応'; teamDesc=`RC異常${rcAnomalyCount}名・LSRP危険${lsrpDangerCount}名`; }
+
+  // ── 軸D：スタッフ性質 ──
+  const staffWithLsrp=allStaff.filter(s=>s.lsrp?.total!==undefined&&s.lsrp?.total!==null);
+  const safeCount=staffWithLsrp.filter(s=>n(s.lsrp?.total)<11).length;
+  const safeRate=staffWithLsrp.length?safeCount/staffWithLsrp.length:null;
+  let staffSignal, staffLabel, staffDesc;
+  if(safeRate===null||!allStaff.length){ staffSignal='gray'; staffLabel='データなし'; staffDesc='スキャンデータを登録してください'; }
+  else if(safeRate>=0.85){ staffSignal='green'; staffLabel='良好'; staffDesc=`LSRP安全率 ${(safeRate*100).toFixed(0)}%`; }
+  else if(safeRate>=0.70){ staffSignal='yellow'; staffLabel='要注意'; staffDesc=`LSRP安全率 ${(safeRate*100).toFixed(0)}%`; }
+  else { staffSignal='red'; staffLabel='要対応'; staffDesc=`LSRP安全率 ${(safeRate*100).toFixed(0)}%`; }
+
+  // ── シグナルカード描画 ──
+  const SIG_COL={green:'var(--accent2)',yellow:'var(--warn)',red:'var(--danger)',gray:'var(--sub)'};
+  const SIG_BG={green:'rgba(129,199,132,0.12)',yellow:'rgba(255,167,38,0.12)',red:'rgba(239,83,80,0.12)',gray:'rgba(143,163,184,0.08)'};
+  const SIG_ICON={green:'🟢',yellow:'🟡',red:'🔴',gray:'⚫'};
+
+  const axes=[
+    {key:'fin',  icon:'💰', title:'資金',       signal:finSignal,  label:finLabel,  desc:finDesc,  tab:'corp'},
+    {key:'pipe', icon:'📈', title:'営業',       signal:pipeSignal, label:pipeLabel, desc:pipeDesc, tab:'corp'},
+    {key:'team', icon:'👥', title:'チーム',     signal:teamSignal, label:teamLabel, desc:teamDesc, tab:'rc'},
+    {key:'staff',icon:'🧬', title:'スタッフ性質',signal:staffSignal,label:staffLabel,desc:staffDesc,tab:'staff'},
+  ];
+
+  document.getElementById('compass-signals').innerHTML=axes.map(a=>`
+    <div class="card" style="border-left:4px solid ${SIG_COL[a.signal]};background:${SIG_BG[a.signal]};cursor:pointer;"
+         onclick="goTab('${a.tab}')">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+        <span style="font-size:1.1rem;">${a.icon}</span>
+        <span style="font-size:0.72rem;color:var(--sub);flex:1;">${a.title}</span>
+        <span style="font-size:1.2rem;">${SIG_ICON[a.signal]}</span>
+      </div>
+      <div style="font-size:1.1rem;font-weight:800;color:${SIG_COL[a.signal]};margin-bottom:4px;">${a.label}</div>
+      <div style="font-size:0.72rem;color:var(--sub);">${a.desc}</div>
+    </div>
+  `).join('');
+
+  // ── 次の手パネル ──
+  const actions=[];
+  if(rcAnomalyCount>0) actions.push({sys:'響',icon:'🗣',text:`RC異常者${rcAnomalyCount}名に個別面談を設計してください`,signal:'red',tab:'rc'});
+  if(lsrpDangerCount>0) actions.push({sys:'ミツメル',icon:'📓',text:`LSRP危険者${lsrpDangerCount}名に日次ジャーナリングを導入してください`,signal:'red',tab:'rc'});
+  if(lsrpWarnCount>0) actions.push({sys:'奏',icon:'🎵',text:`LSRP警戒者${lsrpWarnCount}名の配置見直しを検討してください`,signal:'yellow',tab:'staff'});
+  if(finItems.some(i=>i.level==='red')) actions.push({sys:'響',icon:'💸',text:`f/m130%超：固定費構造のヒアリングが必要です`,signal:'red',tab:'corp'});
+  if(pipeCount===0&&allPipe.length) actions.push({sys:'弦',icon:'📞',text:'商談中案件がゼロです。次の営業先リストを用意してください',signal:'red',tab:'corp'});
+  else if(pipeCount<=2&&allPipe.length) actions.push({sys:'弦',icon:'📋',text:`商談案件が${pipeCount}件と少ない状態です。アプローチを強化してください`,signal:'yellow',tab:'corp'});
+  if(candidates.length>0) actions.push({sys:'凪',icon:'👤',text:`採用判断待ちの候補者が${candidates.length}名います`,signal:'yellow',tab:'candidate'});
+  if(!finData.length) actions.push({sys:'凪',icon:'⚙',text:'財務データが未入力です。データ管理から入力してください',signal:'gray',tab:'corp'});
+  if(!allStaff.length) actions.push({sys:'凪',icon:'⚙',text:'スタッフデータが未入力です。スタッフ一覧から登録してください',signal:'gray',tab:'staff'});
+
+  const ACT_BG={red:'rgba(239,83,80,0.1)',yellow:'rgba(255,167,38,0.1)',gray:'rgba(143,163,184,0.06)'};
+  const ACT_COL={red:'var(--danger)',yellow:'var(--warn)',gray:'var(--sub)'};
+  const actEl=document.getElementById('compass-actions');
+  if(!actions.length){
+    actEl.innerHTML='<div style="padding:20px;text-align:center;color:var(--accent2);font-size:0.9rem;">✅ 現時点で優先アクションはありません</div>';
+  } else {
+    actEl.innerHTML=actions.map((a,i)=>`
+      <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:8px;background:${ACT_BG[a.signal]};margin-bottom:8px;cursor:pointer;"
+           onclick="goTab('${a.tab}')">
+        <div style="font-size:1.2rem;flex-shrink:0;">${a.icon}</div>
+        <div style="flex:1;">
+          <span style="font-size:0.68rem;font-weight:700;color:${ACT_COL[a.signal]};margin-right:6px;">→ ${a.sys}へ</span>
+          <span style="font-size:0.8rem;">${a.text}</span>
+        </div>
+        <div style="font-size:0.68rem;color:var(--sub);">${i+1}/${actions.length}</div>
+      </div>
+    `).join('');
+  }
+
+  // ── 資金サマリー（簡易） ──
+  const finSumEl=document.getElementById('compass-fin-summary');
+  if(!allFin.length){
+    finSumEl.innerHTML='<div style="color:var(--sub);font-size:0.78rem;padding:12px 0;">財務データなし</div>';
+  } else {
+    const offices=getAllOffices();
+    finSumEl.innerHTML=allFin.slice(0,4).map(f=>{
+      const off=offices.find(o=>o.id===f.officeId);
+      const fm=f.fm||0;
+      const col=fm>1.3?'var(--danger)':fm>1.0?'var(--warn)':'var(--accent2)';
+      return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);">
+        <span style="font-size:0.78rem;flex:1;">${off?.name||'─'}</span>
+        <span style="font-size:0.78rem;font-weight:700;color:${col};">${(fm*100).toFixed(0)}%</span>
+      </div>`;
+    }).join('');
+  }
+
+  // ── スタッフサマリー（簡易） ──
+  const staffSumEl=document.getElementById('compass-staff-summary');
+  if(!allStaff.length){
+    staffSumEl.innerHTML='<div style="color:var(--sub);font-size:0.78rem;padding:12px 0;">スタッフデータなし</div>';
+  } else {
+    const total=allStaff.length;
+    const rcOk=allStaff.filter(s=>getRCStatus(s.ego).label==='安全'||getRCStatus(s.ego).label==='─').length;
+    const lsrpOk=allStaff.filter(s=>n(s.lsrp?.total)<11).length;
+    const candCount=candidates.length;
+    staffSumEl.innerHTML=`
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <div class="card" style="flex:1;min-width:80px;text-align:center;padding:10px;">
+          <div style="font-size:1.4rem;font-weight:700;color:var(--accent);">${total}</div>
+          <div style="font-size:0.65rem;color:var(--sub);">在籍</div>
+        </div>
+        <div class="card" style="flex:1;min-width:80px;text-align:center;padding:10px;">
+          <div style="font-size:1.4rem;font-weight:700;color:${rcOk===total?'var(--accent2)':'var(--warn)'};">${rcOk}</div>
+          <div style="font-size:0.65rem;color:var(--sub);">RC安全</div>
+        </div>
+        <div class="card" style="flex:1;min-width:80px;text-align:center;padding:10px;">
+          <div style="font-size:1.4rem;font-weight:700;color:${lsrpOk===total?'var(--accent2)':'var(--warn)'};">${lsrpOk}</div>
+          <div style="font-size:0.65rem;color:var(--sub);">LSRP安全</div>
+        </div>
+        <div class="card" style="flex:1;min-width:80px;text-align:center;padding:10px;cursor:pointer;" onclick="goTab('candidate')">
+          <div style="font-size:1.4rem;font-weight:700;color:${candCount>0?'var(--warn)':'var(--sub)'};">${candCount}</div>
+          <div style="font-size:0.65rem;color:var(--sub);">採用待ち</div>
+        </div>
+      </div>`;
+  }
+
+  // 更新日時
+  document.getElementById('compass-updated').textContent=new Date().toLocaleString('ja-JP',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
 }
 
 // ════════════════════════════════════════════════════
@@ -3764,7 +3970,7 @@ function init(){
   refreshOfficeSelectors();
   renderCorpsList();
   renderOfficesList();
-  renderCurrentTab();
+  goTab('compass');
   checkURLImport();
   updateNagiApiBtn();
   // Enterキーでスキャン
