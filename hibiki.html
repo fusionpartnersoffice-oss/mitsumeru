@@ -334,6 +334,8 @@
     </div>
 
     <button class="next-btn" id="nextBtn" style="display:none" onclick="nextRound()">次へ →</button>
+    <button class="next-btn" id="backBtn" style="display:none;margin-top:8px;background:transparent;border:1px solid var(--border);color:var(--sub);" onclick="goBackToPrevQuestion()">← 前の質問に戻る</button>
+    <button class="reset-btn" id="drillResetBtn" style="margin-top:8px;" onclick="resetAll()">↩ 最初からやり直す</button>
   </div>
 
   <!-- Phase 2: 出力 -->
@@ -590,42 +592,44 @@ async function generateOutput() {
   document.getElementById('nextBtn').style.display = 'none';
   document.getElementById('summaryBox').style.display = 'none';
 
+  // JSONプロンプト：改行禁止を明示、フラット構造で渡す
   const outputSystemPrompt = `あなたは医療・福祉現場の組織分析の専門家です。
-以下の会話から問題の根っこ分析とやることリストを生成してください。
+以下の会話から分析結果を生成してください。
 
-必ず以下のJSON形式のみで出力してください（前後に余計なテキストは不要）：
-{
-  "iceberg": {
-    "surface": "今、見えていること。具体的な行動・出来事を1〜2文で",
-    "pattern": "繰り返しているくせ・傾向を1〜2文で",
-    "structure": "組織の仕組みの問題を1〜2文で",
-    "mental_model": "背景にある思い込み・慣習を1〜2文で",
-    "root": "本当の原因（根っこ）を1文で明確に"
-  },
-  "field_actions": [
-    "明日の朝礼で伝えること（具体的な言葉）",
-    "今週中にやること（手を動かすレベルで）",
-    "関係者への関わり方で変えること"
-  ],
-  "planner": {
-    "analysis": "なぜこの組織でこれが起きているかを平易な言葉で（3〜4文）",
-    "proposals": [
-      "仕組み・ルールレベルで変えること",
-      "話し合いや情報共有の場として変えること",
-      "半年〜1年かけて取り組む組織づくり"
-    ]
-  }
-}`;
+【重要】必ず以下のJSON形式のみで出力してください。
+- 前後に文章・説明・コードブロック記号は一切不要
+- 各値は1行で書く（文字列の中に改行を入れない）
+- 日本語で、現場の人が読んでわかる言葉で書く
+
+{"surface":"今見えていること（1〜2文）","pattern":"繰り返しているくせや傾向（1〜2文）","structure":"組織の仕組みの問題（1〜2文）","mental_model":"思い込みや慣習（1〜2文）","root":"本当の原因を1文で","action1":"明日の朝礼で伝えること","action2":"今週中に手を動かしてやること","action3":"関係者への関わり方で変えること","analysis":"なぜこの組織でこれが起きているか（3〜4文）","proposal1":"仕組みやルールで変えること","proposal2":"話し合いや情報共有の場を変えること","proposal3":"半年〜1年かけて取り組む組織づくり"}`;
 
   try {
     const summaryConv = [{ role: 'user', content: conversation.map(m => `[${m.role}] ${m.content}`).join('\n\n') }];
-    // Bug2修正: 最終出力JSONは1024トークンを超えるため2048に引き上げ
-    const raw = await callClaude(summaryConv, outputSystemPrompt, 2048);
+    // max_tokens 4096：JSON出力の途中切れを防ぐ
+    const raw = await callClaude(summaryConv, outputSystemPrompt, 4096);
 
-    // Bug3修正: ```json...``` ブロックとプレーンJSONの両方に対応
-    const jsonMatch = raw.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/) || raw.match(/(\{[\s\S]*\})/);
-    if (!jsonMatch) throw new Error('出力の形式が正しくありませんでした。もう一度お試しください。\n\n【生のレスポンス】\n' + raw.substring(0, 200));
-    const result = JSON.parse(jsonMatch[1] || jsonMatch[0]);
+    // JSON抽出: コードブロック・プレーン両対応、制御文字を除去してからparse
+    let jsonStr = raw;
+    const blockMatch = raw.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+    if (blockMatch) jsonStr = blockMatch[1];
+    const objMatch = jsonStr.match(/\{[\s\S]*\}/);
+    if (!objMatch) throw new Error('分析結果を取り出せませんでした。\n\n【AIの返答の先頭】\n' + raw.substring(0, 300));
+    // 文字列値内の改行・タブを空白に置換してからparse（JSON.parseは生の改行を受け付けない）
+    const cleaned = objMatch[0].replace(/[\r\n\t]+/g, ' ');
+    const flat = JSON.parse(cleaned);
+
+    // フラットJSONを既存のrenderOutput形式に変換
+    const result = {
+      iceberg: {
+        surface: flat.surface, pattern: flat.pattern,
+        structure: flat.structure, mental_model: flat.mental_model, root: flat.root
+      },
+      field_actions: [flat.action1, flat.action2, flat.action3],
+      planner: {
+        analysis: flat.analysis,
+        proposals: [flat.proposal1, flat.proposal2, flat.proposal3]
+      }
+    };
 
     renderOutput(result);
     showPhase('phase2');
@@ -634,10 +638,12 @@ async function generateOutput() {
     document.getElementById('errorMsg').textContent = 'エラー: ' + e.message;
     document.getElementById('errorMsg').style.display = 'block';
     document.getElementById('aiQuestion').textContent = '出力の生成に失敗しました。';
-    const btn = document.getElementById('nextBtn');
-    btn.textContent = 'もう一度生成する';
-    btn.style.display = 'block';
-    btn.onclick = generateOutput;
+    const nextBtn = document.getElementById('nextBtn');
+    nextBtn.textContent = 'もう一度生成する';
+    nextBtn.style.display = 'block';
+    nextBtn.onclick = generateOutput;
+    // 前の質問に戻るボタンを表示
+    document.getElementById('backBtn').style.display = 'block';
   }
 }
 
@@ -686,9 +692,34 @@ function resetAll() {
   document.getElementById('errorMsg').style.display = 'none';
   document.getElementById('summaryBox').style.display = 'none';
   document.getElementById('nextBtn').onclick = nextRound;
+  document.getElementById('backBtn').style.display = 'none';
   switchTab('iceberg');
   showPhase('phase0');
   updateProgress(0);
+}
+
+// ── 前の質問に戻る ──
+function goBackToPrevQuestion() {
+  if (round <= 0) return;
+  // 最後のユーザー回答を取り消す
+  conversation.pop();
+  round--;
+  document.getElementById('backBtn').style.display = 'none';
+  document.getElementById('errorMsg').style.display = 'none';
+  // 最後のAI質問を再表示して回答を受け付ける
+  const lastAI = conversation.filter(m => m.role === 'assistant').slice(-1)[0];
+  document.getElementById('aiQuestion').textContent = lastAI ? lastAI.content : '';
+  document.getElementById('drillAnswer').value = '';
+  document.getElementById('answerArea').style.display = 'block';
+  const nextBtn = document.getElementById('nextBtn');
+  nextBtn.textContent = round < MAX_ROUNDS - 1 ? '次へ →' : '結果を見る →';
+  nextBtn.onclick = nextRound;
+  nextBtn.style.display = 'block';
+  document.getElementById('drillBadge').textContent = `STEP ${round + 2}`;
+  document.getElementById('drillTitle').textContent = `なんでそうなってるの？（${round + 1}回目）`;
+  document.getElementById('roundNum').textContent = round + 1;
+  updateProgress(round + 1);
+  document.getElementById('drillAnswer').focus();
 }
 
 // ── 印刷・PDF保存 ──
