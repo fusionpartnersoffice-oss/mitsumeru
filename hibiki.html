@@ -449,13 +449,14 @@ function updateProgress(step) {
   document.getElementById('progressLabel').textContent = `STEP ${step + 1} / 7 ─ ${labels[step]}`;
 }
 
-// ── Claude API呼び出し（AbortController 60秒タイムアウト付き）──
-async function callClaude(messages, systemPrompt, maxTokens = 1024) {
+// ── Claude API呼び出し（SSEストリーミング）──
+// onChunk(currentText): チャンク到着ごとに呼ばれるコールバック（省略可）
+async function callClaude(messages, systemPrompt, maxTokens = 1024, onChunk = null) {
   if (!apiKey) { setApiKey(); if (!apiKey) throw new Error('APIキーが設定されていません'); }
 
   const controller = new AbortController();
-  // 60秒でタイムアウト：fetchが無限に待機するのを防ぐ
-  const timer = setTimeout(() => controller.abort(), 60000);
+  // 120秒タイムアウト（ストリーミングなので延長）
+  const timer = setTimeout(() => controller.abort(), 120000);
 
   let res;
   try {
@@ -468,23 +469,63 @@ async function callClaude(messages, systemPrompt, maxTokens = 1024) {
         'anthropic-version': '2023-06-01',
         'anthropic-dangerous-direct-browser-access': 'true'
       },
-      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: maxTokens, system: systemPrompt, messages })
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6', max_tokens: maxTokens,
+        stream: true,  // SSEストリーミングを有効化
+        system: systemPrompt, messages
+      })
     });
   } catch (err) {
     clearTimeout(timer);
-    if (err.name === 'AbortError') throw new Error('タイムアウト（60秒）しました。通信環境を確認してもう一度試してください。');
+    if (err.name === 'AbortError') throw new Error('タイムアウトしました。通信環境を確認してもう一度試してください。');
     throw new Error('通信エラー: ' + err.message);
   }
-  clearTimeout(timer);
 
   if (!res.ok) {
+    clearTimeout(timer);
     const errBody = await res.json().catch(() => ({}));
     const detail = errBody.error?.message || '';
     throw new Error(`APIエラー (${res.status})${detail ? ': ' + detail : ''}`);
   }
-  const data = await res.json();
-  if (!data.content || !data.content[0]) throw new Error('APIから空のレスポンスが返りました');
-  return data.content[0].text;
+
+  // SSEチャンクを逐次読み込む
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let fullText = '';
+  let buffer = '';
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      // ブラウザにUIを更新する機会を毎チャンク与える（フリーズ防止の核心）
+      await new Promise(r => setTimeout(r, 0));
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop(); // 末尾の未完成行は次のチャンクへ持ち越す
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const payload = line.slice(6).trim();
+        if (!payload || payload === '[DONE]') continue;
+        try {
+          const evt = JSON.parse(payload);
+          if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
+            fullText += evt.delta.text;
+            if (onChunk) onChunk(fullText);
+          }
+        } catch { /* malformed JSON は無視 */ }
+      }
+    }
+  } finally {
+    clearTimeout(timer);
+    reader.releaseLock();
+  }
+
+  if (!fullText) throw new Error('AIから応答がありませんでした');
+  return fullText;
 }
 
 // ── システムプロンプト ──
