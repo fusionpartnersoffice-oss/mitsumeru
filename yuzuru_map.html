@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>弦システム 商圏マップ【デモ】— Fusion Partners</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: "Hiragino Kaku Gothic Pro", Meiryo, sans-serif; background: #0d1117; }
+    #header {
+      background: linear-gradient(135deg, #1a237e 0%, #283593 100%);
+      color: #fff; padding: 12px 20px;
+      display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+      border-bottom: 2px solid #3949ab;
+    }
+    #header h1 { font-size: 17px; letter-spacing: .5px; }
+    #header .demo-badge {
+      background: #ff6f00; color: #fff; font-size: 11px; font-weight: bold;
+      padding: 2px 8px; border-radius: 4px; letter-spacing: 1px;
+    }
+    .stat {
+      font-size: 13px; background: rgba(255,255,255,.12);
+      padding: 4px 12px; border-radius: 20px;
+    }
+    .stat span { font-weight: bold; font-size: 16px; margin-right: 2px; }
+    #controls {
+      background: #161b22; padding: 8px 20px;
+      display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+      border-bottom: 1px solid #30363d;
+    }
+    #controls label { font-size: 13px; color: #8b949e; }
+    #controls select {
+      font-size: 13px; padding: 4px 10px; border-radius: 6px;
+      border: 1px solid #30363d; background: #21262d; color: #c9d1d9;
+    }
+    #map { height: calc(100vh - 90px); }
+    .legend {
+      background: rgba(13,17,23,.92); color: #c9d1d9;
+      padding: 10px 14px; border-radius: 8px;
+      line-height: 1.9; font-size: 13px;
+      border: 1px solid #30363d;
+    }
+    .legend b { color: #fff; }
+    .dot {
+      display: inline-block; width: 12px; height: 12px;
+      border-radius: 50%; margin-right: 6px; vertical-align: middle;
+      border: 1.5px solid rgba(255,255,255,.3);
+    }
+    .popup-table { font-size: 12px; border-collapse: collapse; min-width: 220px; }
+    .popup-table td { padding: 3px 6px; }
+    .popup-table td:first-child { color: #888; white-space: nowrap; padding-right: 10px; }
+  </style>
+</head>
+<body>
+<div id="header">
+  <h1>弦システム 商圏マップ</h1>
+  <span class="demo-badge">DEMO</span>
+  <div class="stat">全 <span>8</span> 件</div>
+  <div class="stat" style="background:rgba(229,57,53,.25)">A <span style="color:#ff8a80">5</span> 件</div>
+  <div class="stat" style="background:rgba(251,140,0,.25)">B <span style="color:#ffcc80">1</span> 件</div>
+  <div class="stat" style="background:rgba(30,136,229,.25)">C <span style="color:#82b1ff">2</span> 件</div>
+  <div style="margin-left:auto;font-size:11px;color:rgba(255,255,255,.5)">Fusion Partners © 2026</div>
+</div>
+<div id="controls">
+  <label>ランク：
+    <select id="rankFilter">
+      <option value="ALL">すべて</option>
+      <option value="A">A（即アプローチ）</option>
+      <option value="AB">A + B</option>
+      <option value="B">B のみ</option>
+      <option value="C">C のみ</option>
+    </select>
+  </label>
+  <label>種別：
+    <select id="typeFilter">
+      <option value="ALL">すべて</option>
+      <option value="特別養護老人ホーム">特別養護老人ホーム</option>
+      <option value="通所介護">通所介護</option>
+      <option value="訪問介護">訪問介護</option>
+      <option value="グループホーム">グループホーム</option>
+      <option value="就労">就労支援</option>
+    </select>
+  </label>
+  <label>状況：
+    <select id="statusFilter">
+      <option value="ALL">すべて</option>
+      <option value="未接触">未接触</option>
+      <option value="接触済">接触済</option>
+      <option value="提案中">提案中</option>
+      <option value="成約">成約</option>
+    </select>
+  </label>
+  <span style="font-size:12px;color:#8b949e;margin-left:auto">
+    ピンをクリックすると詳細を表示
+  </span>
+</div>
+<div id="map"></div>
+
+<script>
+const DATA = {
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          135.489,
+          34.648
+        ]
+      },
+      "properties": {
+        "name": "あおぞら介護センター",
+        "corp": "社会福祉法人あおぞら会",
+        "type": "特別養護老人ホーム",
+        "phone": "06-1234-5678",
+        "addr": "大阪府大阪市西成区萩之茶屋1-1-1",
+        "capacity": 45,
+        "waitlist": 15,
+        "kaizen": "未取得",
+        "score": 65,
+        "rank": "A",
+        "reason": "処遇改善加算未取得(+30) / 開設2.2年(+20) / 定員45名(+15)",
+        "color": "#e53935",
+        "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          135.601,
+          34.679
+        ]
+      },
+      "properties": {
+        "name": "かがやき就労支援センター",
+        "corp": "NPO法人かがやき",
+        "type": "就労継続支援B型",
+        "phone": "06-3456-7890",
+        "addr": "大阪府東大阪市高井田西3-3-3",
+        "capacity": 35,
+        "waitlist": 12,
+        "kaizen": "未取得",
+        "score": 75,
+        "rank": "A",
+        "reason": "処遇改善加算未取得(+30) / 開設1.4年(+20) / 定員35名(+15) / 待機12名(+10)",
+        "color": "#e53935",
+        "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          135.524,
+          34.76
+        ]
+      },
+      "properties": {
+        "name": "なごみデイサービス",
+        "corp": "医療法人なごみ会",
+        "type": "通所介護",
+        "phone": "06-4567-8901",
+        "addr": "大阪府吹田市江坂町4-4-4",
+        "capacity": 50,
+        "waitlist": 18,
+        "kaizen": "未取得",
+        "score": 75,
+        "rank": "A",
+        "reason": "処遇改善加算未取得(+30) / 開設3.8年(+20) / 定員50名(+15) / 待機18名(+10)",
+        "color": "#e53935",
+        "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          135.651,
+          34.814
+        ]
+      },
+      "properties": {
+        "name": "つながり障害福祉サービス",
+        "corp": "NPO法人つながり",
+        "type": "就労移行支援",
+        "phone": "072-456-7890",
+        "addr": "大阪府枚方市岡東町6-6-6",
+        "capacity": 20,
+        "waitlist": 3,
+        "kaizen": "未取得",
+        "score": 50,
+        "rank": "A",
+        "reason": "処遇改善加算未取得(+30) / 開設0.4年(+20)",
+        "color": "#e53935",
+        "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          135.569,
+          34.816
+        ]
+      },
+      "properties": {
+        "name": "さくらグループホーム",
+        "corp": "社会福祉法人さくら会",
+        "type": "認知症対応型グループホーム",
+        "phone": "072-567-8901",
+        "addr": "大阪府茨木市双葉町7-7-7",
+        "capacity": 18,
+        "waitlist": 0,
+        "kaizen": "未取得",
+        "score": 30,
+        "rank": "B",
+        "reason": "処遇改善加算未取得(+30)",
+        "color": "#fb8c00",
+        "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          135.361,
+          34.462
+        ]
+      },
+      "properties": {
+        "name": "光和訪問介護ステーション",
+        "corp": "医療法人光和会",
+        "type": "訪問介護",
+        "phone": "0724-78-9012",
+        "addr": "大阪府岸和田市宮本町8-8-8",
+        "capacity": 40,
+        "waitlist": 0,
+        "kaizen": "未取得",
+        "score": 45,
+        "rank": "A",
+        "reason": "処遇改善加算未取得(+30) / 定員40名(+15)",
+        "color": "#e53935",
+        "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          135.468,
+          34.782
+        ]
+      },
+      "properties": {
+        "name": "みのり特別養護老人ホーム",
+        "corp": "社会福祉法人みのり福祉会",
+        "type": "特別養護老人ホーム",
+        "phone": "06-5678-9012",
+        "addr": "大阪府豊中市曽根東町5-5-5",
+        "capacity": 80,
+        "waitlist": 5,
+        "kaizen": "取得済",
+        "score": 5,
+        "rank": "C",
+        "reason": "過去加算取得歴あり(-10) → 該当なし",
+        "color": "#1e88e5",
+        "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          135.482,
+          34.573
+        ]
+      },
+      "properties": {
+        "name": "ひまわりグループホーム",
+        "corp": "社会福祉法人ひまわり会",
+        "type": "認知症対応型グループホーム",
+        "phone": "072-234-5678",
+        "addr": "大阪府堺市堺区新堀町2-2-2",
+        "capacity": 18,
+        "waitlist": 0,
+        "kaizen": "取得済",
+        "score": -15,
+        "rank": "C",
+        "reason": "過去加算取得歴あり(-10) / 老舗小規模(-5)",
+        "color": "#1e88e5",
+        "status": "未接触"
+      }
+    }
+  ]
+};
+
+const map = L.map('map', {zoomControl: true}).setView([34.686, 135.520], 10);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  attribution: '© OpenStreetMap © CARTO',
+  maxZoom: 18,
+}).addTo(map);
+
+let layerGroup = L.layerGroup().addTo(map);
+
+function makeMarker(f) {
+  const p = f.properties;
+  const icon = L.divIcon({
+    className: '',
+    html: `<div style="
+      width:20px;height:20px;border-radius:50%;
+      background:${p.color};
+      border:2.5px solid rgba(255,255,255,.8);
+      box-shadow:0 2px 8px rgba(0,0,0,.6);
+      cursor:pointer;
+    "></div>`,
+    iconSize: [20,20], iconAnchor: [10,10],
+  });
+
+  const rankBadge = {A:'🔴 Aランク（即アプローチ）', B:'🟡 Bランク（準優先）', C:'🔵 Cランク（様子見）'};
+
+  const popup = `
+    <div style="font-family:Meiryo,sans-serif;min-width:240px">
+      <div style="font-size:15px;font-weight:bold;margin-bottom:6px;border-bottom:1px solid #eee;padding-bottom:6px">
+        ${p.name}
+      </div>
+      <div style="font-size:12px;color:#555;margin-bottom:8px">${rankBadge[p.rank] || p.rank}</div>
+      <table class="popup-table">
+        <tr><td>法人</td><td><b>${p.corp}</b></td></tr>
+        <tr><td>種別</td><td>${p.type}</td></tr>
+        <tr><td>住所</td><td>${p.addr}</td></tr>
+        <tr><td>電話</td><td><a href="tel:${p.phone}" style="color:#1565c0">${p.phone}</a></td></tr>
+        <tr><td>定員</td><td>${p.capacity}名</td></tr>
+        <tr><td>待機</td><td>${p.waitlist}名</td></tr>
+        <tr><td>加算</td><td style="color:${p.kaizen==='未取得'?'#c62828':'#2e7d32'};font-weight:bold">${p.kaizen}</td></tr>
+        <tr><td>スコア</td><td><b>${p.score}点</b></td></tr>
+        <tr><td>理由</td><td style="color:#555;font-size:11px">${p.reason}</td></tr>
+        <tr><td>状況</td><td><span style="background:#e8f5e9;color:#2e7d32;padding:1px 6px;border-radius:3px">${p.status}</span></td></tr>
+      </table>
+    </div>
+  `;
+  return L.marker(f.geometry.coordinates.slice().reverse(), {icon})
+    .bindPopup(popup, {maxWidth: 300});
+}
+
+function renderMarkers() {
+  const rv = document.getElementById('rankFilter').value;
+  const tv = document.getElementById('typeFilter').value;
+  const sv = document.getElementById('statusFilter').value;
+  layerGroup.clearLayers();
+  DATA.features.forEach(f => {
+    const p = f.properties;
+    const rm = rv==='ALL'||(rv==='AB'&&(p.rank==='A'||p.rank==='B'))||p.rank===rv;
+    const tm = tv==='ALL'||p.type.includes(tv);
+    const sm = sv==='ALL'||p.status===sv;
+    if (rm && tm && sm) makeMarker(f).addTo(layerGroup);
+  });
+}
+
+['rankFilter','typeFilter','statusFilter'].forEach(id =>
+  document.getElementById(id).addEventListener('change', renderMarkers)
+);
+renderMarkers();
+
+const legend = L.control({position:'bottomright'});
+legend.onAdd = () => {
+  const d = L.DomUtil.create('div','legend');
+  d.innerHTML = `
+    <b>優先度ランク</b><br>
+    <span class="dot" style="background:#e53935"></span>A：処遇改善加算未取得 等<br>
+    <span class="dot" style="background:#fb8c00"></span>B：準優先<br>
+    <span class="dot" style="background:#1e88e5"></span>C：様子見<br>
+    <hr style="border-color:#30363d;margin:6px 0">
+    <span style="font-size:11px;color:#8b949e">スコアが高い順に営業</span>
+  `;
+  return d;
+};
+legend.addTo(map);
+</script>
+</body>
+</html>
