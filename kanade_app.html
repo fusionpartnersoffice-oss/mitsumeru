@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>奏 Kanade v1 — Fusion Partners</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%233a3028'/><polygon points='16,3 27,9.5 27,22.5 16,29 5,22.5 5,9.5' fill='none' stroke='%23c8b89a' stroke-width='1.2'/><path d='M10 22 L10 11 L14 11 M10 16 L13 16 M18 22 L18 11 L22 14 L22 22' fill='none' stroke='%23c8b89a' stroke-width='1.4'/></svg>">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;500&family=Noto+Sans+JP:wght@300;400;500&display=swap');
+
+  :root {
+    --bg: #f5f1ea;
+    --bg2: #ede8df;
+    --border: #c8b89a;
+    --text: #3a3028;
+    --text2: #6a5a4a;
+    --text3: #9a8a7a;
+    --accent: #8a7a6a;
+    --green: #2d7a52;
+    --red: #c0392b;
+    --gold: #b8860b;
+    --card: #faf7f2;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 0 0 100px 0;
+    font-size: 14px;
+    line-height: 1.7;
+  }
+
+  .header {
+    background: var(--text);
+    color: var(--bg);
+    padding: 18px 24px 14px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+  }
+  .header h1 {
+    font-family: 'Noto Serif JP', serif;
+    font-size: 20px;
+    font-weight: 400;
+    letter-spacing: 6px;
+  }
+  .header span { font-size: 11px; color: var(--border); letter-spacing: 2px; }
+  .header .who { margin-left: auto; font-size: 11px; color: var(--border); letter-spacing: 1px; }
+
+  .mode-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg2);
+    position: sticky;
+    top: 57px;
+    z-index: 99;
+  }
+  .mode-tab {
+    flex: 1; padding: 13px; text-align: center; font-size: 13px;
+    cursor: pointer; border: none; background: none; color: var(--text3);
+    letter-spacing: 1px; border-bottom: 2px solid transparent; transition: all 0.2s;
+  }
+  .mode-tab.active { color: var(--text); border-bottom-color: var(--accent); background: var(--bg); font-weight: 500; }
+
+  .screen { display: none; padding: 18px 16px; max-width: 760px; margin: 0 auto; }
+  .screen.active { display: block; }
+
+  .section {
+    background: var(--card); border: 0.5px solid var(--border);
+    border-radius: 8px; padding: 16px; margin-bottom: 14px;
+  }
+  .section-title {
+    font-size: 11px; color: var(--text3); letter-spacing: 2px;
+    text-transform: uppercase; margin-bottom: 14px; padding-bottom: 8px;
+    border-bottom: 0.5px solid var(--border);
+  }
+  .floor-tag {
+    display: inline-block; font-family: 'Noto Serif JP', serif; font-size: 12px;
+    color: var(--accent); border: 0.5px solid var(--border); border-radius: 4px;
+    padding: 1px 8px; margin-right: 8px; letter-spacing: 1px;
+  }
+
+  .field { margin-bottom: 14px; }
+  .field:last-child { margin-bottom: 0; }
+  label { display: block; font-size: 12px; color: var(--text2); margin-bottom: 5px; letter-spacing: 0.5px; }
+
+  input[type=text], input[type=date], textarea, select {
+    width: 100%; padding: 9px 11px; font-family: inherit; font-size: 14px;
+    color: var(--text); background: var(--bg); border: 0.5px solid var(--border);
+    border-radius: 6px; outline: none;
+  }
+  input:focus, textarea:focus, select:focus { border-color: var(--accent); }
+  textarea { resize: vertical; min-height: 60px; line-height: 1.6; }
+  .ego-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+  .ego-grid label { text-align: center; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .q-list { list-style: none; margin: 4px 0 10px; padding-left: 0; }
+  .q-list li {
+    font-size: 13px; color: var(--text2); padding: 4px 0 4px 16px;
+    position: relative; line-height: 1.6;
+  }
+  .q-list li::before { content: '—'; position: absolute; left: 0; color: var(--accent); }
+  .observe {
+    font-size: 12px; color: var(--text3); background: var(--bg2);
+    border-left: 2px solid var(--border); padding: 7px 10px; border-radius: 0 4px 4px 0;
+    margin-top: 6px;
+  }
+
+  .score-row { display: flex; align-items: center; gap: 12px; margin: 10px 0 4px; }
+  .score-row .name { font-size: 13px; color: var(--text); min-width: 84px; font-weight: 500; }
+  .score-row input[type=range] { flex: 1; accent-color: var(--accent); }
+  .score-row .val {
+    font-family: 'Noto Serif JP', serif; font-size: 16px; color: var(--accent);
+    min-width: 48px; text-align: right;
+  }
+
+  .rjp-choices { display: flex; gap: 8px; flex-wrap: wrap; }
+  .rjp-choices button {
+    flex: 1; min-width: 120px; padding: 10px; font-family: inherit; font-size: 13px;
+    border: 0.5px solid var(--border); background: var(--bg); color: var(--text2);
+    border-radius: 6px; cursor: pointer; transition: all 0.15s;
+  }
+  .rjp-choices button.sel { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+
+  .btn {
+    display: inline-block; padding: 11px 20px; font-family: inherit; font-size: 14px;
+    border: none; border-radius: 6px; cursor: pointer; letter-spacing: 1px; transition: opacity 0.15s;
+  }
+  .btn:hover { opacity: 0.88; }
+  .btn-primary { background: var(--text); color: var(--bg); }
+  .btn-ghost { background: var(--bg); color: var(--text2); border: 0.5px solid var(--border); }
+  .btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+
+  .total-card {
+    background: var(--text); color: var(--bg); border-radius: 10px;
+    padding: 22px; text-align: center; margin-bottom: 16px;
+  }
+  .total-card .big { font-family: 'Noto Serif JP', serif; font-size: 48px; line-height: 1; }
+  .total-card .big span { font-size: 22px; color: var(--border); }
+  .total-card .label { font-size: 11px; letter-spacing: 3px; color: var(--border); margin-top: 6px; }
+  .bars { margin-top: 16px; text-align: left; }
+  .bar-row { margin-bottom: 9px; }
+  .bar-row .bl { display: flex; justify-content: space-between; font-size: 11px; color: var(--border); margin-bottom: 3px; }
+  .bar-track { height: 6px; background: rgba(200,184,154,0.25); border-radius: 3px; overflow: hidden; }
+  .bar-fill { height: 100%; background: var(--border); border-radius: 3px; transition: width 0.3s; }
+
+  .cand-item {
+    display: flex; align-items: center; gap: 12px; padding: 13px 14px;
+    background: var(--card); border: 0.5px solid var(--border); border-radius: 8px; margin-bottom: 9px; cursor: pointer;
+  }
+  .cand-item:hover { border-color: var(--accent); }
+  .cand-item.current { border-color: var(--accent); background: var(--bg2); }
+  .cand-item .nm { font-weight: 500; }
+  .cand-item .meta { font-size: 11px; color: var(--text3); }
+  .cand-item .sc { margin-left: auto; font-family: 'Noto Serif JP', serif; color: var(--accent); font-size: 16px; }
+  .cand-item .del { color: var(--text3); font-size: 16px; padding: 0 6px; }
+
+  .note-box { font-size: 11px; color: var(--text3); line-height: 1.7; }
+  .empty { text-align: center; color: var(--text3); padding: 40px 0; font-size: 13px; }
+  .current-banner {
+    background: var(--bg2); border: 0.5px solid var(--border); border-radius: 8px;
+    padding: 10px 14px; margin-bottom: 14px; font-size: 13px;
+  }
+  .current-banner b { font-family: 'Noto Serif JP', serif; letter-spacing: 1px; }
+  .pill { font-size: 10px; letter-spacing: 1px; color: var(--gold); border: 0.5px solid var(--gold); border-radius: 10px; padding: 1px 8px; margin-left: 8px; }
+  pre.md {
+    white-space: pre-wrap; font-family: 'Noto Sans JP', monospace; font-size: 12px;
+    background: var(--bg2); border: 0.5px solid var(--border); border-radius: 8px;
+    padding: 14px; line-height: 1.7; color: var(--text2); max-height: 360px; overflow-y: auto;
+  }
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--text); color: var(--bg); padding: 11px 22px; border-radius: 24px;
+    font-size: 13px; opacity: 0; transition: opacity 0.25s; z-index: 200; pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>奏</h1>
+  <span>KANADE v1 · 採用アセスメント</span>
+  <span class="who">Fusion Partners</span>
+</div>
+
+<div class="mode-tabs">
+  <button class="mode-tab active" data-screen="list">候補者</button>
+  <button class="mode-tab" data-screen="interview">面接</button>
+  <button class="mode-tab" data-screen="profile">プロファイル</button>
+</div>
+
+<!-- ============ 候補者リスト ============ -->
+<div class="screen active" id="screen-list">
+  <div class="section">
+    <div class="section-title">新規候補者</div>
+    <div class="two-col">
+      <div class="field"><label>候補者名</label><input type="text" id="new-name" placeholder="氏名"></div>
+      <div class="field"><label>ポジション</label><input type="text" id="new-pos" placeholder="募集職種"></div>
+    </div>
+    <div class="two-col">
+      <div class="field"><label>面接日</label><input type="date" id="new-date"></div>
+      <div class="field"><label>面接官</label><input type="text" id="new-interviewer" placeholder="例：柴山靖章"></div>
+    </div>
+    <div class="btn-row"><button class="btn btn-primary" onclick="addCandidate()">＋ 候補者を追加して面接へ</button></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">候補者一覧</div>
+    <div id="cand-list"></div>
+  </div>
+</div>
+
+<!-- ============ 面接 ============ -->
+<div class="screen" id="screen-interview">
+  <div id="iv-body">
+    <div class="empty">「候補者」タブで候補者を追加・選択してください。</div>
+  </div>
+</div>
+
+<!-- ============ プロファイル ============ -->
+<div class="screen" id="screen-profile">
+  <div id="pf-body">
+    <div class="empty">候補者を選択すると、スコア集計とプロファイルが表示されます。</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// 奏 Kanade v1 — MVP（範囲A：面接ガイド＋自動採点）
+// データは localStorage に保存（縦断データの種）。LSRPは法務確認まで非搭載。
+// ============================================================
+
+const STORE_KEY = 'kanade_candidates_v1';
+let candidates = [];
+let currentId = null;
+
+// 面接ガイド定義（設計書 奏システム_設計書_20260621.md より忠実に転記）
+const GUIDE = {
+  skill: {
+    floor: '地上1F', title: 'スキル・経験マッチ', max: 10, key: 's_skill',
+    desc: '「できると言っているが、本当にやったのか」を事実で確認する。',
+    q: ['直近の職場で、最も成果が出た仕事を一つ教えてください',
+        'その仕事で、あなたが具体的にやったことを時系列で教えてください',
+        'その結果、数字でどう変わりましたか？'],
+    obs: '主語が「私」か（「チームで」に逃げていないか）／数字・固有名詞・時期が出るか／詰めると詰まらないか'
+  },
+  comp: {
+    floor: '地下1F', title: 'コンピテンシー', sub: true,
+    items: [
+      { name: '成果志向', max: 5, key: 's_seika',
+        q: ['過去最も達成が難しかった目標は何ですか？なぜそれを選んだのですか？',
+            '途中で諦めそうになった瞬間はありましたか？その時どうしましたか？',
+            '最終的な結果は、当初の目標と比べてどうでしたか？'] },
+      { name: '戦略志向', max: 5, key: 's_senryaku',
+        q: ['いくつかの選択肢があって、あなたが判断しなければならなかった場面を教えてください',
+            'その時、何を根拠に判断しましたか？他の選択肢を捨てた理由は？',
+            'その判断を振り返って、今なら何を変えますか？'] },
+      { name: '変革志向', max: 5, key: 's_henkaku',
+        q: ['今までのやり方に疑問を感じて、変えようとしたことはありますか？',
+            '反対する人はいましたか？どう動きましたか？',
+            '変えた結果どうなりましたか？もし失敗した場合、何を学びましたか？'] }
+    ],
+    noteKey: 'note_comp'
+  },
+  pote: {
+    floor: '地下2F', title: 'ポテンシャル（最重要）', sub: true,
+    items: [
+      { name: '好奇心', max: 5, key: 's_kouki',
+        q: ['最近、仕事と関係なく夢中になって調べたことはありますか？',
+            'それはどこまで調べましたか？どこで止まりましたか？止まった理由は？',
+            'その知識を誰かに話したことはありますか？相手の反応は？'],
+        obs: '話すスピードが上がる・目が輝く領域があるか。「特にないです」は危険サイン。' },
+      { name: '洞察力', max: 5, key: 's_dosatsu',
+        q: ['一見関係なさそうな2つのことが、実は同じ構造だと気づいたことはありますか？',
+            '職場・業界の問題で「みんな当たり前だと思っているが実はおかしい」と感じたことは？',
+            'その気づきを誰かに伝えた時、相手はどう反応しましたか？'],
+        obs: '具体例が出るか。「抽象的に語れる→例が出ない」は洞察力でなく丸暗記。' },
+      { name: '胆力', max: 5, key: 's_tanryoku',
+        q: ['自分が正しいと思ったことに対して、上司や周囲から反対されたことはありますか？',
+            'その時どうしましたか？諦めましたか、それとも押し切りましたか？',
+            'その判断を今振り返って、どう思いますか？'],
+        obs: '「波風立てずに従った」を美徳として語っていないか。胆力の欠如は謙虚に見える。' },
+      { name: '共鳴力', max: 5, key: 's_kyomei',
+        q: ['誰かの気持ちが、言葉にされる前に手に取るようにわかった経験はありますか？',
+            'あなたが関わったことで、誰かの行動や気持ちが大きく変わった場面を教えてください',
+            'その人はその後どうなりましたか？'],
+        obs: '「想像した」でなく「相手がそう言っていた」まで追えるか。' }
+    ],
+    noteKey: 'note_pote'
+  },
+  values: {
+    floor: '地下3F', title: '価値観・人生観適合', max: 10, key: 's_values',
+    desc: 'ここがズレるとスキルがあっても長続きしない。',
+    q: ['10年後、どんな状態にいたいですか？仕事でも、人生でも',
+        '働く上で、絶対に譲れないことは何ですか？',
+        'あなたが心の底から尊敬している人は誰ですか？その人のどこを尊敬していますか？',
+        '今まで最も後悔した選択と、最も誇りに思う選択を一つずつ教えてください'],
+    obs: '答えの内容より「即座に出るか・自分の言葉か」を見る。準備した良い答えは音程が合いすぎて不自然。',
+    noteKey: 'note_values'
+  }
+};
+
+const SCORE_KEYS = ['s_skill','s_seika','s_senryaku','s_henkaku','s_kouki','s_dosatsu','s_tanryoku','s_kyomei','s_values'];
+
+// ---------- 永続化 ----------
+function load() { try { candidates = JSON.parse(localStorage.getItem(STORE_KEY)) || []; } catch(e){ candidates = []; } }
+function save() { localStorage.setItem(STORE_KEY, JSON.stringify(candidates)); }
+function cur() { return candidates.find(c => c.id === currentId); }
+function totalOf(c) { return SCORE_KEYS.reduce((s,k)=> s + (Number(c[k])||0), 0); }
+function fmtDate(d){ return d || '—'; }
+
+function newId() {
+  // Date.now 代替（環境制約なし・衝突回避用の単純増分）
+  let max = 0; candidates.forEach(c => { if (c.id > max) max = c.id; });
+  return max + 1;
+}
+
+// ---------- 候補者操作 ----------
+function addCandidate() {
+  const name = document.getElementById('new-name').value.trim();
+  if (!name) { toast('候補者名を入力してください'); return; }
+  const c = {
+    id: newId(), name,
+    position: document.getElementById('new-pos').value.trim(),
+    date: document.getElementById('new-date').value,
+    interviewer: document.getElementById('new-interviewer').value.trim(),
+    // フェーズ1
+    egoCP:'', egoNP:'', egoA:'', egoFC:'', egoAC:'', ennea:'', enneaWing:'', p1note:'',
+    // スコア
+    s_skill:0, s_seika:0, s_senryaku:0, s_henkaku:0,
+    s_kouki:0, s_dosatsu:0, s_tanryoku:0, s_kyomei:0, s_values:0,
+    note_comp:'', note_pote:'', note_values:'',
+    // フェーズ3
+    rjp:'', rjp_reason:'',
+    consistency_ennea:'', consistency_ego:'',
+    hunch:'', judgment:''
+  };
+  candidates.push(c); save();
+  currentId = c.id;
+  document.getElementById('new-name').value = '';
+  document.getElementById('new-pos').value = '';
+  document.getElementById('new-date').value = '';
+  document.getElementById('new-interviewer').value = '';
+  renderList(); renderInterview(); renderProfile();
+  switchScreen('interview');
+  toast('候補者を追加しました');
+}
+
+function selectCandidate(id) { currentId = id; renderList(); renderInterview(); renderProfile(); switchScreen('interview'); }
+function deleteCandidate(id, ev) {
+  ev.stopPropagation();
+  const c = candidates.find(x=>x.id===id);
+  if (!confirm('「'+(c?c.name:'')+'」を削除します。よろしいですか？')) return;
+  candidates = candidates.filter(x=>x.id!==id);
+  if (currentId===id) currentId = null;
+  save(); renderList(); renderInterview(); renderProfile();
+}
+
+function setField(key, val) { const c = cur(); if (!c) return; c[key] = val; save(); }
+function setScore(key, val) {
+  const c = cur(); if (!c) return; c[key] = Number(val); save();
+  const el = document.getElementById('val-'+key); if (el) el.textContent = val;
+  updateLiveTotal();
+}
+function setRjp(v) { const c = cur(); if (!c) return; c.rjp = v; save(); renderInterview(); }
+
+function updateLiveTotal() {
+  const c = cur(); if (!c) return;
+  const el = document.getElementById('live-total'); if (el) el.textContent = totalOf(c);
+}
+
+// ---------- レンダリング：候補者リスト ----------
+function renderList() {
+  const wrap = document.getElementById('cand-list');
+  if (!candidates.length) { wrap.innerHTML = '<div class="empty">まだ候補者がいません。</div>'; return; }
+  wrap.innerHTML = candidates.map(c => `
+    <div class="cand-item ${c.id===currentId?'current':''}" onclick="selectCandidate(${c.id})">
+      <div>
+        <div class="nm">${esc(c.name)}</div>
+        <div class="meta">${esc(c.position)||'—'} · ${fmtDate(c.date)}</div>
+      </div>
+      <div class="sc">${totalOf(c)}<span style="font-size:11px;color:var(--text3)">/55</span></div>
+      <div class="del" onclick="deleteCandidate(${c.id}, event)" title="削除">✕</div>
+    </div>`).join('');
+}
+
+// ---------- レンダリング：面接 ----------
+function scoreRow(name, key, max, val) {
+  return `<div class="score-row">
+    <div class="name">${name}</div>
+    <input type="range" min="0" max="${max}" step="1" value="${val}" oninput="setScore('${key}', this.value)">
+    <div class="val"><span id="val-${key}">${val}</span> / ${max}</div>
+  </div>`;
+}
+function qBlock(item) {
+  let h = `<ul class="q-list">${item.q.map(q=>`<li>${esc(q)}</li>`).join('')}</ul>`;
+  if (item.obs) h += `<div class="observe">観察：${esc(item.obs)}</div>`;
+  return h;
+}
+
+function renderInterview() {
+  const body = document.getElementById('iv-body');
+  const c = cur();
+  if (!c) { body.innerHTML = '<div class="empty">「候補者」タブで候補者を追加・選択してください。</div>'; return; }
+
+  const g = GUIDE;
+  body.innerHTML = `
+  <div class="current-banner">面接中：<b>${esc(c.name)}</b> ／ ${esc(c.position)||'ポジション未設定'} ／ ${fmtDate(c.date)}
+    <span class="pill">合計 <span id="live-total">${totalOf(c)}</span>/55</span></div>
+
+  <!-- フェーズ1 -->
+  <div class="section">
+    <div class="section-title">フェーズ1 ｜ 適性検査（事前・手入力）</div>
+    <div class="note-box" style="margin-bottom:12px">
+      ※ LSRP（サイコパシー尺度）は法的・倫理リスクのため v1 では非搭載（橋下徹＝法務の確認後に追加予定）。
+      検査スコアは面接の「仮説」に使います。
+    </div>
+    <label>エゴグラム（5つの自我状態）</label>
+    <div class="ego-grid" style="margin-bottom:12px">
+      ${['CP','NP','A','FC','AC'].map(k=>`<div>
+        <label>${k}</label>
+        <input type="text" inputmode="numeric" value="${esc(c['ego'+k])}" oninput="setField('ego${k}', this.value)" style="text-align:center">
+      </div>`).join('')}
+    </div>
+    <div class="two-col">
+      <div class="field"><label>エニアグラム タイプ</label><input type="text" value="${esc(c.ennea)}" oninput="setField('ennea', this.value)" placeholder="例：タイプ5"></div>
+      <div class="field"><label>ウィング</label><input type="text" value="${esc(c.enneaWing)}" oninput="setField('enneaWing', this.value)" placeholder="例：w4"></div>
+    </div>
+    <div class="field"><label>所見・面接で確認したい仮説</label><textarea oninput="setField('p1note', this.value)" placeholder="検査から立てた仮説をメモ">${esc(c.p1note)}</textarea></div>
+  </div>
+
+  <!-- フェーズ2：地上1F -->
+  <div class="section">
+    <div class="section-title"><span class="floor-tag">${g.skill.floor}</span>${g.skill.title}（${g.skill.max}点）</div>
+    <div class="note-box" style="margin-bottom:8px">${esc(g.skill.desc)}</div>
+    ${qBlock({q:g.skill.q, obs:g.skill.obs})}
+    ${scoreRow('スキル・経験', g.skill.key, g.skill.max, c[g.skill.key])}
+  </div>
+
+  <!-- フェーズ2：地下1F -->
+  <div class="section">
+    <div class="section-title"><span class="floor-tag">${g.comp.floor}</span>${g.comp.title}（各5点 / 15点）</div>
+    ${g.comp.items.map(it=>`
+      <div style="margin-bottom:14px">
+        <div style="font-weight:500;font-size:13px;margin-bottom:2px">${esc(it.name)}</div>
+        ${qBlock(it)}
+        ${scoreRow(it.name, it.key, it.max, c[it.key])}
+      </div>`).join('')}
+    <div class="field"><label>根拠コメント（コンピテンシー）</label><textarea oninput="setField('note_comp', this.value)">${esc(c.note_comp)}</textarea></div>
+  </div>
+
+  <!-- フェーズ2：地下2F -->
+  <div class="section">
+    <div class="section-title"><span class="floor-tag">${g.pote.floor}</span>${g.pote.title}（各5点 / 20点）</div>
+    ${g.pote.items.map(it=>`
+      <div style="margin-bottom:14px">
+        <div style="font-weight:500;font-size:13px;margin-bottom:2px">${esc(it.name)}</div>
+        ${qBlock(it)}
+        ${scoreRow(it.name, it.key, it.max, c[it.key])}
+      </div>`).join('')}
+    <div class="field"><label>根拠コメント（ポテンシャル）</label><textarea oninput="setField('note_pote', this.value)">${esc(c.note_pote)}</textarea></div>
+  </div>
+
+  <!-- フェーズ2：地下3F -->
+  <div class="section">
+    <div class="section-title"><span class="floor-tag">${g.values.floor}</span>${g.values.title}（${g.values.max}点）</div>
+    <div class="note-box" style="margin-bottom:8px">${esc(g.values.desc)}</div>
+    ${qBlock({q:g.values.q, obs:g.values.obs})}
+    ${scoreRow('価値観適合', g.values.key, g.values.max, c[g.values.key])}
+    <div class="field" style="margin-top:10px"><label>根拠コメント（価値観）</label><textarea oninput="setField('note_values', this.value)">${esc(c.note_values)}</textarea></div>
+  </div>
+
+  <!-- フェーズ3：RJP -->
+  <div class="section">
+    <div class="section-title">フェーズ3 ｜ RJP（ぶっちゃけ採用）反応</div>
+    <div class="note-box" style="margin-bottom:10px">困難・現実を開示した後の反応を見る。前のめり＝本物の志望度・胆力。</div>
+    <div class="rjp-choices">
+      ${[['◎','◎ 前のめり'],['○','○ 受け止めた'],['△','△ 引いた'],['×','× 回避']].map(([v,l])=>
+        `<button class="${c.rjp===v?'sel':''}" onclick="setRjp('${v}')">${l}</button>`).join('')}
+    </div>
+    <div class="field" style="margin-top:12px"><label>RJP後の「それでも来たい理由」</label><textarea oninput="setField('rjp_reason', this.value)">${esc(c.rjp_reason)}</textarea></div>
+  </div>
+
+  <!-- 整合性・直感 -->
+  <div class="section">
+    <div class="section-title">検査 × 面接 整合性確認</div>
+    <div class="two-col">
+      <div class="field"><label>エニアグラムの動機 ↔ 面接の行動は一致したか</label>
+        <select onchange="setField('consistency_ennea', this.value)">
+          ${optList(['','一致','乖離あり'], c.consistency_ennea)}
+        </select></div>
+      <div class="field"><label>エゴグラムの傾向は言動に現れたか</label>
+        <select onchange="setField('consistency_ego', this.value)">
+          ${optList(['','現れた','現れず'], c.consistency_ego)}
+        </select></div>
+    </div>
+    <div class="field"><label>面接官の直感メモ（スコアに表れなかった気になる点）</label><textarea oninput="setField('hunch', this.value)">${esc(c.hunch)}</textarea></div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="switchScreen('profile')">プロファイルを見る →</button>
+  </div>`;
+}
+
+function optList(opts, sel) { return opts.map(o=>`<option value="${o}" ${o===sel?'selected':''}>${o||'—'}</option>`).join(''); }
+
+// ---------- レンダリング：プロファイル ----------
+function judgeLabel(total) {
+  if (total >= 40) return ['採用推薦圏', 'var(--green)'];
+  if (total >= 28) return ['2次面談検討圏', 'var(--gold)'];
+  return ['要再確認圏', 'var(--red)'];
+}
+
+function renderProfile() {
+  const body = document.getElementById('pf-body');
+  const c = cur();
+  if (!c) { body.innerHTML = '<div class="empty">候補者を選択すると、スコア集計とプロファイルが表示されます。</div>'; return; }
+  const total = totalOf(c);
+  const [jl, jcolor] = judgeLabel(total);
+
+  const groups = [
+    ['地上1F スキル', c.s_skill, 10],
+    ['地下1F コンピテンシー', c.s_seika+c.s_senryaku+c.s_henkaku, 15],
+    ['地下2F ポテンシャル', c.s_kouki+c.s_dosatsu+c.s_tanryoku+c.s_kyomei, 20],
+    ['地下3F 価値観', c.s_values, 10]
+  ];
+
+  body.innerHTML = `
+  <div class="total-card">
+    <div class="big">${total}<span> / 55</span></div>
+    <div class="label">${esc(c.name)} ｜ <span style="color:${jcolor}">${jl}</span></div>
+    <div class="bars">
+      ${groups.map(([n,v,m])=>`
+        <div class="bar-row">
+          <div class="bl"><span>${n}</span><span>${v}/${m}</span></div>
+          <div class="bar-track"><div class="bar-fill" style="width:${m?Math.round(v/m*100):0}%"></div></div>
+        </div>`).join('')}
+      <div class="bar-row"><div class="bl"><span>RJP反応</span><span>${c.rjp||'—'}</span></div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">最終判定（決定は柴山さん）</div>
+    <div class="field">
+      <select onchange="setField('judgment', this.value); renderProfile()">
+        ${optList(['','採用推薦','2次面談','見送り'], c.judgment)}
+      </select>
+    </div>
+    <div class="note-box">※ スコア圏はあくまで参考。判定は面接官が決めます（奏は提示、決定は人）。</div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">候補者プロファイル（Markdown）</div>
+    <pre class="md" id="md-out">${esc(buildMarkdown(c))}</pre>
+    <div class="btn-row" style="margin-top:12px">
+      <button class="btn btn-ghost" onclick="copyMd()">📋 コピー</button>
+      <button class="btn btn-primary" onclick="downloadMd()">⬇ .md でダウンロード</button>
+    </div>
+    <div class="note-box" style="margin-top:8px">Obsidianの 01_今日のデスク に貼れば、そのまま報告書になります。</div>
+  </div>`;
+}
+
+function buildMarkdown(c) {
+  const total = totalOf(c);
+  const [jl] = judgeLabel(total);
+  const comp = c.s_seika+c.s_senryaku+c.s_henkaku;
+  const pote = c.s_kouki+c.s_dosatsu+c.s_tanryoku+c.s_kyomei;
+  return `# 奏システム 候補者プロファイル
+
+- 候補者名：${c.name}
+- ポジション：${c.position||'—'}
+- 面接日：${c.date||'—'}　面接官：${c.interviewer||'—'}
+
+## 総合スコア：${total} / 55 （${jl}）
+
+| 階層 | 項目 | スコア |
+|------|------|--------|
+| 地上1F | スキル・経験 | ${c.s_skill} / 10 |
+| 地下1F | コンピテンシー（成果${c.s_seika}・戦略${c.s_senryaku}・変革${c.s_henkaku}） | ${comp} / 15 |
+| 地下2F | ポテンシャル（好奇${c.s_kouki}・洞察${c.s_dosatsu}・胆力${c.s_tanryoku}・共鳴${c.s_kyomei}） | ${pote} / 20 |
+| 地下3F | 価値観・人生観適合 | ${c.s_values} / 10 |
+
+## フェーズ1：適性検査
+- エゴグラム：CP${c.egoCP||'—'} / NP${c.egoNP||'—'} / A${c.egoA||'—'} / FC${c.egoFC||'—'} / AC${c.egoAC||'—'}
+- エニアグラム：${c.ennea||'—'} ${c.enneaWing||''}
+- 所見・仮説：${c.p1note||'—'}
+
+## フェーズ2：根拠コメント
+- コンピテンシー：${c.note_comp||'—'}
+- ポテンシャル：${c.note_pote||'—'}
+- 価値観：${c.note_values||'—'}
+
+## フェーズ3：RJP反応
+- 反応：${c.rjp||'—'}
+- それでも来たい理由：${c.rjp_reason||'—'}
+
+## 検査 × 面接 整合性
+- エニアグラム動機↔行動：${c.consistency_ennea||'—'}
+- エゴグラム傾向↔言動：${c.consistency_ego||'—'}
+
+## 面接官の直感メモ
+${c.hunch||'—'}
+
+## 最終判定（決定は柴山さん）
+${c.judgment||'未判定'}
+
+---
+*奏 Kanade v1 で作成。スコアは参考であり、採否の決定は面接官が行う。*
+`;
+}
+
+function copyMd() {
+  const c = cur(); if (!c) return;
+  navigator.clipboard.writeText(buildMarkdown(c)).then(()=>toast('コピーしました')).catch(()=>toast('コピーに失敗しました'));
+}
+function downloadMd() {
+  const c = cur(); if (!c) return;
+  const blob = new Blob([buildMarkdown(c)], {type:'text/markdown'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `奏プロファイル_${c.name||'候補者'}_${c.date||''}.md`;
+  a.click(); URL.revokeObjectURL(a.href);
+  toast('ダウンロードしました');
+}
+
+// ---------- 共通 ----------
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function switchScreen(name) {
+  document.querySelectorAll('.mode-tab').forEach(t=>t.classList.toggle('active', t.dataset.screen===name));
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+  window.scrollTo(0,0);
+}
+let toastT;
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),1800); }
+
+document.querySelectorAll('.mode-tab').forEach(t=> t.addEventListener('click', ()=>switchScreen(t.dataset.screen)));
+
+// 起動
+load();
+renderList(); renderInterview(); renderProfile();
+</script>
+</body>
+</html>
