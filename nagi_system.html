@@ -559,6 +559,33 @@ tr:hover td{background:rgba(79,195,247,0.03);}
         <div class="form-group"><label>固定費F（円）</label><input id="fin-f" type="number" placeholder="2000000"></div>
         <div class="form-group"><label>利益G（円）</label><input id="fin-g" type="number" placeholder="480000"></div>
       </div>
+      <div style="border-top:1px solid var(--border);margin:14px 0 10px;padding-top:10px;">
+        <div style="font-size:0.72rem;font-weight:700;color:var(--sub);margin-bottom:8px;">📊 定員充足率・加算取得状況</div>
+        <div class="form-row3">
+          <div class="form-group">
+            <label>定員数（人）</label>
+            <input id="fin-capacity" type="number" placeholder="40" oninput="calcOccRate()">
+          </div>
+          <div class="form-group">
+            <label>実績人数（人）</label>
+            <input id="fin-occupancy" type="number" placeholder="35" oninput="calcOccRate()">
+          </div>
+          <div class="form-group">
+            <label>充足率（自動計算）</label>
+            <div id="fin-occ-rate" style="padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:0.85rem;min-height:36px;background:var(--surface);color:var(--text);">─</div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>処遇改善加算の取得状況</label>
+          <select id="fin-kazan" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:0.82rem;outline:none;width:100%;">
+            <option value="">─ 選択してください</option>
+            <option value="Ⅰ">処遇改善加算Ⅰ（最高位）</option>
+            <option value="Ⅱ">処遇改善加算Ⅱ</option>
+            <option value="Ⅲ">処遇改善加算Ⅲ</option>
+            <option value="未取得">未取得</option>
+          </select>
+        </div>
+      </div>
       <button class="btn btn-primary" onclick="saveFin()">💾 保存</button>
     </div>
 
@@ -1942,15 +1969,36 @@ function loadFinForm(){
   const f=getFin(oid);
   if(f){
     ['pq','q','vq','mq','f','g'].forEach(k=>{ const el=document.getElementById('fin-'+k); if(el) el.value=f[k]||''; });
+    const cap=document.getElementById('fin-capacity'); if(cap) cap.value=f.capacity||'';
+    const occ=document.getElementById('fin-occupancy'); if(occ) occ.value=f.occupancy||'';
+    const kaz=document.getElementById('fin-kazan'); if(kaz) kaz.value=f.kazan||'';
   } else {
     ['pq','q','vq','mq','f','g'].forEach(k=>{ const el=document.getElementById('fin-'+k); if(el) el.value=''; });
+    ['fin-capacity','fin-occupancy'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+    const kaz=document.getElementById('fin-kazan'); if(kaz) kaz.value='';
   }
+  calcOccRate();
+}
+
+function calcOccRate(){
+  const cap=n(document.getElementById('fin-capacity')?.value);
+  const occ=n(document.getElementById('fin-occupancy')?.value);
+  const el=document.getElementById('fin-occ-rate');
+  if(!el) return;
+  if(!cap||!occ){ el.textContent='─'; el.style.color='var(--sub)'; return; }
+  const rate=(occ/cap*100).toFixed(1);
+  const loss=Math.max(0,cap-occ)*60000;
+  const col=rate<85?'var(--danger)':rate<95?'var(--warn)':'var(--accent2)';
+  el.innerHTML=`<span style="font-weight:700;color:${col};">${rate}%</span>`
+    +(loss>0?` <span style="font-size:0.72rem;color:var(--danger);">（月次損失試算 -${(loss/10000).toFixed(0)}万円）</span>`:'');
 }
 
 function saveFin(){
   const oid=document.getElementById('fin-office-sel').value;
   if(!oid){ alert('事業所を選択してください'); return; }
   const data=load('nagi_fin').filter(f=>f.officeId!==oid);
+  const cap=n(document.getElementById('fin-capacity').value);
+  const occ=n(document.getElementById('fin-occupancy').value);
   data.push({
     officeId:oid,
     pq:n(document.getElementById('fin-pq').value),
@@ -1959,6 +2007,10 @@ function saveFin(){
     mq:n(document.getElementById('fin-mq').value),
     f:n(document.getElementById('fin-f').value),
     g:n(document.getElementById('fin-g').value),
+    capacity:cap,
+    occupancy:occ,
+    occRate:cap?occ/cap:null,
+    kazan:document.getElementById('fin-kazan').value||'',
   });
   save('nagi_fin',data);
   alert('財務データを保存しました。');
@@ -2330,17 +2382,43 @@ function renderCompass(){
   // ── 軸A：資金 ──
   const finData=allFin.filter(f=>f&&(f.mq||f.pq||f.f));
   let finSignal='green', finLabel='良好', finDesc='全事業所の収益は安定圏', finItems=[];
+  let totalOccLoss=0, kazanMissCount=0;
   if(finData.length){
+    const offices=getAllOffices();
     finData.forEach(f=>{
-      const fm=f.fm||0;
-      const offices=getAllOffices();
+      const fm=f.fm||(f.mq?f.f/f.mq:0);
       const off=offices.find(o=>o.id===f.officeId);
       if(fm>1.3) finItems.push({name:off?.name||'─',fm,level:'red'});
       else if(fm>1.0) finItems.push({name:off?.name||'─',fm,level:'yellow'});
+      // 充足率損失
+      if(f.capacity&&f.occupancy){
+        const loss=Math.max(0,n(f.capacity)-n(f.occupancy))*60000;
+        totalOccLoss+=loss;
+      }
+      // 加算未取得
+      if(f.kazan==='未取得') kazanMissCount++;
     });
-    if(finItems.some(i=>i.level==='red')){ finSignal='red'; finLabel='要緊急対応'; finDesc='f/m比率130%超の事業所あり'; }
-    else if(finItems.some(i=>i.level==='yellow')){ finSignal='yellow'; finLabel='要注意'; finDesc='f/m比率100%超の事業所あり'; }
-    else { finSignal='green'; finLabel='良好'; finDesc='全事業所 f/m比率100%以下'; }
+    // シグナル判定（f/m・充足率・加算を総合）
+    const hasRed=finItems.some(i=>i.level==='red');
+    const hasYellow=finItems.some(i=>i.level==='yellow');
+    const hasOccRed=finData.some(f=>f.capacity&&f.occupancy&&n(f.occupancy)/n(f.capacity)<0.85);
+    const hasOccYellow=finData.some(f=>f.capacity&&f.occupancy&&n(f.occupancy)/n(f.capacity)<0.95);
+    if(hasRed||hasOccRed||kazanMissCount>0){
+      finSignal='red'; finLabel='要緊急対応';
+      const msgs=[];
+      if(hasRed) msgs.push('f/m比率130%超');
+      if(hasOccRed) msgs.push('充足率85%未満');
+      if(kazanMissCount>0) msgs.push(`加算未取得${kazanMissCount}件`);
+      finDesc=msgs.join(' / ');
+    } else if(hasYellow||hasOccYellow){
+      finSignal='yellow'; finLabel='要注意';
+      const msgs=[];
+      if(hasYellow) msgs.push('f/m比率100%超');
+      if(hasOccYellow) msgs.push('充足率95%未満');
+      finDesc=msgs.join(' / ');
+    } else {
+      finSignal='green'; finLabel='良好'; finDesc='全事業所 収益・充足率ともに安定';
+    }
   } else {
     finSignal='gray'; finLabel='データなし'; finDesc='財務データを入力してください';
   }
@@ -2414,6 +2492,8 @@ function renderCompass(){
   if(lsrpDangerCount>0) actions.push({sys:'ミツメル',icon:'📓',text:`LSRP危険者${lsrpDangerCount}名に日次ジャーナリングを導入してください`,signal:'red',tab:'rc'});
   if(lsrpWarnCount>0) actions.push({sys:'奏',icon:'🎵',text:`LSRP警戒者${lsrpWarnCount}名の配置見直しを検討してください`,signal:'yellow',tab:'staff'});
   if(finItems.some(i=>i.level==='red')) actions.push({sys:'響',icon:'💸',text:`f/m130%超：固定費構造のヒアリングが必要です`,signal:'red',tab:'corp'});
+  if(totalOccLoss>0) actions.push({sys:'響',icon:'🏠',text:`定員未充足による月次損失試算：-${(totalOccLoss/10000).toFixed(0)}万円。利用者確保のヒアリングを実施してください`,signal: totalOccLoss>=300000?'red':'yellow',tab:'corp'});
+  if(kazanMissCount>0) actions.push({sys:'弦',icon:'📋',text:`処遇改善加算 未取得${kazanMissCount}件。月次機会損失試算：-${kazanMissCount*18}万円。加算申請サポートの提案先を確認してください`,signal:'red',tab:'corp'});
   if(pipeCount===0&&allPipe.length) actions.push({sys:'弦',icon:'📞',text:'商談中案件がゼロです。次の営業先リストを用意してください',signal:'red',tab:'pipe'});
   else if(pipeCount<=2&&allPipe.length) actions.push({sys:'弦',icon:'📋',text:`商談案件が${pipeCount}件と少ない状態です。アプローチを強化してください`,signal:'yellow',tab:'pipe'});
   if(candidates.length>0) actions.push({sys:'凪',icon:'👤',text:`採用判断待ちの候補者が${candidates.length}名います`,signal:'yellow',tab:'candidate'});
@@ -2445,15 +2525,38 @@ function renderCompass(){
     finSumEl.innerHTML='<div style="color:var(--sub);font-size:0.78rem;padding:12px 0;">財務データなし</div>';
   } else {
     const offices=getAllOffices();
-    finSumEl.innerHTML=allFin.slice(0,4).map(f=>{
+    finSumEl.innerHTML=allFin.slice(0,5).map(f=>{
       const off=offices.find(o=>o.id===f.officeId);
-      const fm=f.fm||0;
-      const col=fm>1.3?'var(--danger)':fm>1.0?'var(--warn)':'var(--accent2)';
-      return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);">
-        <span style="font-size:0.78rem;flex:1;">${off?.name||'─'}</span>
-        <span style="font-size:0.78rem;font-weight:700;color:${col};">${(fm*100).toFixed(0)}%</span>
+      const fm=f.fm||(f.mq?f.f/f.mq:0);
+      const fmCol=fm>1.3?'var(--danger)':fm>1.0?'var(--warn)':'var(--accent2)';
+      // 充足率
+      let occHTML='';
+      if(f.capacity&&f.occupancy){
+        const rate=n(f.occupancy)/n(f.capacity)*100;
+        const occCol=rate<85?'var(--danger)':rate<95?'var(--warn)':'var(--accent2)';
+        const loss=Math.max(0,n(f.capacity)-n(f.occupancy))*60000;
+        occHTML=`<span style="font-size:0.7rem;color:${occCol};margin-left:6px;">充足${rate.toFixed(0)}%`
+          +(loss>0?` <span style="color:var(--danger);">(-${(loss/10000).toFixed(0)}万)</span>`:'')
+          +'</span>';
+      }
+      // 加算
+      const kazHTML=f.kazan==='未取得'
+        ?'<span style="font-size:0.68rem;background:rgba(239,83,80,0.15);color:var(--danger);border-radius:4px;padding:1px 5px;margin-left:4px;">加算未取得</span>'
+        :f.kazan?`<span style="font-size:0.68rem;color:var(--sub);margin-left:4px;">${f.kazan}</span>`:'';
+      return `<div style="display:flex;align-items:center;gap:4px;padding:6px 0;border-bottom:1px solid var(--border);flex-wrap:wrap;">
+        <span style="font-size:0.78rem;flex:1;min-width:60px;">${off?.name||'─'}</span>
+        <span style="font-size:0.78rem;font-weight:700;color:${fmCol};">f/m ${(fm*100).toFixed(0)}%</span>
+        ${occHTML}${kazHTML}
       </div>`;
     }).join('');
+    // 損失合計サマリー
+    if(totalOccLoss>0||kazanMissCount>0){
+      finSumEl.innerHTML+=`<div style="margin-top:8px;padding:8px;border-radius:6px;background:rgba(239,83,80,0.08);font-size:0.75rem;">
+        <span style="font-weight:700;color:var(--danger);">💸 月次損失試算合計</span><br>
+        ${totalOccLoss>0?`定員未充足：-${(totalOccLoss/10000).toFixed(0)}万円<br>`:''}
+        ${kazanMissCount>0?`加算未取得（${kazanMissCount}件）：-${kazanMissCount*18}万円`:''}
+      </div>`;
+    }
   }
 
   // ── スタッフサマリー（簡易） ──
