@@ -2542,8 +2542,12 @@ HP: ${hp}→${endHP} ／ MP: ${mp}→${endMP}
       csvRows.push(`"【①急重要】${e.title}（${e.pomos}ポモ）",${e.date},${e.start},${e.date},${e.end},False,"AI判断：急・重要"`);
     });
   }
-  // 先行予定マップを calendarCSV に追加
+  // 先行予定マップを calendarCSV に追加（重複除去）
+  const advSeenKeys = new Set();
   getAdvanceScheduleData().filter(r => r.date && r.content && /^\d{4}-\d{2}-\d{2}$/.test(r.date)).forEach(r => {
+    const dedupKey = r.date + '|' + r.content.trim() + '|' + (r.startHour || '') + ':' + (r.startMinute || '');
+    if (advSeenKeys.has(dedupKey)) return;
+    advSeenKeys.add(dedupKey);
     const d = r.date.replace(/-/g, '/');
     const sh = r.startHour ? r.startHour + ':' + (r.startMinute || '00') : '';
     const eh = r.endHour   ? r.endHour   + ':' + (r.endMinute   || '00') : '';
