@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>FusionOS 一枚地図 — Fusion Partners</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+
+:root{
+  --bg:     #F0EDE8;
+  --bg2:    #FAF8F4;
+  --navy:   #0b1929;
+  --navy2:  #1c3248;
+  --gold:   #7d6428;
+  --gold2:  #9e7f34;
+  --gold3:  #c9a850;
+  --text:   #1a2535;
+  --dim:    #536070;
+  --border: #d8d2c8;
+}
+
+html,body{
+  width:210mm;
+  height:297mm;
+  background:var(--bg);
+  font-family:'Hiragino Mincho ProN','Yu Mincho','Georgia',serif;
+  color:var(--text);
+  -webkit-font-smoothing:antialiased;
+}
+
+.page{
+  width:210mm;
+  height:297mm;
+  background:var(--bg);
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  padding:14mm 14mm 12mm;
+  overflow:hidden;
+}
+
+/* 上下ゴールドライン */
+.page::before{
+  content:'';
+  position:absolute;
+  top:0;left:0;right:0;
+  height:3px;
+  background:linear-gradient(90deg,transparent,var(--gold3) 20%,var(--gold3) 80%,transparent);
+}
+.page::after{
+  content:'';
+  position:absolute;
+  bottom:0;left:0;right:0;
+  height:2px;
+  background:linear-gradient(90deg,transparent,var(--gold3) 20%,var(--gold3) 80%,transparent);
+  opacity:.5;
+}
+
+/* 左アクセントバー */
+.accent-bar{
+  position:absolute;
+  top:0;left:0;
+  width:4px;height:100%;
+  background:linear-gradient(180deg,var(--gold3),transparent 70%);
+  opacity:.7;
+}
+
+/* ── ヘッダー ── */
+.header{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  margin-bottom:9mm;
+  border-bottom:1px solid var(--border);
+  padding-bottom:5mm;
+}
+.logo-area{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
+.logo-name{
+  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
+  font-size:8pt;
+  letter-spacing:.2em;
+  color:var(--gold);
+  text-transform:uppercase;
+}
+.logo-sub{
+  font-size:6.5pt;
+  color:var(--dim);
+  letter-spacing:.08em;
+}
+.header-title{
+  text-align:right;
+}
+.header-title h1{
+  font-size:13pt;
+  font-weight:normal;
+  letter-spacing:.05em;
+  color:var(--navy);
+  line-height:1.3;
+}
+.header-title .en{
+  font-size:7pt;
+  color:var(--gold2);
+  letter-spacing:.2em;
+  margin-top:2px;
+  display:block;
+  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
+}
+
+/* ── キャッチ ── */
+.catch{
+  text-align:center;
+  margin-bottom:8mm;
+}
+.catch p{
+  font-size:8.5pt;
+  color:var(--dim);
+  letter-spacing:.12em;
+  line-height:1.8;
+}
+.catch strong{
+  color:var(--navy);
+  font-weight:normal;
+}
+
+/* ── フロー ── */
+.flow{
+  display:flex;
+  flex-direction:column;
+  gap:0;
+  flex:1;
+}
+
+.node{
+  display:flex;
+  align-items:stretch;
+  background:var(--bg2);
+  border:1px solid var(--border);
+  border-radius:4px;
+  overflow:hidden;
+  min-height:28mm;
+}
+
+.node-left{
+  width:36mm;
+  background:var(--navy);
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  padding:4mm 3mm;
+  flex-shrink:0;
+}
+.node-jp{
+  font-size:15pt;
+  color:#fff;
+  font-weight:normal;
+  letter-spacing:.04em;
+  line-height:1.1;
+}
+.node-en{
+  font-size:6pt;
+  color:var(--gold3);
+  letter-spacing:.25em;
+  margin-top:3px;
+  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
+  text-transform:uppercase;
+}
+.node-verb{
+  font-size:8pt;
+  color:rgba(255,255,255,.6);
+  margin-top:4px;
+  letter-spacing:.08em;
+  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
+}
+
+.node-right{
+  flex:1;
+  padding:5mm 6mm;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  gap:4px;
+}
+.node-headline{
+  font-size:10pt;
+  color:var(--navy);
+  letter-spacing:.04em;
+  line-height:1.3;
+}
+.node-desc{
+  font-size:7.5pt;
+  color:var(--dim);
+  line-height:1.7;
+  letter-spacing:.04em;
+}
+.node-tag{
+  display:inline-block;
+  background:var(--gold3);
+  color:#fff;
+  font-size:5.5pt;
+  padding:1px 6px;
+  border-radius:2px;
+  letter-spacing:.12em;
+  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
+  align-self:flex-start;
+  margin-top:2px;
+}
+
+/* ── 矢印 ── */
+.arrow{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:7mm;
+  flex-shrink:0;
+}
+.arrow svg{
+  opacity:.4;
+}
+
+/* ── フッター ── */
+.footer{
+  margin-top:6mm;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  border-top:1px solid var(--border);
+  padding-top:4mm;
+}
+.footer-mission{
+  font-size:7pt;
+  color:var(--gold);
+  letter-spacing:.1em;
+  font-style:italic;
+}
+.footer-contact{
+  font-size:6pt;
+  color:var(--dim);
+  letter-spacing:.06em;
+  text-align:right;
+  line-height:1.6;
+  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
+}
+
+@media print{
+  html,body{ width:210mm; height:297mm; }
+  .page{ page-break-after:avoid; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="accent-bar"></div>
+
+  <!-- ヘッダー -->
+  <div class="header">
+    <div class="logo-area">
+      <span class="logo-name">Fusion Partners</span>
+      <span class="logo-sub">組織再設計アーキテクト</span>
+    </div>
+    <div class="header-title">
+      <h1>FusionOS 一枚地図</h1>
+      <span class="en">The Flow of Organization Design</span>
+    </div>
+  </div>
+
+  <!-- キャッチ -->
+  <div class="catch">
+    <p>
+      <strong>「属人化のバグ」を仕組みで解決する</strong>——5つのシステムが、現場を凪がせる。
+    </p>
+  </div>
+
+  <!-- フロー -->
+  <div class="flow">
+
+    <!-- 響 -->
+    <div class="node">
+      <div class="node-left">
+        <span class="node-jp">響</span>
+        <span class="node-en">Hibiki</span>
+        <span class="node-verb">話す</span>
+      </div>
+      <div class="node-right">
+        <span class="node-headline">現場のノイズを「対話」で拾い上げる</span>
+        <span class="node-desc">壁打ち・アセスメントを構造化。「なんでこうなってるの？」という問いが、氷山モデルを自動形成する。話すだけで、組織の現実が見えてくる。</span>
+        <span class="node-tag">現場診断 / 壁打ち</span>
+      </div>
+    </div>
+
+    <div class="arrow">
+      <svg width="20" height="18" viewBox="0 0 20 18" fill="none">
+        <path d="M10 0 L10 12 M5 8 L10 14 L15 8" stroke="#0b1929" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+
+    <!-- 凪 -->
+    <div class="node">
+      <div class="node-left">
+        <span class="node-jp">凪</span>
+        <span class="node-en">Nagi</span>
+        <span class="node-verb">見る</span>
+      </div>
+      <div class="node-right">
+        <span class="node-headline">組織の現実を「診断」で可視化する</span>
+        <span class="node-desc">MQ会計・KSA・West指標を1フォームに統合。収益・チーム・構造を同時に診断し、「どこが詰まっているか」を数字で示す。</span>
+        <span class="node-tag">組織診断 / 凪スキャン</span>
+      </div>
+    </div>
+
+    <div class="arrow">
+      <svg width="20" height="18" viewBox="0 0 20 18" fill="none">
+        <path d="M10 0 L10 12 M5 8 L10 14 L15 8" stroke="#0b1929" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+
+    <!-- 奏 -->
+    <div class="node">
+      <div class="node-left">
+        <span class="node-jp">奏</span>
+        <span class="node-en">Kanade</span>
+        <span class="node-verb">組む</span>
+      </div>
+      <div class="node-right">
+        <span class="node-headline">適材適所を「設計」でつなぎ合わせる</span>
+        <span class="node-desc">エゴグラム・エニアグラム・LSRPチェックで人材を見極め、135パターンの狙撃理論で最適配置を設計する。チームが自走する構造を作る。</span>
+        <span class="node-tag">チームビルディング / 適材適所</span>
+      </div>
+    </div>
+
+    <div class="arrow">
+      <svg width="20" height="18" viewBox="0 0 20 18" fill="none">
+        <path d="M10 0 L10 12 M5 8 L10 14 L15 8" stroke="#0b1929" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+
+    <!-- 弦 -->
+    <div class="node">
+      <div class="node-left">
+        <span class="node-jp">弦</span>
+        <span class="node-en">Yuzuru</span>
+        <span class="node-verb">売る</span>
+      </div>
+      <div class="node-right">
+        <span class="node-headline">価値を「発信」で地域に届ける</span>
+        <span class="node-desc">WAM NETで施設データを取得し、組織課題を自動判断。営業先リストとマップを自動生成して、「属人化を解決できる現場」を必要な人に届ける。</span>
+        <span class="node-tag">地域連携 / 営業設計</span>
+      </div>
+    </div>
+
+    <div class="arrow">
+      <svg width="20" height="18" viewBox="0 0 20 18" fill="none">
+        <path d="M10 0 L10 12 M5 8 L10 14 L15 8" stroke="#0b1929" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+
+    <!-- ミツメル -->
+    <div class="node">
+      <div class="node-left" style="background:var(--gold);">
+        <span class="node-jp" style="font-size:11pt;">ミツメル</span>
+        <span class="node-en" style="color:rgba(255,255,255,.7);">Mitsumeru</span>
+        <span class="node-verb">折れない</span>
+      </div>
+      <div class="node-right">
+        <span class="node-headline">管理職の「耐久設計」で現場を守る</span>
+        <span class="node-desc">日次ジャーナリング・HP/MP監査・翌日戦略を一元管理。仕組みを動かし続ける管理職自身が折れないための、個人用OSです。</span>
+        <span class="node-tag">個人監査 / 日次管理</span>
+      </div>
+    </div>
+
+  </div><!-- /flow -->
+
+  <!-- フッター -->
+  <div class="footer">
+    <span class="footer-mission">「背丈の低い人の生活を、その背丈のまま守る」</span>
+    <div class="footer-contact">
+      fusion.partners.office@gmail.com<br>
+      note.com/fusion_os
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
