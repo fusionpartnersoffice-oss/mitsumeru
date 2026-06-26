@@ -2,130 +2,132 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=1120">
 <title>FusionOS 全体像 — Fusion Partners</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{
   --bg:#F0EDE8; --bg2:#FAF8F4;
   --navy:#0b1929; --navy2:#1c3248;
-  --gold:#7d6428; --gold2:#9e7f34; --gold3:#c9a850;
+  --gold:#7d6428; --gold3:#c9a850;
   --text:#1a2535; --dim:#536070; --border:#d8d2c8;
 }
 html,body{
-  width:210mm; height:297mm;
+  width:1120px; height:630px;
   background:var(--bg);
   font-family:'Hiragino Mincho ProN','Yu Mincho','Georgia',serif;
   color:var(--text);
   -webkit-font-smoothing:antialiased;
-}
-.page{
-  width:210mm; height:297mm;
-  background:var(--bg);
-  position:relative;
-  padding:10mm 12mm 8mm;
-  display:flex; flex-direction:column;
   overflow:hidden;
 }
-/* ゴールドライン上下 */
+
+/* ── PAGE FRAME ── */
+.page{
+  width:1120px; height:630px;
+  position:relative;
+  background:var(--bg);
+  padding:22px 36px 18px;
+  display:flex; flex-direction:column;
+}
 .page::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;
-  background:linear-gradient(90deg,transparent,var(--gold3) 20%,var(--gold3) 80%,transparent);}
+  background:linear-gradient(90deg,transparent,var(--gold3) 15%,var(--gold3) 85%,transparent);}
 .page::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;
-  background:linear-gradient(90deg,transparent,var(--gold3) 30%,var(--gold3) 70%,transparent);opacity:.5;}
+  background:linear-gradient(90deg,transparent,var(--gold3) 20%,var(--gold3) 80%,transparent);opacity:.5;}
 .accent{position:absolute;top:0;left:0;width:4px;height:100%;
-  background:linear-gradient(180deg,var(--gold3),transparent 65%);opacity:.7;}
+  background:linear-gradient(180deg,var(--gold3),transparent 60%);opacity:.7;}
 
 /* ── HEADER ── */
 .header{
   display:flex; justify-content:space-between; align-items:center;
-  padding-bottom:4mm; border-bottom:1px solid var(--border);
-  margin-bottom:5mm; flex-shrink:0;
+  padding-bottom:12px; border-bottom:1px solid var(--border);
+  flex-shrink:0;
 }
-.brand{display:flex;flex-direction:column;gap:1px;}
-.brand-name{font-family:'Hiragino Kaku Gothic ProN',sans-serif;font-size:7pt;
+.brand-name{font-family:'Hiragino Kaku Gothic ProN',sans-serif;font-size:10px;
   letter-spacing:.22em;color:var(--gold);text-transform:uppercase;}
-.brand-sub{font-size:5.5pt;color:var(--dim);letter-spacing:.1em;}
+.brand-sub{font-size:9px;color:var(--dim);letter-spacing:.1em;margin-top:2px;}
 .title-block{text-align:right;}
-.title-block h1{font-size:12pt;font-weight:normal;letter-spacing:.04em;color:var(--navy);}
-.title-block p{font-size:6pt;color:var(--gold2);letter-spacing:.18em;margin-top:2px;
+.title-block h1{font-size:17px;font-weight:normal;letter-spacing:.04em;color:var(--navy);}
+.title-block p{font-size:9px;color:var(--gold);letter-spacing:.15em;margin-top:3px;
   font-family:'Hiragino Kaku Gothic ProN',sans-serif;}
 
-/* ── DIAGRAM AREA ── */
+/* ── DIAGRAM ── */
 .diagram{
-  flex:1; position:relative; display:flex;
-  justify-content:center; align-items:center;
+  flex:1; position:relative;
 }
-/* SVGは全体に広げる */
-.diagram svg{width:100%;height:100%;overflow:visible;}
+.diagram svg{position:absolute;top:0;left:0;width:100%;height:100%;overflow:visible;pointer-events:none;}
 
 /* ── CENTER NODE ── */
-.center-node{
-  position:absolute; top:50%; left:50%;
-  transform:translate(-50%,-50%);
-  width:26mm; height:26mm;
-  background:var(--navy);
+.c-node{
+  position:absolute;
+  width:110px; height:110px;
   border-radius:50%;
+  background:var(--navy);
   display:flex; flex-direction:column;
   justify-content:center; align-items:center;
   text-align:center;
-  box-shadow:0 4px 20px rgba(11,25,41,.25);
-  z-index:10;
+  box-shadow:0 6px 28px rgba(11,25,41,.28);
+  transform:translate(-50%,-50%);
 }
-.center-node .cn-main{font-size:11pt;color:#fff;letter-spacing:.04em;line-height:1.1;}
-.center-node .cn-sub{font-size:5pt;color:var(--gold3);letter-spacing:.18em;margin-top:3px;
+.c-node .c-main{font-size:17px;color:#fff;letter-spacing:.04em;line-height:1.15;}
+.c-node .c-sub{font-size:8px;color:var(--gold3);letter-spacing:.2em;margin-top:4px;
   font-family:'Hiragino Kaku Gothic ProN',sans-serif;text-transform:uppercase;}
 
-/* ── OUTER NODES ── */
-.node{
+/* ── OUTER NODE ── */
+.o-node{
   position:absolute;
   transform:translate(-50%,-50%);
+  display:flex; flex-direction:column; align-items:center;
   text-align:center;
-  z-index:10;
 }
-.node-circle{
-  width:22mm; height:22mm;
+/* 円 */
+.o-circle{
+  width:96px; height:96px;
   border-radius:50%;
   display:flex; flex-direction:column;
   justify-content:center; align-items:center;
-  margin:0 auto 2mm;
-  box-shadow:0 3px 12px rgba(11,25,41,.15);
+  box-shadow:0 4px 16px rgba(11,25,41,.18);
+  flex-shrink:0;
 }
-.node-circle .n-jp{font-size:12pt;font-weight:normal;letter-spacing:.04em;line-height:1.1;}
-.node-circle .n-en{font-size:5pt;letter-spacing:.2em;margin-top:2px;
+.o-jp{font-size:18px;font-weight:normal;line-height:1.1;}
+.o-en{font-size:7px;letter-spacing:.2em;margin-top:3px;
   font-family:'Hiragino Kaku Gothic ProN',sans-serif;text-transform:uppercase;}
-.node-circle .n-verb{font-size:6.5pt;margin-top:3px;letter-spacing:.08em;
+.o-verb{font-size:9px;margin-top:3px;letter-spacing:.08em;
   font-family:'Hiragino Kaku Gothic ProN',sans-serif;}
 
-/* カラーバリエーション */
-.navy-node .node-circle{background:var(--navy2); border:2px solid var(--navy);}
-.navy-node .n-jp{color:#fff;} .navy-node .n-en{color:var(--gold3);} .navy-node .n-verb{color:rgba(255,255,255,.65);}
+/* カラー */
+.navy .o-circle{background:var(--navy2);border:2.5px solid var(--navy);}
+.navy .o-jp,.navy .o-verb{color:#fff;} .navy .o-en{color:var(--gold3);}
 
-.gold-node .node-circle{background:var(--gold); border:2px solid var(--gold2);}
-.gold-node .n-jp{color:#fff;} .gold-node .n-en{color:rgba(255,255,255,.75);} .gold-node .n-verb{color:rgba(255,255,255,.75);}
+.gold .o-circle{background:var(--gold);border:2.5px solid #5a4718;}
+.gold .o-jp,.gold .o-verb{color:#fff;} .gold .o-en{color:rgba(255,255,255,.75);}
 
-.cream-node .node-circle{background:var(--bg2); border:2px solid var(--border);}
-.cream-node .n-jp{color:var(--navy);} .cream-node .n-en{color:var(--gold2);} .cream-node .n-verb{color:var(--dim);}
+.cream .o-circle{background:var(--bg2);border:2.5px solid var(--border);}
+.cream .o-jp{color:var(--navy);} .cream .o-en{color:var(--gold);} .cream .o-verb{color:var(--dim);}
 
-/* 説明テキスト */
-.node-desc{
-  font-size:5.8pt; color:var(--dim); line-height:1.65;
-  letter-spacing:.04em; max-width:30mm;
+/* ラベル・説明 */
+.o-label{
+  font-size:11px; color:var(--navy); letter-spacing:.03em;
+  margin-top:8px; line-height:1.4; max-width:140px;
 }
-.node-label{
-  font-size:7pt; color:var(--navy); font-weight:normal;
-  letter-spacing:.04em; margin-bottom:2px; line-height:1.3;
+.o-desc{
+  font-size:9.5px; color:var(--dim); line-height:1.7;
+  letter-spacing:.03em; margin-top:3px; max-width:140px;
 }
 
 /* ── FOOTER ── */
 .footer{
-  flex-shrink:0;
-  display:flex; justify-content:space-between; align-items:center;
-  border-top:1px solid var(--border); padding-top:3mm; margin-top:3mm;
+  flex-shrink:0; display:flex;
+  justify-content:space-between; align-items:center;
+  border-top:1px solid var(--border); padding-top:10px;
 }
-.footer-mission{font-size:6.5pt;color:var(--gold);letter-spacing:.1em;font-style:italic;}
-.footer-contact{font-size:5.5pt;color:var(--dim);letter-spacing:.06em;text-align:right;
-  line-height:1.7;font-family:'Hiragino Kaku Gothic ProN',sans-serif;}
+.footer-mission{font-size:9px;color:var(--gold);letter-spacing:.1em;font-style:italic;}
+.footer-contact{font-size:8px;color:var(--dim);letter-spacing:.06em;
+  font-family:'Hiragino Kaku Gothic ProN',sans-serif;}
 
-@media print{html,body{width:210mm;height:297mm;}}
+@media print{
+  html,body{width:1120px;height:630px;}
+  @page{size:1120px 630px;margin:0;}
+}
 </style>
 </head>
 <body>
@@ -134,9 +136,9 @@ html,body{
 
 <!-- HEADER -->
 <div class="header">
-  <div class="brand">
-    <span class="brand-name">Fusion Partners</span>
-    <span class="brand-sub">組織再設計アーキテクト</span>
+  <div>
+    <div class="brand-name">Fusion Partners</div>
+    <div class="brand-sub">組織再設計アーキテクト</div>
   </div>
   <div class="title-block">
     <h1>FusionOS — 5つのシステム全体像</h1>
@@ -145,123 +147,113 @@ html,body{
 </div>
 
 <!-- DIAGRAM -->
-<div class="diagram" id="diagram">
+<div class="diagram" id="diag">
+  <svg id="svg-lines"></svg>
 
-  <!-- SVG lines (connecting center to nodes) -->
-  <svg id="lines" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;">
-    <!-- Lines drawn by JS after layout -->
-  </svg>
-
-  <!-- CENTER -->
-  <div class="center-node" id="center">
-    <span class="cn-main">Fusion<br>OS</span>
-    <span class="cn-sub">5 Systems</span>
+  <!-- 中央 -->
+  <div class="c-node" id="cn" style="left:50%;top:50%;">
+    <span class="c-main">Fusion<br>OS</span>
+    <span class="c-sub">5 Systems</span>
   </div>
 
-  <!-- 響 (top) -->
-  <div class="node navy-node" id="n0" style="left:50%;top:12%;">
-    <div class="node-circle">
-      <span class="n-jp">響</span>
-      <span class="n-en">Hibiki</span>
-      <span class="n-verb">話す</span>
+  <!-- 響 top -->
+  <div class="o-node navy" id="n0" style="left:50%;top:10%;">
+    <div class="o-circle">
+      <span class="o-jp">響</span>
+      <span class="o-en">Hibiki</span>
+      <span class="o-verb">話す</span>
     </div>
-    <div class="node-label">現場の声を拾う「入口」</div>
-    <div class="node-desc">壁打ち・アセスメントを構造化。<br>氷山モデルで根本原因を特定する。</div>
+    <div class="o-label">現場の声を拾う「入口」</div>
+    <div class="o-desc">壁打ち・アセスメントを構造化。<br>氷山モデルで根本原因を特定する。</div>
   </div>
 
-  <!-- 凪 (top-right) -->
-  <div class="node gold-node" id="n1" style="left:82%;top:28%;">
-    <div class="node-circle">
-      <span class="n-jp">凪</span>
-      <span class="n-en">Nagi</span>
-      <span class="n-verb">見る</span>
+  <!-- 凪 right-top -->
+  <div class="o-node gold" id="n1" style="left:83%;top:28%;">
+    <div class="o-circle">
+      <span class="o-jp">凪</span>
+      <span class="o-en">Nagi</span>
+      <span class="o-verb">見る</span>
     </div>
-    <div class="node-label">組織を診る「羅針盤」</div>
-    <div class="node-desc">MQ会計・KSA・West指標を統合。<br>収益・チーム・構造を同時可視化。</div>
+    <div class="o-label">組織を診る「羅針盤」</div>
+    <div class="o-desc">MQ会計・KSAで収益・チームを<br>同時に可視化・数字で診断する。</div>
   </div>
 
-  <!-- 弦 (bottom-right) -->
-  <div class="node navy-node" id="n2" style="left:72%;top:72%;">
-    <div class="node-circle">
-      <span class="n-jp">弦</span>
-      <span class="n-en">Yuzuru</span>
-      <span class="n-verb">売る</span>
+  <!-- 弦 right-bottom -->
+  <div class="o-node navy" id="n2" style="left:72%;top:82%;">
+    <div class="o-circle">
+      <span class="o-jp">弦</span>
+      <span class="o-en">Yuzuru</span>
+      <span class="o-verb">売る</span>
     </div>
-    <div class="node-label">地域連携と「自動営業」</div>
-    <div class="node-desc">WAM NET活用で施設データ取得。<br>営業先リスト・マップを自動生成。</div>
+    <div class="o-label">地域連携と「自動営業」</div>
+    <div class="o-desc">施設データから営業先リストと<br>マップを自動生成して届ける。</div>
   </div>
 
-  <!-- ミツメル (bottom-left) -->
-  <div class="node gold-node" id="n3" style="left:28%;top:72%;">
-    <div class="node-circle">
-      <span class="n-jp" style="font-size:8pt;">ミツメル</span>
-      <span class="n-en">Mitsumeru</span>
-      <span class="n-verb">折れない</span>
+  <!-- ミツメル left-bottom -->
+  <div class="o-node gold" id="n3" style="left:28%;top:82%;">
+    <div class="o-circle">
+      <span class="o-jp" style="font-size:11px;letter-spacing:0;">ミツメル</span>
+      <span class="o-en">Mitsumeru</span>
+      <span class="o-verb">折れない</span>
     </div>
-    <div class="node-label">個人の「耐久設計」</div>
-    <div class="node-desc">日次HP/MP監査・翌日戦略を一元化。<br>仕組みを動かす管理職を守る。</div>
+    <div class="o-label">管理職の「耐久設計」</div>
+    <div class="o-desc">日次HP/MP監査・翌日戦略を一元化。<br>仕組みを動かす人を守る。</div>
   </div>
 
-  <!-- 奏 (top-left) -->
-  <div class="node cream-node" id="n4" style="left:18%;top:28%;">
-    <div class="node-circle">
-      <span class="n-jp">奏</span>
-      <span class="n-en">Kanade</span>
-      <span class="n-verb">組む</span>
+  <!-- 奏 left-top -->
+  <div class="o-node cream" id="n4" style="left:17%;top:28%;">
+    <div class="o-circle">
+      <span class="o-jp">奏</span>
+      <span class="o-en">Kanade</span>
+      <span class="o-verb">組む</span>
     </div>
-    <div class="node-label">適材適所の「チームビルディング」</div>
-    <div class="node-desc">エゴグラム・エニアグラム・LSRPで<br>人材を見極め最適配置を設計する。</div>
+    <div class="o-label">適材適所の「チームビルディング」</div>
+    <div class="o-desc">エゴグラム・LSRPで人材を見極め<br>最適なチーム配置を設計する。</div>
   </div>
 
-</div><!-- /diagram -->
+</div>
 
 <!-- FOOTER -->
 <div class="footer">
   <span class="footer-mission">「背丈の低い人の生活を、その背丈のまま守る」— Fusion Partners</span>
-  <div class="footer-contact">fusion.partners.office@gmail.com｜note.com/fusion_os</div>
+  <span class="footer-contact">fusion.partners.office@gmail.com　｜　note.com/fusion_os</span>
+</div>
 </div>
 
-</div><!-- /page -->
-
 <script>
-// 中心→各ノードを結ぶ線をSVGで描画
 window.addEventListener('load', () => {
-  const diagram = document.getElementById('diagram');
-  const svg = document.getElementById('lines');
-  const center = document.getElementById('center');
-  const nodeIds = ['n0','n1','n2','n3','n4'];
-
-  const dr = diagram.getBoundingClientRect();
-  const cr = center.getBoundingClientRect();
-  const cx = cr.left - dr.left + cr.width/2;
-  const cy = cr.top  - dr.top  + cr.height/2;
+  const diag = document.getElementById('diag');
+  const svg  = document.getElementById('svg-lines');
+  const dr   = diag.getBoundingClientRect();
 
   svg.setAttribute('viewBox', `0 0 ${dr.width} ${dr.height}`);
 
-  nodeIds.forEach((id, i) => {
-    const nr = document.getElementById(id).getBoundingClientRect();
-    // ノードの中央（circleの中央）= ノードtop + 11mm相当
-    const circle = document.getElementById(id).querySelector('.node-circle');
-    const ncr = circle.getBoundingClientRect();
-    const nx = ncr.left - dr.left + ncr.width/2;
-    const ny = ncr.top  - dr.top  + ncr.height/2;
+  const cnEl  = document.getElementById('cn');
+  const cnR   = cnEl.getBoundingClientRect();
+  const cx    = cnR.left - dr.left + cnR.width  / 2;
+  const cy    = cnR.top  - dr.top  + cnR.height / 2;
+  const cr    = cnR.width / 2;
 
-    // 線の両端をそれぞれの円の縁まで縮める
-    const angle = Math.atan2(ny - cy, nx - cx);
-    const cr_r = cr.width / 2;
-    const nc_r = ncr.width / 2;
-    const x1 = cx + Math.cos(angle) * (cr_r + 2);
-    const y1 = cy + Math.sin(angle) * (cr_r + 2);
-    const x2 = nx - Math.cos(angle) * (nc_r + 2);
-    const y2 = ny - Math.sin(angle) * (nc_r + 2);
+  ['n0','n1','n2','n3','n4'].forEach(id => {
+    const circ = document.querySelector(`#${id} .o-circle`);
+    const nr   = circ.getBoundingClientRect();
+    const nx   = nr.left - dr.left + nr.width  / 2;
+    const ny   = nr.top  - dr.top  + nr.height / 2;
+    const nr_r = nr.width / 2;
+    const ang  = Math.atan2(ny - cy, nx - cx);
+
+    const x1 = cx + Math.cos(ang) * (cr + 3);
+    const y1 = cy + Math.sin(ang) * (cr + 3);
+    const x2 = nx - Math.cos(ang) * (nr_r + 3);
+    const y2 = ny - Math.sin(ang) * (nr_r + 3);
 
     const line = document.createElementNS('http://www.w3.org/2000/svg','line');
     line.setAttribute('x1', x1); line.setAttribute('y1', y1);
     line.setAttribute('x2', x2); line.setAttribute('y2', y2);
     line.setAttribute('stroke', '#c9a850');
-    line.setAttribute('stroke-width', '1.2');
-    line.setAttribute('stroke-dasharray', '4 3');
-    line.setAttribute('opacity', '0.5');
+    line.setAttribute('stroke-width', '1.5');
+    line.setAttribute('stroke-dasharray', '5 4');
+    line.setAttribute('opacity', '0.55');
     svg.appendChild(line);
   });
 });
