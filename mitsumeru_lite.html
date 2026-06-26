@@ -273,18 +273,7 @@
     letter-spacing: 1px;
   }
 
-  /* ===== デモモード ===== */
-  .demo-overlay {
-    position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(30, 24, 18, 0.92);
-    z-index: 500;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-  }
-  .demo-overlay.active { display: flex; }
+  /* ===== モーダルカード共通 ===== */
   .demo-card {
     background: var(--card);
     border: 0.5px solid var(--border);
@@ -303,15 +292,6 @@
     color: var(--text);
   }
   .demo-card p { font-size: 13px; color: var(--text2); line-height: 1.8; margin-bottom: 16px; }
-  .demo-input {
-    width: 100%; padding: 12px 16px; font-size: 16px;
-    font-family: 'Noto Sans JP', sans-serif;
-    background: var(--bg); border: 0.5px solid var(--border);
-    border-radius: 6px; color: var(--text);
-    text-align: center; letter-spacing: 4px;
-    margin-bottom: 8px; outline: none;
-  }
-  .demo-input:focus { border-color: var(--accent); }
   .demo-badge {
     display: inline-block;
     background: #fff3cd; color: var(--gold);
@@ -319,8 +299,6 @@
     padding: 3px 12px; font-size: 11px; letter-spacing: 1px;
     margin-bottom: 16px;
   }
-  .demo-error { color: var(--red); font-size: 12px; margin-top: 4px; margin-bottom: 8px; display: none; }
-
   /* ===== 同意取得 ===== */
   .consent-overlay {
     position: fixed;
@@ -346,35 +324,12 @@
 </head>
 <body>
 
-<!-- デモモード：招待コード入力 -->
-<div class="demo-overlay" id="invite-overlay">
-  <div class="demo-card">
-    <div class="demo-badge">DEMO MODE</div>
-    <h2>ミツメル Lite</h2>
-    <p>招待コードを入力してください。<br>コードは招待者からお受け取りください。</p>
-    <input type="text" class="demo-input" id="invite-code-input" placeholder="招待コードを入力" autocomplete="off" onkeydown="if(event.key==='Enter')submitInviteCode()">
-    <p id="invite-error" class="demo-error">招待コードが正しくありません。</p>
-    <button class="btn-primary" onclick="submitInviteCode()" style="margin-bottom:8px;">確認する</button>
-    <button class="btn-secondary" onclick="useOwnApiKey()" style="margin-bottom:0;">🔑 APIキーで利用する</button>
-  </div>
-</div>
-
-<!-- デモモード：回数上限 -->
-<div class="demo-overlay" id="limit-overlay">
-  <div class="demo-card">
-    <div class="demo-badge">DEMO 終了</div>
-    <h2>デモ体験終了</h2>
-    <p>本格利用にはAnthropicのAPIキーの設定が必要です。<br><br>APIキーは <strong>console.anthropic.com</strong> で取得できます。<br>「sk-ant-」から始まる文字列です。</p>
-    <button class="btn-primary" onclick="useOwnApiKey()">🔑 APIキーを設定して使う</button>
-    <p style="font-size:11px;color:var(--text3);margin-top:16px;">ミツメルに興味をお持ちいただきありがとうございます。<br>Fusion Partners 柴山靖章</p>
-  </div>
-</div>
-
 <!-- 同意取得モーダル -->
 <div class="consent-overlay" id="consent-overlay">
   <div class="demo-card">
     <div class="demo-badge">初回確認</div>
     <h2>ミツメル Lite</h2>
+    <p style="background:#e8f5ee;border:0.5px solid #a8dfc4;border-radius:6px;padding:10px 14px;color:#1a7a52;font-weight:500;margin-bottom:16px;">無料でお使いいただけます</p>
     <p>ご利用の前に以下をご確認ください。<br>「同意して始める」を押すことで同意したとみなします。</p>
     <p style="font-size:12px;margin-bottom:20px;">
       <a href="./mitsumeru_privacy.html" target="_blank" style="color:var(--accent);text-decoration:underline;">プライバシーポリシー</a>
@@ -382,6 +337,7 @@
       <a href="./mitsumeru_terms.html" target="_blank" style="color:var(--accent);text-decoration:underline;">利用規約</a>
     </p>
     <button class="btn-primary" onclick="giveConsent()">同意して始める</button>
+    <p style="font-size:11px;color:var(--text3);margin-top:12px;">AI機能の利用にはAnthropicのAPIキーが必要です</p>
   </div>
 </div>
 
@@ -582,8 +538,6 @@
 <script>
 let memos = [];
 let apiKey = localStorage.getItem('mitsumeru_api_key') || '';
-const DEMO_CODE = 'MITSUMERU_DEMO';
-let demoActive = false;
 
 // ===== 日付キー管理 =====
 function localDateStr(d) {
@@ -1015,10 +969,6 @@ function setApiKey() {
 
 function callClaude(prompt, onSuccess, onError) {
   if (!hasConsent()) { onError('利用規約・プライバシーポリシーへの同意が必要です。ページを再読み込みしてください。'); return; }
-  if (demoActive) {
-    setTimeout(() => onSuccess(DEMO_MORNING_TEXT), 1000);
-    return;
-  }
   const key = getApiKey();
   if (!key) { onError('APIキーが設定されていません。'); return; }
   fetch('https://api.anthropic.com/v1/messages', {
@@ -1036,57 +986,6 @@ function callClaude(prompt, onSuccess, onError) {
   }).catch(e => onError(e.message));
 }
 
-// ===== デモモード =====
-const DEMO_MORNING_TEXT = `【参謀からの一言】
-入力されたHP/MPとコースを見る限り、今日は動ける地盤がある。ノイズはあるが、それより自分の設計に集中できる状態だ。一つユーモアを添えるとすれば——MPが少し低いのは昨夜のオールドファッションが足りなかっただけだ。今日も進もう。いつもと同じように、一歩ずつ。あなたのペースで動く日が、一番積み上がる。
-
-【今日のTop3タスク】
-1. 最優先プロジェクトのスコープを1ポモで確定し「今日やること・やらないこと」を1枚に整理する
-2. 発信コンテンツのドラフトを30分で書いて、AIに壁打ちして次稿の土台を作る
-3. 返信待ち・確認待ちのメールを2分タスクで処理し、頭の引っかかりをゼロにする`;
-
-function checkDemoOrApiKey() {
-  if (!apiKey) apiKey = localStorage.getItem('mitsumeru_api_key') || '';
-  if (apiKey) return;
-  const demoCount = parseInt(localStorage.getItem('mitsumeru_demo_count') || '0');
-  if (demoCount >= 5) {
-    document.getElementById('limit-overlay').classList.add('active');
-    return;
-  }
-  document.getElementById('invite-overlay').classList.add('active');
-}
-
-function submitInviteCode() {
-  const input = document.getElementById('invite-code-input').value.trim().toUpperCase();
-  const errEl = document.getElementById('invite-error');
-  if (input !== DEMO_CODE) {
-    errEl.style.display = 'block';
-    document.getElementById('invite-code-input').value = '';
-    return;
-  }
-  errEl.style.display = 'none';
-  const demoCount = parseInt(localStorage.getItem('mitsumeru_demo_count') || '0');
-  if (demoCount >= 5) {
-    document.getElementById('invite-overlay').classList.remove('active');
-    document.getElementById('limit-overlay').classList.add('active');
-    return;
-  }
-  localStorage.setItem('mitsumeru_demo_count', demoCount + 1);
-  demoActive = true;
-  document.getElementById('invite-overlay').classList.remove('active');
-  const badge = document.createElement('span');
-  badge.textContent = 'DEMO ' + (demoCount + 1) + '/5';
-  badge.style.cssText = 'background:#fff3cd;color:#8a6a00;border:0.5px solid #ffd970;border-radius:20px;padding:3px 10px;font-size:11px;letter-spacing:1px;margin-left:8px;';
-  document.querySelector('.header').appendChild(badge);
-}
-
-function useOwnApiKey() {
-  document.getElementById('invite-overlay').classList.remove('active');
-  document.getElementById('limit-overlay').classList.remove('active');
-  setApiKey();
-  if (apiKey) demoActive = false;
-}
-
 // ===== 同意取得 =====
 function hasConsent() {
   return !!localStorage.getItem('mitsumeru_consent_date');
@@ -1096,14 +995,11 @@ function giveConsent() {
   localStorage.setItem('mitsumeru_consent_date', new Date().toISOString());
   document.getElementById('consent-overlay').classList.remove('active');
   if (!apiKey) apiKey = localStorage.getItem('mitsumeru_api_key') || '';
-  checkDemoOrApiKey();
 }
 
 function checkConsent() {
   if (!hasConsent()) {
     document.getElementById('consent-overlay').classList.add('active');
-  } else {
-    checkDemoOrApiKey();
   }
 }
 </script>
