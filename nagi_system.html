@@ -266,8 +266,18 @@ tr:hover td{background:rgba(79,195,247,0.03);}
 
   <!-- 次の手パネル -->
   <div class="section">
-    <div class="section-title">⚡ 次の手（優先アクション）</div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+      <div class="section-title" style="margin-bottom:0;">⚡ 次の手（優先アクション）</div>
+      <button id="btn-ai-analysis" onclick="nagiAiAnalysis()"
+        style="margin-left:auto;padding:5px 14px;font-size:0.76rem;font-weight:700;
+               border:1px solid var(--accent);border-radius:20px;background:transparent;
+               color:var(--accent);cursor:pointer;white-space:nowrap;"
+        title="Claude APIで4軸データを分析し、AIが次の手を提案します">
+        🤖 AI分析
+      </button>
+    </div>
     <div id="compass-actions"></div>
+    <div id="compass-ai-result" style="margin-top:10px;"></div>
   </div>
 
   <!-- サマリーバー -->
@@ -4044,6 +4054,136 @@ function copyNagiAdvice(){
     const ta = document.createElement('textarea');
     ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
     alert('コピーしました！');
+  });
+}
+
+// ── 羅針盤専用：AI分析（「次の手」インライン生成）──
+function nagiAiAnalysis(){
+  const key = nagiGetApiKey();
+  if(!key) return;
+
+  const resultEl = document.getElementById('compass-ai-result');
+  const btn = document.getElementById('btn-ai-analysis');
+
+  resultEl.innerHTML = `<div style="padding:14px;border-radius:8px;background:rgba(143,163,184,0.06);border:1px solid var(--border);font-size:0.8rem;color:var(--sub);">
+    <span style="display:inline-block;animation:spin 1s linear infinite;">⏳</span>　Claude が4軸データを分析中...
+  </div>`;
+  btn.disabled = true;
+  btn.style.opacity = '0.5';
+
+  // ── 4軸データ収集 ──
+  const allStaff = getAllStaff();
+  const allFin   = load('nagi_fin');
+  const allPipe  = load('nagi_pipe');
+  const offices  = getAllOffices();
+  const corps    = getCorps();
+  const candidates = getCandidates();
+
+  // 軸A：資金
+  let finLines = [];
+  allFin.forEach(f=>{
+    if(!f) return;
+    const off = offices.find(o=>o.id===f.officeId);
+    const mq=n(f.mq), ff=n(f.f), pq=n(f.pq), g=n(f.g);
+    const fm = mq ? (ff/mq*100).toFixed(1) : '─';
+    const sr = getSurvivalRating(mq?ff/mq:0);
+    finLines.push(`  ${off?.name||f.officeId}：売上${yen(pq)} 粗利${yen(mq)} 固定費${yen(ff)} 利益${yen(g)} f/m=${fm}% 生存格付=${sr.label}`);
+  });
+
+  // 軸B：営業
+  let pipeLines = [];
+  allPipe.forEach(p=>{
+    const off = offices.find(o=>o.id===p.officeId);
+    const rate = n(p.visit) ? (n(p.contract)/n(p.visit)*100).toFixed(0)+'%' : '─';
+    pipeLines.push(`  ${off?.name||p.officeId}：A${n(p.approach)}→Q${n(p.inquiry)}→V${n(p.visit)}→C${n(p.contract)}→R${n(p.repeat)} 成約率=${rate}`);
+  });
+
+  // 軸C：チーム
+  const rcDanger  = allStaff.filter(s=>getRCStatus(s.ego).label==='危険★').map(s=>s.name);
+  const rcCaution = allStaff.filter(s=>getRCStatus(s.ego).label==='注意').map(s=>s.name);
+  const lsrpD = allStaff.filter(s=>n(s.lsrp?.total)>=16).map(s=>s.name);
+  const lsrpW = allStaff.filter(s=>n(s.lsrp?.total)>=11&&n(s.lsrp?.total)<16).map(s=>s.name);
+
+  // 軸D：スタッフ性質
+  const lsrpScanned = allStaff.filter(s=>s.lsrp?.total!=null);
+  const safeRate = lsrpScanned.length ? (lsrpScanned.filter(s=>n(s.lsrp?.total)<11).length/lsrpScanned.length*100).toFixed(0) : '─';
+
+  const prompt = `あなたは医療・福祉業界の経営再設計の専門家「凪（Nagi）」です。
+以下のデータは「Fusion Partners 凪システム」が収集した4軸の経営診断数値です。
+
+【凪の役割】診断ツールではなく経営判断ダッシュボード。「今週どこに手を打つか」を柴山靖章代表に提示する。
+
+## 軸A：💰 資金（MQ会計）
+${finLines.length ? finLines.join('\n') : '  データなし'}
+
+## 軸B：📈 営業（NDBパイプライン）
+${pipeLines.length ? pipeLines.join('\n') : '  データなし'}
+
+## 軸C：👥 チーム
+- スタッフ総数：${allStaff.length}名
+- RC危険★：${rcDanger.length}名${rcDanger.length?'（'+rcDanger.join('、')+'）':''}
+- RC注意：${rcCaution.length}名${rcCaution.length?'（'+rcCaution.join('、')+'）':''}
+- LSRP危険（★★★）：${lsrpD.length}名${lsrpD.length?'（'+lsrpD.join('、')+'）':''}
+- LSRP警戒（★★☆）：${lsrpW.length}名${lsrpW.length?'（'+lsrpW.join('、')+'）':''}
+
+## 軸D：🧬 スタッフ性質
+- LSRP安全率：${safeRate}%（スキャン済み${lsrpScanned.length}名 / 総数${allStaff.length}名）
+- 採用候補者（判断待ち）：${candidates.length}名
+
+---
+
+【出力形式】以下の形式で、簡潔・具体的に出力してください。固定文言禁止、データに基づく提案のみ。
+
+## 🔴 最優先アクション
+→ [担当システム]へ：[具体的な行動。なぜ今週か1行で]
+
+## 🟡 今週中に仕込むこと
+→ [担当システム]へ：[具体的な行動]
+→ [担当システム]へ：[具体的な行動]
+
+## 💬 柴山さんへの一言
+[データを踏まえた率直な現状診断。1〜2文。精神論禁止。]`;
+
+  fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': key,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 800,
+      system: 'あなたは医療・福祉業界の経営コンサルタント「凪」です。データに基づく簡潔な提案のみを出力します。精神論・抽象論は一切書きません。',
+      messages: [{ role: 'user', content: prompt }]
+    })
+  })
+  .then(r => r.json())
+  .then(data => {
+    btn.disabled = false;
+    btn.style.opacity = '1';
+    if(data.error){
+      resultEl.innerHTML = `<div style="padding:10px;border-radius:8px;background:rgba(239,83,80,0.08);font-size:0.78rem;color:var(--danger);">❌ APIエラー：${data.error.message}</div>`;
+      return;
+    }
+    const text = (data.content?.[0]?.text || '').trim();
+    // Markdown → HTML（最小限変換）
+    const html = text
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/^## (.+)$/gm,'<div style="font-weight:700;font-size:0.82rem;margin:12px 0 6px;color:var(--accent);">$1</div>')
+      .replace(/^→ \[(.+?)\]へ：(.+)$/gm,
+        '<div style="display:flex;gap:8px;padding:7px 10px;border-radius:6px;background:rgba(143,163,184,0.06);margin-bottom:5px;font-size:0.8rem;"><span style="font-weight:700;color:var(--accent);white-space:nowrap;">→ $1へ</span><span>$2</span></div>')
+      .replace(/\n/g,'<br>');
+    resultEl.innerHTML = `<div style="border-top:1px solid var(--border);padding-top:12px;margin-top:4px;">
+      <div style="font-size:0.68rem;color:var(--sub);margin-bottom:8px;">🤖 Claude Haiku による分析（${new Date().toLocaleTimeString('ja-JP')}）</div>
+      ${html}
+    </div>`;
+  })
+  .catch(e => {
+    btn.disabled = false;
+    btn.style.opacity = '1';
+    resultEl.innerHTML = `<div style="padding:10px;border-radius:8px;background:rgba(239,83,80,0.08);font-size:0.78rem;color:var(--danger);">❌ ${e.message}</div>`;
   });
 }
 
