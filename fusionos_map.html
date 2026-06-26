@@ -35,13 +35,11 @@ html,body{
 
 /* HEADER */
 .header{
-  display:flex; justify-content:space-between; align-items:center;
+  display:flex; justify-content:center; align-items:center;
   padding-bottom:10px; border-bottom:1px solid var(--border);
   flex-shrink:0;
 }
-.brand-logo{height:36px;width:auto;display:block;}
-.brand-sub{font-size:9px;color:var(--dim);letter-spacing:.1em;margin-top:3px;}
-.title-block{text-align:right;}
+.title-block{text-align:center;}
 .title-block h1{font-size:17px;font-weight:normal;letter-spacing:.04em;color:var(--navy);}
 .title-block p{font-size:9px;color:var(--gold);letter-spacing:.14em;margin-top:3px;
   font-family:'Hiragino Kaku Gothic ProN',sans-serif;}
@@ -54,17 +52,16 @@ html,body{
 .c-node{
   position:absolute;
   width:200px; height:200px; border-radius:50%;
-  background:var(--navy);
+  background:var(--bg2);
+  border:3px solid var(--navy);
   display:flex; flex-direction:column;
   justify-content:center; align-items:center; text-align:center;
-  box-shadow:0 8px 40px rgba(11,25,41,.35);
+  box-shadow:0 8px 40px rgba(11,25,41,.25), 0 0 0 6px rgba(201,168,80,.18);
   transform:translate(-50%,-50%);
   z-index:10;
 }
-.c-main{font-size:22px;color:#fff;letter-spacing:.06em;line-height:1.15;}
-.c-sub{font-size:8.5px;color:var(--gold3);letter-spacing:.22em;margin-top:6px;
-  font-family:'Hiragino Kaku Gothic ProN',sans-serif;text-transform:uppercase;}
-.c-mission{font-size:8px;color:rgba(255,255,255,.45);letter-spacing:.06em;margin-top:5px;
+.c-logo{width:140px;height:auto;display:block;}
+.c-mission{font-size:8px;color:var(--dim);letter-spacing:.06em;margin-top:8px;
   font-family:'Hiragino Kaku Gothic ProN',sans-serif;line-height:1.5;}
 
 /* OUTER NODES — 110px */
@@ -122,10 +119,6 @@ html,body{
 
 <!-- HEADER -->
 <div class="header">
-  <div>
-    <img src="https://fusionpartnersoffice-oss.github.io/mitsumeru/logo.png" alt="Fusion Partners" class="brand-logo">
-    <div class="brand-sub">組織再設計アーキテクト</div>
-  </div>
   <div class="title-block">
     <h1>FusionOS — 5つのシステム全体像</h1>
     <p>医療・福祉現場の「属人化のバグ」を仕組みで解決する</p>
@@ -138,8 +131,7 @@ html,body{
 
   <!-- 中央 200px -->
   <div class="c-node" id="cn" style="left:50%;top:50%;">
-    <span class="c-main">Fusion<br>OS</span>
-    <span class="c-sub">5 Systems</span>
+    <img src="https://fusionpartnersoffice-oss.github.io/mitsumeru/logo.png" alt="Fusion Partners" class="c-logo">
     <span class="c-mission">属人化のバグを<br>仕組みで解決する</span>
   </div>
 
