@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>プライバシーポリシー | Fusion Partners</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:     #F0EDE8;
+  --bg2:    #FAF8F4;
+  --navy:   #0b1929;
+  --navy2:  #1c3248;
+  --gold:   #7d6428;
+  --gold2:  #9e7f34;
+  --gold3:  #c9a850;
+  --text:   #1a2535;
+  --dim:    #536070;
+  --dim2:   #8a98a8;
+  --border: #d8d2c8;
+  --shadow: 0 2px 16px rgba(0,0,0,.06);
+}
+html,body{
+  background:var(--bg);
+  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic','Meiryo',sans-serif;
+  color:var(--text);
+  line-height:1.8;
+  -webkit-font-smoothing:antialiased;
+}
+.site-header{
+  background:var(--navy);
+  color:#F0EDE8;
+  padding:20px 32px 16px;
+  display:flex;
+  align-items:baseline;
+  gap:16px;
+  border-bottom:3px solid var(--gold3);
+}
+.site-header .logo{
+  font-family:'Hiragino Mincho ProN','Yu Mincho',serif;
+  font-size:1.1rem;
+  letter-spacing:4px;
+  color:var(--gold3);
+}
+.site-header .page-title{
+  font-size:0.85rem;
+  letter-spacing:2px;
+  color:#aab8c8;
+}
+.site-header nav{margin-left:auto;}
+.site-header nav a{
+  color:#aab8c8;
+  text-decoration:none;
+  font-size:0.78rem;
+  margin-left:20px;
+  letter-spacing:1px;
+  transition:color .2s;
+}
+.site-header nav a:hover{color:var(--gold3);}
+
+.container{
+  max-width:800px;
+  margin:0 auto;
+  padding:48px 24px 80px;
+}
+
+.doc-hero{
+  border-left:4px solid var(--gold3);
+  padding:24px 28px;
+  background:var(--bg2);
+  margin-bottom:40px;
+  box-shadow:var(--shadow);
+}
+.doc-hero .doc-type{
+  font-size:0.72rem;
+  letter-spacing:3px;
+  color:var(--gold2);
+  text-transform:uppercase;
+  margin-bottom:8px;
+}
+.doc-hero h1{
+  font-family:'Hiragino Mincho ProN','Yu Mincho',serif;
+  font-size:1.6rem;
+  font-weight:400;
+  color:var(--navy);
+  letter-spacing:2px;
+  margin-bottom:12px;
+}
+.doc-hero .meta{
+  font-size:0.78rem;
+  color:var(--dim);
+  line-height:1.7;
+}
+
+.coverage{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin:20px 0 32px;
+}
+.badge{
+  background:var(--navy2);
+  color:#e8eef4;
+  font-size:0.72rem;
+  padding:4px 12px;
+  border-radius:20px;
+  letter-spacing:1px;
+}
+
+article h2{
+  font-family:'Hiragino Mincho ProN','Yu Mincho',serif;
+  font-size:1.05rem;
+  font-weight:500;
+  color:var(--navy);
+  border-bottom:1px solid var(--border);
+  padding-bottom:8px;
+  margin:40px 0 16px;
+  letter-spacing:1px;
+}
+article h2 .art-num{
+  color:var(--gold2);
+  margin-right:8px;
+  font-size:0.85rem;
+}
+article h3{
+  font-size:0.9rem;
+  color:var(--navy2);
+  margin:20px 0 10px;
+  font-weight:600;
+}
+article p{
+  font-size:0.88rem;
+  color:var(--dim);
+  margin-bottom:12px;
+  line-height:1.85;
+}
+article ol,article ul{
+  padding-left:1.4em;
+  margin-bottom:14px;
+}
+article li{
+  font-size:0.87rem;
+  color:var(--dim);
+  margin-bottom:6px;
+  line-height:1.8;
+}
+
+.doc-table{
+  width:100%;
+  border-collapse:collapse;
+  margin:16px 0 20px;
+  font-size:0.84rem;
+}
+.doc-table th{
+  background:var(--navy2);
+  color:#e8eef4;
+  padding:10px 14px;
+  text-align:left;
+  font-weight:500;
+  letter-spacing:.5px;
+}
+.doc-table td{
+  padding:10px 14px;
+  border-bottom:1px solid var(--border);
+  color:var(--dim);
+  vertical-align:top;
+  line-height:1.7;
+}
+.doc-table tr:nth-child(even) td{background:var(--bg2);}
+
+.highlight{
+  background:var(--bg2);
+  border-left:3px solid var(--gold3);
+  padding:14px 18px;
+  margin:16px 0;
+  font-size:0.85rem;
+  color:var(--dim);
+  line-height:1.8;
+}
+.highlight strong{color:var(--navy);}
+
+.warn-box{
+  background:#fdf8f0;
+  border:1px solid #e8d8a8;
+  border-left:4px solid var(--gold3);
+  padding:14px 18px;
+  margin:16px 0;
+  font-size:0.85rem;
+  color:var(--dim);
+  line-height:1.8;
+}
+.warn-box strong{color:var(--navy);}
+
+.rights-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+  margin:16px 0;
+}
+.right-card{
+  background:var(--bg2);
+  border:1px solid var(--border);
+  border-top:3px solid var(--gold3);
+  padding:14px 16px;
+}
+.right-card .right-title{
+  font-size:0.82rem;
+  font-weight:600;
+  color:var(--navy2);
+  margin-bottom:6px;
+}
+.right-card .right-desc{
+  font-size:0.78rem;
+  color:var(--dim);
+  line-height:1.7;
+}
+
+.doc-footer{
+  border-top:1px solid var(--border);
+  padding:32px 24px;
+  text-align:center;
+  font-size:0.76rem;
+  color:var(--dim2);
+  line-height:1.9;
+}
+.doc-footer a{color:var(--gold2);text-decoration:none;}
+.doc-footer a:hover{text-decoration:underline;}
+
+@media(max-width:600px){
+  .site-header{padding:14px 16px;}
+  .container{padding:28px 16px 60px;}
+  .doc-hero{padding:18px;}
+  .doc-hero h1{font-size:1.25rem;}
+  .site-header nav{display:none;}
+  .rights-grid{grid-template-columns:1fr;}
+}
+@media print{
+  .site-header nav{display:none;}
+  .container{padding:20px;}
+}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <span class="logo">Fusion Partners</span>
+  <span class="page-title">プライバシーポリシー</span>
+  <nav>
+    <a href="mitsumeru_terms.html">利用規約</a>
+    <a href="mitsumeru_app.html">ミツメル</a>
+  </nav>
+</header>
+
+<div class="container">
+  <div class="doc-hero">
+    <div class="doc-type">Privacy Policy</div>
+    <h1>プライバシーポリシー</h1>
+    <div class="meta">
+      制定日：2026年6月26日　｜　版数：v1.0<br>
+      事業者：Fusion Partners（代表 柴山靖章）<br>
+      連絡先：fusion.partners.office@gmail.com
+    </div>
+  </div>
+
+  <div class="coverage">
+    <span class="badge">① ミツメル</span>
+    <span class="badge">② 響（なぜなぜ分析）</span>
+    <span class="badge">③ 奏システム</span>
+    <span class="badge">④ ミツメルスキャン</span>
+  </div>
+
+  <article>
+
+    <h2><span class="art-num">第1条</span>事業者情報</h2>
+    <table class="doc-table">
+      <tr><th>項目</th><th>内容</th></tr>
+      <tr><td>事業者名</td><td>Fusion Partners</td></tr>
+      <tr><td>代表者</td><td>柴山靖章</td></tr>
+      <tr><td>連絡先メール</td><td>fusion.partners.office@gmail.com</td></tr>
+      <tr><td>対象サービス</td><td>ミツメル / 響（なぜなぜ分析）/ 奏システム / ミツメルスキャン・適性チェック</td></tr>
+    </table>
+
+    <h2><span class="art-num">第2条</span>収集する個人情報</h2>
+    <p>本サービスは、ユーザーが入力した以下の情報を取り扱います。すべての情報の入力は任意です。</p>
+
+    <h3>ミツメル（mitsumeru_app.html）</h3>
+    <table class="doc-table">
+      <tr><th>情報の種類</th><th>具体例</th></tr>
+      <tr><td>プロファイル</td><td>氏名・役割・LSRP判定・RC判定・エゴグラム・エニアグラム・キャリアアンカー</td></tr>
+      <tr><td>日次行動記録</td><td>睡眠時間・体調スコア・気分スコア・ポモドーロ数・ノイズ情報</td></tr>
+      <tr><td>ジャーナリングメモ</td><td>#体調／#実績／#ノイズ／#思考タグ付きメモ</td></tr>
+      <tr><td>スケジュール</td><td>アポイントメント・先行予定</td></tr>
+      <tr><td>APIキー</td><td>Anthropic APIキー（sk-ant-…形式）</td></tr>
+    </table>
+
+    <h3>響 — なぜなぜ分析（hibiki.html）</h3>
+    <table class="doc-table">
+      <tr><th>情報の種類</th><th>具体例</th></tr>
+      <tr><td>入力テキスト</td><td>現場の困りごと・課題の自由記述</td></tr>
+      <tr><td>分析履歴</td><td>AIが生成した根本原因・改善アクションリスト（端末内のみ）</td></tr>
+    </table>
+    <div class="warn-box">
+      <strong>⚠️ 響への入力に関する注意：</strong><br>
+      氏名・施設名・利用者名など個人・組織が特定される情報の入力はお控えください。
+      入力テキストはAnthropicのClaude API（米国）に送信されます。
+    </div>
+
+    <h3>奏システム（kanade_app.html）/ ミツメルスキャン・適性チェック</h3>
+    <table class="doc-table">
+      <tr><th>情報の種類</th><th>具体例</th></tr>
+      <tr><td>基本情報</td><td>氏名・フリガナ・所属法人・事業所名（任意）</td></tr>
+      <tr><td>アセスメント結果</td><td>LSRPスコア・判定 / エゴグラム5指標 / RC判定 / エニアグラムTop3</td></tr>
+      <tr><td>採用評価データ</td><td>各フェーズのスコア・面接官メモ・最終判定（奏システム）</td></tr>
+    </table>
+
+    <h2><span class="art-num">第3条</span>利用目的</h2>
+    <ol>
+      <li>AIによる翌日戦略・朝の参謀アドバイス・週次/月次サマリーの生成（ミツメル）</li>
+      <li>現場課題のなぜなぜ分析・改善アクションの提示（響）</li>
+      <li>採用選考における面接官の参考情報の提供（奏・ミツメルスキャン・適性チェック）</li>
+      <li>クラウド同期機能の提供（ミツメル）</li>
+      <li>アプリ機能の提供・改善・品質管理</li>
+    </ol>
+    <div class="highlight">
+      <strong>採用アセスメントの使用制限：</strong><br>
+      アセスメントスコアは面接官の参考情報です。スコアのみを根拠とした機械的なスクリーニング除外・不採用決定には使用しません。
+    </div>
+
+    <h2><span class="art-num">第4条</span>第三者提供・外部サービスへのデータ送信</h2>
+
+    <h3>Anthropic（米国）</h3>
+    <p>AI機能の利用時に、ユーザーのデータを含むプロンプトをAnthropicのClaude APIに送信します。</p>
+    <table class="doc-table">
+      <tr><th>サービス</th><th>送信タイミング</th><th>送信されるデータ</th></tr>
+      <tr><td>ミツメル</td><td>「判定する」「翌日戦略を生成」「週次/月次サマリー」ボタン押下時</td><td>ジャーナリングメモ・プロファイル・HP/MPデータ等</td></tr>
+      <tr><td>響</td><td>AI分析ボタン押下時（毎回）</td><td>入力した現場課題テキスト全文</td></tr>
+    </table>
+    <div class="warn-box">
+      送信はユーザーのデバイスからAnthropicに<strong>直接</strong>行われます（当社サーバーを経由しません）。<br>
+      Anthropic プライバシーポリシー：<a href="https://www.anthropic.com/privacy" target="_blank" rel="noopener">https://www.anthropic.com/privacy</a>
+    </div>
+
+    <h3>Cloudflare（米国）</h3>
+    <p>ミツメルのクラウド同期機能を有効にした場合、日次データをCloudflare Workers KVに保存します（任意機能）。</p>
+    <p>Cloudflare プライバシーポリシー：<a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener">https://www.cloudflare.com/privacypolicy/</a></p>
+
+    <h2><span class="art-num">第5条</span>要配慮個人情報の取扱い</h2>
+    <p>以下の情報は、個人情報保護法第2条第3項に規定する要配慮個人情報に該当する可能性があります。</p>
+    <ul>
+      <li>LSRPスコア（対人行動傾向・衝動性に関する情報）</li>
+      <li>エゴグラム・RC判定（心理的特性に関する情報）</li>
+      <li>エニアグラム結果（価値観・行動動機に関する情報）</li>
+      <li>体調・睡眠情報（健康状態に関する情報）</li>
+    </ul>
+    <p>これらの情報の入力はすべて任意です。入力した場合、本ポリシーへの同意をもって当該情報の取扱いに明示的に同意したものとみなします。採用アセスメントの実施時は、受検者から別途書面による明示的な同意を取得することを推奨します。</p>
+
+    <h2><span class="art-num">第6条</span>データの保管と管理</h2>
+    <table class="doc-table">
+      <tr><th>サービス</th><th>保管場所</th><th>保管期間</th><th>削除方法</th></tr>
+      <tr><td>ミツメル（通常）</td><td>ユーザーのブラウザ（localStorage）</td><td>ユーザーが削除するまで</td><td>ブラウザのlocalStorageを消去</td></tr>
+      <tr><td>ミツメル（クラウド同期）</td><td>Cloudflare KV（米国）</td><td>削除リクエストまで</td><td>fusion.partners.office@gmail.comへ連絡（2週間以内対応）</td></tr>
+      <tr><td>響</td><td>ユーザーのブラウザ（localStorage）のみ</td><td>上限50件・ユーザーが削除するまで</td><td>ブラウザのlocalStorageを消去</td></tr>
+      <tr><td>奏・スキャン</td><td>担当者のブラウザ・管理用CSV</td><td>採用活動終了後6ヶ月以内</td><td>担当者が手動削除 / 請求より2週間以内</td></tr>
+    </table>
+    <p><strong>当社サーバーへの個人データの収集は行いません。</strong>APIキーはユーザーのブラウザ内（localStorage）に保存されます。共有端末での使用後は必ずAPIキーを削除してください。</p>
+
+    <h2><span class="art-num">第7条</span>安全管理措置</h2>
+    <ul>
+      <li>データはユーザーのデバイス上に保存され、当社は原則アクセスしません</li>
+      <li>Cloudflare KVおよびAnthropicへの通信はHTTPS（TLS）で暗号化されます</li>
+      <li>APIキー等の認証情報は第三者に提供しません</li>
+    </ul>
+
+    <h2><span class="art-num">第8条</span>ユーザーの権利</h2>
+    <div class="rights-grid">
+      <div class="right-card">
+        <div class="right-title">開示請求</div>
+        <div class="right-desc">自身の個人情報の開示を請求できます。メールにてご連絡ください（1週間以内に対応）。</div>
+      </div>
+      <div class="right-card">
+        <div class="right-title">訂正・削除</div>
+        <div class="right-desc">アプリ設定画面から直接修正するか、メールでご連絡ください。</div>
+      </div>
+      <div class="right-card">
+        <div class="right-title">利用停止</div>
+        <div class="right-desc">ブラウザのlocalStorageを消去することで、端末内のデータを削除できます。</div>
+      </div>
+      <div class="right-card">
+        <div class="right-title">クラウドデータ削除</div>
+        <div class="right-desc">fusion.partners.office@gmail.comにご連絡ください。2週間以内に対応します。</div>
+      </div>
+    </div>
+
+    <h2><span class="art-num">第9条</span>Cookieおよびトラッキング</h2>
+    <p>本サービスはCookieを使用しません。Google Analytics等のトラッキングツールも使用していません。データの永続化はlocalStorageのみで行います。</p>
+
+    <h2><span class="art-num">第10条</span>プライバシーポリシーの変更</h2>
+    <p>本ポリシーは必要に応じて改訂します。重要な変更がある場合は、アプリ上の通知またはメールにてお知らせします。変更後にサービスを利用した場合、改訂後のポリシーに同意したものとみなします。</p>
+
+    <h2><span class="art-num">第11条</span>お問い合わせ</h2>
+    <div class="highlight">
+      <strong>Fusion Partners 個人情報取扱窓口</strong><br>
+      担当：柴山靖章<br>
+      メール：fusion.partners.office@gmail.com<br>
+      対応時間：平日10:00〜17:00（土日祝・年末年始を除く）
+    </div>
+
+  </article>
+</div>
+
+<footer class="doc-footer">
+  <p>Fusion Partners プライバシーポリシー　|　制定：2026年6月26日　|　v1.0</p>
+  <p style="margin-top:6px;">
+    <a href="mitsumeru_terms.html">利用規約</a>　|
+    <a href="mitsumeru_app.html">ミツメル</a>　|
+    <a href="mailto:fusion.partners.office@gmail.com">お問い合わせ</a>
+  </p>
+  <p style="margin-top:10px;font-size:0.7rem;">本ポリシーは草案であり、弁護士によるレビューを経た上で正式版とすることを推奨します。</p>
+</footer>
+
+</body>
+</html>

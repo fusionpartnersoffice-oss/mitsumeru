@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>利用規約 | Fusion Partners</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:     #F0EDE8;
+  --bg2:    #FAF8F4;
+  --navy:   #0b1929;
+  --navy2:  #1c3248;
+  --gold:   #7d6428;
+  --gold2:  #9e7f34;
+  --gold3:  #c9a850;
+  --text:   #1a2535;
+  --dim:    #536070;
+  --dim2:   #8a98a8;
+  --border: #d8d2c8;
+  --shadow: 0 2px 16px rgba(0,0,0,.06);
+}
+html,body{
+  background:var(--bg);
+  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic','Meiryo',sans-serif;
+  color:var(--text);
+  line-height:1.8;
+  -webkit-font-smoothing:antialiased;
+}
+/* ── HEADER ── */
+.site-header{
+  background:var(--navy);
+  color:#F0EDE8;
+  padding:20px 32px 16px;
+  display:flex;
+  align-items:baseline;
+  gap:16px;
+  border-bottom:3px solid var(--gold3);
+}
+.site-header .logo{
+  font-family:'Hiragino Mincho ProN','Yu Mincho',serif;
+  font-size:1.1rem;
+  letter-spacing:4px;
+  color:var(--gold3);
+}
+.site-header .page-title{
+  font-size:0.85rem;
+  letter-spacing:2px;
+  color:#aab8c8;
+}
+.site-header nav{margin-left:auto;}
+.site-header nav a{
+  color:#aab8c8;
+  text-decoration:none;
+  font-size:0.78rem;
+  margin-left:20px;
+  letter-spacing:1px;
+  transition:color .2s;
+}
+.site-header nav a:hover{color:var(--gold3);}
+
+/* ── LAYOUT ── */
+.container{
+  max-width:800px;
+  margin:0 auto;
+  padding:48px 24px 80px;
+}
+
+/* ── HERO ── */
+.doc-hero{
+  border-left:4px solid var(--gold3);
+  padding:24px 28px;
+  background:var(--bg2);
+  margin-bottom:40px;
+  box-shadow:var(--shadow);
+}
+.doc-hero .doc-type{
+  font-size:0.72rem;
+  letter-spacing:3px;
+  color:var(--gold2);
+  text-transform:uppercase;
+  margin-bottom:8px;
+}
+.doc-hero h1{
+  font-family:'Hiragino Mincho ProN','Yu Mincho',serif;
+  font-size:1.6rem;
+  font-weight:400;
+  color:var(--navy);
+  letter-spacing:2px;
+  margin-bottom:12px;
+}
+.doc-hero .meta{
+  font-size:0.78rem;
+  color:var(--dim);
+  line-height:1.7;
+}
+
+/* ── COVERAGE BADGE LIST ── */
+.coverage{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin:20px 0 32px;
+}
+.badge{
+  background:var(--navy2);
+  color:#e8eef4;
+  font-size:0.72rem;
+  padding:4px 12px;
+  border-radius:20px;
+  letter-spacing:1px;
+}
+
+/* ── ARTICLE ── */
+article h2{
+  font-family:'Hiragino Mincho ProN','Yu Mincho',serif;
+  font-size:1.05rem;
+  font-weight:500;
+  color:var(--navy);
+  border-bottom:1px solid var(--border);
+  padding-bottom:8px;
+  margin:40px 0 16px;
+  letter-spacing:1px;
+}
+article h2 .art-num{
+  color:var(--gold2);
+  margin-right:8px;
+  font-size:0.85rem;
+}
+article h3{
+  font-size:0.9rem;
+  color:var(--navy2);
+  margin:20px 0 10px;
+  font-weight:600;
+}
+article p{
+  font-size:0.88rem;
+  color:var(--dim);
+  margin-bottom:12px;
+  line-height:1.85;
+}
+article ol,article ul{
+  padding-left:1.4em;
+  margin-bottom:14px;
+}
+article li{
+  font-size:0.87rem;
+  color:var(--dim);
+  margin-bottom:6px;
+  line-height:1.8;
+}
+
+/* ── TABLE ── */
+.doc-table{
+  width:100%;
+  border-collapse:collapse;
+  margin:16px 0 20px;
+  font-size:0.84rem;
+}
+.doc-table th{
+  background:var(--navy2);
+  color:#e8eef4;
+  padding:10px 14px;
+  text-align:left;
+  font-weight:500;
+  letter-spacing:.5px;
+}
+.doc-table td{
+  padding:10px 14px;
+  border-bottom:1px solid var(--border);
+  color:var(--dim);
+  vertical-align:top;
+  line-height:1.7;
+}
+.doc-table tr:nth-child(even) td{background:var(--bg2);}
+
+/* ── HIGHLIGHT BOX ── */
+.highlight{
+  background:var(--bg2);
+  border-left:3px solid var(--gold3);
+  padding:14px 18px;
+  margin:16px 0;
+  font-size:0.85rem;
+  color:var(--dim);
+  line-height:1.8;
+}
+.highlight strong{color:var(--navy);}
+
+/* ── PROHIBIT BOX ── */
+.prohibit{
+  background:#fdf8f0;
+  border:1px solid #e8d8a8;
+  border-left:4px solid var(--gold3);
+  padding:14px 18px;
+  margin:16px 0;
+  font-size:0.85rem;
+  color:var(--dim);
+  line-height:1.8;
+}
+
+/* ── FOOTER ── */
+.doc-footer{
+  border-top:1px solid var(--border);
+  padding:32px 24px;
+  text-align:center;
+  font-size:0.76rem;
+  color:var(--dim2);
+  line-height:1.9;
+}
+.doc-footer a{color:var(--gold2);text-decoration:none;}
+.doc-footer a:hover{text-decoration:underline;}
+
+@media(max-width:600px){
+  .site-header{padding:14px 16px;}
+  .container{padding:28px 16px 60px;}
+  .doc-hero{padding:18px;}
+  .doc-hero h1{font-size:1.25rem;}
+  .site-header nav{display:none;}
+}
+@media print{
+  .site-header nav{display:none;}
+  .container{padding:20px;}
+  article h2{page-break-before:auto;}
+}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <span class="logo">Fusion Partners</span>
+  <span class="page-title">利用規約</span>
+  <nav>
+    <a href="mitsumeru_privacy.html">プライバシーポリシー</a>
+    <a href="mitsumeru_app.html">ミツメル</a>
+  </nav>
+</header>
+
+<div class="container">
+  <div class="doc-hero">
+    <div class="doc-type">Terms of Service</div>
+    <h1>利用規約</h1>
+    <div class="meta">
+      制定日：2026年6月26日　｜　版数：v1.0<br>
+      事業者：Fusion Partners（代表 柴山靖章）<br>
+      連絡先：fusion.partners.office@gmail.com
+    </div>
+  </div>
+
+  <div class="coverage">
+    <span class="badge">① ミツメル</span>
+    <span class="badge">② 響（なぜなぜ分析）</span>
+    <span class="badge">③ 奏システム</span>
+    <span class="badge">④ ミツメルスキャン</span>
+  </div>
+
+  <article>
+
+    <h2><span class="art-num">第1条</span>適用範囲</h2>
+    <p>本利用規約（以下「本規約」）は、Fusion Partners（代表：柴山靖章、以下「当社」）が提供する以下のサービス（以下総称して「本サービス」）の利用に適用されます。本サービスを利用することにより、ユーザーは本規約に同意したものとみなします。</p>
+    <table class="doc-table">
+      <tr><th>サービス名</th><th>内容</th><th>URL / ファイル</th></tr>
+      <tr><td>ミツメル</td><td>個人ジャーナリング・日次行動監査・翌日戦略生成</td><td>mitsumeru_app.html</td></tr>
+      <tr><td>響（Hibiki）</td><td>現場改善なぜなぜ分析AIツール</td><td>hibiki.html</td></tr>
+      <tr><td>奏（Kanade）システム</td><td>採用評価統合ツール（4階層×3フェーズ）</td><td>kanade_app.html</td></tr>
+      <tr><td>ミツメルスキャン / 適性チェック</td><td>採用・人材配置向けアセスメント</td><td>mitsumeru_scan.html / mitsumeru_tekisei_check.html</td></tr>
+    </table>
+
+    <h2><span class="art-num">第2条</span>利用資格</h2>
+    <ol>
+      <li>本サービスは18歳以上の個人が利用できます。18歳未満の方が利用する場合は保護者の同意が必要です。</li>
+      <li>採用評価目的（奏システム・ミツメルスキャン・適性チェック）で利用する場合、実施者は採用選考に関する法令（職業安定法・労働基準法等）を遵守する責任を負います。</li>
+      <li>当社の競合サービス開発を目的とした利用は禁止します。</li>
+    </ol>
+
+    <h2><span class="art-num">第3条</span>利用料金とAPIキー</h2>
+    <ol>
+      <li>本サービス自体は無料で提供します（将来有料プランを導入する場合は事前に告知します）。</li>
+      <li>AI機能（翌日戦略・なぜなぜ分析・週次サマリー等）の利用には、ユーザー自身のAnthropicAPIキーが必要です。APIの利用料はユーザーがAnthropicに直接負担します。</li>
+      <li>APIキーはユーザーのブラウザ内（localStorage）に保存されます。共有端末での使用後は必ずAPIキーを削除してください。</li>
+      <li>APIキーの漏えいによって生じた損害について、当社は責任を負いません。</li>
+    </ol>
+
+    <h2><span class="art-num">第4条</span>禁止事項</h2>
+    <p>ユーザーは以下の行為を行ってはなりません。</p>
+    <ol>
+      <li>本サービスのソースコードを無断でコピー・改変・再配布すること</li>
+      <li>本サービスを商業目的で無断使用すること</li>
+      <li>他者のAPIキーを無断で使用すること</li>
+      <li>サーバー（Cloudflare Workers）に過度な負荷をかける行為</li>
+      <li>法令または公序良俗に反する行為</li>
+      <li>当社または第三者の権利を侵害する行為</li>
+    </ol>
+
+    <div class="prohibit">
+      <strong>【採用アセスメント利用者への特別禁止事項】</strong><br>
+      ミツメルスキャン・適性チェック・奏システムを採用選考に使用する場合、以下を禁止します。<br>
+      ・アセスメントスコアのみを理由とした機械的な採用不合格処理<br>
+      ・不採用通知にアセスメントスコアを不採用理由として明記すること<br>
+      ・受検者の同意なくアセスメント結果を第三者に提供すること<br>
+      ・受検を選考参加の条件とすること（受検は任意です）
+    </div>
+
+    <h2><span class="art-num">第5条</span>外部サービスの利用</h2>
+    <ol>
+      <li>本サービスのAI機能はAnthropicのClaude APIを使用します。ユーザーはAnthropicの利用規約（https://www.anthropic.com/legal/aup）に同意の上でAPIキーを使用してください。</li>
+      <li>ミツメルのクラウド同期機能はCloudflareのWorkers KVを使用します。</li>
+      <li>外部サービスの障害・仕様変更・サービス終了によるユーザーへの影響について、当社は責任を負いません。</li>
+      <li>響（なぜなぜ分析）で入力したテキストはAnthropicのサーバーに送信されます。氏名・施設名等の個人・組織識別情報の入力はお控えください。</li>
+    </ol>
+
+    <h2><span class="art-num">第6条</span>知的財産権</h2>
+    <ol>
+      <li>本サービスのソースコード・デザイン・文書類に関する著作権その他の知的財産権は当社に帰属します。</li>
+      <li>ユーザーが本サービスに入力したデータの著作権はユーザーに帰属します。</li>
+      <li>本サービスのスクリーンショットや説明を個人的・非商業的目的で使用することは許可します。商業目的での使用には当社の事前許可が必要です。</li>
+    </ol>
+
+    <h2><span class="art-num">第7条</span>免責事項</h2>
+    <table class="doc-table">
+      <tr><th>免責の対象</th><th>内容</th></tr>
+      <tr><td>サービスの可用性</td><td>本サービスを「現状有姿」で提供します。継続的稼働・無中断を保証しません。</td></tr>
+      <tr><td>AI出力の精度</td><td>翌日戦略・なぜなぜ分析等のAI生成コンテンツの正確性・有用性を保証しません。AI出力は参考情報であり最終判断はユーザーが行ってください。</td></tr>
+      <tr><td>アセスメントの精度</td><td>LSRPスコア等のアセスメント結果は統計的傾向の参考値です。個人の能力・適性を確定的に評価するものではありません。</td></tr>
+      <tr><td>データの保全</td><td>ブラウザキャッシュクリア・端末初期化等によるデータ損失について責任を負いません。重要データは定期的にCSVダウンロード等でバックアップしてください。</td></tr>
+      <tr><td>健康・医療情報</td><td>本サービスに記録される健康情報は医療診断・治療を目的としたものではありません。</td></tr>
+      <tr><td>採用結果</td><td>アセスメント結果に基づく採用判断の結果について、当社は一切の責任を負いません。</td></tr>
+    </table>
+
+    <h2><span class="art-num">第8条</span>サービスの変更・終了</h2>
+    <ol>
+      <li>当社は、ユーザーへの事前通知なくサービス内容を変更することがあります。</li>
+      <li>重大な変更・サービス終了の場合は、可能な限り事前に告知します。</li>
+      <li>サービス終了時にはユーザーがデータをエクスポートできる期間を設けるよう努めます。</li>
+    </ol>
+
+    <h2><span class="art-num">第9条</span>本規約の変更</h2>
+    <p>当社は必要に応じて本規約を変更することがあります。変更後もサービスを継続利用した場合、変更後の規約に同意したものとみなします。</p>
+
+    <h2><span class="art-num">第10条</span>準拠法・管轄裁判所</h2>
+    <p>本規約は日本法に準拠します。本規約に関する紛争については、当社所在地を管轄する裁判所を第一審の専属的合意管轄裁判所とします。</p>
+
+    <h2><span class="art-num">第11条</span>お問い合わせ</h2>
+    <div class="highlight">
+      <strong>Fusion Partners</strong><br>
+      代表：柴山靖章<br>
+      メール：fusion.partners.office@gmail.com<br>
+      対応時間：平日10:00〜17:00（土日祝除く）
+    </div>
+
+  </article>
+</div>
+
+<footer class="doc-footer">
+  <p>Fusion Partners 利用規約　|　制定：2026年6月26日　|　v1.0</p>
+  <p style="margin-top:6px;">
+    <a href="mitsumeru_privacy.html">プライバシーポリシー</a>　|
+    <a href="mitsumeru_app.html">ミツメル</a>　|
+    <a href="mailto:fusion.partners.office@gmail.com">お問い合わせ</a>
+  </p>
+  <p style="margin-top:10px;font-size:0.7rem;">本規約は草案であり、弁護士によるレビューを経た上で正式版とすることを推奨します。</p>
+</footer>
+
+</body>
+</html>
