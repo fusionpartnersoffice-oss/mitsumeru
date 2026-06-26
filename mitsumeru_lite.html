@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>ミツメル Lite — Fusion Partners</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%233a3028'/><polygon points='16,3 27,9.5 27,22.5 16,29 5,22.5 5,9.5' fill='none' stroke='%23c8b89a' stroke-width='1.2'/><polygon points='9,10 15,14 9,22' fill='%238a7a6a'/><polygon points='23,10 17,14 23,22' fill='%238a7a6a'/><circle cx='16' cy='16' r='3.5' fill='%23c8b89a'/></svg>">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;500&family=Noto+Sans+JP:wght@300;400;500&display=swap');
+
+  :root {
+    --bg: #f5f1ea;
+    --bg2: #ede8df;
+    --border: #c8b89a;
+    --text: #3a3028;
+    --text2: #6a5a4a;
+    --text3: #9a8a7a;
+    --accent: #8a7a6a;
+    --green: #2d7a52;
+    --red: #c0392b;
+    --gold: #b8860b;
+    --card: #faf7f2;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 0 0 80px 0;
+  }
+
+  .header {
+    background: var(--text);
+    color: var(--bg);
+    padding: 20px 24px 16px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+  }
+
+  .header h1 {
+    font-family: 'Noto Serif JP', serif;
+    font-size: 20px;
+    font-weight: 400;
+    letter-spacing: 4px;
+  }
+
+  .header span {
+    font-size: 11px;
+    color: var(--border);
+    letter-spacing: 2px;
+  }
+
+  .mode-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg2);
+    position: sticky;
+    top: 61px;
+    z-index: 99;
+  }
+
+  .mode-tab {
+    flex: 1;
+    padding: 14px;
+    text-align: center;
+    font-size: 13px;
+    cursor: pointer;
+    border: none;
+    background: none;
+    color: var(--text3);
+    letter-spacing: 1px;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+  }
+
+  .mode-tab.active {
+    color: var(--text);
+    border-bottom-color: var(--accent);
+    background: var(--bg);
+    font-weight: 500;
+  }
+
+  .screen { display: none; padding: 20px 16px; }
+  .screen.active { display: block; }
+
+  .section {
+    background: var(--card);
+    border: 0.5px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+
+  .section-title {
+    font-size: 11px;
+    color: var(--text3);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    padding-bottom: 8px;
+    border-bottom: 0.5px solid var(--border);
+  }
+
+  .field { margin-bottom: 14px; }
+  .field:last-child { margin-bottom: 0; }
+
+  label {
+    display: block;
+    font-size: 12px;
+    color: var(--text2);
+    margin-bottom: 6px;
+    letter-spacing: 0.5px;
+  }
+
+  input[type="time"],
+  input[type="date"],
+  input[type="number"],
+  textarea,
+  select {
+    width: 100%;
+    padding: 9px 12px;
+    font-size: 14px;
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    border: 0.5px solid var(--border);
+    border-radius: 4px;
+    color: var(--text);
+    outline: none;
+  }
+
+  input[type="time"]:focus,
+  textarea:focus,
+  select:focus { border-color: var(--accent); }
+
+  textarea { min-height: 80px; resize: vertical; line-height: 1.7; }
+
+  .score-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .score-row input[type="range"] { flex: 1; accent-color: var(--accent); }
+  .score-val { font-size: 16px; font-weight: 500; min-width: 20px; text-align: center; }
+
+  .checkbox-group { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  .checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--bg2);
+    border: 0.5px solid var(--border);
+    border-radius: 20px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.15s;
+  }
+
+  .checkbox-item input { display: none; }
+  .checkbox-item.checked { background: #8a7a6a !important; color: #f5f1ea !important; border-color: #8a7a6a !important; font-weight: 500; }
+
+  .status-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .status-card {
+    background: var(--bg2);
+    border: 0.5px solid var(--border);
+    border-radius: 6px;
+    padding: 12px 8px;
+    text-align: center;
+  }
+
+  .status-card .label { font-size: 11px; color: var(--text3); margin-bottom: 4px; }
+  .status-card .value { font-size: 26px; font-weight: 500; font-family: 'Noto Serif JP', serif; }
+  .hp-val { color: #1a7a52; }
+  .mp-val { color: #1a5a9a; }
+  .lv-val { color: #8a6a1a; }
+
+  .mode-badge {
+    text-align: center;
+    padding: 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 16px;
+    letter-spacing: 1px;
+  }
+
+  .mode-normal { background: #e8f5ee; color: var(--green); border: 0.5px solid #a8dfc4; }
+  .mode-dblock { background: #fff3cd; color: var(--gold); border: 0.5px solid #ffd970; }
+  .mode-2min { background: #fde8e8; color: var(--red); border: 0.5px solid #f5b5b5; }
+
+  .btn-primary {
+    width: 100%;
+    padding: 14px;
+    background: var(--text);
+    color: var(--bg);
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: 'Noto Sans JP', sans-serif;
+    letter-spacing: 2px;
+    cursor: pointer;
+    margin-bottom: 10px;
+    transition: opacity 0.15s;
+  }
+
+  .btn-primary:hover { opacity: 0.85; }
+
+  .btn-secondary {
+    width: 100%;
+    padding: 12px;
+    background: var(--bg);
+    color: var(--text);
+    border: 0.5px solid var(--border);
+    border-radius: 6px;
+    font-size: 13px;
+    font-family: 'Noto Sans JP', sans-serif;
+    cursor: pointer;
+    margin-bottom: 8px;
+    transition: background 0.15s;
+  }
+
+  .btn-secondary:hover { background: var(--bg2); }
+
+  .output-box {
+    background: var(--bg2);
+    border: 0.5px solid var(--border);
+    border-radius: 6px;
+    padding: 14px;
+    font-size: 12px;
+    color: var(--text2);
+    white-space: pre-wrap;
+    line-height: 1.8;
+    max-height: 300px;
+    overflow-y: auto;
+    display: none;
+  }
+
+  .output-box.visible { display: block; }
+
+  .loading-text {
+    text-align: center;
+    color: var(--text3);
+    font-size: 13px;
+    font-style: italic;
+    padding: 20px;
+    display: none;
+  }
+
+  .date-display {
+    font-size: 13px;
+    color: var(--gold);
+    font-weight: 600;
+    text-align: right;
+    margin-bottom: 16px;
+    letter-spacing: 1px;
+  }
+
+  /* ===== デモモード ===== */
+  .demo-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(30, 24, 18, 0.92);
+    z-index: 500;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .demo-overlay.active { display: flex; }
+  .demo-card {
+    background: var(--card);
+    border: 0.5px solid var(--border);
+    border-radius: 12px;
+    max-width: 420px;
+    width: 100%;
+    padding: 28px 24px;
+    text-align: center;
+  }
+  .demo-card h2 {
+    font-family: 'Noto Serif JP', serif;
+    font-size: 18px;
+    font-weight: 400;
+    letter-spacing: 3px;
+    margin-bottom: 12px;
+    color: var(--text);
+  }
+  .demo-card p { font-size: 13px; color: var(--text2); line-height: 1.8; margin-bottom: 16px; }
+  .demo-input {
+    width: 100%; padding: 12px 16px; font-size: 16px;
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--bg); border: 0.5px solid var(--border);
+    border-radius: 6px; color: var(--text);
+    text-align: center; letter-spacing: 4px;
+    margin-bottom: 8px; outline: none;
+  }
+  .demo-input:focus { border-color: var(--accent); }
+  .demo-badge {
+    display: inline-block;
+    background: #fff3cd; color: var(--gold);
+    border: 0.5px solid #ffd970; border-radius: 20px;
+    padding: 3px 12px; font-size: 11px; letter-spacing: 1px;
+    margin-bottom: 16px;
+  }
+  .demo-error { color: var(--red); font-size: 12px; margin-top: 4px; margin-bottom: 8px; display: none; }
+
+  /* ===== 同意取得 ===== */
+  .consent-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(30, 24, 18, 0.96);
+    z-index: 600;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .consent-overlay.active { display: flex; }
+
+  /* ===== Lite バッジ ===== */
+  .lite-badge {
+    display: inline-block;
+    background: #e8f0fe; color: #1a5a9a;
+    border: 0.5px solid #a8c4f0; border-radius: 20px;
+    padding: 3px 10px; font-size: 10px; letter-spacing: 1px;
+    margin-left: 6px; vertical-align: middle;
+  }
+</style>
+</head>
+<body>
+
+<!-- デモモード：招待コード入力 -->
+<div class="demo-overlay" id="invite-overlay">
+  <div class="demo-card">
+    <div class="demo-badge">DEMO MODE</div>
+    <h2>ミツメル Lite</h2>
+    <p>招待コードを入力してください。<br>コードは招待者からお受け取りください。</p>
+    <input type="text" class="demo-input" id="invite-code-input" placeholder="招待コードを入力" autocomplete="off" onkeydown="if(event.key==='Enter')submitInviteCode()">
+    <p id="invite-error" class="demo-error">招待コードが正しくありません。</p>
+    <button class="btn-primary" onclick="submitInviteCode()" style="margin-bottom:8px;">確認する</button>
+    <button class="btn-secondary" onclick="useOwnApiKey()" style="margin-bottom:0;">🔑 APIキーで利用する</button>
+  </div>
+</div>
+
+<!-- デモモード：回数上限 -->
+<div class="demo-overlay" id="limit-overlay">
+  <div class="demo-card">
+    <div class="demo-badge">DEMO 終了</div>
+    <h2>デモ体験終了</h2>
+    <p>本格利用にはAnthropicのAPIキーの設定が必要です。<br><br>APIキーは <strong>console.anthropic.com</strong> で取得できます。<br>「sk-ant-」から始まる文字列です。</p>
+    <button class="btn-primary" onclick="useOwnApiKey()">🔑 APIキーを設定して使う</button>
+    <p style="font-size:11px;color:var(--text3);margin-top:16px;">ミツメルに興味をお持ちいただきありがとうございます。<br>Fusion Partners 柴山靖章</p>
+  </div>
+</div>
+
+<!-- 同意取得モーダル -->
+<div class="consent-overlay" id="consent-overlay">
+  <div class="demo-card">
+    <div class="demo-badge">初回確認</div>
+    <h2>ミツメル Lite</h2>
+    <p>ご利用の前に以下をご確認ください。<br>「同意して始める」を押すことで同意したとみなします。</p>
+    <p style="font-size:12px;margin-bottom:20px;">
+      <a href="./mitsumeru_privacy.html" target="_blank" style="color:var(--accent);text-decoration:underline;">プライバシーポリシー</a>
+      　｜
+      <a href="./mitsumeru_terms.html" target="_blank" style="color:var(--accent);text-decoration:underline;">利用規約</a>
+    </p>
+    <button class="btn-primary" onclick="giveConsent()">同意して始める</button>
+  </div>
+</div>
+
+<div class="header">
+  <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;">
+    <polygon points="16,2 27,8.5 27,23.5 16,30 5,23.5 5,8.5" fill="none" stroke="#c8b89a" stroke-width="1"/>
+    <polygon points="16,6 23,10.5 23,21.5 16,26 9,21.5 9,10.5" fill="none" stroke="#c8b89a" stroke-width="0.5"/>
+    <polygon points="7,10 14,14 7,22" fill="#8a7a6a"/>
+    <polygon points="25,10 18,14 25,22" fill="#8a7a6a"/>
+    <circle cx="16" cy="16" r="4" fill="#c8b89a"/>
+  </svg>
+  <h1>ミツメル</h1>
+  <span class="lite-badge">LITE</span>
+  <span>FUSION PARTNERS</span>
+  <button onclick="toggleHelp()" style="margin-left:auto;background:none;border:0.5px solid var(--border);color:var(--bg);border-radius:20px;padding:4px 12px;font-size:11px;cursor:pointer;letter-spacing:1px;">？ ヘルプ</button>
+  <button onclick="setApiKey()" style="margin-left:8px;background:none;border:0.5px solid var(--border);color:var(--bg);border-radius:20px;padding:4px 12px;font-size:11px;cursor:pointer;letter-spacing:1px;" id="api-btn">🔑 API</button>
+</div>
+
+<div id="help-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:200;overflow-y:auto;padding:20px;">
+  <div style="background:var(--card);border-radius:12px;max-width:640px;margin:0 auto;padding:24px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <h2 style="font-family:'Noto Serif JP',serif;font-size:16px;font-weight:400;letter-spacing:3px;">取扱手順書 — Lite版</h2>
+      <button onclick="toggleHelp()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text3);">✕</button>
+    </div>
+    <div style="font-size:13px;line-height:1.9;color:var(--text2);">
+
+      <div style="background:#e8f5ee;border-radius:8px;padding:14px;margin-bottom:16px;border:0.5px solid #a8dfc4;">
+        <p style="font-weight:500;color:#1a7a52;margin-bottom:8px;">🔑 さいしょに1回だけ</p>
+        <p>右上の「🔑 API」を押して、キーを貼り付けてください。</p>
+        <p>ボタンが緑になれば、準備完了です。</p>
+        <p style="color:#6a5a4a;font-size:12px;margin-top:6px;">※キーは console.anthropic.com で取れます（sk-ant- で始まります）</p>
+      </div>
+
+      <p style="font-weight:500;color:var(--text);margin-bottom:6px;">🌅 朝（2〜3分）</p>
+      <p>寝た時間・体調・気分・今日のキツさを入力してください。</p>
+      <p>「今日のモードを判定する」を押すとHP/MPとAIの一言が出ます。</p>
+
+      <div style="height:1px;background:var(--border);margin:14px 0;"></div>
+
+      <p style="font-weight:500;color:var(--text);margin-bottom:6px;">📝 随時メモ（日中）</p>
+      <p>気づいたら時刻と内容をすぐ書いてください。</p>
+      <p style="color:var(--text3);font-size:12px;">データはこの端末のブラウザに保存されます。</p>
+
+      <div style="height:1px;background:var(--border);margin:14px 0;"></div>
+
+      <div style="background:var(--bg2);border-radius:8px;padding:14px;margin-top:16px;">
+        <p style="font-size:12px;color:var(--text3);text-align:center;">Fusion Partners ミツメル Lite<br>柴山 靖章 × Claude</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="mode-tabs">
+  <button class="mode-tab active" onclick="switchTab('morning')">朝</button>
+  <button class="mode-tab" onclick="switchTab('memo')">随時メモ</button>
+</div>
+
+<!-- 日付ロールオーバー検知バナー -->
+<div id="date-rollover-bar" style="display:none;background:#fff3cd;border:0.5px solid #ffd970;color:#8a6a00;padding:9px 12px;font-size:13px;text-align:center;border-radius:6px;margin:8px 16px;line-height:1.5;">
+  日付が変わりました（<span id="rollover-date"></span>）。宵越し入力でなければ切り替えてください。
+  <button onclick="jumpToToday()" style="margin-left:8px;background:#8a6a00;color:#fff;border:none;border-radius:5px;padding:4px 12px;cursor:pointer;font-size:12px;font-weight:500;">今日に切り替える</button>
+</div>
+
+<!-- 随時メモ -->
+<div id="screen-memo" class="screen">
+  <div class="date-display" id="memo-date"></div>
+
+  <div class="section">
+    <div class="section-title">随時メモ</div>
+
+    <div class="field">
+      <label>時刻</label>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input type="time" id="memo-time" style="flex:1;">
+        <button onclick="setNowTime()" style="padding:9px 14px;background:var(--accent);color:var(--bg);border:none;border-radius:4px;font-size:12px;cursor:pointer;white-space:nowrap;">今の時刻</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>内容</label>
+      <textarea id="memo-content" placeholder="気づいたこと、起きたこと、ボヤキをそのまま入力"></textarea>
+    </div>
+
+    <button class="btn-primary" onclick="addMemo()">追加する</button>
+  </div>
+
+  <div class="section">
+    <div class="section-title">本日のメモ一覧</div>
+    <div id="memo-list" style="font-size:13px;color:var(--text2);line-height:2;">
+      <span style="color:var(--text3);font-size:12px;">まだメモがありません</span>
+    </div>
+    <button class="btn-secondary" onclick="clearMemos()" style="margin-top:12px;color:var(--red);border-color:var(--red);">メモをリセット</button>
+  </div>
+</div>
+
+<!-- 朝モード -->
+<div id="screen-morning" class="screen active">
+  <div class="date-display" id="morning-date"></div>
+
+  <div class="section">
+    <div class="section-title">対象日（宵越し・遅延入力の場合は変更）</div>
+    <div class="field">
+      <input type="date" id="m-date" onchange="changeTargetDate(this.value)">
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">睡眠</div>
+    <div class="field">
+      <label>就寝時間（昨夜）</label>
+      <input type="time" id="m-sleep" onchange="saveMorning()" value="23:00">
+    </div>
+    <div class="field">
+      <label>起床時間（今朝）</label>
+      <input type="time" id="m-wake" onchange="saveMorning()" value="07:00">
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">今朝の状態</div>
+    <div class="field">
+      <label>体調（直感で）</label>
+      <div class="score-row">
+        <span style="font-size:11px;color:var(--text3)">最悪</span>
+        <input type="range" min="1" max="5" id="m-body" oninput="document.getElementById('m-body-val').textContent=this.value; saveMorning()">
+        <span style="font-size:11px;color:var(--text3)">最高</span>
+        <span class="score-val" id="m-body-val">—</span>
+      </div>
+    </div>
+    <div class="field">
+      <label>気分・精神状態（直感で）</label>
+      <div class="score-row">
+        <span style="font-size:11px;color:var(--text3)">最悪</span>
+        <input type="range" min="1" max="5" id="m-mood" oninput="document.getElementById('m-mood-val').textContent=this.value; saveMorning()">
+        <span style="font-size:11px;color:var(--text3)">最高</span>
+        <span class="score-val" id="m-mood-val">—</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">ノイズ</div>
+    <div class="field">
+      <label>気がかりになっていること（複数可）</label>
+      <div class="checkbox-group" id="m-noise-group">
+        <label class="checkbox-item" onclick="toggleCheck(this,event)"><input type="checkbox" value="仕事のこと">仕事のこと</label>
+        <label class="checkbox-item" onclick="toggleCheck(this,event)"><input type="checkbox" value="家族のこと">家族のこと</label>
+        <label class="checkbox-item" onclick="toggleCheck(this,event)"><input type="checkbox" value="友人のこと">友人のこと</label>
+        <label class="checkbox-item" onclick="toggleCheck(this,event)"><input type="checkbox" value="自分のこと">自分のこと</label>
+        <label class="checkbox-item" onclick="toggleCheck(this,event)"><input type="checkbox" value="お金のこと">お金のこと</label>
+        <label class="checkbox-item" onclick="toggleCheck(this,event)"><input type="checkbox" value="健康のこと">健康のこと</label>
+        <label class="checkbox-item" onclick="toggleCheck(this,event)"><input type="checkbox" value="その他">その他</label>
+      </div>
+    </div>
+    <div class="field">
+      <label>具体的に何がありましたか？</label>
+      <textarea id="m-noise-detail" placeholder="誰のどんな言葉・行動に削られたか、事実だけを吐き出す"></textarea>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">今日のスタート</div>
+    <div class="field">
+      <label>本日のタスクコース</label>
+      <div class="score-row">
+        <span style="font-size:11px;color:var(--text3)">超甘口</span>
+        <input type="range" min="1" max="6" id="m-course" oninput="updateCourse(this.value); saveMorning()">
+        <span style="font-size:11px;color:var(--text3)">地獄</span>
+      </div>
+      <div id="course-badge" style="margin-top:10px;text-align:center;padding:8px;border-radius:6px;font-size:13px;font-weight:500;background:var(--bg2);border:0.5px solid var(--border);">
+        コース3 — 中辛：いつもより少なめで動く
+      </div>
+    </div>
+    <div class="field">
+      <label>今日の一言（任意）</label>
+      <textarea id="m-want" oninput="saveMorning()" placeholder="面接前で緊張している、など。なければ空欄でOK" style="min-height:60px;"></textarea>
+    </div>
+  </div>
+
+  <button class="btn-primary" onclick="calcMorning()">今日のモードを判定する</button>
+
+  <div id="morning-result" style="display:none;">
+    <div class="status-grid">
+      <div class="status-card"><div class="label">HP</div><div class="value hp-val" id="hp-val">—</div></div>
+      <div class="status-card"><div class="label">MP</div><div class="value mp-val" id="mp-val">—</div></div>
+      <div class="status-card"><div class="label">LV</div><div class="value lv-val" id="lv-val">—</div></div>
+    </div>
+    <div class="mode-badge" id="mode-badge">判定中...</div>
+    <div class="section">
+      <div class="section-title">参謀からの一言</div>
+      <div class="loading-text" id="morning-loading">分析中...</div>
+      <div class="output-box" id="morning-advice"></div>
+      <button class="btn-secondary" onclick="copyMorningAdvice()" style="margin-top:10px;">アドバイスをコピー</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let memos = [];
+let apiKey = localStorage.getItem('mitsumeru_api_key') || '';
+const DEMO_CODE = 'MITSUMERU_DEMO';
+let demoActive = false;
+
+// ===== 日付キー管理 =====
+function localDateStr(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+const TODAY = localDateStr(new Date());
+let targetDate = TODAY;
+
+function lsKey(type, date) {
+  return 'mitsumeru_lite_' + type + '_' + (date || targetDate);
+}
+
+function lsLoad(type, date) {
+  try { return JSON.parse(localStorage.getItem(lsKey(type, date)) || 'null'); } catch(e) { return null; }
+}
+
+function formatLV(totalPoints) {
+  const level = Math.floor(totalPoints / 100) + 1;
+  const pts = totalPoints % 100;
+  return 'LV' + level + '/' + pts;
+}
+function getLVBase() {
+  return parseInt(localStorage.getItem('mitsumeru_lite_lv_total') || '0');
+}
+
+// ===== データ保存（localStorageのみ） =====
+function saveMemos() {
+  const payload = { data: memos, _ts: Date.now() };
+  localStorage.setItem(lsKey('memos'), JSON.stringify(payload));
+}
+
+function saveMorning() {
+  const data = { _ts: Date.now() };
+  ['m-sleep','m-wake','m-body','m-mood','m-noise-detail','m-want','m-course'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) data[id] = el.value;
+  });
+  const noises = [];
+  document.querySelectorAll('#m-noise-group .checkbox-item').forEach(label => {
+    if (label.classList.contains('checked')) noises.push(label.querySelector('input').value);
+  });
+  data['noises'] = noises;
+  const advice = document.getElementById('morning-advice');
+  if (advice) data['morning-advice'] = advice.textContent;
+  const hpVal = document.getElementById('hp-val');
+  const mpVal = document.getElementById('mp-val');
+  const modeBadge = document.getElementById('mode-badge');
+  const morningResult = document.getElementById('morning-result');
+  if (hpVal) data['hp-val'] = hpVal.textContent;
+  if (mpVal) data['mp-val'] = mpVal.textContent;
+  if (modeBadge) { data['mode-badge-text'] = modeBadge.textContent; data['mode-badge-class'] = modeBadge.className; }
+  if (morningResult) data['morning-result-visible'] = morningResult.style.display !== 'none';
+  data['lv-base'] = getLVBase();
+  localStorage.setItem(lsKey('morning'), JSON.stringify(data));
+}
+
+// ===== UI復元 =====
+function applyMorningData(d) {
+  if (!d) return;
+  const bodyEl = document.getElementById('m-body');
+  if (bodyEl) { const v = d['m-body']||'3'; bodyEl.value=v; const bv=document.getElementById('m-body-val'); if(bv) bv.textContent=v; }
+  const moodEl = document.getElementById('m-mood');
+  if (moodEl) { const v = d['m-mood']||'3'; moodEl.value=v; const mv=document.getElementById('m-mood-val'); if(mv) mv.textContent=v; }
+  const courseEl = document.getElementById('m-course');
+  if (courseEl) { const v = d['m-course']||'3'; courseEl.value=v; updateCourse(v); }
+  ['m-sleep','m-wake','m-noise-detail','m-want'].forEach(id => {
+    const el = document.getElementById(id); if (el && d[id]!==undefined) el.value = d[id];
+  });
+  if (d.noises) {
+    document.querySelectorAll('#m-noise-group .checkbox-item').forEach(label => {
+      label.classList.toggle('checked', d.noises.includes(label.querySelector('input').value));
+    });
+  }
+  if (d['hp-val'] && d['hp-val']!=='—') { const e=document.getElementById('hp-val'); if(e) e.textContent=d['hp-val']; }
+  if (d['mp-val'] && d['mp-val']!=='—') { const e=document.getElementById('mp-val'); if(e) e.textContent=d['mp-val']; }
+  if (d['lv-base'] !== undefined) { const e=document.getElementById('lv-val'); if(e) e.textContent=formatLV(d['lv-base']); }
+  if (d['mode-badge-text']) { const b=document.getElementById('mode-badge'); if(b){b.textContent=d['mode-badge-text']; if(d['mode-badge-class']) b.className=d['mode-badge-class'];} }
+  if (d['morning-result-visible']) { const r=document.getElementById('morning-result'); if(r) r.style.display='block'; }
+  if (d['morning-advice']&&d['morning-advice'].trim()) { const a=document.getElementById('morning-advice'); if(a){a.textContent=d['morning-advice'];a.classList.add('visible');} }
+}
+
+function applyMemosData(d) {
+  if (!d) return;
+  memos = Array.isArray(d) ? d : (Array.isArray(d.data) ? d.data : []);
+  renderMemos();
+}
+
+// ===== 起動時 =====
+window.addEventListener('DOMContentLoaded', function() {
+  const lsMorning = lsLoad('morning');
+  const lsMemos   = lsLoad('memos');
+  applyMorningData(lsMorning);
+  applyMemosData(lsMemos);
+  setDates();
+  checkConsent();
+  if (apiKey) {
+    const btn = document.getElementById('api-btn');
+    if (btn) btn.style.color = '#4caf82';
+  }
+});
+
+// ===== 日付ロールオーバー =====
+let _appToday = TODAY;
+function checkDateRollover() {
+  if (document.hidden) return;
+  const fresh = localDateStr(new Date());
+  if (fresh === _appToday) return;
+  const wasOnToday = (targetDate === _appToday);
+  _appToday = fresh;
+  if (wasOnToday) {
+    const bar = document.getElementById('date-rollover-bar');
+    const lbl = document.getElementById('rollover-date');
+    if (bar && lbl) { lbl.textContent = fresh; bar.style.display = 'block'; }
+  }
+}
+function jumpToToday() {
+  const bar = document.getElementById('date-rollover-bar');
+  if (bar) bar.style.display = 'none';
+  changeTargetDate(localDateStr(new Date()));
+}
+document.addEventListener('visibilitychange', checkDateRollover);
+window.addEventListener('focus', checkDateRollover);
+setInterval(checkDateRollover, 60000);
+
+function setDates() {
+  const now = new Date();
+  const fmt = d => `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${'日月火水木金土'[d.getDay()]}）`;
+  const morningDateEl = document.getElementById('morning-date');
+  if (morningDateEl) morningDateEl.textContent = fmt(now);
+  const memoDateEl = document.getElementById('memo-date');
+  if (memoDateEl) memoDateEl.textContent = fmt(now);
+  const mDateEl = document.getElementById('m-date');
+  if (mDateEl) mDateEl.value = targetDate;
+  setNowTime();
+}
+
+function changeTargetDate(newDate) {
+  if (!newDate || newDate === targetDate) return;
+  saveMorning(); saveMemos();
+  targetDate = newDate;
+  const mDateEl = document.getElementById('m-date');
+  if (mDateEl) mDateEl.value = newDate;
+
+  memos = [];
+  const bodyEl=document.getElementById('m-body'), moodEl=document.getElementById('m-mood'), courseEl=document.getElementById('m-course');
+  if(bodyEl){bodyEl.value=3; document.getElementById('m-body-val').textContent=3;}
+  if(moodEl){moodEl.value=3; document.getElementById('m-mood-val').textContent=3;}
+  if(courseEl){courseEl.value=3; updateCourse(3);}
+  const resultEl=document.getElementById('morning-result'); if(resultEl) resultEl.style.display='none';
+  ['m-sleep','m-wake','m-noise-detail','m-want'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value=id==='m-sleep'?'23:00':id==='m-wake'?'07:00':'';
+  });
+  document.querySelectorAll('#m-noise-group .checkbox-item').forEach(l=>l.classList.remove('checked'));
+  renderMemos();
+
+  const lsM = lsLoad('morning', newDate);
+  const lsMm = lsLoad('memos', newDate);
+  applyMorningData(lsM);
+  if (lsMm) applyMemosData(lsMm);
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.mode-tab').forEach((t,i) => {
+    t.classList.toggle('active', ['morning','memo'][i] === tab);
+  });
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const screenEl = document.getElementById('screen-'+tab);
+  if (screenEl) screenEl.classList.add('active');
+}
+
+// ===== 随時メモ（タグなし） =====
+function setNowTime() {
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2,'0');
+  const m = String(now.getMinutes()).padStart(2,'0');
+  const el = document.getElementById('memo-time');
+  if (el) el.value = `${h}:${m}`;
+}
+
+function addMemo() {
+  const time = document.getElementById('memo-time').value;
+  const content = document.getElementById('memo-content').value.trim();
+  if (!content) return;
+  const timeStr = time ? time.replace(':','') : '';
+  memos.push({ time: timeStr, content });
+  saveMemos();
+  renderMemos();
+  document.getElementById('memo-content').value = '';
+  setNowTime();
+}
+
+function deleteMemo(i) {
+  memos.splice(i, 1);
+  saveMemos();
+  renderMemos();
+}
+
+function editMemo(i) {
+  const m = memos[i];
+  const timeFormatted = m.time ? m.time.substring(0,2)+':'+m.time.substring(2,4) : '';
+  document.getElementById('memo-time').value = timeFormatted;
+  document.getElementById('memo-content').value = m.content;
+  memos.splice(i, 1);
+  renderMemos();
+  document.getElementById('memo-content').scrollIntoView({ behavior: 'smooth' });
+  document.getElementById('memo-content').focus();
+}
+
+function renderMemos() {
+  const list = document.getElementById('memo-list');
+  if (!list) return;
+  if (memos.length === 0) {
+    list.innerHTML = '<span style="color:var(--text3);font-size:12px;">まだメモがありません</span>';
+    return;
+  }
+  list.innerHTML = memos.map((m, i) => `
+    <div style="display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:0.5px solid var(--border);">
+      <span style="color:var(--text3);min-width:38px;font-size:12px;">${m.time ? m.time.substring(0,2)+':'+m.time.substring(2,4) : '--:--'}</span>
+      <div style="flex:1;">
+        <span style="font-size:13px;line-height:1.6;">${m.content}</span>
+      </div>
+      <button onclick="editMemo(${i})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:0 4px;flex-shrink:0;">✏️</button>
+      <button onclick="deleteMemo(${i})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;padding:0 4px;flex-shrink:0;">×</button>
+    </div>
+  `).join('');
+}
+
+function clearMemos() {
+  if (confirm('本日のメモをリセットしますか？')) {
+    memos = [];
+    saveMemos();
+    renderMemos();
+  }
+}
+
+function getMemoSummary() {
+  if (memos.length === 0) return 'なし';
+  return memos.map(m => `${m.time} ${m.content}`).join('\n');
+}
+
+// ===== 朝チェックイン =====
+const courseData = {
+  1: { name: '超甘口', desc: '寝てるだけでOK', bg: '#e8f0fe', color: '#1a5a9a' },
+  2: { name: '甘口', desc: 'D-block・2分タスクのみ', bg: '#fff3cd', color: '#8a6a00' },
+  3: { name: '中辛', desc: 'いつもより少なめで動く', bg: '#e8f5ee', color: '#1a7a52' },
+  4: { name: '辛口', desc: '通常モード', bg: '#fff0e8', color: '#c05a00' },
+  5: { name: '激辛', desc: '全力モード', bg: '#fde8e8', color: '#c0392b' },
+  6: { name: '地獄', desc: '締め切り・本番前', bg: '#2a1a1a', color: '#ff6644' },
+};
+
+function updateCourse(val) {
+  const c = courseData[val];
+  if (!c) return;
+  const badge = document.getElementById('course-badge');
+  if (!badge) return;
+  badge.textContent = `コース${val} — ${c.name}：${c.desc}`;
+  badge.style.background = c.bg;
+  badge.style.color = c.color;
+  badge.style.borderColor = c.color + '44';
+}
+
+function toggleCheck(el, event) {
+  if (event) event.preventDefault();
+  el.classList.toggle('checked');
+  saveMorning();
+}
+
+function toggleHelp() {
+  const overlay = document.getElementById('help-overlay');
+  overlay.style.display = overlay.style.display === 'none' ? 'block' : 'none';
+}
+
+function calcSleepHP() {
+  const sleep = document.getElementById('m-sleep').value;
+  const wake = document.getElementById('m-wake').value;
+  if (!sleep || !wake) return 70;
+  const [sh, sm] = sleep.split(':').map(Number);
+  const [wh, wm] = wake.split(':').map(Number);
+  let sleepMins = (wh * 60 + wm) - (sh * 60 + sm);
+  if (sleepMins < 0) sleepMins += 24 * 60;
+  const hours = sleepMins / 60;
+  return Math.min(100, Math.round(hours / 7 * 100));
+}
+
+function getProfileText() {
+  return 'ミツメル Lite版利用者';
+}
+
+function calcMorning() {
+  const sleepScore = calcSleepHP();
+  const body = parseInt(document.getElementById('m-body').value);
+  const mood = parseInt(document.getElementById('m-mood').value);
+  const hpAdj = Math.min(100, Math.round(sleepScore * (body / 4)));
+
+  const noises = Array.from(document.querySelectorAll('#m-noise-group .checked input')).map(i => i.value);
+  const noiseDetail = document.getElementById('m-noise-detail').value || '';
+  const want = document.getElementById('m-want').value;
+  const courseVal = document.getElementById('m-course').value;
+  const course = courseData[courseVal];
+
+  const mpBase = Math.round((mood / 4) * 100);
+  const noiseCheckPenalty = noises.length * 10;
+  let noiseTextPenalty = 0;
+  if (noiseDetail.length > 0 && noiseDetail.length <= 40) noiseTextPenalty = 5;
+  else if (noiseDetail.length > 40 && noiseDetail.length <= 100) noiseTextPenalty = 10;
+  else if (noiseDetail.length > 100) noiseTextPenalty = 15;
+  if (/[怒叫罵悪消耗苦辛傷暴鬱不安]/.test(noiseDetail)) noiseTextPenalty += 5;
+  const courseAdjMap = {'1':-10,'2':-5,'3':-3,'4':0,'5':5,'6':8};
+  const courseAdj = courseAdjMap[courseVal] !== undefined ? courseAdjMap[courseVal] : 0;
+  const mp = Math.min(110, Math.max(0, mpBase - noiseCheckPenalty - noiseTextPenalty + courseAdj));
+
+  document.getElementById('hp-val').textContent = hpAdj;
+  document.getElementById('mp-val').textContent = mp;
+  const lvValEl = document.getElementById('lv-val');
+  if (lvValEl) lvValEl.textContent = formatLV(getLVBase());
+
+  let modeText, modeClass;
+  if (hpAdj >= 60 && mp >= 60) { modeText = '通常モード — 今日は動けます'; modeClass = 'mode-normal'; }
+  else if (hpAdj >= 40 || mp >= 40) { modeText = 'D-blockモード — 最小限に絞りましょう'; modeClass = 'mode-dblock'; }
+  else { modeText = '2分タスクモード — 小さいことだけ'; modeClass = 'mode-2min'; }
+
+  const badge = document.getElementById('mode-badge');
+  badge.textContent = modeText;
+  badge.className = 'mode-badge ' + modeClass;
+
+  document.getElementById('morning-result').style.display = 'block';
+  saveMorning();
+
+  const prompt = `あなたはFusion Partners代表の「SuccessOS 統合経営参謀」です。
+
+今朝の状態確認データ：
+HP: ${hpAdj}/100、MP: ${mp}/100
+モード判定: ${modeText}
+本日のタスクコース: コース${courseVal}（${course.name}：${course.desc}）
+ノイズ: ${noises.join('、') || 'なし'}
+具体的なノイズ: ${noiseDetail || 'なし'}
+今日の一言: ${want || 'なし'}
+
+上記データをもとに、以下の2つを出力してください。
+
+【参謀からの一言】
+3〜5文。以下のトーンで書くこと：
+・上から目線の励ましは禁止。同志として隣に立つ言葉を使う
+・今日のHP/MP/コース/ノイズを読んで、その人だけに向けた言葉にする
+・「今日も動こうかな」と思わせる熱さと具体性
+・ユーモアを1つ自然に入れる
+・比喩より事実ベースの言葉を使う
+
+【今日のTop3タスク】
+HP・MPとタスクコースをもとに、今日「これだけはやる」タスクを3つ、優先順位順に箇条書きで出力してください。
+D-blockモードは「最小限の具体的行動」を、通常モード以上は「積極的に詰め込んで」ください。`;
+
+  const loading = document.getElementById('morning-loading');
+  const advice = document.getElementById('morning-advice');
+  loading.style.display = 'block';
+  advice.classList.remove('visible');
+
+  callClaude(prompt,
+    text => {
+      loading.style.display = 'none';
+      advice.textContent = text;
+      advice.classList.add('visible');
+      saveMorning();
+    },
+    err => {
+      loading.style.display = 'none';
+      advice.textContent = 'エラー：' + err;
+      advice.classList.add('visible');
+    }
+  );
+}
+
+function copyMorningAdvice() {
+  const hp = document.getElementById('hp-val').textContent;
+  const mp = document.getElementById('mp-val').textContent;
+  const mode = document.getElementById('mode-badge').textContent;
+  const advice = document.getElementById('morning-advice').textContent;
+  const now = new Date();
+  const dateStr = `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日`;
+  const courseVal = document.getElementById('m-course').value;
+  const course = courseData[courseVal];
+  const text = `# ミツメル Lite 朝の確認｜${dateStr}
+
+## ステータス
+- HP: ${hp}/100
+- MP: ${mp}/100
+- タスクコース: コース${courseVal}（${course.name}：${course.desc}）
+- モード: ${mode}
+
+## 参謀からの一言
+${advice}`;
+  navigator.clipboard.writeText(text).then(() => {
+    alert('アドバイスをコピーしました！');
+  });
+}
+
+// ===== API / Claude =====
+function getApiKey() {
+  if (apiKey) return apiKey;
+  const key = prompt('AnthropicのAPIキーを入力してください：\n\n取得方法：console.anthropic.com → API Keys → Create Key');
+  if (key && key.trim().startsWith('sk-')) {
+    apiKey = key.trim();
+    localStorage.setItem('mitsumeru_api_key', apiKey);
+    return apiKey;
+  } else if (key) {
+    alert('APIキーは「sk-」から始まる文字列です。もう一度確認してください。');
+    return null;
+  }
+  return null;
+}
+
+function setApiKey() {
+  const key = prompt('AnthropicのAPIキーを入力してください（sk-ant-...）：\n\n取得方法：console.anthropic.com → API Keys → Create Key\n\n現在のキー：' + (apiKey ? apiKey.substring(0,10)+'...' : '未設定'));
+  if (key === null) return;
+  if (key.trim().startsWith('sk-')) {
+    apiKey = key.trim();
+    localStorage.setItem('mitsumeru_api_key', apiKey);
+    document.getElementById('api-btn').style.color = '#4caf82';
+    alert('APIキーを設定しました！');
+  } else if (key.trim() === '') {
+    apiKey = '';
+    localStorage.removeItem('mitsumeru_api_key');
+    document.getElementById('api-btn').style.color = 'var(--bg)';
+    alert('APIキーをクリアしました。');
+  } else {
+    alert('APIキーの形式が正しくありません。\n「sk-ant-」から始まる文字列を入力してください。\n\nヘッダーの「🔑 API」ボタンから再設定できます。');
+  }
+}
+
+function callClaude(prompt, onSuccess, onError) {
+  if (!hasConsent()) { onError('利用規約・プライバシーポリシーへの同意が必要です。ページを再読み込みしてください。'); return; }
+  if (demoActive) {
+    setTimeout(() => onSuccess(DEMO_MORNING_TEXT), 1000);
+    return;
+  }
+  const key = getApiKey();
+  if (!key) { onError('APIキーが設定されていません。'); return; }
+  fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 4000,
+      messages: [{ role: 'user', content: prompt }]
+    })
+  }).then(r => r.json()).then(data => {
+    if (data.error) { onError(data.error.message); return; }
+    const text = data.content?.map(c => c.text || '').join('') || 'エラーが発生しました';
+    onSuccess(text);
+  }).catch(e => onError(e.message));
+}
+
+// ===== デモモード =====
+const DEMO_MORNING_TEXT = `【参謀からの一言】
+入力されたHP/MPとコースを見る限り、今日は動ける地盤がある。ノイズはあるが、それより自分の設計に集中できる状態だ。一つユーモアを添えるとすれば——MPが少し低いのは昨夜のオールドファッションが足りなかっただけだ。今日も進もう。いつもと同じように、一歩ずつ。あなたのペースで動く日が、一番積み上がる。
+
+【今日のTop3タスク】
+1. 最優先プロジェクトのスコープを1ポモで確定し「今日やること・やらないこと」を1枚に整理する
+2. 発信コンテンツのドラフトを30分で書いて、AIに壁打ちして次稿の土台を作る
+3. 返信待ち・確認待ちのメールを2分タスクで処理し、頭の引っかかりをゼロにする`;
+
+function checkDemoOrApiKey() {
+  if (!apiKey) apiKey = localStorage.getItem('mitsumeru_api_key') || '';
+  if (apiKey) return;
+  const demoCount = parseInt(localStorage.getItem('mitsumeru_demo_count') || '0');
+  if (demoCount >= 5) {
+    document.getElementById('limit-overlay').classList.add('active');
+    return;
+  }
+  document.getElementById('invite-overlay').classList.add('active');
+}
+
+function submitInviteCode() {
+  const input = document.getElementById('invite-code-input').value.trim().toUpperCase();
+  const errEl = document.getElementById('invite-error');
+  if (input !== DEMO_CODE) {
+    errEl.style.display = 'block';
+    document.getElementById('invite-code-input').value = '';
+    return;
+  }
+  errEl.style.display = 'none';
+  const demoCount = parseInt(localStorage.getItem('mitsumeru_demo_count') || '0');
+  if (demoCount >= 5) {
+    document.getElementById('invite-overlay').classList.remove('active');
+    document.getElementById('limit-overlay').classList.add('active');
+    return;
+  }
+  localStorage.setItem('mitsumeru_demo_count', demoCount + 1);
+  demoActive = true;
+  document.getElementById('invite-overlay').classList.remove('active');
+  const badge = document.createElement('span');
+  badge.textContent = 'DEMO ' + (demoCount + 1) + '/5';
+  badge.style.cssText = 'background:#fff3cd;color:#8a6a00;border:0.5px solid #ffd970;border-radius:20px;padding:3px 10px;font-size:11px;letter-spacing:1px;margin-left:8px;';
+  document.querySelector('.header').appendChild(badge);
+}
+
+function useOwnApiKey() {
+  document.getElementById('invite-overlay').classList.remove('active');
+  document.getElementById('limit-overlay').classList.remove('active');
+  setApiKey();
+  if (apiKey) demoActive = false;
+}
+
+// ===== 同意取得 =====
+function hasConsent() {
+  return !!localStorage.getItem('mitsumeru_consent_date');
+}
+
+function giveConsent() {
+  localStorage.setItem('mitsumeru_consent_date', new Date().toISOString());
+  document.getElementById('consent-overlay').classList.remove('active');
+  if (!apiKey) apiKey = localStorage.getItem('mitsumeru_api_key') || '';
+  checkDemoOrApiKey();
+}
+
+function checkConsent() {
+  if (!hasConsent()) {
+    document.getElementById('consent-overlay').classList.add('active');
+  } else {
+    checkDemoOrApiKey();
+  }
+}
+</script>
+
+</body>
+</html>
