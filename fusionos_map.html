@@ -20,13 +20,10 @@ html,body{
   -webkit-font-smoothing:antialiased;
   overflow:hidden;
 }
-
-/* ── PAGE FRAME ── */
 .page{
   width:1120px; height:630px;
-  position:relative;
-  background:var(--bg);
-  padding:22px 36px 18px;
+  position:relative; background:var(--bg);
+  padding:18px 36px 14px;
   display:flex; flex-direction:column;
 }
 .page::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;
@@ -36,89 +33,79 @@ html,body{
 .accent{position:absolute;top:0;left:0;width:4px;height:100%;
   background:linear-gradient(180deg,var(--gold3),transparent 60%);opacity:.7;}
 
-/* ── HEADER ── */
+/* HEADER */
 .header{
   display:flex; justify-content:space-between; align-items:center;
-  padding-bottom:12px; border-bottom:1px solid var(--border);
+  padding-bottom:10px; border-bottom:1px solid var(--border);
   flex-shrink:0;
 }
 .brand-name{font-family:'Hiragino Kaku Gothic ProN',sans-serif;font-size:10px;
   letter-spacing:.22em;color:var(--gold);text-transform:uppercase;}
-.brand-sub{font-size:9px;color:var(--dim);letter-spacing:.1em;margin-top:2px;}
+.brand-sub{font-size:9px;color:var(--dim);letter-spacing:.1em;margin-top:1px;}
 .title-block{text-align:right;}
 .title-block h1{font-size:17px;font-weight:normal;letter-spacing:.04em;color:var(--navy);}
-.title-block p{font-size:9px;color:var(--gold);letter-spacing:.15em;margin-top:3px;
+.title-block p{font-size:9px;color:var(--gold);letter-spacing:.14em;margin-top:3px;
   font-family:'Hiragino Kaku Gothic ProN',sans-serif;}
 
-/* ── DIAGRAM ── */
-.diagram{
-  flex:1; position:relative;
-}
-.diagram svg{position:absolute;top:0;left:0;width:100%;height:100%;overflow:visible;pointer-events:none;}
+/* DIAGRAM */
+.diagram{flex:1;position:relative;}
+.diagram svg{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;}
 
-/* ── CENTER NODE ── */
+/* CENTER — 200px */
 .c-node{
   position:absolute;
-  width:110px; height:110px;
-  border-radius:50%;
+  width:200px; height:200px; border-radius:50%;
   background:var(--navy);
   display:flex; flex-direction:column;
-  justify-content:center; align-items:center;
-  text-align:center;
-  box-shadow:0 6px 28px rgba(11,25,41,.28);
+  justify-content:center; align-items:center; text-align:center;
+  box-shadow:0 8px 40px rgba(11,25,41,.35);
   transform:translate(-50%,-50%);
+  z-index:10;
 }
-.c-node .c-main{font-size:17px;color:#fff;letter-spacing:.04em;line-height:1.15;}
-.c-node .c-sub{font-size:8px;color:var(--gold3);letter-spacing:.2em;margin-top:4px;
+.c-main{font-size:22px;color:#fff;letter-spacing:.06em;line-height:1.15;}
+.c-sub{font-size:8.5px;color:var(--gold3);letter-spacing:.22em;margin-top:6px;
   font-family:'Hiragino Kaku Gothic ProN',sans-serif;text-transform:uppercase;}
+.c-mission{font-size:8px;color:rgba(255,255,255,.45);letter-spacing:.06em;margin-top:5px;
+  font-family:'Hiragino Kaku Gothic ProN',sans-serif;line-height:1.5;}
 
-/* ── OUTER NODE ── */
+/* OUTER NODES — 110px */
 .o-node{
   position:absolute;
   transform:translate(-50%,-50%);
   display:flex; flex-direction:column; align-items:center;
-  text-align:center;
+  text-align:center; z-index:10;
 }
-/* 円 */
 .o-circle{
-  width:96px; height:96px;
-  border-radius:50%;
+  width:110px; height:110px; border-radius:50%;
   display:flex; flex-direction:column;
   justify-content:center; align-items:center;
-  box-shadow:0 4px 16px rgba(11,25,41,.18);
+  box-shadow:0 5px 20px rgba(11,25,41,.2);
   flex-shrink:0;
 }
-.o-jp{font-size:18px;font-weight:normal;line-height:1.1;}
-.o-en{font-size:7px;letter-spacing:.2em;margin-top:3px;
+.o-jp{font-size:20px;font-weight:normal;line-height:1.1;}
+.o-en{font-size:7.5px;letter-spacing:.2em;margin-top:3px;
   font-family:'Hiragino Kaku Gothic ProN',sans-serif;text-transform:uppercase;}
-.o-verb{font-size:9px;margin-top:3px;letter-spacing:.08em;
+.o-verb{font-size:10px;margin-top:3px;letter-spacing:.1em;
   font-family:'Hiragino Kaku Gothic ProN',sans-serif;}
 
 /* カラー */
 .navy .o-circle{background:var(--navy2);border:2.5px solid var(--navy);}
 .navy .o-jp,.navy .o-verb{color:#fff;} .navy .o-en{color:var(--gold3);}
-
-.gold .o-circle{background:var(--gold);border:2.5px solid #5a4718;}
-.gold .o-jp,.gold .o-verb{color:#fff;} .gold .o-en{color:rgba(255,255,255,.75);}
-
+.gold .o-circle{background:var(--gold);border:2.5px solid #4a3810;}
+.gold .o-jp,.gold .o-verb{color:#fff;} .gold .o-en{color:rgba(255,255,255,.8);}
 .cream .o-circle{background:var(--bg2);border:2.5px solid var(--border);}
 .cream .o-jp{color:var(--navy);} .cream .o-en{color:var(--gold);} .cream .o-verb{color:var(--dim);}
 
 /* ラベル・説明 */
-.o-label{
-  font-size:11px; color:var(--navy); letter-spacing:.03em;
-  margin-top:8px; line-height:1.4; max-width:140px;
-}
-.o-desc{
-  font-size:9.5px; color:var(--dim); line-height:1.7;
-  letter-spacing:.03em; margin-top:3px; max-width:140px;
-}
+.o-label{font-size:11.5px;color:var(--navy);letter-spacing:.03em;
+  margin-top:8px;line-height:1.4;max-width:148px;font-weight:normal;}
+.o-desc{font-size:10px;color:var(--dim);line-height:1.7;
+  letter-spacing:.03em;margin-top:3px;max-width:148px;}
 
-/* ── FOOTER ── */
+/* FOOTER */
 .footer{
-  flex-shrink:0; display:flex;
-  justify-content:space-between; align-items:center;
-  border-top:1px solid var(--border); padding-top:10px;
+  flex-shrink:0;display:flex;justify-content:space-between;align-items:center;
+  border-top:1px solid var(--border);padding-top:9px;
 }
 .footer-mission{font-size:9px;color:var(--gold);letter-spacing:.1em;font-style:italic;}
 .footer-contact{font-size:8px;color:var(--dim);letter-spacing:.06em;
@@ -150,14 +137,15 @@ html,body{
 <div class="diagram" id="diag">
   <svg id="svg-lines"></svg>
 
-  <!-- 中央 -->
+  <!-- 中央 200px -->
   <div class="c-node" id="cn" style="left:50%;top:50%;">
     <span class="c-main">Fusion<br>OS</span>
     <span class="c-sub">5 Systems</span>
+    <span class="c-mission">属人化のバグを<br>仕組みで解決する</span>
   </div>
 
-  <!-- 響 top -->
-  <div class="o-node navy" id="n0" style="left:50%;top:10%;">
+  <!-- 響 top   pentagon: 90° -->
+  <div class="o-node navy" id="n0" style="left:50%;top:11%;">
     <div class="o-circle">
       <span class="o-jp">響</span>
       <span class="o-en">Hibiki</span>
@@ -167,19 +155,19 @@ html,body{
     <div class="o-desc">壁打ち・アセスメントを構造化。<br>氷山モデルで根本原因を特定する。</div>
   </div>
 
-  <!-- 凪 right-top -->
-  <div class="o-node gold" id="n1" style="left:83%;top:28%;">
+  <!-- 凪 top-right   18° -->
+  <div class="o-node gold" id="n1" style="left:79%;top:27%;">
     <div class="o-circle">
       <span class="o-jp">凪</span>
       <span class="o-en">Nagi</span>
       <span class="o-verb">見る</span>
     </div>
     <div class="o-label">組織を診る「羅針盤」</div>
-    <div class="o-desc">MQ会計・KSAで収益・チームを<br>同時に可視化・数字で診断する。</div>
+    <div class="o-desc">MQ会計・KSAで収益・チームを<br>数字で同時に可視化・診断する。</div>
   </div>
 
-  <!-- 弦 right-bottom -->
-  <div class="o-node navy" id="n2" style="left:72%;top:82%;">
+  <!-- 弦 bottom-right   −54° -->
+  <div class="o-node navy" id="n2" style="left:69%;top:80%;">
     <div class="o-circle">
       <span class="o-jp">弦</span>
       <span class="o-en">Yuzuru</span>
@@ -189,10 +177,10 @@ html,body{
     <div class="o-desc">施設データから営業先リストと<br>マップを自動生成して届ける。</div>
   </div>
 
-  <!-- ミツメル left-bottom -->
-  <div class="o-node gold" id="n3" style="left:28%;top:82%;">
+  <!-- ミツメル bottom-left   234° -->
+  <div class="o-node gold" id="n3" style="left:31%;top:80%;">
     <div class="o-circle">
-      <span class="o-jp" style="font-size:11px;letter-spacing:0;">ミツメル</span>
+      <span class="o-jp" style="font-size:12px;letter-spacing:0;">ミツメル</span>
       <span class="o-en">Mitsumeru</span>
       <span class="o-verb">折れない</span>
     </div>
@@ -200,8 +188,8 @@ html,body{
     <div class="o-desc">日次HP/MP監査・翌日戦略を一元化。<br>仕組みを動かす人を守る。</div>
   </div>
 
-  <!-- 奏 left-top -->
-  <div class="o-node cream" id="n4" style="left:17%;top:28%;">
+  <!-- 奏 top-left   162° -->
+  <div class="o-node cream" id="n4" style="left:21%;top:27%;">
     <div class="o-circle">
       <span class="o-jp">奏</span>
       <span class="o-en">Kanade</span>
@@ -225,14 +213,13 @@ window.addEventListener('load', () => {
   const diag = document.getElementById('diag');
   const svg  = document.getElementById('svg-lines');
   const dr   = diag.getBoundingClientRect();
-
   svg.setAttribute('viewBox', `0 0 ${dr.width} ${dr.height}`);
 
-  const cnEl  = document.getElementById('cn');
-  const cnR   = cnEl.getBoundingClientRect();
-  const cx    = cnR.left - dr.left + cnR.width  / 2;
-  const cy    = cnR.top  - dr.top  + cnR.height / 2;
-  const cr    = cnR.width / 2;
+  const cnEl = document.getElementById('cn');
+  const cnR  = cnEl.getBoundingClientRect();
+  const cx   = cnR.left - dr.left + cnR.width  / 2;
+  const cy   = cnR.top  - dr.top  + cnR.height / 2;
+  const cr   = cnR.width / 2;
 
   ['n0','n1','n2','n3','n4'].forEach(id => {
     const circ = document.querySelector(`#${id} .o-circle`);
@@ -241,18 +228,16 @@ window.addEventListener('load', () => {
     const ny   = nr.top  - dr.top  + nr.height / 2;
     const nr_r = nr.width / 2;
     const ang  = Math.atan2(ny - cy, nx - cx);
-
-    const x1 = cx + Math.cos(ang) * (cr + 3);
-    const y1 = cy + Math.sin(ang) * (cr + 3);
-    const x2 = nx - Math.cos(ang) * (nr_r + 3);
-    const y2 = ny - Math.sin(ang) * (nr_r + 3);
-
+    const x1 = cx + Math.cos(ang) * (cr + 4);
+    const y1 = cy + Math.sin(ang) * (cr + 4);
+    const x2 = nx - Math.cos(ang) * (nr_r + 4);
+    const y2 = ny - Math.sin(ang) * (nr_r + 4);
     const line = document.createElementNS('http://www.w3.org/2000/svg','line');
     line.setAttribute('x1', x1); line.setAttribute('y1', y1);
     line.setAttribute('x2', x2); line.setAttribute('y2', y2);
     line.setAttribute('stroke', '#c9a850');
-    line.setAttribute('stroke-width', '1.5');
-    line.setAttribute('stroke-dasharray', '5 4');
+    line.setAttribute('stroke-width', '2');
+    line.setAttribute('stroke-dasharray', '6 4');
     line.setAttribute('opacity', '0.55');
     svg.appendChild(line);
   });
