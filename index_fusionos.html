@@ -306,8 +306,10 @@ html,body{
 }
 .price-grid{
   display:grid;
-  grid-template-columns:repeat(4,1fr);
+  grid-template-columns:repeat(2,1fr);
   gap:14px;
+  max-width:620px;
+  margin:0 auto;
 }
 .price-card{
   border:1px solid var(--border);
@@ -505,13 +507,13 @@ html,body{
       <div class="price-eyebrow">Pricing — ミツメル</div>
       <div class="price-title">伴走の深さで、選べる。</div>
       <div class="price-lead">
-        「AIがどこまで読んで、何を返してくれるか」で4段階。¥480から始められます。
+        まずは無料で、AIの伴走を。続けたくなったらStandardへ。
       </div>
     </div>
     <div class="price-grid">
-      <div class="price-card">
+      <div class="price-card feature">
         <div class="price-tier">Lite</div>
-        <div class="price-amount">¥480<small>/月</small></div>
+        <div class="price-amount">無料<small>Free</small></div>
         <div class="price-catch">朝の一言コーチ</div>
         <div class="price-desc">まず試したい個人・管理職へ。HP/MPで状態を数値化し、AIが朝に一言。</div>
       </div>
@@ -519,19 +521,7 @@ html,body{
         <div class="price-tier">Standard</div>
         <div class="price-amount">¥1,980<small>/月</small></div>
         <div class="price-catch">今日×明日の設計士</div>
-        <div class="price-desc">毎日戦略を立てたい実務層へ。AI翌日戦略・カレンダー分類・週次サマリー。</div>
-      </div>
-      <div class="price-card">
-        <div class="price-tier">Pro</div>
-        <div class="price-amount">¥4,800<small>/月</small></div>
-        <div class="price-catch">過去を読む主治医</div>
-        <div class="price-desc">折れない仕組みを作りたい管理職へ。月次分析・心理スキャン・バーンアウト予測。</div>
-      </div>
-      <div class="price-card feature">
-        <div class="price-tier">Extreme</div>
-        <div class="price-amount">¥9,800<small>/月</small></div>
-        <div class="price-catch">OSの中枢神経</div>
-        <div class="price-desc">FusionOS統合・経営者仕様。凪・奏と接続し、組織と個人を同時に守る。</div>
+        <div class="price-desc">2週間の無料トライアル後 ¥1,980/月。AI翌日戦略・カレンダー分類・週次サマリー。</div>
       </div>
     </div>
     <div class="price-note">※ 価格は予定です。プラン内容は順次拡充します。</div>
