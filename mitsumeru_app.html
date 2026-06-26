@@ -1042,7 +1042,6 @@
       <table id="advance-schedule-table" style="width:100%;border-collapse:collapse;font-size:12px;">
         <thead>
           <tr style="background:var(--bg2);border-bottom:1px solid var(--border);">
-            <th style="padding:6px 4px;text-align:center;color:var(--text2);font-weight:500;min-width:36px;">曜日</th>
             <th style="padding:6px 4px;text-align:center;color:var(--text2);font-weight:500;min-width:80px;">日付</th>
             <th style="padding:6px 4px;text-align:center;color:var(--text2);font-weight:500;min-width:72px;">開始</th>
             <th style="padding:6px 4px;text-align:center;color:var(--text2);font-weight:500;min-width:72px;">終了</th>
@@ -1330,12 +1329,10 @@ function saveEvening() {
 }
 
 // ===== 先行予定マップ =====
-const DAYS = ['日','月','火','水','木','金','土'];
 function addAdvanceRow(row) {
   const tbody = document.getElementById('advance-schedule-body');
   const tr = document.createElement('tr');
   tr.style.borderBottom = '0.5px solid var(--border)';
-  const day        = row ? (row.day        || '') : '';
   const date       = row ? (row.date       || '') : '';
   const startHour  = row ? (row.startHour  || row.hour   || '') : '';
   const startMin   = row ? (row.startMinute|| row.minute || '') : '';
@@ -1352,12 +1349,6 @@ function addAdvanceRow(row) {
   const pomoOpts = '<option value=""></option>'+['1','2','3','4','5','6','7','8','9','10'].map(p=>'<option>'+p+'</option>').join('')+'<option>未定</option>';
 
   tr.innerHTML = `
-    <td style="padding:4px 2px;text-align:center;">
-      <select class="adv-day" onchange="saveEvening()" style="border:0.5px solid var(--border);background:var(--bg2);color:var(--text);border-radius:4px;font-size:11px;width:36px;padding:2px;">
-        <option value=""></option>
-        ${DAYS.map(d=>'<option>'+d+'</option>').join('')}
-      </select>
-    </td>
     <td style="padding:4px 2px;">
       <input class="adv-date" type="date" onchange="saveEvening()" style="width:110px;border:0.5px solid var(--border);background:var(--bg2);color:var(--text);border-radius:4px;font-size:11px;padding:3px 4px;touch-action:manipulation;">
     </td>
@@ -1385,7 +1376,6 @@ function addAdvanceRow(row) {
     </td>
   `;
   tbody.appendChild(tr);
-  tr.querySelector('.adv-day').value   = day;
   tr.querySelector('.adv-date').value  = date;
   tr.querySelector('.adv-sh').value    = startHour;
   tr.querySelector('.adv-sm').value    = startMin || (startHour ? '00' : '');
@@ -1423,7 +1413,6 @@ function getAdvanceScheduleData() {
   document.querySelectorAll('#advance-schedule-body tr').forEach(tr => {
     const priBtn = tr.querySelector('.adv-pri-btn[style*="var(--accent)"]');
     rows.push({
-      day:         (tr.querySelector('.adv-day')    ||{value:''}).value,
       date:        (tr.querySelector('.adv-date')   ||{value:''}).value,
       startHour:   (tr.querySelector('.adv-sh')     ||{value:''}).value,
       startMinute: (tr.querySelector('.adv-sm')     ||{value:''}).value,
