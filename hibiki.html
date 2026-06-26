@@ -207,6 +207,62 @@
   .print-btn-print { background: transparent; border: 1px solid var(--accent); color: var(--accent); }
   .print-btn:hover { opacity: 0.82; }
 
+  /* ── スマホ対応（〜480px） ── */
+  @media (max-width: 480px) {
+    /* ヘッダー */
+    header { padding: 10px 12px; gap: 7px; }
+    header h1 { font-size: 1rem; }
+    .header-sub { display: none; }
+    .api-btn { padding: 5px 8px; font-size: 0.7rem; }
+    .api-status { font-size: 0.65rem; padding: 3px 6px; }
+
+    /* プログレス */
+    .progress-wrap { padding: 8px 12px; }
+
+    /* メインパディング */
+    main { padding: 14px 12px 60px; }
+
+    /* テキスト */
+    .section-title { font-size: 1rem; }
+    .section-desc { font-size: 0.8rem; }
+
+    /* 入力エリア */
+    .form-group input, .form-group select { font-size: 1rem; padding: 12px 14px; }
+    .voice-input-wrap textarea { font-size: 1rem; min-height: 100px; padding: 12px 48px 12px 12px; }
+    .answer-area textarea { font-size: 1rem; min-height: 90px; padding: 12px 48px 12px 12px; }
+
+    /* ボタン — タップしやすい高さ確保 */
+    .start-btn { padding: 16px; font-size: 1rem; }
+    .next-btn { padding: 15px; font-size: 1rem; }
+    .reset-btn { padding: 14px; font-size: 0.88rem; }
+
+    /* 結果タブ — ラベルを短縮 */
+    .output-tabs { gap: 4px; }
+    .out-tab { padding: 10px 4px; font-size: 0.75rem; }
+
+    /* 結果パネル */
+    .iceberg-card { padding: 12px; }
+    .iceberg-card .layer-text { font-size: 0.85rem; }
+    .action-card, .proposal-card { padding: 12px; }
+    .action-text, .proposal-text { font-size: 0.85rem; }
+    .analysis-text { font-size: 0.82rem; }
+
+    /* PDFボタン — 縦並びに */
+    .print-btns { flex-direction: column; gap: 8px; }
+    .print-btn { padding: 14px; font-size: 0.9rem; }
+
+    /* AIバブル */
+    .ai-bubble { padding: 14px 12px; }
+    .ai-bubble .ai-text { font-size: 0.9rem; }
+  }
+
+  /* ── タブレット対応（481px〜767px） ── */
+  @media (min-width: 481px) and (max-width: 767px) {
+    main { padding: 16px 14px 70px; }
+    .print-btns { gap: 10px; }
+    .out-tab { font-size: 0.79rem; }
+  }
+
   /* ── 印刷用スタイル ── */
   @media print {
     header, .progress-wrap, .output-tabs, .reset-btn, .print-btns, .section-badge, .modal-overlay { display: none !important; }
