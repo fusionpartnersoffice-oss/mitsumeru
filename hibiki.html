@@ -615,7 +615,10 @@ async function askNextQuestion() {
   await new Promise(r => setTimeout(r, 0));
 
   try {
-    const reply = await callClaude(conversation, buildSystemPrompt());
+    const reply = await callClaude(conversation, buildSystemPrompt(), 1024, (text) => {
+      clearInterval(loadTimer);
+      questionEl.textContent = text;
+    });
     clearInterval(loadTimer);
     conversation.push({ role: 'assistant', content: reply });
 
