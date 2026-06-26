@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>響（Hibiki）| 現場分析 | Fusion Partners</title>
+<title>響（Hibiki）| なぜなぜ分析ツール | Fusion Partners</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23e67e22'/><text x='16' y='24' font-size='20' text-anchor='middle'>🔔</text></svg>">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
@@ -209,7 +209,7 @@
 
   /* ── 印刷用スタイル ── */
   @media print {
-    header, .progress-wrap, .output-tabs, .reset-btn, .print-btns, .section-badge { display: none !important; }
+    header, .progress-wrap, .output-tabs, .reset-btn, .print-btns, .section-badge, .modal-overlay { display: none !important; }
     body { background: #fff; color: #000; }
     main { padding: 0; max-width: 100%; }
     .phase { display: block !important; }
@@ -227,6 +227,39 @@
     .print-date { display: block !important; font-size: 0.8rem; color: #666; margin-bottom: 16px; }
   }
   .print-date { display: none; }
+
+  /* ── 履歴モーダル ── */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.62);
+    display: none; align-items: flex-start; justify-content: center;
+    z-index: 1000; padding: 40px 16px; overflow-y: auto;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal-box {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); max-width: 560px; width: 100%; padding: 18px;
+  }
+  .modal-box h2 { font-size: 1rem; color: var(--accent); margin-bottom: 4px; }
+  .modal-sub { font-size: 0.75rem; color: var(--sub); margin-bottom: 14px; line-height: 1.5; }
+  .hist-item {
+    background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+    padding: 11px 13px; margin-bottom: 9px; display: flex; align-items: center; gap: 10px;
+  }
+  .hist-main { flex: 1; cursor: pointer; min-width: 0; }
+  .hist-date { font-size: 0.82rem; color: var(--text); font-weight: 600; }
+  .hist-meta { font-size: 0.72rem; color: var(--sub); margin-top: 2px; }
+  .hist-root { font-size: 0.74rem; color: var(--sub); margin-top: 4px; line-height: 1.4; }
+  .hist-del {
+    background: transparent; border: 1px solid var(--border); color: var(--sub);
+    border-radius: 6px; width: 30px; height: 30px; cursor: pointer; flex-shrink: 0; font-size: 0.85rem;
+  }
+  .hist-del:hover { border-color: var(--danger); color: var(--danger); }
+  .hist-empty { text-align: center; color: var(--sub); padding: 24px 0; font-size: 0.85rem; }
+  .modal-close {
+    width: 100%; padding: 10px; margin-top: 8px; background: transparent;
+    border: 1px solid var(--border); color: var(--sub); border-radius: var(--radius); cursor: pointer;
+  }
+  .modal-close:hover { border-color: var(--sub); color: var(--text); }
 </style>
 </head>
 <body>
@@ -234,8 +267,9 @@
 <header>
   <div style="font-size:1.4rem">🔔</div>
   <h1>響（Hibiki）</h1>
-  <span class="header-sub">現場分析ツール</span>
+  <span class="header-sub">なぜなぜ分析ツール</span>
   <span id="apiStatus" class="api-status ng">APIキー未設定</span>
+  <button class="api-btn" onclick="showHistory()">📚 履歴</button>
   <button class="api-btn" onclick="setApiKey()">🔑 APIキー</button>
 </header>
 
@@ -399,6 +433,16 @@
   </div>
 
 </main>
+
+<!-- 履歴モーダル -->
+<div class="modal-overlay" id="historyModal">
+  <div class="modal-box">
+    <h2>📚 分析履歴</h2>
+    <div class="modal-sub">この端末に保存された過去の分析結果です（最大50件）。<br>項目をタップすると結果を再表示します。</div>
+    <div id="historyList"></div>
+    <button class="modal-close" onclick="closeHistory()">閉じる</button>
+  </div>
+</div>
 
 <script>
 // ── APIキー管理 ──
@@ -583,6 +627,7 @@ async function askNextQuestion() {
   answerArea.style.display = 'none';
   nextBtn.style.display = 'none';
   nextBtn.disabled = false;
+  document.getElementById('backBtn').style.display = 'none';
 
   // 経過時間カウンター（BUG-002対応：長い待機をフリーズと誤認させない）
   let elapsed = 0;
@@ -626,6 +671,8 @@ async function askNextQuestion() {
     questionEl.textContent = reply;
     document.getElementById('drillAnswer').value = '';
     answerArea.style.display = 'block';
+    // ① 通常時も「前の質問に戻る」を常時表示（1回目＝round0は戻れないので非表示）
+    document.getElementById('backBtn').style.display = round > 0 ? 'block' : 'none';
     nextBtn.disabled = false;
     nextBtn.style.display = 'block';
     nextBtn.textContent = round < MAX_ROUNDS - 1 ? '次へ →' : '結果を見る →';
@@ -640,6 +687,7 @@ async function askNextQuestion() {
     nextBtn.textContent = 'もう一度試す';
     nextBtn.style.display = 'block';
     nextBtn.onclick = askNextQuestion;
+    document.getElementById('backBtn').style.display = round > 0 ? 'block' : 'none';
   }
 }
 
@@ -800,6 +848,7 @@ async function generateOutput() {
     const raw3 = await callClaude(summaryConv, plainPrompt, 4096);
     const result3 = parsePlainTextResult(raw3);
     renderOutput(result3);
+    saveToHistory(result3);
     showPhase('phase2');
     updateProgress(6);
   } catch (e) {
@@ -816,7 +865,7 @@ async function generateOutput() {
 
 // ── フラットJSONをrenderOutputに渡す内部ヘルパー ──
 function _renderAndShow(flat) {
-  renderOutput({
+  const result = {
     iceberg: {
       surface: flat.surface, pattern: flat.pattern,
       structure: flat.structure, mental_model: flat.mental_model, root: flat.root
@@ -826,7 +875,9 @@ function _renderAndShow(flat) {
       analysis: flat.analysis,
       proposals: [flat.proposal1, flat.proposal2, flat.proposal3]
     }
-  });
+  };
+  renderOutput(result);
+  saveToHistory(result);
   showPhase('phase2');
   updateProgress(6);
 }
@@ -888,7 +939,7 @@ function goBackToPrevQuestion() {
   // 最後のユーザー回答を取り消す
   conversation.pop();
   round--;
-  document.getElementById('backBtn').style.display = 'none';
+  document.getElementById('backBtn').style.display = round > 0 ? 'block' : 'none';
   document.getElementById('errorMsg').style.display = 'none';
   // 最後のAI質問を再表示して回答を受け付ける
   const lastAI = conversation.filter(m => m.role === 'assistant').slice(-1)[0];
@@ -904,6 +955,81 @@ function goBackToPrevQuestion() {
   document.getElementById('roundNum').textContent = round + 1;
   updateProgress(round + 1);
   document.getElementById('drillAnswer').focus();
+}
+
+// ── ③ 分析結果の履歴保存（localStorage） ──
+const HISTORY_KEY = 'hibiki_history';
+
+function loadHistory() {
+  try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); }
+  catch { return []; }
+}
+
+function saveToHistory(result) {
+  try {
+    const hist = loadHistory();
+    const d = new Date();
+    const ts = `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    hist.unshift({ id: d.getTime(), ts, org: orgName || '', role: userRole || '', result });
+    if (hist.length > 50) hist.length = 50;  // 上限50件
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(hist));
+  } catch (e) {
+    // localStorageが使えなくても分析表示は継続する
+    console.warn('履歴保存に失敗:', e);
+  }
+}
+
+function escapeHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// ── 履歴一覧の表示 ──
+function showHistory() {
+  const list = document.getElementById('historyList');
+  const hist = loadHistory();
+  if (!hist.length) {
+    list.innerHTML = '<div class="hist-empty">まだ保存された分析がありません。</div>';
+  } else {
+    list.innerHTML = hist.map(h => {
+      const root = (h.result && h.result.iceberg && h.result.iceberg.root) ? h.result.iceberg.root : '';
+      const meta = [h.org, h.role].filter(Boolean).join(' ／ ') || '組織名なし';
+      return `<div class="hist-item">
+        <div class="hist-main" onclick="viewHistoryItem(${h.id})">
+          <div class="hist-date">${escapeHtml(h.ts)}</div>
+          <div class="hist-meta">${escapeHtml(meta)}</div>
+          <div class="hist-root">🎯 ${escapeHtml(root)}</div>
+        </div>
+        <button class="hist-del" title="削除" onclick="deleteHistoryItem(${h.id})">✕</button>
+      </div>`;
+    }).join('');
+  }
+  document.getElementById('historyModal').classList.add('active');
+}
+
+function closeHistory() {
+  document.getElementById('historyModal').classList.remove('active');
+}
+
+// ── 履歴項目を結果画面に再表示 ──
+function viewHistoryItem(id) {
+  const item = loadHistory().find(h => h.id === id);
+  if (!item) return;
+  orgName = item.org || '';
+  userRole = item.role || '';
+  renderOutput(item.result);
+  switchTab('iceberg');
+  showPhase('phase2');
+  updateProgress(6);
+  closeHistory();
+  window.scrollTo(0, 0);
+}
+
+function deleteHistoryItem(id) {
+  if (!confirm('この履歴を削除しますか？')) return;
+  const hist = loadHistory().filter(h => h.id !== id);
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(hist));
+  showHistory();
 }
 
 // ── PDFダウンロード（html2pdf.js） ──
@@ -922,7 +1048,7 @@ async function downloadPdf() {
   const origDisplay = panels.map(id => document.getElementById(id).style.display);
   panels.forEach(id => { document.getElementById(id).style.display = 'block'; });
 
-  const fileName = `響_分析結果_${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}.pdf`;
+  const fileName = `響_分析結果_${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}_${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}.pdf`;
 
   const element = document.getElementById('phase2');
   const opt = {
