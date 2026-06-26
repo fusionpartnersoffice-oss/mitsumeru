@@ -238,6 +238,145 @@ html,body{
   .card-name{justify-content:center;}
   .card-go{justify-content:center;}
 }
+
+/* ── VOICE ── */
+.voice{
+  margin:54px auto 8px;
+  max-width:680px;
+  text-align:center;
+}
+.voice-eyebrow{
+  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
+  font-size:11px;
+  letter-spacing:4px;
+  text-transform:uppercase;
+  color:var(--gold2);
+  margin-bottom:18px;
+}
+.voice-quote{
+  font-size:clamp(26px,4vw,42px);
+  font-weight:300;
+  line-height:1.5;
+  color:var(--navy);
+  letter-spacing:.5px;
+}
+.voice-quote em{
+  font-style:normal;
+  color:var(--gold2);
+  border-bottom:2px solid var(--gold3);
+  padding-bottom:2px;
+}
+.voice-sub{
+  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
+  font-size:clamp(12px,1.4vw,14px);
+  color:var(--dim);
+  line-height:2;
+  margin-top:24px;
+  letter-spacing:.5px;
+}
+
+/* ── PRICING ── */
+.pricing{
+  margin-top:48px;
+}
+.price-head{
+  text-align:center;
+  margin-bottom:26px;
+}
+.price-eyebrow{
+  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
+  font-size:11px;
+  letter-spacing:4px;
+  text-transform:uppercase;
+  color:var(--gold2);
+  margin-bottom:12px;
+}
+.price-title{
+  font-size:clamp(24px,3.4vw,36px);
+  font-weight:200;
+  color:var(--navy);
+  letter-spacing:-.5px;
+}
+.price-lead{
+  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
+  font-size:clamp(12px,1.4vw,14px);
+  color:var(--dim);
+  line-height:1.9;
+  margin-top:12px;
+}
+.price-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:14px;
+}
+.price-card{
+  border:1px solid var(--border);
+  border-radius:6px;
+  background:var(--bg2);
+  box-shadow:var(--shadow);
+  padding:24px 20px;
+  text-align:center;
+  border-top:3px solid var(--gold3);
+  display:flex;
+  flex-direction:column;
+}
+.price-card.feature{
+  border-top-color:var(--navy);
+  background:#fff;
+}
+.price-tier{
+  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
+  font-size:13px;
+  font-weight:600;
+  letter-spacing:2px;
+  color:var(--navy);
+  text-transform:uppercase;
+  margin-bottom:14px;
+}
+.price-amount{
+  font-size:clamp(28px,3.6vw,38px);
+  font-weight:200;
+  color:var(--navy);
+  letter-spacing:-1px;
+  line-height:1;
+}
+.price-amount small{
+  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
+  font-size:12px;
+  font-weight:400;
+  color:var(--dim);
+  letter-spacing:0;
+  margin-left:3px;
+}
+.price-catch{
+  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
+  font-size:12.5px;
+  color:var(--gold2);
+  font-weight:600;
+  margin:14px 0 8px;
+  line-height:1.5;
+}
+.price-desc{
+  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
+  font-size:11.5px;
+  color:var(--dim);
+  line-height:1.8;
+  margin-top:auto;
+}
+.price-note{
+  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
+  font-size:10.5px;
+  color:var(--dim2);
+  text-align:center;
+  margin-top:16px;
+  letter-spacing:.3px;
+}
+@media(max-width:760px){
+  .price-grid{grid-template-columns:repeat(2,1fr);}
+}
+@media(max-width:400px){
+  .price-grid{grid-template-columns:1fr;}
+}
 </style>
 </head>
 <body>
@@ -349,6 +488,54 @@ html,body{
     </a>
 
   </div>
+
+  <!-- VOICE -->
+  <section class="voice">
+    <div class="voice-eyebrow">Voice — ミツメルを使った人の声</div>
+    <div class="voice-quote"><em>「傍に俺がいるみたいだ。」</em></div>
+    <div class="voice-sub">
+      AIは、命令する道具ではない。朝に一言、背中を押し、夜にそっと振り返る。<br>
+      25年分の現場感を、あなたの傍に置いておく。それがFusionOSの伴走です。
+    </div>
+  </section>
+
+  <!-- PRICING -->
+  <section class="pricing">
+    <div class="price-head">
+      <div class="price-eyebrow">Pricing — ミツメル</div>
+      <div class="price-title">伴走の深さで、選べる。</div>
+      <div class="price-lead">
+        「AIがどこまで読んで、何を返してくれるか」で4段階。¥480から始められます。
+      </div>
+    </div>
+    <div class="price-grid">
+      <div class="price-card">
+        <div class="price-tier">Lite</div>
+        <div class="price-amount">¥480<small>/月</small></div>
+        <div class="price-catch">朝の一言コーチ</div>
+        <div class="price-desc">まず試したい個人・管理職へ。HP/MPで状態を数値化し、AIが朝に一言。</div>
+      </div>
+      <div class="price-card">
+        <div class="price-tier">Standard</div>
+        <div class="price-amount">¥1,980<small>/月</small></div>
+        <div class="price-catch">今日×明日の設計士</div>
+        <div class="price-desc">毎日戦略を立てたい実務層へ。AI翌日戦略・カレンダー分類・週次サマリー。</div>
+      </div>
+      <div class="price-card">
+        <div class="price-tier">Pro</div>
+        <div class="price-amount">¥4,800<small>/月</small></div>
+        <div class="price-catch">過去を読む主治医</div>
+        <div class="price-desc">折れない仕組みを作りたい管理職へ。月次分析・心理スキャン・バーンアウト予測。</div>
+      </div>
+      <div class="price-card feature">
+        <div class="price-tier">Extreme</div>
+        <div class="price-amount">¥9,800<small>/月</small></div>
+        <div class="price-catch">OSの中枢神経</div>
+        <div class="price-desc">FusionOS統合・経営者仕様。凪・奏と接続し、組織と個人を同時に守る。</div>
+      </div>
+    </div>
+    <div class="price-note">※ 価格は予定です。プラン内容は順次拡充します。</div>
+  </section>
 
   <!-- FOOTER -->
   <footer class="foot">
