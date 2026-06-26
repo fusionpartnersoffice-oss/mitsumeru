@@ -1945,16 +1945,19 @@ function closeImgPreview() {
 
 function setApiKey() {
   const key = prompt('AnthropicのAPIキーを入力してください（sk-ant-...）：\n\n取得方法：console.anthropic.com → API Keys → Create Key\n\n現在のキー：' + (apiKey ? apiKey.substring(0,10)+'...' : '未設定'));
-  if (key && key.trim().startsWith('sk-')) {
+  if (key === null) return;
+  if (key.trim().startsWith('sk-')) {
     apiKey = key.trim();
     localStorage.setItem('mitsumeru_api_key', apiKey);
     document.getElementById('api-btn').style.color = '#4caf82';
     alert('APIキーを設定しました！');
-  } else if (key === '') {
+  } else if (key.trim() === '') {
     apiKey = '';
     localStorage.removeItem('mitsumeru_api_key');
     document.getElementById('api-btn').style.color = 'var(--bg)';
     alert('APIキーをクリアしました。');
+  } else {
+    alert('APIキーの形式が正しくありません。\n「sk-ant-」から始まる文字列を入力してください。\n\nヘッダーの「🔑 API」ボタンから再設定できます。');
   }
 }
 
@@ -3120,6 +3123,7 @@ HP：72/100　MP：65/100　LV：LV4/80（本日+40pt、4ポモ）
 ・session_log追記：本日のサマリーを1行で記載`;
 
 function checkDemoOrApiKey() {
+  if (!apiKey) apiKey = localStorage.getItem('mitsumeru_api_key') || '';
   if (apiKey) return;
   const demoCount = parseInt(localStorage.getItem('mitsumeru_demo_count') || '0');
   if (demoCount >= 5) {
@@ -3167,6 +3171,7 @@ function hasConsent() {
 function giveConsent() {
   localStorage.setItem('mitsumeru_consent_date', new Date().toISOString());
   document.getElementById('consent-overlay').classList.remove('active');
+  if (!apiKey) apiKey = localStorage.getItem('mitsumeru_api_key') || '';
   checkDemoOrApiKey();
 }
 
