@@ -260,9 +260,92 @@
     border: 1px solid var(--border); color: var(--sub); border-radius: var(--radius); cursor: pointer;
   }
   .modal-close:hover { border-color: var(--sub); color: var(--text); }
+
+  /* ── ④ 利用規約同意・デモモード（ミツメル準拠／hibikiダークテーマ） ── */
+  .gate-overlay {
+    position: fixed; inset: 0; z-index: 1500;
+    background: rgba(8,12,18,0.94);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .gate-overlay.consent { z-index: 1600; }
+  .gate-overlay.active { display: flex; }
+  .gate-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    max-width: 420px; width: 100%; padding: 26px 22px; text-align: center;
+  }
+  .gate-card h2 { font-size: 1.2rem; color: var(--accent); margin-bottom: 12px; }
+  .gate-card p { font-size: 0.85rem; color: var(--sub); line-height: 1.75; margin-bottom: 16px; }
+  .gate-note {
+    font-size: 0.72rem; color: var(--sub); line-height: 1.7; text-align: left;
+    background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+    padding: 11px 13px; margin-bottom: 18px;
+  }
+  .gate-input {
+    width: 100%; padding: 12px 16px; font-size: 1rem; font-family: inherit;
+    background: var(--card); border: 1px solid var(--border); border-radius: 8px; color: var(--text);
+    text-align: center; letter-spacing: 2px; margin-bottom: 8px; outline: none;
+  }
+  .gate-input:focus { border-color: var(--accent); }
+  .gate-badge {
+    display: inline-block; background: rgba(255,183,77,0.15); color: var(--accent3);
+    border: 1px solid var(--accent3); border-radius: 20px; padding: 3px 12px;
+    font-size: 0.7rem; letter-spacing: 1px; margin-bottom: 16px;
+  }
+  .gate-error { color: var(--danger); font-size: 0.75rem; margin: 2px 0 8px; display: none; }
+  .gate-btn {
+    width: 100%; padding: 12px; border-radius: var(--radius);
+    font-size: 0.95rem; font-weight: 700; cursor: pointer; margin-bottom: 8px; font-family: inherit;
+  }
+  .gate-btn-primary { background: var(--accent); color: #1a0029; border: none; }
+  .gate-btn-secondary { background: transparent; color: var(--sub); border: 1px solid var(--border); font-weight: 600; }
+  .gate-btn:hover { opacity: 0.88; }
+  .demo-badge-header {
+    background: rgba(255,183,77,0.15); color: var(--accent3); border: 1px solid var(--accent3);
+    border-radius: 20px; padding: 3px 10px; font-size: 0.7rem; letter-spacing: 1px; margin-left: 8px;
+  }
 </style>
 </head>
 <body>
+
+<!-- ④ 利用規約同意モーダル（初回起動時） -->
+<div class="gate-overlay consent" id="consentGate">
+  <div class="gate-card">
+    <div class="gate-badge">初回確認</div>
+    <h2>響（Hibiki）</h2>
+    <p>ご利用の前に、データの取り扱いをご確認ください。<br>「同意して始める」を押すことで同意したものとみなします。</p>
+    <div class="gate-note">
+      ・入力された相談内容は、AI分析のため Anthropic（Claude API）へ送信されます。<br>
+      ・氏名など個人が特定される情報の入力はお控えください。<br>
+      ・APIキー・分析履歴は、お使いの端末内（localStorage）にのみ保存されます。<br>
+      ・本ツールは現場改善の参考用であり、結果の利用は自己責任となります。
+    </div>
+    <button class="gate-btn gate-btn-primary" onclick="giveConsent()">同意して始める</button>
+  </div>
+</div>
+
+<!-- ④ デモモード：招待コード入力 -->
+<div class="gate-overlay" id="inviteGate">
+  <div class="gate-card">
+    <div class="gate-badge">DEMO MODE</div>
+    <h2>響（Hibiki）</h2>
+    <p>招待コードを入力すると、デモを5回までお試しいただけます。<br>コードは招待者からお受け取りください。</p>
+    <input type="text" class="gate-input" id="inviteCodeInput" placeholder="招待コードを入力" autocomplete="off" onkeydown="if(event.key==='Enter')submitInviteCode()">
+    <p id="inviteError" class="gate-error">招待コードが正しくありません。</p>
+    <button class="gate-btn gate-btn-primary" onclick="submitInviteCode()">確認する</button>
+    <button class="gate-btn gate-btn-secondary" onclick="useOwnApiKey()">🔑 APIキーで利用する</button>
+  </div>
+</div>
+
+<!-- ④ デモモード：回数上限 -->
+<div class="gate-overlay" id="limitGate">
+  <div class="gate-card">
+    <div class="gate-badge">DEMO 終了</div>
+    <h2>デモ体験終了</h2>
+    <p>デモのご利用は5回までです。<br><br>続けてお使いいただくには、AnthropicのAPIキー（「sk-ant-」で始まる文字列）の設定が必要です。<br>キーは <strong>console.anthropic.com</strong> で取得できます。</p>
+    <button class="gate-btn gate-btn-primary" onclick="useOwnApiKey()">🔑 APIキーを設定して使う</button>
+    <p style="font-size:0.7rem;color:var(--sub);margin-top:14px;">響をお試しいただきありがとうございます。<br>Fusion Partners 柴山靖章</p>
+  </div>
+</div>
 
 <header>
   <div style="font-size:1.4rem">🔔</div>
@@ -498,6 +581,10 @@ function updateProgress(step) {
 // ── Claude API呼び出し（SSEストリーミング）──
 // onChunk(currentText): チャンク到着ごとに呼ばれるコールバック（省略可）
 async function callClaude(messages, systemPrompt, maxTokens = 1024, onChunk = null) {
+  // ④ デモモード：実APIを呼ばずサンプル応答を返す
+  if (demoActive && !apiKey) {
+    return await demoResponse(maxTokens, onChunk);
+  }
   if (!apiKey) { setApiKey(); if (!apiKey) throw new Error('APIキーが設定されていません'); }
 
   const controller = new AbortController();
@@ -1078,8 +1165,123 @@ function printDoc() {
   window.print();
 }
 
+// ── ④ 利用規約同意・デモモード（ミツメル準拠） ──
+const DEMO_CODE = 'HIBIKI_DEMO';   // 招待コード（入力は大文字小文字を問わない）
+const DEMO_MAX = 5;                // デモ利用上限
+let demoActive = false;
+
+// デモ用サンプル応答（実APIを使わずに体験できる）
+const DEMO_QUESTIONS = [
+  'なるほど、現場でそういう状況が起きているのですね。\n\nなんで、そうなってしまうんだと思いますか？',
+  'そこには理由がありそうですね。\n\nなんで、その状態がずっと続いてしまうんでしょう？',
+  '繰り返し起きているのですね。\n\nなんで、誰も止められないんだと思いますか？',
+  '組織の仕組みの問題が見えてきましたね。\n\nなんで、その仕組みのまま放置されてきたんでしょう？',
+  'だいぶ根っこに近づきました。\n\nなんで、それが「当たり前」になってしまったんだと思いますか？'
+];
+const DEMO_ANALYSIS = {
+  surface: 'デモ：現場で問題が繰り返し起きているが、その場の対応に追われている状態です。',
+  pattern: 'デモ：トラブルが起きるたびに個人の頑張りで穴埋めし、根本に手をつけられずにいます。',
+  structure: 'デモ：報告・相談のルートが曖昧で、誰が判断するかが決まらないまま運用されています。',
+  mental_model: 'デモ：「現場は忙しくて当たり前」「言っても変わらない」という諦めが共有されています。',
+  root: 'デモ：問題を仕組みとして扱う場がなく、属人的な対応が前提になっていることが根っこです。',
+  action1: 'デモ：明日の朝礼で「今週はこの1件だけ仕組みを見直す」と宣言し、対象を1つに絞る。',
+  action2: 'デモ：今週中に、繰り返している問題を1枚の紙に書き出し、どこで詰まるかを可視化する。',
+  action3: 'デモ：関係者に「責めるためでなく仕組みを直すために聞きたい」と前置きしてヒアリングする。',
+  analysis: 'デモ：この組織では問題が起きるたびに個人の対応力で乗り切る文化が定着しています。根本原因を構造として扱う習慣がないため、同じ問題が形を変えて再発します。忙しさが慢性化し、立ち止まって仕組みを見直す余白が失われていることが背景にあります。',
+  proposal1: 'デモ：「繰り返す問題」を記録し、月1回だけ仕組みを見直す定例の場をルール化する。',
+  proposal2: 'デモ：報告・相談の判断ルートを1枚の図にして、誰が何を決めるかを明文化する。',
+  proposal3: 'デモ：半年かけて「個人の頑張り」前提から「仕組みで回る」前提へ、小さな成功体験を積み上げる。'
+};
+
+// デモ応答を返す（maxTokensで質問か最終分析かを判定）
+async function demoResponse(maxTokens, onChunk) {
+  await new Promise(r => setTimeout(r, 700)); // 体感のための擬似待機
+  const text = (maxTokens >= 2048)
+    ? JSON.stringify(DEMO_ANALYSIS)
+    : DEMO_QUESTIONS[Math.min(round, DEMO_QUESTIONS.length - 1)];
+  if (onChunk) onChunk(text);
+  return text;
+}
+
+// 同意状態
+function hasConsent() { return !!localStorage.getItem('hibiki_consent_date'); }
+
+function giveConsent() {
+  localStorage.setItem('hibiki_consent_date', new Date().toISOString());
+  document.getElementById('consentGate').classList.remove('active');
+  if (!apiKey) apiKey = localStorage.getItem('hibiki_api_key') || '';
+  checkDemoOrApiKey();
+}
+
+function checkConsent() {
+  if (!hasConsent()) {
+    document.getElementById('consentGate').classList.add('active');
+  } else {
+    checkDemoOrApiKey();
+  }
+}
+
+// 同意後：APIキーがあればそのまま／なければデモ招待 or 上限案内
+function checkDemoOrApiKey() {
+  if (!apiKey) apiKey = localStorage.getItem('hibiki_api_key') || '';
+  if (apiKey) return; // 通常利用
+  const demoCount = parseInt(localStorage.getItem('hibiki_demo_count') || '0');
+  if (demoCount >= DEMO_MAX) {
+    document.getElementById('limitGate').classList.add('active');
+    return;
+  }
+  document.getElementById('inviteGate').classList.add('active');
+}
+
+function submitInviteCode() {
+  const input = document.getElementById('inviteCodeInput').value.trim().toUpperCase();
+  const errEl = document.getElementById('inviteError');
+  if (input !== DEMO_CODE) {
+    errEl.style.display = 'block';
+    document.getElementById('inviteCodeInput').value = '';
+    return;
+  }
+  errEl.style.display = 'none';
+  const demoCount = parseInt(localStorage.getItem('hibiki_demo_count') || '0');
+  if (demoCount >= DEMO_MAX) {
+    document.getElementById('inviteGate').classList.remove('active');
+    document.getElementById('limitGate').classList.add('active');
+    return;
+  }
+  localStorage.setItem('hibiki_demo_count', demoCount + 1);
+  demoActive = true;
+  document.getElementById('inviteGate').classList.remove('active');
+  showDemoBadge(demoCount + 1);
+}
+
+function showDemoBadge(n) {
+  let badge = document.getElementById('demoBadgeHeader');
+  if (!badge) {
+    badge = document.createElement('span');
+    badge.id = 'demoBadgeHeader';
+    badge.className = 'demo-badge-header';
+    document.querySelector('header').appendChild(badge);
+  }
+  badge.textContent = 'DEMO ' + n + '/' + DEMO_MAX;
+}
+
+function useOwnApiKey() {
+  document.getElementById('inviteGate').classList.remove('active');
+  document.getElementById('limitGate').classList.remove('active');
+  setApiKey();
+  if (apiKey) {
+    demoActive = false;
+    const badge = document.getElementById('demoBadgeHeader');
+    if (badge) badge.remove();
+  } else if (!hasConsent() || (!apiKey && parseInt(localStorage.getItem('hibiki_demo_count') || '0') < DEMO_MAX)) {
+    // キー設定をやめた場合はデモ招待に戻す（同意済み前提）
+    if (hasConsent()) checkDemoOrApiKey();
+  }
+}
+
 // ── 初期化 ──
 updateProgress(0);
+checkConsent();
 </script>
 </body>
 </html>
