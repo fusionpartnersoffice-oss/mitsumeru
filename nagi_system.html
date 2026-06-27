@@ -280,6 +280,17 @@ tr:hover td{background:rgba(79,195,247,0.03);}
     <div id="compass-ai-result" style="margin-top:10px;"></div>
   </div>
 
+  <!-- ミツメル連携パネル -->
+  <div class="section" style="margin-top:4px;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+      <div class="section-title" style="margin-bottom:0;">📡 ミツメル連携（柴山代表 本日の状態）</div>
+      <button onclick="loadMitsumeruStatus()" style="margin-left:auto;padding:4px 12px;font-size:0.72rem;border:1px solid var(--border);border-radius:16px;background:transparent;color:var(--sub);cursor:pointer;">🔄 更新</button>
+    </div>
+    <div id="mitsumeru-status-panel">
+      <div style="color:var(--sub);font-size:0.78rem;padding:8px 0;">読み込み中...</div>
+    </div>
+  </div>
+
   <!-- サマリーバー -->
   <div class="grid-2" style="margin-top:4px;">
     <div class="section">
@@ -4290,12 +4301,110 @@ ${pipeLines.length ? pipeLines.join('\n') : '  データなし'}
   });
 }
 
+// ════════════════════════════════════════════════════
+//  ミツメル連携：本日の状態を取得して羅針盤に表示
+// ════════════════════════════════════════════════════
+
+function loadMitsumeruStatus(){
+  const panel = document.getElementById('mitsumeru-status-panel');
+  if(!panel) return;
+  panel.innerHTML = '<div style="color:var(--sub);font-size:0.78rem;padding:8px 0;"><span style="display:inline-block;animation:spin 1s linear infinite;">⏳</span> 取得中...</div>';
+
+  const today = new Date().toISOString().slice(0,10); // YYYY-MM-DD
+  const key = `fusionos_status_${today}`;
+  const url = `https://mitsumeru-sync.fusion-partners-office.workers.dev?key=${encodeURIComponent(key)}`;
+
+  fetch(url)
+    .then(r => { if(!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+    .then(d => renderMitsumeruStatus(d, today))
+    .catch(e => {
+      panel.innerHTML = `<div style="font-size:0.78rem;color:var(--sub);padding:8px 0;">
+        ─ データなし（${today}）<span style="margin-left:8px;font-size:0.68rem;color:var(--sub);">${e.message}</span>
+      </div>`;
+    });
+}
+
+function renderMitsumeruStatus(d, dateStr){
+  const panel = document.getElementById('mitsumeru-status-panel');
+  if(!panel) return;
+
+  // mode_level の色・ラベル定義
+  const MODE = {
+    critical: { col:'var(--danger)',   bg:'rgba(239,83,80,0.1)',  icon:'🔴', label:'クリティカル' },
+    heavy:    { col:'var(--warn)',     bg:'rgba(255,167,38,0.1)', icon:'🟡', label:'ヘビー' },
+    normal:   { col:'var(--accent2)',  bg:'rgba(129,199,132,0.1)',icon:'🟢', label:'ノーマル' },
+    focus:    { col:'var(--accent)',   bg:'rgba(79,195,247,0.1)', icon:'🔵', label:'フォーカス' },
+    light:    { col:'var(--accent2)',  bg:'rgba(129,199,132,0.1)',icon:'🟢', label:'ライト' },
+  };
+  const mode = MODE[d.mode_level] || { col:'var(--sub)', bg:'rgba(143,163,184,0.06)', icon:'⚫', label: d.mode_level||'─' };
+
+  const hp  = Math.min(100, Math.max(0, Number(d.hp)  || 0));
+  const mp  = Math.min(100, Math.max(0, Number(d.mp)  || 0));
+  const bs  = Number(d.burnout_score) || 0;
+  const bsAlert = bs >= 51;
+
+  const barStyle = (val, col) =>
+    `<div style="background:var(--surface);border-radius:4px;height:8px;overflow:hidden;margin-top:3px;">
+       <div style="background:${col};width:${val}%;height:8px;border-radius:4px;transition:width 0.4s;"></div>
+     </div>`;
+
+  panel.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+
+      <!-- HP -->
+      <div class="card" style="padding:10px 12px;">
+        <div style="font-size:0.68rem;color:var(--sub);margin-bottom:2px;">❤️ HP（体力）</div>
+        <div style="font-size:1.3rem;font-weight:800;color:${hp<40?'var(--danger)':hp<70?'var(--warn)':'var(--accent2)'};">${hp}<span style="font-size:0.7rem;font-weight:400;"> / 100</span></div>
+        ${barStyle(hp, hp<40?'var(--danger)':hp<70?'var(--warn)':'var(--accent2)')}
+      </div>
+
+      <!-- MP -->
+      <div class="card" style="padding:10px 12px;">
+        <div style="font-size:0.68rem;color:var(--sub);margin-bottom:2px;">💙 MP（集中力）</div>
+        <div style="font-size:1.3rem;font-weight:800;color:${mp<40?'var(--danger)':mp<70?'var(--warn)':'var(--accent)'};">${mp}<span style="font-size:0.7rem;font-weight:400;"> / 100</span></div>
+        ${barStyle(mp, mp<40?'var(--danger)':mp<70?'var(--warn)':'var(--accent)')}
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+
+      <!-- モードレベル -->
+      <div class="card" style="padding:10px 12px;background:${mode.bg};border-left:3px solid ${mode.col};">
+        <div style="font-size:0.68rem;color:var(--sub);margin-bottom:4px;">⚡ 本日のモード</div>
+        <div style="font-size:1rem;font-weight:800;color:${mode.col};">${mode.icon} ${mode.label}</div>
+      </div>
+
+      <!-- バーンアウトスコア -->
+      <div class="card" style="padding:10px 12px;${bsAlert?'background:rgba(239,83,80,0.1);border-left:3px solid var(--danger);':''}">
+        <div style="font-size:0.68rem;color:var(--sub);margin-bottom:4px;">🔥 バーンアウトスコア</div>
+        <div style="font-size:1rem;font-weight:800;color:${bsAlert?'var(--danger)':'var(--text)'};">
+          ${bs}
+          ${bsAlert ? '<span style="font-size:0.68rem;background:var(--danger);color:#fff;border-radius:4px;padding:1px 6px;margin-left:6px;">⚠️ 要注意</span>' : ''}
+        </div>
+        ${bsAlert ? '<div style="font-size:0.68rem;color:var(--danger);margin-top:3px;">51以上：バーンアウトリスクあり</div>' : ''}
+      </div>
+    </div>
+
+    <!-- 今日の戦略 -->
+    ${d.strategy_headline ? `
+    <div class="card" style="padding:10px 14px;border-left:3px solid var(--accent);">
+      <div style="font-size:0.68rem;color:var(--sub);margin-bottom:4px;">🎯 今日の戦略</div>
+      <div style="font-size:0.88rem;font-weight:600;">${d.strategy_headline}</div>
+    </div>` : ''}
+
+    <div style="font-size:0.65rem;color:var(--sub);margin-top:6px;text-align:right;">
+      ${dateStr} のデータ
+    </div>
+  `;
+}
+
 function init(){
   refreshCorpSelector();
   refreshOfficeSelectors();
   renderCorpsList();
   renderOfficesList();
   goTab('compass');
+  loadMitsumeruStatus();
   checkURLImport();
   updateNagiApiBtn();
   // Enterキーでスキャン
