@@ -3,1929 +3,833 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>響（Hibiki）| なぜなぜ分析ツール | Fusion Partners</title>
+<title>響（Hibiki）| ICFアセスメント | Fusion Partners</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23e67e22'/><text x='16' y='24' font-size='20' text-anchor='middle'>🔔</text></svg>">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
-  :root {
-    --bg: #0f1923; --surface: #1a2634; --card: #223044;
-    --accent: #ce93d8; --accent2: #81c784; --accent3: #ffb74d; --accent4: #f06292;
-    --danger: #ef5350; --warn: #ffa726; --text: #e8eaf0; --sub: #8fa3b8;
-    --border: #2e4460; --radius: 10px;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: var(--bg); color: var(--text); font-family: 'Hiragino Kaku Gothic Pro', 'Meiryo', sans-serif; min-height: 100vh; }
+:root {
+  --bg:#0f1923; --surface:#1a2634; --card:#223044;
+  --accent:#ce93d8; --accent2:#81c784; --accent3:#ffb74d;
+  --danger:#ef5350; --text:#e8eaf0; --sub:#8fa3b8; --border:#2e4460; --radius:10px;
+  --red-cell:rgba(239,83,80,.13); --red-border:rgba(239,83,80,.5);
+  --blue-cell:rgba(100,181,246,.13); --blue-border:rgba(100,181,246,.5);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Hiragino Kaku Gothic Pro','Meiryo',sans-serif;min-height:100vh;}
 
-  header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 12px 20px; display: flex; align-items: center; gap: 10px; }
-  header h1 { font-size: 1.1rem; font-weight: 700; color: var(--accent); flex: 1; }
-  .header-sub { font-size: 0.75rem; color: var(--sub); }
-  .api-btn { background: var(--card); border: 1px solid var(--border); color: var(--sub); border-radius: 6px; padding: 5px 12px; font-size: 0.75rem; cursor: pointer; }
-  .api-btn:hover { color: var(--text); border-color: var(--sub); }
-  .api-status { font-size: 0.7rem; padding: 3px 8px; border-radius: 10px; }
-  .api-status.ok { background: rgba(129,199,132,0.2); color: var(--accent2); }
-  .api-status.ng { background: rgba(239,83,80,0.2); color: var(--danger); }
+/* ── ヘッダー ── */
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:8px 14px;display:flex;align-items:center;gap:8px;position:sticky;top:0;z-index:100;flex-wrap:wrap;}
+header h1{font-size:.95rem;font-weight:700;color:var(--accent);}
+.person-badge{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:3px 11px;font-size:.76rem;}
+.phase-badge{background:rgba(206,147,216,.15);border:1px solid var(--accent);border-radius:20px;padding:3px 10px;font-size:.7rem;color:var(--accent);}
+.hdr-spacer{flex:1;}
+.hdr-btn{background:var(--card);border:1px solid var(--border);color:var(--sub);border-radius:6px;padding:5px 11px;font-size:.74rem;cursor:pointer;font-family:inherit;transition:all .15s;}
+.hdr-btn:hover{color:var(--text);border-color:var(--sub);}
+.hdr-btn.grn{background:rgba(129,199,132,.2);border-color:var(--accent2);color:var(--accent2);}
+.api-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px;}
+.api-dot.ok{background:var(--accent2);}
+.api-dot.ng{background:var(--danger);}
 
-  .progress-wrap { background: var(--surface); border-bottom: 1px solid var(--border); padding: 10px 20px; }
-  .progress-steps { display: flex; gap: 6px; margin-bottom: 5px; }
-  .step-dot { flex: 1; height: 4px; border-radius: 2px; background: var(--border); transition: background 0.3s; }
-  .step-dot.done { background: var(--accent2); }
-  .step-dot.active { background: var(--accent); }
-  .progress-label { font-size: 0.73rem; color: var(--sub); }
+/* ── フェーズ管理 ── */
+.phase{display:none;}.phase.active{display:block;}
 
-  main { max-width: 720px; margin: 0 auto; padding: 20px 16px 80px; }
+/* ── Phase 0: 利用者一覧 ── */
+#phase0{padding:22px 16px;}
+.p0-wrap{max-width:800px;margin:0 auto;}
+.p0-title{font-size:1.05rem;font-weight:700;margin-bottom:4px;}
+.p0-desc{font-size:.8rem;color:var(--sub);margin-bottom:18px;line-height:1.7;}
+.person-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;}
+.person-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;cursor:pointer;transition:all .18s;}
+.person-card:hover{border-color:var(--accent);}
+.person-card.new-card{border-style:dashed;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-height:90px;color:var(--sub);}
+.person-card.new-card:hover{color:var(--accent);border-color:var(--accent);}
+.pc-alias{font-weight:700;font-size:.95rem;margin-bottom:3px;}
+.pc-org{font-size:.7rem;color:var(--sub);margin-bottom:6px;}
+.pc-count{font-size:.68rem;color:var(--accent2);}
+.pc-date{font-size:.65rem;color:var(--sub);margin-top:2px;}
 
-  .phase { display: none; }
-  .phase.active { display: block; }
+/* ── Phase 0b: 新規 / フェーズ選択 ── */
+#phase0b{padding:22px 16px;}
+.p0b-wrap{max-width:500px;margin:0 auto;}
+.form-title{font-size:.98rem;font-weight:700;margin-bottom:14px;}
+.form-group{margin-bottom:12px;}
+.form-group label{font-size:.78rem;color:var(--sub);display:block;margin-bottom:4px;}
+.form-group input{width:100%;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:9px 13px;font-size:.88rem;outline:none;font-family:inherit;}
+.form-group input:focus{border-color:var(--accent);}
+.phase-options{display:flex;flex-direction:column;gap:7px;}
+.phase-option{display:flex;align-items:flex-start;gap:9px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:11px 13px;cursor:pointer;transition:all .18s;}
+.phase-option:hover{border-color:var(--sub);}
+.phase-option.selected{background:rgba(206,147,216,.1);border-color:var(--accent);}
+.phase-option input[type="radio"]{margin-top:2px;accent-color:var(--accent);}
+.po-label{font-size:.86rem;font-weight:700;margin-bottom:1px;}
+.po-desc{font-size:.7rem;color:var(--sub);}
+.start-btn{width:100%;padding:12px;background:var(--accent);color:#1a0029;border:none;border-radius:var(--radius);font-size:.92rem;font-weight:700;cursor:pointer;margin-top:8px;font-family:inherit;}
+.start-btn:hover{opacity:.9;}
+.back-link{font-size:.76rem;color:var(--sub);text-align:center;margin-top:10px;cursor:pointer;}
+.back-link:hover{color:var(--text);}
 
-  .section-badge { display: inline-block; background: var(--accent); color: #1a0029; font-size: 0.68rem; font-weight: 700; padding: 2px 10px; border-radius: 20px; margin-bottom: 10px; }
-  .section-title { font-size: 1.1rem; color: var(--text); margin-bottom: 4px; }
-  .section-desc { font-size: 0.82rem; color: var(--sub); margin-bottom: 20px; line-height: 1.6; }
+/* ── Phase 1: メイン ── */
+#phase1.active{display:flex;flex-direction:column;}
+.split-layout{display:flex;align-items:flex-start;min-height:calc(100vh - 56px);}
 
-  /* ── Phase 0: 情報入力 ── */
-  .info-form { display: flex; flex-direction: column; gap: 14px; }
-  .form-group label { font-size: 0.82rem; color: var(--sub); display: block; margin-bottom: 5px; }
-  .form-group input, .form-group select {
-    width: 100%; background: var(--card); border: 1px solid var(--border);
-    border-radius: var(--radius); color: var(--text); padding: 10px 14px;
-    font-size: 0.92rem; outline: none;
-  }
-  .form-group input:focus, .form-group select:focus { border-color: var(--accent); }
-  .form-group select option { background: var(--card); }
+.matrix-panel{width:56%;border-right:1px solid var(--border);padding:14px;overflow-y:auto;max-height:calc(100vh - 56px);position:sticky;top:56px;}
+.panel-title{font-size:.72rem;font-weight:700;color:var(--sub);margin-bottom:10px;letter-spacing:.04em;}
 
-  /* 音声入力エリア */
-  .voice-input-wrap { position: relative; }
-  .voice-input-wrap textarea {
-    width: 100%; background: var(--card); border: 1px solid var(--border);
-    border-radius: var(--radius); color: var(--text); padding: 12px 50px 12px 14px;
-    font-size: 0.92rem; outline: none; resize: vertical; min-height: 90px;
-    font-family: inherit; line-height: 1.6;
-  }
-  .voice-input-wrap textarea:focus { border-color: var(--accent); }
-  /* ── 音声入力ボタン（プレースホルダー）──
-     ここに音声入力APIを追加する
-     候補: Web Speech API (SpeechRecognition) または外部サービス (PLAUDE, Whisper等)
-     実装手順:
-       1. SpeechRecognition を初期化
-       2. ボタンクリックで録音開始→stopで結果をtextareaにセット
-       3. 対応ブラウザ: Chrome/Edge (webkit prefix), Firefox は非対応
-  */
-  .voice-btn {
-    position: absolute; right: 10px; top: 10px;
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 6px; color: var(--sub); width: 34px; height: 34px;
-    cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center;
-    transition: all 0.2s;
-  }
-  .voice-btn:hover { border-color: var(--accent); color: var(--accent); }
-  .voice-btn.recording { border-color: var(--danger); color: var(--danger); animation: pulse 1s infinite; }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
-  .voice-hint { font-size: 0.7rem; color: var(--sub); margin-top: 4px; }
+.domain-section{margin-bottom:12px;}
+.domain-header{display:flex;align-items:center;gap:7px;padding:6px 9px;border-radius:8px;background:var(--surface);border:1px solid var(--border);margin-bottom:5px;}
+.domain-icon{font-size:.92rem;}
+.domain-label{font-size:.76rem;font-weight:700;flex:1;}
+.d-badges{display:flex;gap:3px;}
+.d-badge{font-size:.6rem;font-weight:700;padding:1px 5px;border-radius:9px;}
+.d-badge.r{background:rgba(239,83,80,.2);color:#ef5350;}
+.d-badge.b{background:rgba(100,181,246,.2);color:#64b5f6;}
 
-  .start-btn {
-    width: 100%; padding: 14px; background: var(--accent); color: #1a0029;
-    border: none; border-radius: var(--radius); font-size: 1rem; font-weight: 700;
-    cursor: pointer; margin-top: 6px; transition: opacity 0.2s;
-  }
-  .start-btn:hover { opacity: 0.88; }
-  .start-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.domain-cells{display:grid;grid-template-columns:1fr 1fr;gap:4px;}
+.icf-cell{background:var(--card);border:1px solid var(--border);border-radius:7px;padding:7px 9px;cursor:pointer;transition:all .18s;min-height:56px;position:relative;}
+.icf-cell:hover{border-color:var(--sub);}
+.icf-cell.cr{background:var(--red-cell);border-color:var(--red-border);}
+.icf-cell.cb{background:var(--blue-cell);border-color:var(--blue-border);}
+.cell-label{font-size:.6rem;color:var(--sub);margin-bottom:3px;}
+.cell-text{font-size:.75rem;line-height:1.5;}
+.cell-tri{position:absolute;top:4px;right:6px;font-size:.66rem;}
+.cell-empty{font-size:.66rem;color:var(--border);font-style:italic;}
 
-  /* ── Phase 1: 氷山ドリル ── */
-  .drill-round { font-size: 0.75rem; color: var(--sub); margin-bottom: 14px; }
-  .drill-round span { color: var(--accent); font-weight: 700; }
+.analysis-panel{flex:1;padding:14px;overflow-y:auto;max-height:calc(100vh - 56px);}
+.analyze-btn{width:100%;padding:11px;background:var(--accent);color:#1a0029;border:none;border-radius:var(--radius);font-size:.88rem;font-weight:700;cursor:pointer;margin-bottom:12px;font-family:inherit;}
+.analyze-btn:hover{opacity:.9;}
+.analyze-btn:disabled{opacity:.4;cursor:not-allowed;}
 
-  .iceberg-visual { display: flex; gap: 3px; margin-bottom: 18px; }
-  .iceberg-layer {
-    flex: 1; height: 6px; border-radius: 3px; background: var(--border); transition: background 0.4s;
-  }
-  .iceberg-layer.lit-0 { background: var(--accent3); }
-  .iceberg-layer.lit-1 { background: #ba68c8; }
-  .iceberg-layer.lit-2 { background: #9575cd; }
-  .iceberg-layer.lit-3 { background: #7986cb; }
-  .iceberg-layer.lit-4 { background: var(--accent); }
+.ice-card{border-radius:var(--radius);padding:9px 12px;margin-bottom:7px;border:1px solid transparent;}
+.ice-s{background:rgba(255,183,77,.07);border-color:rgba(255,183,77,.3);}
+.ice-p{background:rgba(186,104,200,.07);border-color:rgba(186,104,200,.3);}
+.ice-st{background:rgba(149,117,205,.07);border-color:rgba(149,117,205,.3);}
+.ice-m{background:rgba(121,134,203,.07);border-color:rgba(121,134,203,.3);}
+.ice-r{background:rgba(206,147,216,.1);border-color:var(--accent);}
+.ice-lbl{font-size:.66rem;font-weight:700;color:var(--sub);margin-bottom:4px;}
+.ice-txt{font-size:.82rem;line-height:1.65;}
+.ice-ph{font-size:.78rem;color:var(--border);font-style:italic;text-align:center;padding:18px;}
 
-  .ai-bubble {
-    background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
-    padding: 16px; margin-bottom: 14px;
-  }
-  .ai-bubble .ai-label { font-size: 0.7rem; color: var(--accent); margin-bottom: 6px; font-weight: 700; }
-  .ai-bubble .ai-text { font-size: 0.92rem; line-height: 1.7; }
+.plan-sec{margin-top:12px;border-top:1px solid var(--border);padding-top:12px;}
+.plan-lbl{font-size:.66rem;font-weight:700;color:var(--accent2);margin-bottom:5px;}
+.plan-txt{font-size:.82rem;line-height:1.65;margin-bottom:8px;}
+.act-list{display:flex;flex-direction:column;gap:5px;margin-bottom:8px;}
+.act-item{display:flex;gap:7px;align-items:flex-start;}
+.act-num{background:var(--accent2);color:#0f1923;font-size:.64rem;font-weight:700;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;}
+.act-txt{font-size:.82rem;line-height:1.55;}
 
-  .summary-box {
-    background: rgba(206,147,216,0.07); border: 1px solid rgba(206,147,216,0.2);
-    border-radius: var(--radius); padding: 10px 14px; margin-bottom: 14px;
-    font-size: 0.8rem; color: var(--sub); line-height: 1.5;
-  }
-  .summary-box strong { color: var(--accent); }
+.action-bar{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);}
+.act-btn{flex:1;min-width:88px;padding:9px;border-radius:var(--radius);font-size:.78rem;font-weight:700;cursor:pointer;font-family:inherit;border:1px solid var(--border);background:var(--card);color:var(--text);transition:all .18s;}
+.act-btn:hover{border-color:var(--sub);}
+.act-btn.save{background:rgba(129,199,132,.12);border-color:var(--accent2);color:var(--accent2);}
+.act-btn.pdca{background:rgba(206,147,216,.1);border-color:var(--accent);color:var(--accent);}
 
-  .answer-area { position: relative; margin-bottom: 10px; }
-  .answer-area textarea {
-    width: 100%; background: var(--card); border: 1px solid var(--border);
-    border-radius: var(--radius); color: var(--text); padding: 12px 50px 12px 14px;
-    font-size: 0.92rem; outline: none; resize: vertical; min-height: 80px;
-    font-family: inherit; line-height: 1.6;
-  }
-  .answer-area textarea:focus { border-color: var(--accent); }
-  /* ── 音声入力ボタン（ドリル中）──
-     ここに音声入力APIを追加する（Phase 0 の voice-btn と同じ実装を使い回す）
-  */
-  .answer-area .voice-btn { top: 8px; }
+.loading{text-align:center;padding:18px;color:var(--sub);font-size:.82rem;}
+.dots::after{content:'';animation:dd 1.2s infinite;}
+@keyframes dd{0%{content:''}33%{content:'.'}66%{content:'..'}100%{content:'...'}}
 
-  .next-btn {
-    width: 100%; padding: 12px; background: var(--accent); color: #1a0029;
-    border: none; border-radius: var(--radius); font-size: 0.95rem; font-weight: 700;
-    cursor: pointer; transition: opacity 0.2s;
-  }
-  .next-btn:hover { opacity: 0.88; }
-  .next-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+/* ── セル編集モーダル ── */
+.over{position:fixed;inset:0;z-index:500;background:rgba(8,12,18,.82);display:none;align-items:center;justify-content:center;padding:16px;}
+.over.active{display:flex;}
+.cell-modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;max-width:390px;width:100%;}
+.cm-dom{font-size:.64rem;color:var(--sub);margin-bottom:1px;}
+.cm-lbl{font-size:.92rem;font-weight:700;margin-bottom:10px;}
+.cm-ta{width:100%;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:9px 11px;font-size:.85rem;outline:none;resize:vertical;min-height:76px;font-family:inherit;line-height:1.6;margin-bottom:9px;}
+.cm-ta:focus{border-color:var(--accent);}
+.tri-row{display:flex;gap:5px;margin-bottom:10px;}
+.tri-btn{flex:1;padding:7px;border-radius:7px;font-size:.76rem;font-weight:700;cursor:pointer;font-family:inherit;border:1px solid transparent;transition:all .15s;}
+.tri-btn.tr{background:var(--red-cell);border-color:var(--red-border);color:#ef5350;}
+.tri-btn.tb{background:var(--blue-cell);border-color:var(--blue-border);color:#64b5f6;}
+.tri-btn.tn{background:var(--card);border-color:var(--border);color:var(--sub);}
+.tri-btn.on{box-shadow:0 0 0 2px currentColor;}
+.cm-btns{display:flex;gap:7px;}
+.cm-save{flex:1;padding:9px;background:var(--accent);color:#1a0029;border:none;border-radius:7px;font-weight:700;cursor:pointer;font-family:inherit;}
+.cm-cancel{padding:9px 15px;background:var(--card);border:1px solid var(--border);color:var(--sub);border-radius:7px;cursor:pointer;font-family:inherit;}
 
-  .loading-indicator { text-align: center; padding: 20px; color: var(--sub); font-size: 0.85rem; }
-  .loading-dots::after { content: ''; animation: dots 1.2s infinite; }
-  @keyframes dots { 0%{content:'.'} 33%{content:'..'} 66%{content:'...'} }
+/* ── PDCA比較モーダル ── */
+.modal-over{position:fixed;inset:0;z-index:400;background:rgba(8,12,18,.88);display:none;align-items:flex-start;justify-content:center;padding:16px;overflow-y:auto;}
+.modal-over.active{display:flex;}
+.modal-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);max-width:880px;width:100%;padding:20px;margin:auto;}
+.modal-box h2{font-size:.95rem;color:var(--accent);margin-bottom:4px;}
+.modal-sub{font-size:.74rem;color:var(--sub);margin-bottom:14px;}
+.chg-card{background:rgba(206,147,216,.08);border:1px solid var(--accent);border-radius:var(--radius);padding:11px 13px;margin-bottom:12px;}
+.chg-lbl{font-size:.66rem;color:var(--accent);font-weight:700;margin-bottom:3px;}
+.chg-txt{font-size:.82rem;line-height:1.65;}
+.cmp-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.cmp-dtitle{font-size:.74rem;font-weight:700;color:var(--sub);margin-bottom:6px;}
+.cmp-cell{padding:5px 8px;border-radius:6px;border:1px solid var(--border);margin-bottom:3px;}
+.cmp-cell.changed{border-color:var(--accent3);background:rgba(255,183,77,.07);}
+.cmp-cell-lbl{font-size:.58rem;color:var(--sub);}
+.cmp-cell-txt{font-size:.74rem;line-height:1.5;}
+.chg-badge{font-size:.55rem;background:var(--accent3);color:#1a0029;border-radius:3px;padding:1px 4px;margin-left:3px;}
+.modal-close{background:var(--card);border:1px solid var(--border);color:var(--sub);border-radius:7px;padding:8px 18px;cursor:pointer;font-family:inherit;margin-top:14px;}
+.modal-close:hover{border-color:var(--sub);color:var(--text);}
 
-  /* ── Phase 2: 二層出力 ── */
-  .output-tabs { display: flex; gap: 6px; margin-bottom: 16px; }
-  .out-tab {
-    flex: 1; padding: 9px; background: var(--card); border: 1px solid var(--border);
-    border-radius: 8px; text-align: center; cursor: pointer; font-size: 0.82rem; color: var(--sub);
-    transition: all 0.2s;
-  }
-  .out-tab.active { background: rgba(206,147,216,0.12); border-color: var(--accent); color: var(--accent); font-weight: 700; }
+/* ── 同意ゲート ── */
+.gate{position:fixed;inset:0;z-index:600;background:rgba(8,12,18,.95);display:none;align-items:center;justify-content:center;padding:18px;}
+.gate.active{display:flex;}
+.gate-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);max-width:410px;width:100%;padding:24px 20px;text-align:center;}
+.gate-card h2{font-size:1.05rem;color:var(--accent);margin-bottom:10px;}
+.gate-card p{font-size:.82rem;color:var(--sub);line-height:1.75;margin-bottom:14px;}
+.gate-note{font-size:.7rem;color:var(--sub);line-height:1.7;text-align:left;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:16px;}
+.gate-btn{width:100%;padding:11px;border-radius:var(--radius);font-size:.92rem;font-weight:700;cursor:pointer;font-family:inherit;background:var(--accent);color:#1a0029;border:none;}
+.gate-btn:hover{opacity:.9;}
 
-  .out-panel { display: none; }
-  .out-panel.active { display: block; }
+#toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--accent2);color:#0f1923;padding:9px 20px;border-radius:20px;font-weight:700;font-size:.82rem;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;}
 
-  .iceberg-card {
-    background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
-    padding: 14px; margin-bottom: 12px;
-  }
-  .iceberg-card .layer-label { font-size: 0.7rem; font-weight: 700; margin-bottom: 4px; }
-  .iceberg-card .layer-text { font-size: 0.88rem; line-height: 1.6; color: var(--text); }
-  .layer-surface .layer-label { color: var(--accent3); }
-  .layer-pattern .layer-label { color: #ba68c8; }
-  .layer-structure .layer-label { color: #9575cd; }
-  .layer-mental .layer-label { color: #7986cb; }
-  .layer-root .layer-label { color: var(--accent); }
-  .layer-root { border-color: rgba(206,147,216,0.4); }
-
-  .action-card {
-    background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
-    padding: 14px; margin-bottom: 10px;
-  }
-  .action-card h3 { font-size: 0.85rem; color: var(--accent2); margin-bottom: 10px; font-weight: 700; }
-  .action-item { display: flex; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--border); }
-  .action-item:last-child { border-bottom: none; }
-  .action-num { font-size: 0.75rem; font-weight: 700; color: var(--accent2); min-width: 20px; }
-  .action-text { font-size: 0.88rem; line-height: 1.5; }
-
-  .proposal-card {
-    background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
-    padding: 14px; margin-bottom: 10px;
-  }
-  .proposal-card h3 { font-size: 0.85rem; color: var(--accent); margin-bottom: 8px; font-weight: 700; }
-  .analysis-text { font-size: 0.85rem; color: var(--sub); line-height: 1.7; margin-bottom: 12px; }
-  .proposal-item { display: flex; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--border); }
-  .proposal-item:last-child { border-bottom: none; }
-  .proposal-mark { color: var(--accent); font-weight: 700; font-size: 0.82rem; min-width: 16px; }
-  .proposal-text { font-size: 0.87rem; line-height: 1.5; }
-
-  .reset-btn {
-    width: 100%; padding: 11px; background: transparent; border: 1px solid var(--border);
-    color: var(--sub); border-radius: var(--radius); font-size: 0.85rem; cursor: pointer;
-    margin-top: 20px; transition: all 0.2s;
-  }
-  .reset-btn:hover { border-color: var(--sub); color: var(--text); }
-
-  .error-msg { background: rgba(239,83,80,0.1); border: 1px solid var(--danger); border-radius: var(--radius); padding: 12px 14px; font-size: 0.85rem; color: var(--danger); margin-bottom: 14px; }
-
-  /* ── 印刷・PDF保存ボタン ── */
-  .print-btns { display: flex; gap: 8px; margin-top: 12px; }
-  .print-btn {
-    flex: 1; padding: 11px; border-radius: var(--radius); font-size: 0.85rem;
-    cursor: pointer; font-weight: 600; transition: opacity 0.2s;
-  }
-  .print-btn-pdf { background: var(--accent); color: #1a0029; border: none; }
-  .print-btn-print { background: transparent; border: 1px solid var(--accent); color: var(--accent); }
-  .print-btn:hover { opacity: 0.82; }
-
-  /* ── スマホ対応（〜480px） ── */
-  @media (max-width: 480px) {
-    /* ヘッダー */
-    header { padding: 10px 12px; gap: 7px; }
-    header h1 { font-size: 1rem; }
-    .header-sub { display: none; }
-    .api-btn { padding: 5px 8px; font-size: 0.7rem; }
-    .api-status { font-size: 0.65rem; padding: 3px 6px; }
-
-    /* プログレス */
-    .progress-wrap { padding: 8px 12px; }
-
-    /* メインパディング */
-    main { padding: 14px 12px 60px; }
-
-    /* テキスト */
-    .section-title { font-size: 1rem; }
-    .section-desc { font-size: 0.8rem; }
-
-    /* 入力エリア */
-    .form-group input, .form-group select { font-size: 1rem; padding: 12px 14px; }
-    .voice-input-wrap textarea { font-size: 1rem; min-height: 100px; padding: 12px 48px 12px 12px; }
-    .answer-area textarea { font-size: 1rem; min-height: 90px; padding: 12px 48px 12px 12px; }
-
-    /* ボタン — タップしやすい高さ確保 */
-    .start-btn { padding: 16px; font-size: 1rem; }
-    .next-btn { padding: 15px; font-size: 1rem; }
-    .reset-btn { padding: 14px; font-size: 0.88rem; }
-
-    /* 結果タブ — ラベルを短縮 */
-    .output-tabs { gap: 4px; }
-    .out-tab { padding: 10px 4px; font-size: 0.75rem; }
-
-    /* 結果パネル */
-    .iceberg-card { padding: 12px; }
-    .iceberg-card .layer-text { font-size: 0.85rem; }
-    .action-card, .proposal-card { padding: 12px; }
-    .action-text, .proposal-text { font-size: 0.85rem; }
-    .analysis-text { font-size: 0.82rem; }
-
-    /* PDFボタン — 縦並びに */
-    .print-btns { flex-direction: column; gap: 8px; }
-    .print-btn { padding: 14px; font-size: 0.9rem; }
-
-    /* AIバブル */
-    .ai-bubble { padding: 14px 12px; }
-    .ai-bubble .ai-text { font-size: 0.9rem; }
-  }
-
-  /* ── タブレット対応（481px〜767px） ── */
-  @media (min-width: 481px) and (max-width: 767px) {
-    main { padding: 16px 14px 70px; }
-    .print-btns { gap: 10px; }
-    .out-tab { font-size: 0.79rem; }
-  }
-
-  /* ── 印刷用スタイル ── */
-  @media print {
-    header, .progress-wrap, .output-tabs, .reset-btn, .print-btns, .section-badge, .modal-overlay { display: none !important; }
-    body { background: #fff; color: #000; }
-    main { padding: 0; max-width: 100%; }
-    .phase { display: block !important; }
-    #phase0, #phase1 { display: none !important; }
-    #phase2 { display: block !important; }
-    .out-panel { display: block !important; page-break-inside: avoid; margin-bottom: 16px; }
-    .section-title { font-size: 1.2rem; font-weight: 700; margin-bottom: 4px; color: #000; }
-    .section-desc { color: #555; margin-bottom: 12px; }
-    .iceberg-card, .action-card, .proposal-card {
-      background: #f9f9f9; border: 1px solid #ccc; border-radius: 6px;
-      padding: 10px 14px; margin-bottom: 10px; page-break-inside: avoid;
-    }
-    .layer-label, .action-card h3, .proposal-card h3 { color: #333 !important; }
-    .layer-text, .action-text, .proposal-text, .analysis-text { color: #000; }
-    .print-date { display: block !important; font-size: 0.8rem; color: #666; margin-bottom: 16px; }
-  }
-  .print-date { display: none; }
-
-  /* ── 比較選択 ── */
-  .hist-item.selected { border-color: var(--accent); background: rgba(206,147,216,0.08); }
-  .hist-check { width: 22px; height: 22px; border: 2px solid var(--border); border-radius: 5px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; transition: all 0.2s; }
-  .hist-check.checked { border-color: var(--accent); background: var(--accent); color: #1a0029; }
-  .hist-group-label { font-size: 0.72rem; font-weight: 700; color: var(--sub); padding: 10px 0 4px; border-bottom: 1px solid var(--border); margin-bottom: 6px; }
-  .compare-toolbar { display: flex; align-items: center; gap: 8px; padding: 8px 0 10px; border-bottom: 1px solid var(--border); margin-bottom: 10px; }
-  .compare-hint { font-size: 0.75rem; color: var(--sub); flex: 1; }
-  .compare-mode-btn { padding: 6px 12px; background: transparent; border: 1px solid var(--border); color: var(--sub); border-radius: 8px; font-size: 0.75rem; cursor: pointer; white-space: nowrap; }
-  .compare-mode-btn.active { border-color: var(--accent); color: var(--accent); }
-  .compare-exec-btn { padding: 8px 14px; background: var(--accent); color: #1a0029; border: none; border-radius: 8px; font-size: 0.8rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
-  .compare-exec-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-
-  /* ── 比較モーダル ── */
-  .compare-modal { max-width: 680px; }
-  .compare-header-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
-  .compare-col-label { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 9px 12px; }
-  .compare-col-label .col-date { font-size: 0.8rem; color: var(--accent); font-weight: 700; }
-  .compare-col-label .col-meta { font-size: 0.7rem; color: var(--sub); margin-top: 2px; }
-  .compare-section { margin-bottom: 16px; }
-  .compare-section-title { font-size: 0.72rem; color: var(--sub); font-weight: 700; padding-bottom: 5px; border-bottom: 1px solid var(--border); margin-bottom: 8px; }
-  .compare-layer-label { font-size: 0.7rem; color: var(--sub); padding: 2px 0 3px; display: flex; align-items: center; gap: 6px; }
-  .compare-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px; }
-  .compare-cell { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; font-size: 0.82rem; line-height: 1.55; }
-  .compare-cell.changed { border-color: var(--accent3); background: rgba(255,183,77,0.06); }
-  .change-badge { display: inline-block; font-size: 0.62rem; font-weight: 700; padding: 1px 6px; border-radius: 10px; }
-  .change-badge.new { background: rgba(255,183,77,0.2); color: var(--accent3); }
-  .change-badge.same { background: rgba(143,163,184,0.12); color: var(--sub); }
-  @media (max-width: 480px) {
-    .compare-row { grid-template-columns: 1fr; }
-    .compare-header-grid { grid-template-columns: 1fr; }
-  }
-
-  /* ── 履歴モーダル ── */
-  .modal-overlay {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.62);
-    display: none; align-items: flex-start; justify-content: center;
-    z-index: 1000; padding: 40px 16px; overflow-y: auto;
-  }
-  .modal-overlay.active { display: flex; }
-  .modal-box {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); max-width: 560px; width: 100%; padding: 18px;
-  }
-  .modal-box h2 { font-size: 1rem; color: var(--accent); margin-bottom: 4px; }
-  .modal-sub { font-size: 0.75rem; color: var(--sub); margin-bottom: 14px; line-height: 1.5; }
-  .hist-item {
-    background: var(--card); border: 1px solid var(--border); border-radius: 8px;
-    padding: 11px 13px; margin-bottom: 9px; display: flex; align-items: center; gap: 10px;
-  }
-  .hist-main { flex: 1; cursor: pointer; min-width: 0; }
-  .hist-date { font-size: 0.82rem; color: var(--text); font-weight: 600; }
-  .hist-meta { font-size: 0.72rem; color: var(--sub); margin-top: 2px; }
-  .hist-root { font-size: 0.74rem; color: var(--sub); margin-top: 4px; line-height: 1.4; }
-  .hist-del {
-    background: transparent; border: 1px solid var(--border); color: var(--sub);
-    border-radius: 6px; width: 30px; height: 30px; cursor: pointer; flex-shrink: 0; font-size: 0.85rem;
-  }
-  .hist-del:hover { border-color: var(--danger); color: var(--danger); }
-  .hist-empty { text-align: center; color: var(--sub); padding: 24px 0; font-size: 0.85rem; }
-  .modal-close {
-    width: 100%; padding: 10px; margin-top: 8px; background: transparent;
-    border: 1px solid var(--border); color: var(--sub); border-radius: var(--radius); cursor: pointer;
-  }
-  .modal-close:hover { border-color: var(--sub); color: var(--text); }
-
-  /* ── ④ 利用規約同意・デモモード（ミツメル準拠／hibikiダークテーマ） ── */
-  .gate-overlay {
-    position: fixed; inset: 0; z-index: 1500;
-    background: rgba(8,12,18,0.94);
-    display: none; align-items: center; justify-content: center; padding: 20px;
-  }
-  .gate-overlay.consent { z-index: 1600; }
-  .gate-overlay.active { display: flex; }
-  .gate-card {
-    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
-    max-width: 420px; width: 100%; padding: 26px 22px; text-align: center;
-  }
-  .gate-card h2 { font-size: 1.2rem; color: var(--accent); margin-bottom: 12px; }
-  .gate-card p { font-size: 0.85rem; color: var(--sub); line-height: 1.75; margin-bottom: 16px; }
-  .gate-note {
-    font-size: 0.72rem; color: var(--sub); line-height: 1.7; text-align: left;
-    background: var(--card); border: 1px solid var(--border); border-radius: 8px;
-    padding: 11px 13px; margin-bottom: 18px;
-  }
-  .gate-input {
-    width: 100%; padding: 12px 16px; font-size: 1rem; font-family: inherit;
-    background: var(--card); border: 1px solid var(--border); border-radius: 8px; color: var(--text);
-    text-align: center; letter-spacing: 2px; margin-bottom: 8px; outline: none;
-  }
-  .gate-input:focus { border-color: var(--accent); }
-  .gate-badge {
-    display: inline-block; background: rgba(255,183,77,0.15); color: var(--accent3);
-    border: 1px solid var(--accent3); border-radius: 20px; padding: 3px 12px;
-    font-size: 0.7rem; letter-spacing: 1px; margin-bottom: 16px;
-  }
-  .gate-error { color: var(--danger); font-size: 0.75rem; margin: 2px 0 8px; display: none; }
-  .gate-btn {
-    width: 100%; padding: 12px; border-radius: var(--radius);
-    font-size: 0.95rem; font-weight: 700; cursor: pointer; margin-bottom: 8px; font-family: inherit;
-  }
-  .gate-btn-primary { background: var(--accent); color: #1a0029; border: none; }
-  .gate-btn-secondary { background: transparent; color: var(--sub); border: 1px solid var(--border); font-weight: 600; }
-  .gate-btn:hover { opacity: 0.88; }
-  .demo-badge-header {
-    background: rgba(255,183,77,0.15); color: var(--accent3); border: 1px solid var(--accent3);
-    border-radius: 20px; padding: 3px 10px; font-size: 0.7rem; letter-spacing: 1px; margin-left: 8px;
-  }
-
-  /* ── Phase 1: 左右分割レイアウト ── */
-  .drill-layout { display: flex; gap: 16px; align-items: flex-start; }
-  .drill-map-panel {
-    width: 196px; flex-shrink: 0;
-    background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
-    padding: 14px 12px; position: sticky; top: 16px;
-  }
-  .drill-qa-panel { flex: 1; min-width: 0; }
-  .map-panel-title { font-size: 0.8rem; font-weight: 700; color: var(--accent); margin-bottom: 12px; }
-  .map-layer-item {
-    display: flex; align-items: flex-start; gap: 8px;
-    padding: 8px 9px; border-radius: 8px; margin-bottom: 5px; transition: all 0.3s;
-    border: 1px solid transparent;
-  }
-  .map-layer-item.done { background: rgba(129,199,132,0.1); border-color: rgba(129,199,132,0.3); }
-  .map-layer-item.active { background: rgba(206,147,216,0.15); border-color: var(--accent); }
-  .map-layer-item.pending { opacity: 0.38; }
-  .map-layer-icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
-  .map-layer-body { flex: 1; min-width: 0; }
-  .map-layer-name { font-size: 0.76rem; font-weight: 700; line-height: 1.3; }
-  .map-layer-desc { font-size: 0.65rem; color: var(--sub); margin-top: 2px; }
-  .map-layer-check { color: var(--accent2); font-size: 0.78rem; flex-shrink: 0; margin-left: auto; padding-top: 2px; }
-  .map-now-label {
-    font-size: 0.68rem; color: var(--sub); text-align: center;
-    margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border);
-    line-height: 1.5;
-  }
-  @media (max-width: 640px) {
-    .drill-layout { flex-direction: column; }
-    .drill-map-panel { width: 100%; position: static; }
-    .map-layer-desc { display: none; }
-    .map-layer-item { padding: 6px 8px; margin-bottom: 3px; }
-  }
-
-  /* ── 個別支援計画モード ── */
-  .mode-selector { display: flex; gap: 8px; margin-bottom: 6px; }
-  .mode-btn { flex: 1; padding: 10px; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); color: var(--sub); font-size: 0.83rem; cursor: pointer; font-family: inherit; transition: all 0.2s; }
-  .mode-btn.active { background: rgba(206,147,216,0.12); border-color: var(--accent); color: var(--accent); font-weight: 700; }
-  .isp-header-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 15px 18px; margin-bottom: 12px; }
-  .isp-doc-title { font-size: 1.05rem; font-weight: 700; color: var(--accent); margin-bottom: 3px; }
-  .isp-doc-meta { font-size: 0.75rem; color: var(--sub); }
-  .isp-section { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 13px 15px; margin-bottom: 10px; }
-  .isp-section-label { font-size: 0.7rem; font-weight: 700; color: var(--accent2); margin-bottom: 8px; letter-spacing: 0.5px; }
-  .isp-value { font-size: 0.88rem; line-height: 1.7; }
-  .icf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .icf-cell { background: rgba(129,199,132,0.06); border: 1px solid rgba(129,199,132,0.2); border-radius: 8px; padding: 10px 12px; }
-  .icf-cell-label { font-size: 0.68rem; font-weight: 700; color: var(--accent2); margin-bottom: 5px; }
-  .icf-cell-text { font-size: 0.82rem; line-height: 1.6; }
-  .goal-card { border-radius: var(--radius); padding: 12px 14px; margin-bottom: 8px; }
-  .goal-long { background: rgba(206,147,216,0.08); border: 1px solid rgba(206,147,216,0.3); }
-  .goal-short { background: rgba(255,183,77,0.06); border: 1px solid rgba(255,183,77,0.25); }
-  .goal-label { font-size: 0.7rem; font-weight: 700; margin-bottom: 5px; }
-  .goal-long .goal-label { color: var(--accent); }
-  .goal-short .goal-label { color: var(--accent3); }
-  .goal-text { font-size: 0.88rem; line-height: 1.65; }
-  .support-list { display: flex; flex-direction: column; gap: 8px; }
-  .support-item { display: flex; gap: 10px; align-items: flex-start; }
-  .support-num { background: var(--accent2); color: #0f1923; font-size: 0.72rem; font-weight: 700; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
-  .support-text { font-size: 0.88rem; line-height: 1.65; }
-  @media (max-width: 480px) { .icf-grid { grid-template-columns: 1fr; } }
-  @media print {
-    #phase3 .print-btns, #phase3 .reset-btn { display: none !important; }
-  }
+@media(max-width:660px){
+  .split-layout{flex-direction:column;}
+  .matrix-panel{width:100%;max-height:none;position:static;border-right:none;border-bottom:1px solid var(--border);}
+  .analysis-panel{max-height:none;}
+  .cmp-grid{grid-template-columns:1fr;}
+}
+@media print{
+  header,.analyze-btn,.action-bar,.hdr-btn,.hdr-spacer{display:none!important;}
+  .split-layout{flex-direction:column;}
+  .matrix-panel,.analysis-panel{max-height:none;overflow:visible;width:100%;}
+  body{background:#fff;color:#000;}
+  .icf-cell,.ice-card,.domain-header{background:#f9f9f9!important;border-color:#ccc!important;}
+  .over,.modal-over,.gate{display:none!important;}
+}
 </style>
 </head>
 <body>
 
-<!-- ④ 利用規約同意モーダル（初回起動時） -->
-<div class="gate-overlay consent" id="consentGate">
+<!-- 同意ゲート -->
+<div class="gate active" id="consentGate">
   <div class="gate-card">
-    <div class="gate-badge">初回確認</div>
-    <h2>響（Hibiki）</h2>
-    <p>ご利用の前に、データの取り扱いをご確認ください。<br>「同意して始める」を押すことで同意したものとみなします。</p>
+    <h2>🔔 響（Hibiki）</h2>
+    <p>ご利用の前に、データの取り扱いをご確認ください。</p>
     <div class="gate-note">
-      ・入力された相談内容は、AI分析のため Anthropic（Claude API）へ送信されます。<br>
-      ・氏名など個人が特定される情報の入力はお控えください。<br>
-      ・APIキー・分析履歴は、お使いの端末内（localStorage）にのみ保存されます。<br>
-      ・本ツールは現場改善の参考用であり、結果の利用は自己責任となります。
+      ・入力内容はAI分析のためAnthropicへ送信されます。<br>
+      ・氏名など個人を特定できる情報の入力はお控えください。<br>
+      ・APIキー・データはお使いの端末（localStorage）にのみ保存されます。<br>
+      ・本ツールはアセスメントの補助用途です。結果の利用は自己責任でお願いします。
     </div>
-    <button class="gate-btn gate-btn-primary" onclick="giveConsent()">同意して始める</button>
+    <button class="gate-btn" onclick="giveConsent()">同意して始める</button>
   </div>
 </div>
 
-<!-- ④ デモモード：招待コード入力 -->
-<div class="gate-overlay" id="inviteGate">
-  <div class="gate-card">
-    <div class="gate-badge">DEMO MODE</div>
-    <h2>響（Hibiki）</h2>
-    <p>招待コードを入力すると、デモを5回までお試しいただけます。<br>コードは招待者からお受け取りください。</p>
-    <input type="text" class="gate-input" id="inviteCodeInput" placeholder="招待コードを入力" autocomplete="off" onkeydown="if(event.key==='Enter')submitInviteCode()">
-    <p id="inviteError" class="gate-error">招待コードが正しくありません。</p>
-    <button class="gate-btn gate-btn-primary" onclick="submitInviteCode()">確認する</button>
-    <button class="gate-btn gate-btn-secondary" onclick="useOwnApiKey()">🔑 APIキーで利用する</button>
-  </div>
-</div>
-
-<!-- ④ デモモード：回数上限 -->
-<div class="gate-overlay" id="limitGate">
-  <div class="gate-card">
-    <div class="gate-badge">DEMO 終了</div>
-    <h2>デモ体験終了</h2>
-    <p>デモのご利用は5回までです。<br><br>続けてお使いいただくには、AnthropicのAPIキー（「sk-ant-」で始まる文字列）の設定が必要です。<br>キーは <strong>console.anthropic.com</strong> で取得できます。</p>
-    <button class="gate-btn gate-btn-primary" onclick="useOwnApiKey()">🔑 APIキーを設定して使う</button>
-    <p style="font-size:0.7rem;color:var(--sub);margin-top:14px;">響をお試しいただきありがとうございます。<br>Fusion Partners 柴山靖章</p>
-  </div>
-</div>
-
+<!-- ヘッダー -->
 <header>
-  <div style="font-size:1.4rem">🔔</div>
+  <span style="font-size:1.2rem">🔔</span>
   <h1>響（Hibiki）</h1>
-  <span class="header-sub">なぜなぜ分析ツール</span>
-  <span id="apiStatus" class="api-status ng">APIキー未設定</span>
-  <button class="api-btn" onclick="showHistory()">📚 履歴</button>
-  <button class="api-btn" onclick="setApiKey()">🔑 APIキー</button>
+  <span id="personBadge" class="person-badge" style="display:none"></span>
+  <span id="phaseBadge" class="phase-badge" style="display:none"></span>
+  <div class="hdr-spacer"></div>
+  <span><span class="api-dot ng" id="apiDot"></span><span id="apiTxt" style="font-size:.7rem;color:var(--sub)">APIキー未設定</span></span>
+  <button class="hdr-btn grn" id="analyzeHdrBtn" style="display:none" onclick="generateAnalysis()">▶ 分析</button>
+  <button class="hdr-btn grn" id="saveHdrBtn" style="display:none" onclick="saveAssessment()">💾 保存</button>
+  <button class="hdr-btn" id="homeBtn" style="display:none" onclick="showPersonList()">🏠 一覧</button>
+  <button class="hdr-btn" onclick="setApiKey()">🔑 APIキー</button>
 </header>
 
-<div class="progress-wrap">
-  <div class="progress-steps" id="progressDots">
-    <div class="step-dot active" id="dot0"></div>
-    <div class="step-dot" id="dot1"></div>
-    <div class="step-dot" id="dot2"></div>
-    <div class="step-dot" id="dot3"></div>
-    <div class="step-dot" id="dot4"></div>
-    <div class="step-dot" id="dot5"></div>
-    <div class="step-dot" id="dot6"></div>
+<!-- Phase 0: 利用者一覧 -->
+<div class="phase active" id="phase0">
+  <div class="p0-wrap">
+    <div class="p0-title">🔔 響（Hibiki）</div>
+    <div class="p0-desc">ICFマトリクス × 氷山モデルで、利用者のアセスメントを積み重ねていきます。<br>利用者を選ぶか、新規作成してください。</div>
+    <div class="person-grid" id="personGrid"></div>
   </div>
-  <div class="progress-label" id="progressLabel">STEP 1 / 7 ─ 状況入力</div>
 </div>
 
-<main>
-
-  <!-- Phase 0: 情報入力 -->
-  <div class="phase active" id="phase0">
-    <span class="section-badge">STEP 1</span>
-    <div class="section-title">今、現場で何が起きていますか？</div>
-    <p class="section-desc">困っていること・気になっていることを、思ったまま話してください。<br>「なんで？」を5回繰り返して、問題の根っこまで掘り下げます。</p>
-
-    <div style="margin-bottom:18px">
-      <label style="font-size:0.82rem;color:var(--sub);display:block;margin-bottom:8px;">分析モードを選んでください</label>
-      <div class="mode-selector">
-        <button class="mode-btn active" id="modeOrgBtn" onclick="setMode('org')">🏔 現場・組織分析</button>
-        <button class="mode-btn" id="modeIspBtn" onclick="setMode('isp')">📋 個別支援計画</button>
+<!-- Phase 0b: 新規 / フェーズ選択 -->
+<div class="phase" id="phase0b">
+  <div class="p0b-wrap">
+    <div class="form-title" id="p0bTitle">新しい利用者を追加</div>
+    <div class="form-group" id="aliasGrp">
+      <label>対象者の呼び方（仮名・イニシャル等）</label>
+      <input type="text" id="aliasInput" placeholder="例：Aさん、田中様（仮名）">
+    </div>
+    <div class="form-group" id="orgGrp">
+      <label>施設名・事業所名（任意）</label>
+      <input type="text" id="orgInput" placeholder="例：〇〇介護老人保健施設">
+    </div>
+    <div class="form-group">
+      <label>アセスメントのフェーズ</label>
+      <div class="phase-options">
+        <label class="phase-option selected" id="pOpt1">
+          <input type="radio" name="ph" value="一次アセスメント" checked>
+          <div><div class="po-label">📋 一次アセスメント</div><div class="po-desc">初回・書類や観察をもとに仮説を立てる</div></div>
+        </label>
+        <label class="phase-option" id="pOpt2">
+          <input type="radio" name="ph" value="二次アセスメント">
+          <div><div class="po-label">🔍 二次アセスメント</div><div class="po-desc">面談後・仮説を検証し深掘りする</div></div>
+        </label>
+        <label class="phase-option" id="pOpt3">
+          <input type="radio" name="ph" value="PDCA更新">
+          <div><div class="po-label">🔄 PDCA更新</div><div class="po-desc">前回との比較・変化を記録する</div></div>
+        </label>
       </div>
     </div>
+    <button class="start-btn" onclick="startAssessment()">アセスメントを始める →</button>
+    <div class="back-link" onclick="showPersonList()">← 利用者一覧に戻る</div>
+  </div>
+</div>
 
-    <div class="info-form">
-      <div class="form-group">
-        <label>施設名・組織名（任意）</label>
-        <input type="text" id="orgName" placeholder="例：〇〇介護老人保健施設">
+<!-- Phase 1: メインアセスメント -->
+<div class="phase" id="phase1">
+  <div class="split-layout">
+    <div class="matrix-panel">
+      <div class="panel-title">📊 ICFマトリクス — タップしてコメント入力・トリアージ</div>
+      <div id="matrixContent"></div>
+    </div>
+    <div class="analysis-panel">
+      <div class="panel-title">🏔 氷山モデル + 支援計画</div>
+      <button class="analyze-btn" id="analyzeBtn" onclick="generateAnalysis()">▶ マトリクスを分析する</button>
+      <div id="analysisLoading" style="display:none" class="loading"><span class="dots">ICFデータを分析中</span></div>
+      <div id="icebergArea"><div class="ice-ph">左のマトリクスを入力して「分析する」を押してください。</div></div>
+      <div class="plan-sec" id="planArea" style="display:none">
+        <div class="plan-lbl">支援方針</div>
+        <div class="plan-txt" id="planPolicy"></div>
+        <div class="plan-lbl">本人の夢・強み（青セルより）</div>
+        <div class="plan-txt" id="planDreams"></div>
+        <div class="plan-lbl">推進項目</div>
+        <div class="act-list" id="planActions"></div>
+        <div class="plan-lbl">評価・見直し</div>
+        <div class="plan-txt" id="planEval"></div>
       </div>
-      <div class="form-group">
-        <label>あなたの役職</label>
-        <select id="role">
-          <option value="">選択してください</option>
-          <option value="管理者">管理者</option>
-          <option value="サービス提供責任者">サービス提供責任者</option>
-          <option value="リーダー・主任">リーダー・主任</option>
-          <option value="現場スタッフ">現場スタッフ</option>
-          <option value="経営者">経営者</option>
-          <option value="その他">その他</option>
-        </select>
+      <div class="action-bar">
+        <button class="act-btn save" onclick="saveAssessment()">💾 保存</button>
+        <button class="act-btn pdca" id="pdcaBtn" style="display:none" onclick="showPdcaComparison()">🔄 前回と比較</button>
+        <button class="act-btn" onclick="downloadPdf()">📄 PDF</button>
+        <button class="act-btn" onclick="window.print()">🖨 印刷</button>
       </div>
-      <div class="form-group">
-        <label id="initialInputLabel">今、現場で一番困っていること</label>
-        <div class="voice-input-wrap">
-          <textarea id="initialInput" placeholder="例：スタッフが報告を上げてこない。何度言っても改善しない。なぜそうなっているのかわからない。"></textarea>
-          <!-- ── 音声入力ボタン（プレースホルダー）──
-               ここに音声入力APIを追加する
-               実装例（Web Speech API）:
-               voiceBtn.onclick = () => {
-                 const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-                 rec.lang = 'ja-JP'; rec.interimResults = false;
-                 rec.onresult = e => { initialInput.value += e.results[0][0].transcript; };
-                 rec.start();
-               };
-          -->
-          <button class="voice-btn" id="voiceBtnInit" title="音声入力（準備中）" onclick="alertVoiceNotReady()">🎤</button>
-        </div>
-        <div class="voice-hint">🎤 音声入力は近日対応予定です</div>
-      </div>
-      <button class="start-btn" id="startBtn" onclick="startDrill()">掘り下げを始める →</button>
     </div>
   </div>
+</div>
 
-  <!-- Phase 1: 氷山ドリル -->
-  <div class="phase" id="phase1">
-    <div class="drill-layout">
-
-      <!-- 左パネル: 全体マップ（常に表示） -->
-      <div class="drill-map-panel">
-        <div class="map-panel-title" id="mapPanelTitle">🏔 氷山モデル</div>
-        <div id="mapLayersList"></div>
-        <div class="map-now-label" id="mapNowLabel"></div>
-      </div>
-
-      <!-- 右パネル: 質問・回答エリア -->
-      <div class="drill-qa-panel">
-        <span class="section-badge" id="drillBadge">STEP 2</span>
-        <div class="section-title" id="drillTitle">なんでそうなってるの？（1回目）</div>
-        <div class="drill-round">掘り下げ <span id="roundNum">1</span> / 5</div>
-
-        <!-- JS互換性保持のため非表示で保持 -->
-        <div class="iceberg-visual" style="display:none">
-          <div class="iceberg-layer" id="iceLayer0"></div>
-          <div class="iceberg-layer" id="iceLayer1"></div>
-          <div class="iceberg-layer" id="iceLayer2"></div>
-          <div class="iceberg-layer" id="iceLayer3"></div>
-          <div class="iceberg-layer" id="iceLayer4"></div>
-        </div>
-
-        <div id="errorMsg" class="error-msg" style="display:none"></div>
-
-        <div id="summaryBox" class="summary-box" style="display:none">
-          <strong>ここまで分かったこと：</strong><br>
-          <span id="summaryText"></span>
-        </div>
-
-        <div class="ai-bubble" id="aiBubble">
-          <div class="ai-label">🔔 響</div>
-          <div class="ai-text" id="aiQuestion"><span class="loading-dots">考えています</span></div>
-        </div>
-
-        <div class="answer-area" id="answerArea" style="display:none">
-          <textarea id="drillAnswer" placeholder="思ったまま答えてください。短くても大丈夫です。"></textarea>
-          <button class="voice-btn" title="音声入力（準備中）" onclick="alertVoiceNotReady()">🎤</button>
-        </div>
-
-        <button class="next-btn" id="nextBtn" style="display:none" onclick="nextRound()">次へ →</button>
-        <button class="next-btn" id="backBtn" style="display:none;margin-top:8px;background:transparent;border:1px solid var(--border);color:var(--sub);" onclick="goBackToPrevQuestion()">← 前の質問に戻る</button>
-        <button class="reset-btn" id="drillResetBtn" style="margin-top:8px;" onclick="resetAll()">↩ 最初からやり直す</button>
-      </div>
-
+<!-- セル編集モーダル -->
+<div class="over" id="cellOver">
+  <div class="cell-modal">
+    <div class="cm-dom" id="cmDom"></div>
+    <div class="cm-lbl" id="cmLbl"></div>
+    <textarea class="cm-ta" id="cmTa" placeholder="観察・記録・気になること（任意）"></textarea>
+    <div class="tri-row">
+      <button class="tri-btn tr" id="triR" onclick="setTri('red')">🔴 リスク</button>
+      <button class="tri-btn tb" id="triB" onclick="setTri('blue')">🔵 強み</button>
+      <button class="tri-btn tn" id="triN" onclick="setTri('none')">⬜ 未分類</button>
+    </div>
+    <div class="cm-btns">
+      <button class="cm-save" onclick="saveCellEdit()">保存</button>
+      <button class="cm-cancel" onclick="closeCellEdit()">キャンセル</button>
     </div>
   </div>
+</div>
 
-  <!-- Phase 2: 出力 -->
-  <div class="phase" id="phase2">
-    <span class="section-badge">分析完了</span>
-    <div class="section-title">問題の根っこ分析 ＋ やることリスト</div>
-    <p class="section-desc" style="margin-bottom:16px">2つの視点で結果を出しています。切り替えてご確認ください。</p>
-    <div class="print-date" id="printDate"></div>
-
-    <div class="output-tabs">
-      <div class="out-tab active" id="tabIceberg" onclick="switchTab('iceberg')">🏔 問題の根っこ</div>
-      <div class="out-tab" id="tabField" onclick="switchTab('field')">👷 現場向け</div>
-      <div class="out-tab" id="tabPlanner" onclick="switchTab('planner')">📋 管理者向け</div>
-    </div>
-
-    <div class="out-panel active" id="panelIceberg">
-      <div class="iceberg-card layer-surface">
-        <div class="layer-label">🌊 今、見えていること</div>
-        <div class="layer-text" id="outSurface"></div>
-      </div>
-      <div class="iceberg-card layer-pattern">
-        <div class="layer-label">🔄 繰り返しているくせ・傾向</div>
-        <div class="layer-text" id="outPattern"></div>
-      </div>
-      <div class="iceberg-card layer-structure">
-        <div class="layer-label">🏗 組織の仕組みの問題</div>
-        <div class="layer-text" id="outStructure"></div>
-      </div>
-      <div class="iceberg-card layer-mental">
-        <div class="layer-label">💭 思い込み・慣習</div>
-        <div class="layer-text" id="outMental"></div>
-      </div>
-      <div class="iceberg-card layer-root">
-        <div class="layer-label">🎯 本当の原因（根っこ）</div>
-        <div class="layer-text" id="outRoot"></div>
-      </div>
-    </div>
-
-    <div class="out-panel" id="panelField">
-      <div class="action-card">
-        <h3>👷 明日からやること</h3>
-        <div id="fieldActions"></div>
-      </div>
-    </div>
-
-    <div class="out-panel" id="panelPlanner">
-      <div class="proposal-card">
-        <h3>📋 組織の仕組みを変えるために</h3>
-        <div class="analysis-text" id="plannerAnalysis"></div>
-        <div id="plannerProposals"></div>
-      </div>
-    </div>
-
-    <div class="print-btns">
-      <button class="print-btn print-btn-pdf" id="pdfBtn" onclick="downloadPdf()">📄 PDFで保存</button>
-      <button class="print-btn print-btn-print" onclick="printDoc()">🖨 印刷する</button>
-    </div>
-    <p style="font-size:0.75rem;color:var(--sub);text-align:center;margin-top:10px;">この分析結果は、現場改善の参考としてご自由にシェアいただけます。</p>
-    <button class="reset-btn" onclick="resetAll()">↩ 最初からやり直す</button>
-  </div>
-
-  <!-- Phase 3: 個別支援計画書 -->
-  <div class="phase" id="phase3">
-    <span class="section-badge">個別支援計画書</span>
-    <div class="section-title">ICF×氷山モデルによる個別支援計画書</div>
-    <p class="section-desc" style="margin-bottom:14px">会話内容をもとにAIが作成した支援計画書の草案です。内容を確認・修正の上、ご活用ください。</p>
-
-    <div class="isp-header-card">
-      <div class="isp-doc-title">📋 個別支援計画書</div>
-      <div class="isp-doc-meta" id="ispDocMeta">作成日：─</div>
-    </div>
-
-    <div class="isp-section">
-      <div class="isp-section-label">🔍 現状の整理</div>
-      <div class="isp-value" id="ispSituation"></div>
-    </div>
-
-    <div class="isp-section">
-      <div class="isp-section-label">📊 ICF 4軸分析</div>
-      <div class="icf-grid">
-        <div class="icf-cell">
-          <div class="icf-cell-label">🌐 参加</div>
-          <div class="icf-cell-text" id="ispParticipation"></div>
-        </div>
-        <div class="icf-cell">
-          <div class="icf-cell-label">⚡ 活動</div>
-          <div class="icf-cell-text" id="ispActivity"></div>
-        </div>
-        <div class="icf-cell">
-          <div class="icf-cell-label">🧠 心身機能</div>
-          <div class="icf-cell-text" id="ispBody"></div>
-        </div>
-        <div class="icf-cell">
-          <div class="icf-cell-label">🏘 環境因子</div>
-          <div class="icf-cell-text" id="ispEnvironment"></div>
-        </div>
-      </div>
-    </div>
-
-    <div class="isp-section">
-      <div class="isp-section-label">🎯 目標設定</div>
-      <div class="goal-card goal-long">
-        <div class="goal-label">長期目標（6ヶ月後の目指す姿）</div>
-        <div class="goal-text" id="ispLongGoal"></div>
-      </div>
-      <div class="goal-card goal-short">
-        <div class="goal-label">短期目標①（1ヶ月）</div>
-        <div class="goal-text" id="ispShortGoal1"></div>
-      </div>
-      <div class="goal-card goal-short">
-        <div class="goal-label">短期目標②（2〜3ヶ月）</div>
-        <div class="goal-text" id="ispShortGoal2"></div>
-      </div>
-    </div>
-
-    <div class="isp-section">
-      <div class="isp-section-label">🤝 支援内容</div>
-      <div class="support-list">
-        <div class="support-item">
-          <span class="support-num">1</span>
-          <span class="support-text" id="ispSupport1"></span>
-        </div>
-        <div class="support-item">
-          <span class="support-num">2</span>
-          <span class="support-text" id="ispSupport2"></span>
-        </div>
-        <div class="support-item">
-          <span class="support-num">3</span>
-          <span class="support-text" id="ispSupport3"></span>
-        </div>
-      </div>
-    </div>
-
-    <div class="isp-section">
-      <div class="isp-section-label">📅 評価・見直し</div>
-      <div class="isp-value" id="ispEvaluation"></div>
-    </div>
-
-    <div class="print-btns">
-      <button class="print-btn print-btn-pdf" onclick="downloadIspPdf()">📄 PDFで保存</button>
-      <button class="print-btn print-btn-print" onclick="printDoc()">🖨 印刷する</button>
-    </div>
-    <p style="font-size:0.75rem;color:var(--sub);text-align:center;margin-top:10px;">AIによる草案です。最終確認・修正は担当スタッフが行ってください。</p>
-    <button class="reset-btn" onclick="resetAll()">↩ 最初からやり直す</button>
-  </div>
-
-</main>
-
-<!-- 履歴モーダル -->
-<div class="modal-overlay" id="historyModal">
+<!-- PDCA比較モーダル -->
+<div class="modal-over" id="pdcaModal">
   <div class="modal-box">
-    <h2>📚 分析履歴</h2>
-    <div class="modal-sub" id="histModalSub">この端末に保存された過去の分析結果です（最大50件）。</div>
-    <div id="historyList"></div>
-    <button class="modal-close" onclick="closeHistory()">閉じる</button>
+    <h2>🔄 PDCA比較</h2>
+    <div class="modal-sub" id="pdcaSub"></div>
+    <div id="chgSummary" style="display:none">
+      <div class="chg-card">
+        <div class="chg-lbl">✨ 変化サマリー（AI）</div>
+        <div class="chg-txt" id="chgTxt"></div>
+      </div>
+    </div>
+    <div class="cmp-grid" id="cmpContent"></div>
+    <button class="modal-close" onclick="closePdcaModal()">閉じる</button>
   </div>
 </div>
 
-<!-- 比較モーダル -->
-<div class="modal-overlay" id="compareModal">
-  <div class="modal-box compare-modal">
-    <h2>🔍 分析結果の比較</h2>
-    <div class="modal-sub" id="compareSubTitle"></div>
-    <div id="compareContent"></div>
-    <button class="modal-close" onclick="closeCompare()">← 履歴に戻る</button>
-  </div>
-</div>
+<div id="toast"></div>
 
 <script>
-// ── APIキー管理 ──
+// ── ICF定義 ──
+const ICF_DOMAINS = [
+  {id:'health',label:'① 健康状態・医療',icon:'🏥',cells:['現疾患・内服管理','医療的ケア','聴力・視力・感覚','疼痛・浮腫・倦怠感']},
+  {id:'body',label:'② 心身機能',icon:'🧠',cells:['ADL（立ち上がり・移動）','排泄・入浴・食事','認知機能・記憶・判断','精神・意欲・睡眠']},
+  {id:'activity',label:'③ 活動',icon:'⚡',cells:['家事・IADL（炊事・洗濯）','買い物・財産管理','服薬管理・セルフケア','外出・移動手段']},
+  {id:'participation',label:'④ 参加',icon:'🌐',cells:['家族・近所との交流','コミュニティ参加','趣味・余暇活動','就労・社会的役割']},
+  {id:'environment',label:'⑤ 環境因子',icon:'🏘',cells:['家族サポート状況','経済状況・制度利用','住環境・物理的環境','サービス体制・連携']},
+  {id:'personal',label:'⑥ 個人因子',icon:'✨',cells:['価値観・意思・信念','生い立ち・職業歴','強み・得意なこと','本人の夢・希望・不安']},
+];
+
+// ── 状態 ──
 let apiKey = localStorage.getItem('hibiki_api_key') || '';
+let currentPersonId = null;
+let currentPhase = '';
+let cells = {};
+let currentIceberg = null;
+let currentPlan = null;
+let editCell = null;
+let editTri = 'none';
+
+// ── APIキー ──
 updateApiStatus();
-
 function updateApiStatus() {
-  const el = document.getElementById('apiStatus');
-  if (apiKey) { el.textContent = 'APIキー設定済'; el.className = 'api-status ok'; }
-  else { el.textContent = 'APIキー未設定'; el.className = 'api-status ng'; }
+  const dot = document.getElementById('apiDot'), txt = document.getElementById('apiTxt');
+  if (apiKey) { dot.className = 'api-dot ok'; txt.textContent = 'APIキー設定済'; }
+  else { dot.className = 'api-dot ng'; txt.textContent = 'APIキー未設定'; }
 }
-
 function setApiKey() {
-  const k = prompt('AnthropicのAPIキーを入力してください（sk-ant-...）\n\n取得：console.anthropic.com → API Keys\n\n現在：' + (apiKey ? apiKey.substring(0,12)+'...' : '未設定'));
-  if (k && k.startsWith('sk-ant-')) {
+  const k = prompt('AnthropicのAPIキーを入力（sk-ant-...）\n現在：' + (apiKey ? apiKey.substring(0,14)+'...' : '未設定'));
+  if (k && k.trim().startsWith('sk-ant-')) {
     apiKey = k.trim();
     localStorage.setItem('hibiki_api_key', apiKey);
     updateApiStatus();
   } else if (k !== null) {
-    alert('キーの形式が正しくありません。「sk-ant-」で始まるキーを入力してください。');
+    alert('形式が正しくありません（sk-ant-で始まるキーを入力）');
   }
 }
 
-// ── 音声入力プレースホルダー ──
-// ここに音声入力の初期化処理を追加する
-function alertVoiceNotReady() {
-  alert('音声入力は近日対応予定です。\nテキストで入力してください。');
-}
+// ── 同意 ──
+function hasConsent() { return !!localStorage.getItem('hibiki_consent'); }
+function giveConsent() { localStorage.setItem('hibiki_consent','1'); document.getElementById('consentGate').classList.remove('active'); }
+function checkConsent() { if (!hasConsent()) document.getElementById('consentGate').classList.add('active'); }
 
-// ── 状態管理 ──
-let round = 0;
-const MAX_ROUNDS = 5;
-let conversation = []; // { role: 'user'|'assistant', content: string }
-let initialText = '';
-let orgName = '';
-let userRole = '';
+// ── persons ──
+function loadPersons() { return JSON.parse(localStorage.getItem('hibiki_persons') || '[]'); }
+function savePersons(p) { localStorage.setItem('hibiki_persons', JSON.stringify(p)); }
+function getPerson(id) { return loadPersons().find(p => p.id === id); }
 
-// 掘り下げ段階のラベル（表示用）
-const icebergLabels = ['出来事を確認', '繰り返しを探る', '仕組みを見る', '思い込みへ', '根っこに到達'];
-
-// ── プログレス更新 ──
-function updateProgress(step) {
-  for (let i = 0; i <= 6; i++) {
-    const dot = document.getElementById('dot' + i);
-    if (i < step) dot.className = 'step-dot done';
-    else if (i === step) dot.className = 'step-dot active';
-    else dot.className = 'step-dot';
-  }
-  const labels = ['状況入力', '1回目', '2回目', '3回目', '4回目', '5回目', '結果表示'];
-  document.getElementById('progressLabel').textContent = `STEP ${step + 1} / 7 ─ ${labels[step]}`;
-}
-
-// ── Claude API呼び出し（SSEストリーミング）──
-// onChunk(currentText): チャンク到着ごとに呼ばれるコールバック（省略可）
-async function callClaude(messages, systemPrompt, maxTokens = 1024, onChunk = null) {
-  // ④ デモモード：実APIを呼ばずサンプル応答を返す
-  if (demoActive && !apiKey) {
-    return await demoResponse(maxTokens, onChunk);
-  }
-  if (!apiKey) { setApiKey(); if (!apiKey) throw new Error('APIキーが設定されていません'); }
-
-  const controller = new AbortController();
-  // 120秒タイムアウト（ストリーミングなので延長）
-  const timer = setTimeout(() => controller.abort(), 120000);
-
-  let res;
-  try {
-    res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      signal: controller.signal,
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-6', max_tokens: maxTokens,
-        stream: true,  // SSEストリーミングを有効化
-        system: systemPrompt, messages
-      })
-    });
-  } catch (err) {
-    clearTimeout(timer);
-    if (err.name === 'AbortError') throw new Error('タイムアウトしました。通信環境を確認してもう一度試してください。');
-    throw new Error('通信エラー: ' + err.message);
-  }
-
-  if (!res.ok) {
-    clearTimeout(timer);
-    const errBody = await res.json().catch(() => ({}));
-    const detail = errBody.error?.message || '';
-    throw new Error(`APIエラー (${res.status})${detail ? ': ' + detail : ''}`);
-  }
-
-  // SSEチャンクを逐次読み込む
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder();
-  let fullText = '';
-  let buffer = '';
-
-  try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      // ブラウザにUIを更新する機会を毎チャンク与える（フリーズ防止の核心）
-      await new Promise(r => setTimeout(r, 0));
-
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop(); // 末尾の未完成行は次のチャンクへ持ち越す
-
-      for (const line of lines) {
-        if (!line.startsWith('data: ')) continue;
-        const payload = line.slice(6).trim();
-        if (!payload || payload === '[DONE]') continue;
-        try {
-          const evt = JSON.parse(payload);
-          if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
-            fullText += evt.delta.text;
-            if (onChunk) onChunk(fullText);
-          }
-        } catch { /* malformed JSON は無視 */ }
-      }
-    }
-  } finally {
-    clearTimeout(timer);
-    reader.releaseLock();
-  }
-
-  if (!fullText) throw new Error('AIから応答がありませんでした');
-  return fullText;
-}
-
-// ── システムプロンプト ──
-function buildSystemPrompt() {
-  return `あなたは医療・福祉現場の組織分析の専門家「響（Hibiki）」です。
-役割：${userRole || '管理職'}の方が話す「現場の困りごと」を起点に、「なんでそうなっているのか？」を繰り返し掘り下げて問題の根っこを見つけます。
-
-【掘り下げの階層】
-①今、見えていること: 目に見える出来事・行動
-②繰り返しているくせ・傾向: 同じことが何度も起きていないか
-③組織の仕組みの問題: 制度・役割・流れの問題
-④思い込み・慣習: 「当たり前」になっている信念や文化
-⑤本当の原因: 根っこにある本質的な問題
-
-【ルール】
-- 質問は1つだけ。短く。現場の言葉で。
-- 「なぜ〜なのでしょうか？」ではなく「なんで〜なんですか？」という口調で
-- 相手の言葉をまず受け止めてから掘り下げる
-- 責めるような言い方はしない
-- 1文で状況を要約してから次の質問を投げる
-- 出力形式: 「（要約1文）\n\nなんで〜なんですか？」`;
-}
-
-// ── ドリル開始 ──
-async function startDrill() {
-  initialText = document.getElementById('initialInput').value.trim();
-  orgName = document.getElementById('orgName').value.trim();
-  userRole = document.getElementById('role').value;
-
-  if (!initialText) { alert('困っていることを入力してください。'); return; }
-
-  document.getElementById('startBtn').disabled = true;
-  showPhase('phase1');
-  round = 0;
-  conversation = [];
-  updateMapPanel(0);
-  updateProgress(1);
-
-  // 最初のユーザー発言をセット
-  const firstMsg = (orgName ? `【${orgName}】` : '') + `【${userRole || '管理職'}】\n\n${initialText}`;
-  conversation.push({ role: 'user', content: firstMsg });
-
-  await askNextQuestion();
-}
-
-// ── 次の質問を取得 ──
-async function askNextQuestion() {
-  const questionEl = document.getElementById('aiQuestion');
-  const answerArea = document.getElementById('answerArea');
-  const nextBtn = document.getElementById('nextBtn');
-  const errorEl = document.getElementById('errorMsg');
-
-  errorEl.style.display = 'none';
-  answerArea.style.display = 'none';
-  nextBtn.style.display = 'none';
-  nextBtn.disabled = false;
-  document.getElementById('backBtn').style.display = 'none';
-
-  // 経過時間カウンター（BUG-002対応：長い待機をフリーズと誤認させない）
-  let elapsed = 0;
-  const loadTimer = setInterval(() => {
-    elapsed++;
-    const msg = elapsed < 10 ? '考えています' : `考えています（${elapsed}秒）`;
-    const hint = elapsed >= 20 ? '<br><span style="font-size:0.75rem;color:var(--sub)">AIが深く考えています。もう少しお待ちください。</span>' : '';
-    questionEl.innerHTML = `<span class="loading-dots">${msg}</span>${hint}`;
-  }, 1000);
-  questionEl.innerHTML = '<span class="loading-dots">考えています</span>';
-
-  // 氷山ビジュアル更新
-  for (let i = 0; i < 5; i++) {
-    document.getElementById('iceLayer' + i).className = 'iceberg-layer' + (i < round ? ' lit-' + i : '');
-  }
-
-  document.getElementById('drillBadge').textContent = `STEP ${round + 2}`;
-  document.getElementById('drillTitle').textContent = currentMode === 'isp'
-    ? `ICF掘り下げ（${round + 1}回目）`
-    : `なんでそうなってるの？（${round + 1}回目）`;
-  document.getElementById('roundNum').textContent = round + 1;
-  updateMapPanel(round);
-
-  // サマリー表示（2回目以降）
-  if (round > 0 && conversation.length >= 2) {
-    const lastAssistant = conversation.filter(m => m.role === 'assistant').slice(-1)[0];
-    if (lastAssistant) {
-      document.getElementById('summaryText').textContent = lastAssistant.content.split('\n')[0];
-      document.getElementById('summaryBox').style.display = 'block';
-    }
-  }
-
-  // DOM更新をブラウザに描画させてからfetchを開始する（フリーズ防止）
-  await new Promise(r => setTimeout(r, 0));
-
-  try {
-    const reply = await callClaude(conversation, currentMode === 'isp' ? buildIspSystemPrompt() : buildSystemPrompt(), 1024, (text) => {
-      clearInterval(loadTimer);
-      questionEl.textContent = text;
-    });
-    clearInterval(loadTimer);
-    conversation.push({ role: 'assistant', content: reply });
-
-    questionEl.textContent = reply;
-    document.getElementById('drillAnswer').value = '';
-    answerArea.style.display = 'block';
-    // ① 通常時も「前の質問に戻る」を常時表示（1回目＝round0は戻れないので非表示）
-    document.getElementById('backBtn').style.display = round > 0 ? 'block' : 'none';
-    nextBtn.disabled = false;
-    nextBtn.style.display = 'block';
-    nextBtn.textContent = round < MAX_ROUNDS - 1 ? '次へ →' : '結果を見る →';
-    nextBtn.onclick = nextRound;
-    document.getElementById('drillAnswer').focus();
-  } catch (e) {
-    clearInterval(loadTimer);
-    errorEl.textContent = 'エラー: ' + e.message;
-    errorEl.style.display = 'block';
-    questionEl.textContent = 'AIへの接続に失敗しました。';
-    nextBtn.disabled = false;
-    nextBtn.textContent = 'もう一度試す';
-    nextBtn.style.display = 'block';
-    nextBtn.onclick = askNextQuestion;
-    document.getElementById('backBtn').style.display = round > 0 ? 'block' : 'none';
-  }
-}
-
-// ── 次ラウンドへ ──
-async function nextRound() {
-  const answer = document.getElementById('drillAnswer').value.trim();
-  if (!answer) { alert('回答を入力してください。'); return; }
-
-  // クリック直後にボタンを封鎖（二重クリック・CDPフリーズ防止）
-  const nextBtn = document.getElementById('nextBtn');
-  nextBtn.disabled = true;
-  nextBtn.textContent = '送信中...';
-  nextBtn.onclick = nextRound;
-
-  conversation.push({ role: 'user', content: answer });
-  round++;
-
-  if (round >= MAX_ROUNDS) {
-    updateProgress(6);
-    if (currentMode === 'isp') { await generateISP(); } else { await generateOutput(); }
-  } else {
-    updateProgress(round + 1);
-    await askNextQuestion();
-  }
-}
-
-// ── JSONパース試行ヘルパー ──
-function tryParseFlat(raw) {
-  try {
-    let jsonStr = raw;
-    const blockMatch = raw.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-    if (blockMatch) jsonStr = blockMatch[1];
-    const objMatch = jsonStr.match(/\{[\s\S]*\}/);
-    if (!objMatch) return null;
-    // 文字列値内の改行・タブを空白に置換（JSON.parseは生の改行を受け付けない）
-    const cleaned = objMatch[0].replace(/[\r\n\t]+/g, ' ');
-    const flat = JSON.parse(cleaned);
-    // 必須キーがあるか確認
-    if (!flat.surface || !flat.root || !flat.action1) return null;
-    return flat;
-  } catch { return null; }
-}
-
-// ── プレーンテキストをセクションごとにパース ──
-function parsePlainTextResult(raw) {
-  const get = (label) => {
-    const re = new RegExp('【' + label + '】\\s*([\\s\\S]*?)(?=【|$)');
-    const m = raw.match(re);
-    return m ? m[1].trim().replace(/\n+/g, ' ') : '（分析データなし）';
-  };
-  return {
-    iceberg: {
-      surface:      get('今見えていること'),
-      pattern:      get('繰り返しているくせ・傾向'),
-      structure:    get('組織の仕組みの問題'),
-      mental_model: get('思い込み・慣習'),
-      root:         get('本当の原因')
-    },
-    field_actions: [
-      get('明日からやること①'),
-      get('明日からやること②'),
-      get('明日からやること③')
-    ],
-    planner: {
-      analysis: get('なぜこの組織で起きているか'),
-      proposals: [
-        get('仕組み・ルールで変えること'),
-        get('話し合い・情報共有の場を変えること'),
-        get('半年〜1年の組織づくり')
-      ]
-    }
-  };
-}
-
-// ── 最終出力生成（①JSONリトライ → ②プレーンテキストフォールバック）──
-async function generateOutput() {
-  showPhase('phase1');
-  document.getElementById('aiQuestion').innerHTML = '<span class="loading-dots">問題の根っこを分析中</span>';
-  document.getElementById('answerArea').style.display = 'none';
-  document.getElementById('nextBtn').style.display = 'none';
-  document.getElementById('summaryBox').style.display = 'none';
-
-  const summaryConv = [{ role: 'user', content: conversation.map(m => `[${m.role}] ${m.content}`).join('\n\n') }];
-
-  // ── プロンプトA：JSONモード（特殊文字を避けるよう強化）──
-  const jsonPrompt = `あなたは医療・福祉現場の組織分析の専門家です。
-以下の会話から分析結果を生成してください。
-
-【絶対に守るルール】
-- 出力はJSONのみ。前後に文章・説明・コードブロック記号（\`\`\`）は一切書かない
-- 各値は1行で（改行・タブを入れない）
-- 値の中にダブルクォート（"）を使わない。使いたい場合は「」で代替する
-- 値の中にバックスラッシュ（\\）を使わない
-- コロン（:）は文末に使わない（「〜すること」「〜を行う」で締める）
-
-{"surface":"今見えていること（1〜2文）","pattern":"繰り返しているくせや傾向（1〜2文）","structure":"組織の仕組みの問題（1〜2文）","mental_model":"思い込みや慣習（1〜2文）","root":"本当の原因を1文で","action1":"明日の朝礼で伝えること","action2":"今週中に手を動かしてやること","action3":"関係者への関わり方で変えること","analysis":"なぜこの組織でこれが起きているか（3〜4文）","proposal1":"仕組みやルールで変えること","proposal2":"話し合いや情報共有の場を変えること","proposal3":"半年〜1年かけて取り組む組織づくり"}`;
-
-  // ── プロンプトB：プレーンテキストフォールバック ──
-  const plainPrompt = `あなたは医療・福祉現場の組織分析の専門家です。
-以下の会話から分析結果を生成してください。
-各セクションを【】の見出しのあとに改行して書いてください。
-
-【今見えていること】
-（1〜2文）
-
-【繰り返しているくせ・傾向】
-（1〜2文）
-
-【組織の仕組みの問題】
-（1〜2文）
-
-【思い込み・慣習】
-（1〜2文）
-
-【本当の原因】
-（1文で）
-
-【明日からやること①】
-（明日の朝礼で伝えること）
-
-【明日からやること②】
-（今週中に手を動かしてやること）
-
-【明日からやること③】
-（関係者への関わり方で変えること）
-
-【なぜこの組織で起きているか】
-（3〜4文）
-
-【仕組み・ルールで変えること】
-（具体的な提案）
-
-【話し合い・情報共有の場を変えること】
-（具体的な提案）
-
-【半年〜1年の組織づくり】
-（長期的な取り組み）`;
-
-  // ── 試行①：JSON（1回目）──
-  document.getElementById('aiQuestion').innerHTML = '<span class="loading-dots">分析中（1/3）</span>';
-  try {
-    const raw1 = await callClaude(summaryConv, jsonPrompt, 4096);
-    const flat1 = tryParseFlat(raw1);
-    if (flat1) { _renderAndShow(flat1); return; }
-  } catch { /* fall through */ }
-
-  // ── 試行②：JSON（自動リトライ）──
-  document.getElementById('aiQuestion').innerHTML = '<span class="loading-dots">再分析中（2/3）</span>';
-  try {
-    const raw2 = await callClaude(summaryConv, jsonPrompt, 4096);
-    const flat2 = tryParseFlat(raw2);
-    if (flat2) { _renderAndShow(flat2); return; }
-  } catch { /* fall through */ }
-
-  // ── 試行③：プレーンテキストフォールバック ──
-  document.getElementById('aiQuestion').innerHTML = '<span class="loading-dots">別形式で分析中（3/3）</span>';
-  try {
-    const raw3 = await callClaude(summaryConv, plainPrompt, 4096);
-    const result3 = parsePlainTextResult(raw3);
-    renderOutput(result3);
-    saveToHistory(result3);
-    showPhase('phase2');
-    updateProgress(6);
-  } catch (e) {
-    document.getElementById('errorMsg').textContent = 'エラー: ' + e.message;
-    document.getElementById('errorMsg').style.display = 'block';
-    document.getElementById('aiQuestion').textContent = '出力の生成に失敗しました。';
-    const nextBtn = document.getElementById('nextBtn');
-    nextBtn.textContent = 'もう一度生成する';
-    nextBtn.style.display = 'block';
-    nextBtn.onclick = generateOutput;
-    document.getElementById('backBtn').style.display = 'block';
-  }
-}
-
-// ── フラットJSONをrenderOutputに渡す内部ヘルパー ──
-function _renderAndShow(flat) {
-  const result = {
-    iceberg: {
-      surface: flat.surface, pattern: flat.pattern,
-      structure: flat.structure, mental_model: flat.mental_model, root: flat.root
-    },
-    field_actions: [flat.action1, flat.action2, flat.action3],
-    planner: {
-      analysis: flat.analysis,
-      proposals: [flat.proposal1, flat.proposal2, flat.proposal3]
-    }
-  };
-  renderOutput(result);
-  saveToHistory(result);
-  showPhase('phase2');
-  updateProgress(6);
-}
-
-// ── 出力レンダリング ──
-function renderOutput(result) {
-  document.getElementById('outSurface').textContent = result.iceberg.surface;
-  document.getElementById('outPattern').textContent = result.iceberg.pattern;
-  document.getElementById('outStructure').textContent = result.iceberg.structure;
-  document.getElementById('outMental').textContent = result.iceberg.mental_model;
-  document.getElementById('outRoot').textContent = result.iceberg.root;
-
-  const fieldEl = document.getElementById('fieldActions');
-  fieldEl.innerHTML = result.field_actions.map((a, i) =>
-    `<div class="action-item"><div class="action-num">${i + 1}</div><div class="action-text">${a}</div></div>`
-  ).join('');
-
-  document.getElementById('plannerAnalysis').textContent = result.planner.analysis;
-  const plannerEl = document.getElementById('plannerProposals');
-  plannerEl.innerHTML = result.planner.proposals.map(p =>
-    `<div class="proposal-item"><div class="proposal-mark">▶</div><div class="proposal-text">${p}</div></div>`
-  ).join('');
-}
-
-// ── タブ切り替え ──
-function switchTab(name) {
-  ['iceberg', 'field', 'planner'].forEach(t => {
-    document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1)).classList.toggle('active', t === name);
-    document.getElementById('panel' + t.charAt(0).toUpperCase() + t.slice(1)).classList.toggle('active', t === name);
-  });
-}
-
-// ── フェーズ切り替え ──
+// ── フェーズ切替 ──
 function showPhase(id) {
-  ['phase0', 'phase1', 'phase2', 'phase3'].forEach(p => {
+  ['phase0','phase0b','phase1'].forEach(p => {
     document.getElementById(p).className = 'phase' + (p === id ? ' active' : '');
   });
+  const inA = id === 'phase1';
+  document.getElementById('homeBtn').style.display = inA ? 'inline-block' : 'none';
+  document.getElementById('saveHdrBtn').style.display = inA ? 'inline-block' : 'none';
+  document.getElementById('analyzeHdrBtn').style.display = inA ? 'inline-block' : 'none';
 }
 
-// ── リセット ──
-function resetAll() {
-  round = 0; conversation = []; initialText = ''; orgName = ''; userRole = '';
-  document.getElementById('initialInput').value = '';
-  document.getElementById('orgName').value = '';
-  document.getElementById('role').value = '';
-  document.getElementById('startBtn').disabled = false;
-  document.getElementById('errorMsg').style.display = 'none';
-  document.getElementById('summaryBox').style.display = 'none';
-  document.getElementById('nextBtn').onclick = nextRound;
-  document.getElementById('backBtn').style.display = 'none';
-  switchTab('iceberg');
+// ── 利用者一覧 ──
+function showPersonList() {
+  currentPersonId = null;
+  document.getElementById('personBadge').style.display = 'none';
+  document.getElementById('phaseBadge').style.display = 'none';
+  renderPersonList();
   showPhase('phase0');
-  updateProgress(0);
 }
 
-// ── 左パネル: 全体マップ ──
-const ORG_MAP_LAYERS = [
-  { icon: '🌊', name: '今、見えていること', desc: '出来事・行動（水面上）' },
-  { icon: '🔄', name: 'くせ・傾向', desc: '繰り返しているパターン' },
-  { icon: '🏗',  name: '仕組みの問題', desc: '制度・役割・フローの歪み' },
-  { icon: '💭', name: '思い込み・慣習', desc: '当たり前の信念・文化' },
-  { icon: '🎯', name: '本当の原因', desc: '根っこ（水面下の最深部）' },
-];
-const ISP_MAP_LAYERS = [
-  { icon: '🌐', name: '参加', desc: '社会生活・役割の制約' },
-  { icon: '⚡', name: '活動', desc: '日常の動作・作業の制限' },
-  { icon: '🧠', name: '心身機能', desc: '障害・疾患・機能低下' },
-  { icon: '🏘', name: '環境因子', desc: '促進・阻害する環境' },
-  { icon: '🎯', name: '根本的なニーズ', desc: '支援の核心' },
-];
-
-function updateMapPanel(currentRound) {
-  const layers = currentMode === 'isp' ? ISP_MAP_LAYERS : ORG_MAP_LAYERS;
-  const title = currentMode === 'isp' ? '📊 ICF 4軸マップ' : '🏔 氷山モデル';
-  document.getElementById('mapPanelTitle').textContent = title;
-  const listEl = document.getElementById('mapLayersList');
-  listEl.innerHTML = layers.map((layer, i) => {
-    const state = i < currentRound ? 'done' : i === currentRound ? 'active' : 'pending';
-    const check = state === 'done' ? '<span class="map-layer-check">✓</span>' : '';
-    return `<div class="map-layer-item ${state}">
-      <span class="map-layer-icon">${layer.icon}</span>
-      <div class="map-layer-body">
-        <div class="map-layer-name">${layer.name}</div>
-        <div class="map-layer-desc">${layer.desc}</div>
-      </div>${check}
+function renderPersonList() {
+  const persons = loadPersons();
+  let html = '';
+  persons.forEach(p => {
+    const cnt = p.assessments ? p.assessments.length : 0;
+    const lat = cnt > 0 ? p.assessments[cnt-1] : null;
+    html += `<div class="person-card" onclick="selectPerson('${p.id}')">
+      <div class="pc-alias">${esc(p.alias)}</div>
+      <div class="pc-org">${esc(p.orgName || '施設名なし')}</div>
+      <div class="pc-count">📋 ${cnt}件のアセスメント</div>
+      ${lat ? `<div class="pc-date">最終：${lat.date}</div>` : ''}
     </div>`;
-  }).join('');
-  const idx = Math.min(currentRound, layers.length - 1);
-  document.getElementById('mapNowLabel').textContent =
-    currentRound >= 5 ? '✓ 全層の掘り下げ完了' : '今ここ → ' + layers[idx].name;
+  });
+  html += `<div class="person-card new-card" onclick="showNewPersonForm()">
+    <span style="font-size:1.7rem">＋</span><span style="font-size:.78rem">新しい利用者</span>
+  </div>`;
+  document.getElementById('personGrid').innerHTML = html;
 }
 
-// ── 個別支援計画モード ──
-let currentMode = 'org';
-
-function setMode(mode) {
-  currentMode = mode;
-  document.getElementById('modeOrgBtn').classList.toggle('active', mode === 'org');
-  document.getElementById('modeIspBtn').classList.toggle('active', mode === 'isp');
-  if (mode === 'isp') {
-    document.getElementById('initialInputLabel').textContent = '対象者の状況・支援ニーズ（個人名は入力しないでください）';
-    document.getElementById('initialInput').placeholder = '例：A氏（仮名）は日常生活の自立に向けた支援を受けている。身の回りのことは一部介助が必要。外出に不安を感じており、社会参加が少ない状態。';
-    document.querySelector('#phase0 .section-title').textContent = '対象者の状況を教えてください';
-    document.querySelector('#phase0 .section-desc').textContent = 'ICF×氷山モデルで掘り下げて、A4一枚の個別支援計画書を作成します。\n個人名・住所など特定につながる情報の入力はお控えください。';
-  } else {
-    document.getElementById('initialInputLabel').textContent = '今、現場で一番困っていること';
-    document.getElementById('initialInput').placeholder = '例：スタッフが報告を上げてこない。何度言っても改善しない。なぜそうなっているのかわからない。';
-    document.querySelector('#phase0 .section-title').textContent = '今、現場で何が起きていますか？';
-    document.querySelector('#phase0 .section-desc').textContent = '困っていること・気になっていることを、思ったまま話してください。\n「なんで？」を5回繰り返して、問題の根っこまで掘り下げます。';
+function selectPerson(id) {
+  currentPersonId = id;
+  const p = getPerson(id);
+  if (!p) return;
+  document.getElementById('p0bTitle').textContent = `${esc(p.alias)}の新規アセスメント`;
+  document.getElementById('aliasGrp').style.display = 'none';
+  document.getElementById('orgGrp').style.display = 'none';
+  const cnt = p.assessments ? p.assessments.length : 0;
+  if (cnt > 0) {
+    document.querySelectorAll('input[name="ph"]').forEach((r,i) => { r.checked = i === 2; });
+    syncPhaseOpts();
   }
+  showPhase('phase0b');
 }
 
-function buildIspSystemPrompt() {
-  return `あなたは医療・福祉現場の個別支援専門家「響（Hibiki）」です。
-役割：${userRole || '支援者'}の方が話す「対象者の状況・支援ニーズ」を起点に、ICF（国際生活機能分類）の視点から「なんでそうなっているのか？」を繰り返し掘り下げます。
-
-【ICF掘り下げの4軸】
-①参加: 社会生活・役割への制約（就労・交流・余暇）
-②活動: 日常の動作・作業・生活行為の制限
-③心身機能: 障害・疾患・機能低下・感覚・認知
-④環境因子: 促進・阻害する環境（人・制度・物理的環境）
-
-【ルール】
-- 質問は1つだけ。短く。やさしい言葉で。
-- ICFの4軸を順番に掘り下げる
-- 「なぜ〜でしょうか？」ではなく「なんで〜なんですか？」という口調で
-- 相手の言葉をまず受け止めてから掘り下げる
-- 本人の強み・意欲も見落とさない
-- 出力形式: 「（受け止め1文）\n\nなんで〜なんですか？」`;
+function showNewPersonForm() {
+  currentPersonId = null;
+  document.getElementById('p0bTitle').textContent = '新しい利用者を追加';
+  document.getElementById('aliasGrp').style.display = 'block';
+  document.getElementById('orgGrp').style.display = 'block';
+  document.getElementById('aliasInput').value = '';
+  document.getElementById('orgInput').value = '';
+  document.querySelectorAll('input[name="ph"]').forEach((r,i) => { r.checked = i === 0; });
+  syncPhaseOpts();
+  showPhase('phase0b');
 }
 
-function tryParseISP(raw) {
+function syncPhaseOpts() {
+  document.querySelectorAll('input[name="ph"]').forEach((r,i) => {
+    document.getElementById('pOpt'+(i+1)).classList.toggle('selected', r.checked);
+  });
+}
+document.querySelectorAll('input[name="ph"]').forEach(r => r.addEventListener('change', syncPhaseOpts));
+
+function startAssessment() {
+  const phaseVal = document.querySelector('input[name="ph"]:checked')?.value || '一次アセスメント';
+  let persons = loadPersons();
+  let person;
+
+  if (!currentPersonId) {
+    const alias = document.getElementById('aliasInput').value.trim();
+    const orgName = document.getElementById('orgInput').value.trim();
+    if (!alias) { alert('対象者の呼び方を入力してください。'); return; }
+    person = { id:'p_'+Date.now(), alias, orgName, createdAt:fmtDate(), assessments:[] };
+    persons.push(person);
+    currentPersonId = person.id;
+  } else {
+    person = persons.find(p => p.id === currentPersonId);
+    if (!person) return;
+  }
+
+  cells = {};
+  if (phaseVal === 'PDCA更新' && person.assessments && person.assessments.length > 0) {
+    const prev = person.assessments[person.assessments.length - 1];
+    if (prev.cells) cells = JSON.parse(JSON.stringify(prev.cells));
+  }
+
+  savePersons(persons);
+  currentPhase = phaseVal;
+  currentIceberg = null;
+  currentPlan = null;
+
+  const pb = document.getElementById('personBadge');
+  pb.textContent = person.alias; pb.style.display = 'inline-block';
+  const phb = document.getElementById('phaseBadge');
+  phb.textContent = phaseVal; phb.style.display = 'inline-block';
+
+  const hasPrev = person.assessments && person.assessments.length > 0;
+  document.getElementById('pdcaBtn').style.display = hasPrev ? 'inline-flex' : 'none';
+
+  renderMatrix();
+  resetAnalysis();
+  showPhase('phase1');
+}
+
+// ── ICFマトリクス ──
+function renderMatrix() {
+  let html = '';
+  ICF_DOMAINS.forEach((dom, di) => {
+    const reds = dom.cells.filter((_,ci) => cells[ck(di,ci)] && cells[ck(di,ci)].color === 'red').length;
+    const blues = dom.cells.filter((_,ci) => cells[ck(di,ci)] && cells[ck(di,ci)].color === 'blue').length;
+    html += `<div class="domain-section">
+      <div class="domain-header">
+        <span class="domain-icon">${dom.icon}</span>
+        <span class="domain-label">${dom.label}</span>
+        <div class="d-badges">
+          ${reds > 0 ? `<span class="d-badge r">🔴${reds}</span>` : ''}
+          ${blues > 0 ? `<span class="d-badge b">🔵${blues}</span>` : ''}
+        </div>
+      </div>
+      <div class="domain-cells">`;
+    dom.cells.forEach((lbl, ci) => {
+      const key = ck(di, ci);
+      const c = cells[key] || {text:'', color:'none'};
+      const cc = c.color !== 'none' ? `c${c.color.charAt(0)}` : '';
+      const tri = c.color === 'red' ? '🔴' : c.color === 'blue' ? '🔵' : '';
+      html += `<div class="icf-cell ${cc}" onclick="openCellEdit(${di},${ci})">
+        <div class="cell-label">${lbl}</div>
+        ${tri ? `<div class="cell-tri">${tri}</div>` : ''}
+        ${c.text ? `<div class="cell-text">${esc(c.text)}</div>` : `<div class="cell-empty">タップして入力</div>`}
+      </div>`;
+    });
+    html += '</div></div>';
+  });
+  document.getElementById('matrixContent').innerHTML = html;
+}
+
+function ck(di, ci) { return `r${di}c${ci}`; }
+
+// ── セル編集 ──
+function openCellEdit(di, ci) {
+  editCell = {di, ci};
+  const dom = ICF_DOMAINS[di];
+  const c = cells[ck(di,ci)] || {text:'', color:'none'};
+  editTri = c.color || 'none';
+  document.getElementById('cmDom').textContent = dom.label;
+  document.getElementById('cmLbl').textContent = dom.cells[ci];
+  document.getElementById('cmTa').value = c.text || '';
+  syncTriBtns();
+  document.getElementById('cellOver').classList.add('active');
+  document.getElementById('cmTa').focus();
+}
+function setTri(t) { editTri = t; syncTriBtns(); }
+function syncTriBtns() {
+  document.getElementById('triR').classList.toggle('on', editTri === 'red');
+  document.getElementById('triB').classList.toggle('on', editTri === 'blue');
+  document.getElementById('triN').classList.toggle('on', editTri === 'none');
+}
+function saveCellEdit() {
+  if (!editCell) return;
+  const {di, ci} = editCell;
+  const text = document.getElementById('cmTa').value.trim();
+  const key = ck(di, ci);
+  if (text || editTri !== 'none') cells[key] = {text, color: editTri};
+  else delete cells[key];
+  closeCellEdit();
+  renderMatrix();
+}
+function closeCellEdit() {
+  editCell = null;
+  document.getElementById('cellOver').classList.remove('active');
+}
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeCellEdit(); closePdcaModal(); }
+});
+document.getElementById('cellOver').addEventListener('click', e => {
+  if (e.target === document.getElementById('cellOver')) closeCellEdit();
+});
+
+// ── 分析 ──
+function buildSys() {
+  const p = getPerson(currentPersonId);
+  const alias = p ? p.alias : '対象者';
+  return `あなたは医療・福祉現場のICF（国際生活機能分類）専門家「響（Hibiki）」です。
+対象者：${alias}　フェーズ：${currentPhase}
+
+ICFアセスメントマトリクス（6領域・各4項目）を分析し、氷山モデルと支援計画をJSONのみで出力してください。
+
+【分析の観点】
+・🔴赤セル（リスク・課題）を氷山の各層に当てはめる
+・🔵青セル（強み・資源）を支援計画の土台として活用
+・領域間のつながりを読み解く（例：環境因子が活動制限を生む等）
+・表面に見える課題から根本原因まで掘り下げる
+
+【出力ルール（厳守）】
+・JSONのみ・コードブロック不要・各値は1行・値の中にダブルクォートを使わない`;
+}
+
+function buildMsg() {
+  const lines = [];
+  ICF_DOMAINS.forEach((dom, di) => {
+    dom.cells.forEach((lbl, ci) => {
+      const c = cells[ck(di,ci)];
+      if (c && c.text) {
+        const f = c.color === 'red' ? '🔴リスク' : c.color === 'blue' ? '🔵強み' : '⬜';
+        lines.push(`[${dom.label}] ${lbl}（${f}）：${c.text}`);
+      }
+    });
+  });
+  const data = lines.length > 0 ? lines.join('\n') : '（まだ入力なし。空の状態から仮説的に分析してください）';
+  return `以下のICFアセスメント内容を分析し、氷山モデル+支援計画をJSONで出力してください。
+
+=== アセスメントデータ ===
+${data}
+
+=== 出力フォーマット（JSONのみ） ===
+{"surface":"今見えていること（1〜2文）","pattern":"繰り返しているくせ・傾向（1〜2文）","structure":"環境・仕組みの問題（1〜2文）","mental_model":"思い込み・慣習（1〜2文）","root":"本当の原因・根っこ（1文）","policy":"支援方針（1〜2文）","dreams":"本人の夢・強み（青セルから）","action1":"推進項目①","action2":"推進項目②","action3":"推進項目③","evaluation":"評価・見直し時期と方法（1文）"}`;
+}
+
+function parseData(raw) {
   try {
-    let jsonStr = raw;
-    const blockMatch = raw.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-    if (blockMatch) jsonStr = blockMatch[1];
-    const objMatch = jsonStr.match(/\{[\s\S]*\}/);
-    if (!objMatch) return null;
-    const cleaned = objMatch[0].replace(/[\r\n\t]+/g, ' ');
-    const flat = JSON.parse(cleaned);
-    if (!flat.situation || !flat.long_goal || !flat.support1) return null;
-    return flat;
+    let s = raw;
+    const bm = raw.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+    if (bm) s = bm[1];
+    const om = s.match(/\{[\s\S]*\}/);
+    if (!om) return null;
+    const d = JSON.parse(om[0].replace(/[\r\n\t]+/g,' '));
+    if (!d.surface || !d.root) return null;
+    return d;
   } catch { return null; }
 }
 
-function renderISP(flat) {
-  const now = new Date();
-  const dateStr = now.getFullYear() + '年' + (now.getMonth()+1) + '月' + now.getDate() + '日';
-  document.getElementById('ispDocMeta').textContent = '作成日：' + dateStr + (orgName ? '　　施設名：' + orgName : '');
-  document.getElementById('ispSituation').textContent = flat.situation || '─';
-  document.getElementById('ispParticipation').textContent = flat.icf_participation || '─';
-  document.getElementById('ispActivity').textContent = flat.icf_activity || '─';
-  document.getElementById('ispBody').textContent = flat.icf_body || '─';
-  document.getElementById('ispEnvironment').textContent = flat.icf_environment || '─';
-  document.getElementById('ispLongGoal').textContent = flat.long_goal || '─';
-  document.getElementById('ispShortGoal1').textContent = flat.short_goal1 || '─';
-  document.getElementById('ispShortGoal2').textContent = flat.short_goal2 || '─';
-  document.getElementById('ispSupport1').textContent = flat.support1 || '─';
-  document.getElementById('ispSupport2').textContent = flat.support2 || '─';
-  document.getElementById('ispSupport3').textContent = flat.support3 || '─';
-  document.getElementById('ispEvaluation').textContent = flat.evaluation || '─';
+function resetAnalysis() {
+  document.getElementById('icebergArea').innerHTML = '<div class="ice-ph">左のマトリクスを入力して「分析する」を押してください。</div>';
+  document.getElementById('planArea').style.display = 'none';
+  document.getElementById('analysisLoading').style.display = 'none';
 }
 
-async function generateISP() {
-  showPhase('phase1');
-  document.getElementById('aiQuestion').innerHTML = '<span class="loading-dots">個別支援計画書を作成中</span>';
-  document.getElementById('answerArea').style.display = 'none';
-  document.getElementById('nextBtn').style.display = 'none';
-  document.getElementById('summaryBox').style.display = 'none';
+async function generateAnalysis() {
+  if (!apiKey) { setApiKey(); if (!apiKey) return; }
+  document.getElementById('icebergArea').innerHTML = '';
+  document.getElementById('planArea').style.display = 'none';
+  document.getElementById('analysisLoading').style.display = 'block';
+  document.getElementById('analyzeBtn').disabled = true;
+  document.getElementById('analyzeHdrBtn').disabled = true;
 
-  const summaryConv = [{ role: 'user', content: conversation.map(m => `[${m.role}] ${m.content}`).join('\n\n') }];
-
-  const ispJsonPrompt = `あなたは医療・福祉現場のICF支援計画の専門家です。
-以下の会話から個別支援計画書の内容をJSONで生成してください。
-
-【絶対に守るルール】
-- 出力はJSONのみ。前後に文章・説明・コードブロック記号（\`\`\`）は一切書かない
-- 各値は1行で（改行・タブを入れない）
-- 値の中にダブルクォート（"）を使わない。使いたい場合は「」で代替する
-- 値の中にバックスラッシュ（\\）を使わない
-- コロン（:）は文末に使わない（「〜する」「〜を支援する」で締める）
-
-{"situation":"現状の整理（ICF観点から1〜2文）","icf_participation":"参加：社会生活・役割での制約（1〜2文）","icf_activity":"活動：日常の動作・作業の制限（1〜2文）","icf_body":"心身機能：障害・疾患・機能低下（1〜2文）","icf_environment":"環境因子：促進・阻害要因（1〜2文）","long_goal":"長期目標（6ヶ月後の目指す姿を1文で）","short_goal1":"短期目標①（1ヶ月で達成できること）","short_goal2":"短期目標②（2〜3ヶ月で達成できること）","support1":"支援内容①（具体的な支援の内容）","support2":"支援内容②（具体的な支援の内容）","support3":"支援内容③（具体的な支援の内容）","evaluation":"評価・見直し時期と確認方法（1〜2文）"}`;
-
-  const ispPlainPrompt = `あなたは医療・福祉現場のICF支援計画の専門家です。
-以下の会話から個別支援計画書の内容を生成してください。
-各セクションを【】の見出しの後に改行して書いてください。
-
-【現状の整理】
-（ICF観点から1〜2文）
-
-【参加：社会生活・役割での制約】
-（1〜2文）
-
-【活動：日常動作・作業の制限】
-（1〜2文）
-
-【心身機能・障害・疾患】
-（1〜2文）
-
-【環境因子：促進・阻害要因】
-（1〜2文）
-
-【長期目標（6ヶ月）】
-（目指す姿を1文で）
-
-【短期目標①（1ヶ月）】
-（達成できること）
-
-【短期目標②（2〜3ヶ月）】
-（達成できること）
-
-【支援内容①】
-（具体的な内容）
-
-【支援内容②】
-（具体的な内容）
-
-【支援内容③】
-（具体的な内容）
-
-【評価・見直し】
-（時期と方法）`;
-
-  document.getElementById('aiQuestion').innerHTML = '<span class="loading-dots">支援計画書を生成中（1/3）</span>';
-  try {
-    const raw1 = await callClaude(summaryConv, ispJsonPrompt, 4096);
-    const flat1 = tryParseISP(raw1);
-    if (flat1) { renderISP(flat1); showPhase('phase3'); updateProgress(6); return; }
-  } catch { /* fall through */ }
-
-  document.getElementById('aiQuestion').innerHTML = '<span class="loading-dots">再生成中（2/3）</span>';
-  try {
-    const raw2 = await callClaude(summaryConv, ispJsonPrompt, 4096);
-    const flat2 = tryParseISP(raw2);
-    if (flat2) { renderISP(flat2); showPhase('phase3'); updateProgress(6); return; }
-  } catch { /* fall through */ }
-
-  document.getElementById('aiQuestion').innerHTML = '<span class="loading-dots">別形式で生成中（3/3）</span>';
-  try {
-    const raw3 = await callClaude(summaryConv, ispPlainPrompt, 4096);
-    const getSection = (label) => {
-      const re = new RegExp('【' + label + '】\\s*([\\s\\S]*?)(?=【|$)');
-      const m = raw3.match(re);
-      return m ? m[1].trim().replace(/\n+/g, ' ') : '─';
-    };
-    const flat3 = {
-      situation: getSection('現状の整理'),
-      icf_participation: getSection('参加：社会生活・役割での制約'),
-      icf_activity: getSection('活動：日常動作・作業の制限'),
-      icf_body: getSection('心身機能・障害・疾患'),
-      icf_environment: getSection('環境因子：促進・阻害要因'),
-      long_goal: getSection('長期目標（6ヶ月）'),
-      short_goal1: getSection('短期目標①（1ヶ月）'),
-      short_goal2: getSection('短期目標②（2〜3ヶ月）'),
-      support1: getSection('支援内容①'),
-      support2: getSection('支援内容②'),
-      support3: getSection('支援内容③'),
-      evaluation: getSection('評価・見直し')
-    };
-    renderISP(flat3);
-    showPhase('phase3');
-    updateProgress(6);
-  } catch (e) {
-    document.getElementById('errorMsg').textContent = 'エラー: ' + e.message;
-    document.getElementById('errorMsg').style.display = 'block';
-    document.getElementById('aiQuestion').textContent = '支援計画書の生成に失敗しました。';
-    const nextBtn = document.getElementById('nextBtn');
-    nextBtn.textContent = 'もう一度生成する';
-    nextBtn.style.display = 'block';
-    nextBtn.onclick = generateISP;
-    document.getElementById('backBtn').style.display = 'block';
+  const msgs = [{role:'user', content:buildMsg()}];
+  let success = false;
+  for (let i = 0; i < 3; i++) {
+    try {
+      const raw = await callClaude(msgs, buildSys(), 4096, null);
+      const d = parseData(raw);
+      if (d) {
+        currentIceberg = d; currentPlan = d;
+        renderIceberg(d); renderPlan(d);
+        document.getElementById('analysisLoading').style.display = 'none';
+        success = true; break;
+      }
+    } catch(e) {
+      if (i === 2) {
+        document.getElementById('analysisLoading').innerHTML = `<span style="color:var(--danger)">エラー: ${esc(e.message)}</span>`;
+      }
+    }
+  }
+  document.getElementById('analyzeBtn').disabled = false;
+  document.getElementById('analyzeHdrBtn').disabled = false;
+  if (!success && document.getElementById('analysisLoading').querySelector('.dots')) {
+    document.getElementById('analysisLoading').innerHTML = '<span style="color:var(--danger)">分析に失敗しました。もう一度お試しください。</span>';
   }
 }
 
-function downloadIspPdf() {
-  const el = document.getElementById('phase3');
-  const orgLabel = orgName ? orgName + '_' : '';
+const LAYERS = [
+  {k:'surface', i:'🌊', l:'今、見えていること', c:'ice-s'},
+  {k:'pattern', i:'🔄', l:'繰り返しているくせ・傾向', c:'ice-p'},
+  {k:'structure', i:'🏗', l:'環境・仕組みの問題', c:'ice-st'},
+  {k:'mental_model', i:'💭', l:'思い込み・慣習', c:'ice-m'},
+  {k:'root', i:'🎯', l:'本当の原因（根っこ）', c:'ice-r'},
+];
+function renderIceberg(d) {
+  document.getElementById('icebergArea').innerHTML = LAYERS.map(l =>
+    `<div class="ice-card ${l.c}"><div class="ice-lbl">${l.i} ${l.l}</div><div class="ice-txt">${esc(d[l.k]||'─')}</div></div>`
+  ).join('');
+}
+function renderPlan(d) {
+  document.getElementById('planPolicy').textContent = d.policy || '─';
+  document.getElementById('planDreams').textContent = d.dreams || '─';
+  document.getElementById('planActions').innerHTML = ['action1','action2','action3'].map((k,i) =>
+    `<div class="act-item"><span class="act-num">${i+1}</span><span class="act-txt">${esc(d[k]||'─')}</span></div>`
+  ).join('');
+  document.getElementById('planEval').textContent = d.evaluation || '─';
+  document.getElementById('planArea').style.display = 'block';
+}
+
+// ── 保存 ──
+function saveAssessment() {
+  if (!currentPersonId) { alert('利用者が選択されていません。'); return; }
+  const persons = loadPersons();
+  const person = persons.find(p => p.id === currentPersonId);
+  if (!person) return;
+  if (!person.assessments) person.assessments = [];
+  person.assessments.push({
+    id: Date.now(), date: fmtDate(), phase: currentPhase,
+    cells: JSON.parse(JSON.stringify(cells)),
+    iceberg: currentIceberg ? JSON.parse(JSON.stringify(currentIceberg)) : null,
+    plan: currentPlan ? JSON.parse(JSON.stringify(currentPlan)) : null,
+  });
+  savePersons(persons);
+  toast('✅ 保存しました');
+  document.getElementById('pdcaBtn').style.display = 'inline-flex';
+}
+
+// ── PDCA比較 ──
+async function showPdcaComparison() {
+  const persons = loadPersons();
+  const person = persons.find(p => p.id === currentPersonId);
+  if (!person || !person.assessments || person.assessments.length === 0) return;
+  const prev = person.assessments[person.assessments.length - 1];
+  const prevCells = prev.cells || {};
+
+  document.getElementById('pdcaSub').textContent = `前回：${prev.date}（${prev.phase}）　vs　今回`;
+  document.getElementById('chgSummary').style.display = 'none';
+  document.getElementById('chgTxt').textContent = '';
+
+  let html = '';
+  ICF_DOMAINS.forEach((dom, di) => {
+    html += `<div><div class="cmp-dtitle">${dom.icon} ${dom.label}</div>`;
+    dom.cells.forEach((lbl, ci) => {
+      const key = ck(di, ci);
+      const pc = prevCells[key] || {text:'', color:'none'};
+      const cc = cells[key] || {text:'', color:'none'};
+      const chg = pc.text !== cc.text || pc.color !== cc.color;
+      html += `<div class="cmp-cell${chg?' changed':''}">
+        <div class="cmp-cell-lbl">${lbl}${chg ? '<span class="chg-badge">変化</span>' : ''}</div>
+        <div class="cmp-cell-txt">
+          <span style="opacity:.5">前：${pc.text ? esc(pc.text) : '（なし）'}</span><br>
+          <span>今：${cc.text ? esc(cc.text) : '（なし）'}</span>
+        </div>
+      </div>`;
+    });
+    html += '</div>';
+  });
+  document.getElementById('cmpContent').innerHTML = html;
+  document.getElementById('pdcaModal').classList.add('active');
+
+  if (apiKey && prev.iceberg && currentIceberg) {
+    try {
+      const raw = await callClaude([{role:'user', content:
+        `前回の氷山分析:\n${JSON.stringify(prev.iceberg)}\n\n今回の氷山分析:\n${JSON.stringify(currentIceberg)}\n\n2〜3文で「何がどう変化したか」を簡潔にまとめてください。改善点と残課題の両方に触れてください。`
+      }], 'あなたは医療・福祉のアセスメント専門家です。', 400, null);
+      document.getElementById('chgTxt').textContent = raw.trim();
+      document.getElementById('chgSummary').style.display = 'block';
+    } catch { /* サマリー生成失敗は無視 */ }
+  }
+}
+function closePdcaModal() { document.getElementById('pdcaModal').classList.remove('active'); }
+document.getElementById('pdcaModal').addEventListener('click', e => {
+  if (e.target === document.getElementById('pdcaModal')) closePdcaModal();
+});
+
+// ── PDF ──
+function downloadPdf() {
+  const p = getPerson(currentPersonId);
+  const alias = p ? p.alias : 'アセスメント';
   const now = new Date();
   const stamp = now.getFullYear() + ('0'+(now.getMonth()+1)).slice(-2) + ('0'+now.getDate()).slice(-2);
   html2pdf().set({
-    margin: [10, 10, 10, 10], filename: orgLabel + '個別支援計画書_' + stamp + '.pdf',
-    image: { type: 'jpeg', quality: 0.95 },
-    html2canvas: { scale: 2, useCORS: true, backgroundColor: '#0f1923' },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-  }).from(el).save();
+    margin:[8,8,8,8], filename: alias+'_'+currentPhase+'_'+stamp+'.pdf',
+    image:{type:'jpeg', quality:.92},
+    html2canvas:{scale:2, useCORS:true, backgroundColor:'#0f1923'},
+    jsPDF:{unit:'mm', format:'a4', orientation:'landscape'}
+  }).from(document.getElementById('phase1')).save();
 }
 
-// ── 前の質問に戻る ──
-function goBackToPrevQuestion() {
-  if (round <= 0) return;
-  // 最後のユーザー回答を取り消す
-  conversation.pop();
-  round--;
-  document.getElementById('backBtn').style.display = round > 0 ? 'block' : 'none';
-  document.getElementById('errorMsg').style.display = 'none';
-  // 最後のAI質問を再表示して回答を受け付ける
-  const lastAI = conversation.filter(m => m.role === 'assistant').slice(-1)[0];
-  document.getElementById('aiQuestion').textContent = lastAI ? lastAI.content : '';
-  document.getElementById('drillAnswer').value = '';
-  document.getElementById('answerArea').style.display = 'block';
-  const nextBtn = document.getElementById('nextBtn');
-  nextBtn.textContent = round < MAX_ROUNDS - 1 ? '次へ →' : '結果を見る →';
-  nextBtn.onclick = nextRound;
-  nextBtn.style.display = 'block';
-  document.getElementById('drillBadge').textContent = `STEP ${round + 2}`;
-  document.getElementById('drillTitle').textContent = currentMode === 'isp'
-    ? `ICF掘り下げ（${round + 1}回目）`
-    : `なんでそうなってるの？（${round + 1}回目）`;
-  document.getElementById('roundNum').textContent = round + 1;
-  updateMapPanel(round);
-  updateProgress(round + 1);
-  document.getElementById('drillAnswer').focus();
-}
-
-// ── ③ 分析結果の履歴保存（localStorage） ──
-const HISTORY_KEY = 'hibiki_history';
-
-function loadHistory() {
-  try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); }
-  catch { return []; }
-}
-
-function saveToHistory(result) {
+// ── Claude API ──
+async function callClaude(messages, systemPrompt, maxTokens=1024, onChunk=null) {
+  if (!apiKey) throw new Error('APIキーが設定されていません');
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 120000);
+  let res;
   try {
-    const hist = loadHistory();
-    const d = new Date();
-    const ts = `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-    hist.unshift({ id: d.getTime(), ts, org: orgName || '', role: userRole || '', result });
-    if (hist.length > 50) hist.length = 50;  // 上限50件
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(hist));
-  } catch (e) {
-    // localStorageが使えなくても分析表示は継続する
-    console.warn('履歴保存に失敗:', e);
-  }
-}
-
-function escapeHtml(s) {
-  return String(s == null ? '' : s)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
-
-// ── 比較モード状態 ──
-let compareMode = false;
-let compareSelected = []; // 選択中のid（最大2件）
-
-// ── 履歴一覧の表示（施設グループ化＋比較モード対応） ──
-function showHistory() {
-  const hist = loadHistory();
-  const sub = document.getElementById('histModalSub');
-
-  // ツールバー
-  const canCompare = compareSelected.length >= 2;
-  let html = `<div class="compare-toolbar">
-    <span class="compare-hint">${compareMode
-      ? (compareSelected.length === 0 ? '比較したい2件を選んでください'
-        : compareSelected.length === 1 ? 'もう1件選んでください'
-        : '2件選択済み → 比較できます')
-      : '項目をタップして結果を再表示'}</span>
-    <button class="compare-mode-btn ${compareMode ? 'active' : ''}" onclick="toggleCompareMode()">
-      ${compareMode ? '選択解除' : '比較する'}
-    </button>
-    ${compareMode ? `<button class="compare-exec-btn" onclick="openComparison()" ${canCompare ? '' : 'disabled'}>比較 →</button>` : ''}
-  </div>`;
-
-  if (!hist.length) {
-    html += '<div class="hist-empty">まだ保存された分析がありません。</div>';
-  } else {
-    // 施設名でグループ化（登場順を維持）
-    const groups = new Map();
-    hist.forEach(h => {
-      const key = h.org || '（施設名なし）';
-      if (!groups.has(key)) groups.set(key, []);
-      groups.get(key).push(h);
+    res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST', signal:ctrl.signal,
+      headers:{
+        'Content-Type':'application/json', 'x-api-key':apiKey,
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-access':'true'
+      },
+      body:JSON.stringify({model:'claude-sonnet-4-6', max_tokens:maxTokens, stream:true, system:systemPrompt, messages})
     });
-
-    groups.forEach((items, groupKey) => {
-      html += `<div class="hist-group-label">🏢 ${escapeHtml(groupKey)}（${items.length}件）</div>`;
-      items.forEach(h => {
-        const root = h.result?.iceberg?.root || '';
-        const isSelected = compareSelected.includes(h.id);
-        const clickAction = compareMode
-          ? `toggleCompareSelect(${h.id})`
-          : `viewHistoryItem(${h.id})`;
-        html += `<div class="hist-item${isSelected ? ' selected' : ''}" onclick="${clickAction}" style="cursor:pointer">
-          ${compareMode ? `<div class="hist-check${isSelected ? ' checked' : ''}">${isSelected ? '✓' : ''}</div>` : ''}
-          <div class="hist-main">
-            <div class="hist-date">${escapeHtml(h.ts)}</div>
-            <div class="hist-meta">${escapeHtml(h.role || '')}</div>
-            <div class="hist-root">🎯 ${escapeHtml(root)}</div>
-          </div>
-          ${!compareMode ? `<button class="hist-del" title="削除" onclick="event.stopPropagation();deleteHistoryItem(${h.id})">✕</button>` : ''}
-        </div>`;
-      });
-    });
+  } catch(e) { clearTimeout(timer); if(e.name==='AbortError') throw new Error('タイムアウト'); throw new Error('通信エラー: '+e.message); }
+  if (!res.ok) {
+    clearTimeout(timer);
+    const eb = await res.json().catch(()=>({}));
+    throw new Error(`APIエラー(${res.status})${eb.error?.message?': '+eb.error.message:''}`);
   }
-
-  document.getElementById('historyList').innerHTML = html;
-  sub.textContent = compareMode
-    ? '比較したい2件を選択してください。'
-    : 'この端末に保存された過去の分析結果です（最大50件）。';
-  document.getElementById('historyModal').classList.add('active');
-}
-
-function toggleCompareMode() {
-  compareMode = !compareMode;
-  compareSelected = [];
-  showHistory();
-}
-
-function toggleCompareSelect(id) {
-  const idx = compareSelected.indexOf(id);
-  if (idx >= 0) {
-    compareSelected.splice(idx, 1);
-  } else {
-    if (compareSelected.length >= 2) compareSelected.shift();
-    compareSelected.push(id);
-  }
-  showHistory();
-}
-
-function closeHistory() {
-  compareMode = false;
-  compareSelected = [];
-  document.getElementById('historyModal').classList.remove('active');
-}
-
-// ── 履歴項目を結果画面に再表示 ──
-function viewHistoryItem(id) {
-  const item = loadHistory().find(h => h.id === id);
-  if (!item) return;
-  orgName = item.org || '';
-  userRole = item.role || '';
-  renderOutput(item.result);
-  switchTab('iceberg');
-  showPhase('phase2');
-  updateProgress(6);
-  closeHistory();
-  window.scrollTo(0, 0);
-}
-
-function deleteHistoryItem(id) {
-  if (!confirm('この履歴を削除しますか？')) return;
-  const hist = loadHistory().filter(h => h.id !== id);
-  localStorage.setItem(HISTORY_KEY, JSON.stringify(hist));
-  showHistory();
-}
-
-// ── 比較ビュー ──
-function openComparison() {
-  if (compareSelected.length < 2) return;
-  const hist = loadHistory();
-  const items = compareSelected.map(id => hist.find(h => h.id === id)).filter(Boolean);
-  if (items.length < 2) return;
-  // 古い→新しい順に並べる（idはtimestamp）
-  const [older, newer] = items[0].id < items[1].id ? items : [items[1], items[0]];
-  renderComparison(older, newer);
-  document.getElementById('compareModal').classList.add('active');
-}
-
-function closeCompare() {
-  document.getElementById('compareModal').classList.remove('active');
-}
-
-function isChanged(a, b) {
-  return String(a || '').trim() !== String(b || '').trim();
-}
-
-function renderComparison(older, newer) {
-  const LAYERS = [
-    { key: 'surface',      label: '🌊 今、見えていること' },
-    { key: 'pattern',      label: '🔄 繰り返しているくせ・傾向' },
-    { key: 'structure',    label: '🏗 組織の仕組みの問題' },
-    { key: 'mental_model', label: '💭 思い込み・慣習' },
-    { key: 'root',         label: '🎯 本当の原因' },
-  ];
-
-  const orgLabel = older.org || '施設名なし';
-  document.getElementById('compareSubTitle').textContent =
-    `${orgLabel} ／ ${older.ts} → ${newer.ts}`;
-
-  let html = '';
-
-  // セッションヘッダー
-  html += `<div class="compare-header-grid">
-    <div class="compare-col-label">
-      <div class="col-date">📅 ${escapeHtml(older.ts)}</div>
-      <div class="col-meta">${escapeHtml(older.role || '役職なし')}</div>
-    </div>
-    <div class="compare-col-label">
-      <div class="col-date">📅 ${escapeHtml(newer.ts)}</div>
-      <div class="col-meta">${escapeHtml(newer.role || '役職なし')}</div>
-    </div>
-  </div>`;
-
-  // 氷山5層比較
-  html += '<div class="compare-section"><div class="compare-section-title">🏔 氷山の変化</div>';
-  LAYERS.forEach(({ key, label }) => {
-    const ov = older.result?.iceberg?.[key] || '';
-    const nv = newer.result?.iceberg?.[key] || '';
-    const changed = isChanged(ov, nv);
-    const badge = changed
-      ? '<span class="change-badge new">変化あり</span>'
-      : '<span class="change-badge same">変化なし</span>';
-    html += `<div class="compare-layer-label">${label}${badge}</div>
-    <div class="compare-row">
-      <div class="compare-cell${changed ? ' changed' : ''}">${escapeHtml(ov) || '─'}</div>
-      <div class="compare-cell${changed ? ' changed' : ''}">${escapeHtml(nv) || '─'}</div>
-    </div>`;
-  });
-  html += '</div>';
-
-  // 現場アクション比較
-  html += '<div class="compare-section"><div class="compare-section-title">👷 明日からやること</div>';
-  for (let i = 0; i < 3; i++) {
-    const ov = older.result?.field_actions?.[i] || '';
-    const nv = newer.result?.field_actions?.[i] || '';
-    const changed = isChanged(ov, nv);
-    html += `<div class="compare-row">
-      <div class="compare-cell${changed ? ' changed' : ''}" style="font-size:0.8rem">${escapeHtml(ov) || '─'}</div>
-      <div class="compare-cell${changed ? ' changed' : ''}" style="font-size:0.8rem">${escapeHtml(nv) || '─'}</div>
-    </div>`;
-  }
-  html += '</div>';
-
-  document.getElementById('compareContent').innerHTML = html;
-}
-
-// ── PDFダウンロード（html2pdf.js） ──
-async function downloadPdf() {
-  const btn = document.getElementById('pdfBtn');
-  btn.disabled = true;
-  btn.textContent = '生成中...';
-
-  const d = new Date();
-  const dateStr = `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日 分析結果` +
-    (orgName ? `（${orgName}）` : '');
-  document.getElementById('printDate').textContent = dateStr;
-
-  // 全パネルを一時的に表示してからキャプチャ
-  const panels = ['panelIceberg', 'panelField', 'panelPlanner'];
-  const origDisplay = panels.map(id => document.getElementById(id).style.display);
-  panels.forEach(id => { document.getElementById(id).style.display = 'block'; });
-
-  const fileName = `響_分析結果_${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}_${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}.pdf`;
-
-  const element = document.getElementById('phase2');
-  const opt = {
-    margin: [10, 10, 10, 10],
-    filename: fileName,
-    image: { type: 'jpeg', quality: 0.95 },
-    html2canvas: { scale: 2, useCORS: true, backgroundColor: '#0f1923' },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-  };
-
+  const reader = res.body.getReader();
+  const dec = new TextDecoder();
+  let full='', buf='';
   try {
-    await html2pdf().set(opt).from(element).save();
-  } finally {
-    // パネル表示を元に戻す
-    panels.forEach((id, i) => { document.getElementById(id).style.display = origDisplay[i]; });
-    btn.disabled = false;
-    btn.textContent = '📄 PDFで保存';
-  }
+    while(true) {
+      const {done, value} = await reader.read();
+      if (done) break;
+      await new Promise(r=>setTimeout(r,0));
+      buf += dec.decode(value, {stream:true});
+      const lines = buf.split('\n'); buf = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const pl = line.slice(6).trim();
+        if (!pl || pl==='[DONE]') continue;
+        try {
+          const ev = JSON.parse(pl);
+          if (ev.type==='content_block_delta' && ev.delta?.type==='text_delta') {
+            full += ev.delta.text;
+            if (onChunk) onChunk(full);
+          }
+        } catch {}
+      }
+    }
+  } finally { clearTimeout(timer); reader.releaseLock(); }
+  if (!full) throw new Error('AIから応答がありませんでした');
+  return full;
 }
 
-// ── 印刷 ──
-function printDoc() {
-  const d = new Date();
-  const dateStr = `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日 分析結果` +
-    (orgName ? `（${orgName}）` : '');
-  document.getElementById('printDate').textContent = dateStr;
-  window.print();
+// ── ユーティリティ ──
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmtDate() {
+  const n = new Date();
+  return n.getFullYear()+'/'+('0'+(n.getMonth()+1)).slice(-2)+'/'+('0'+n.getDate()).slice(-2)+' '+('0'+n.getHours()).slice(-2)+':'+('0'+n.getMinutes()).slice(-2);
 }
-
-// ── ④ 利用規約同意・デモモード（ミツメル準拠） ──
-const DEMO_CODE = 'HIBIKI_DEMO';   // 招待コード（入力は大文字小文字を問わない）
-const DEMO_MAX = 5;                // デモ利用上限
-let demoActive = false;
-
-// デモ用サンプル応答（実APIを使わずに体験できる）
-const DEMO_QUESTIONS = [
-  'なるほど、現場でそういう状況が起きているのですね。\n\nなんで、そうなってしまうんだと思いますか？',
-  'そこには理由がありそうですね。\n\nなんで、その状態がずっと続いてしまうんでしょう？',
-  '繰り返し起きているのですね。\n\nなんで、誰も止められないんだと思いますか？',
-  '組織の仕組みの問題が見えてきましたね。\n\nなんで、その仕組みのまま放置されてきたんでしょう？',
-  'だいぶ根っこに近づきました。\n\nなんで、それが「当たり前」になってしまったんだと思いますか？'
-];
-const DEMO_ANALYSIS = {
-  surface: 'デモ：現場で問題が繰り返し起きているが、その場の対応に追われている状態です。',
-  pattern: 'デモ：トラブルが起きるたびに個人の頑張りで穴埋めし、根本に手をつけられずにいます。',
-  structure: 'デモ：報告・相談のルートが曖昧で、誰が判断するかが決まらないまま運用されています。',
-  mental_model: 'デモ：「現場は忙しくて当たり前」「言っても変わらない」という諦めが共有されています。',
-  root: 'デモ：問題を仕組みとして扱う場がなく、属人的な対応が前提になっていることが根っこです。',
-  action1: 'デモ：明日の朝礼で「今週はこの1件だけ仕組みを見直す」と宣言し、対象を1つに絞る。',
-  action2: 'デモ：今週中に、繰り返している問題を1枚の紙に書き出し、どこで詰まるかを可視化する。',
-  action3: 'デモ：関係者に「責めるためでなく仕組みを直すために聞きたい」と前置きしてヒアリングする。',
-  analysis: 'デモ：この組織では問題が起きるたびに個人の対応力で乗り切る文化が定着しています。根本原因を構造として扱う習慣がないため、同じ問題が形を変えて再発します。忙しさが慢性化し、立ち止まって仕組みを見直す余白が失われていることが背景にあります。',
-  proposal1: 'デモ：「繰り返す問題」を記録し、月1回だけ仕組みを見直す定例の場をルール化する。',
-  proposal2: 'デモ：報告・相談の判断ルートを1枚の図にして、誰が何を決めるかを明文化する。',
-  proposal3: 'デモ：半年かけて「個人の頑張り」前提から「仕組みで回る」前提へ、小さな成功体験を積み上げる。'
-};
-
-// デモ応答を返す（maxTokensで質問か最終分析かを判定）
-async function demoResponse(maxTokens, onChunk) {
-  await new Promise(r => setTimeout(r, 700)); // 体感のための擬似待機
-  const text = (maxTokens >= 2048)
-    ? JSON.stringify(DEMO_ANALYSIS)
-    : DEMO_QUESTIONS[Math.min(round, DEMO_QUESTIONS.length - 1)];
-  if (onChunk) onChunk(text);
-  return text;
-}
-
-// 同意状態
-function hasConsent() { return !!localStorage.getItem('hibiki_consent_date'); }
-
-function giveConsent() {
-  localStorage.setItem('hibiki_consent_date', new Date().toISOString());
-  document.getElementById('consentGate').classList.remove('active');
-  if (!apiKey) apiKey = localStorage.getItem('hibiki_api_key') || '';
-  checkDemoOrApiKey();
-}
-
-function checkConsent() {
-  if (!hasConsent()) {
-    document.getElementById('consentGate').classList.add('active');
-  } else {
-    checkDemoOrApiKey();
-  }
-}
-
-// 同意後：APIキーがあればそのまま／なければデモ招待 or 上限案内
-function checkDemoOrApiKey() {
-  if (!apiKey) apiKey = localStorage.getItem('hibiki_api_key') || '';
-  if (apiKey) return; // 通常利用
-  const demoCount = parseInt(localStorage.getItem('hibiki_demo_count') || '0');
-  if (demoCount >= DEMO_MAX) {
-    document.getElementById('limitGate').classList.add('active');
-    return;
-  }
-  document.getElementById('inviteGate').classList.add('active');
-}
-
-function submitInviteCode() {
-  const input = document.getElementById('inviteCodeInput').value.trim().toUpperCase();
-  const errEl = document.getElementById('inviteError');
-  if (input !== DEMO_CODE) {
-    errEl.style.display = 'block';
-    document.getElementById('inviteCodeInput').value = '';
-    return;
-  }
-  errEl.style.display = 'none';
-  const demoCount = parseInt(localStorage.getItem('hibiki_demo_count') || '0');
-  if (demoCount >= DEMO_MAX) {
-    document.getElementById('inviteGate').classList.remove('active');
-    document.getElementById('limitGate').classList.add('active');
-    return;
-  }
-  localStorage.setItem('hibiki_demo_count', demoCount + 1);
-  demoActive = true;
-  document.getElementById('inviteGate').classList.remove('active');
-  showDemoBadge(demoCount + 1);
-}
-
-function showDemoBadge(n) {
-  let badge = document.getElementById('demoBadgeHeader');
-  if (!badge) {
-    badge = document.createElement('span');
-    badge.id = 'demoBadgeHeader';
-    badge.className = 'demo-badge-header';
-    document.querySelector('header').appendChild(badge);
-  }
-  badge.textContent = 'DEMO ' + n + '/' + DEMO_MAX;
-}
-
-function useOwnApiKey() {
-  document.getElementById('inviteGate').classList.remove('active');
-  document.getElementById('limitGate').classList.remove('active');
-  setApiKey();
-  if (apiKey) {
-    demoActive = false;
-    const badge = document.getElementById('demoBadgeHeader');
-    if (badge) badge.remove();
-  } else if (!hasConsent() || (!apiKey && parseInt(localStorage.getItem('hibiki_demo_count') || '0') < DEMO_MAX)) {
-    // キー設定をやめた場合はデモ招待に戻す（同意済み前提）
-    if (hasConsent()) checkDemoOrApiKey();
-  }
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.opacity = '1';
+  setTimeout(() => { t.style.opacity = '0'; }, 2200);
 }
 
 // ── 初期化 ──
-updateProgress(0);
 checkConsent();
+renderPersonList();
 </script>
 </body>
 </html>
