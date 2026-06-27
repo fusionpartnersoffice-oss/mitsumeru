@@ -185,6 +185,32 @@
     font-size: 13px; opacity: 0; transition: opacity 0.25s; z-index: 200; pointer-events: none;
   }
   .toast.show { opacity: 1; }
+
+  /* ── 適性検査フェーズ2：LSRP（法務準拠UI） ── */
+  .legal-note {
+    font-size: 11px; color: var(--text2); line-height: 1.7;
+    background: #fbf4e8; border: 0.5px solid var(--gold); border-radius: 6px;
+    padding: 10px 12px; margin-bottom: 12px;
+  }
+  .legal-note b { color: var(--gold); }
+  .consent-row {
+    display: flex; align-items: flex-start; gap: 9px;
+    background: var(--bg2); border: 0.5px solid var(--border); border-radius: 6px;
+    padding: 11px 12px; margin-bottom: 10px; cursor: pointer;
+  }
+  .consent-row input[type=checkbox] { width: 18px; height: 18px; margin-top: 1px; accent-color: var(--green); flex-shrink: 0; cursor: pointer; }
+  .consent-row .c-text { font-size: 12px; color: var(--text2); line-height: 1.6; }
+  .consent-row .c-text b { color: var(--text); }
+  .consent-ok { display: block; color: var(--green); font-size: 11px; margin-top: 4px; }
+  .lsrp-locked { opacity: 0.4; pointer-events: none; }
+  .lsrp-sub-title { font-family: 'Noto Serif JP', serif; font-size: 13px; color: var(--text); margin: 4px 0 8px; letter-spacing: 1px; }
+  .trigger-banner {
+    font-size: 12px; color: var(--text2); line-height: 1.7;
+    background: #fff3cd; border: 1px solid var(--gold); border-radius: 6px;
+    padding: 10px 12px; margin: 10px 0;
+  }
+  .trigger-banner .t-title { display: block; font-weight: 600; color: var(--gold); margin-bottom: 4px; }
+  .trigger-banner b { color: var(--text); }
 </style>
 </head>
 <body>
@@ -241,7 +267,9 @@
 <script>
 // ============================================================
 // 奏 Kanade v1 — MVP（範囲A：面接ガイド＋自動採点）
-// データは localStorage に保存（縦断データの種）。LSRPは法務確認まで非搭載。
+// データは localStorage に保存（縦断データの種）。
+// 適性検査フェーズ2：LSRP搭載（法務確認済み・運用規程No.001 / 橋下徹 2026-06-27）。
+//   原則：①医学的診断でない ②スコアのみで採否不可 ③本人同意必須 ④トリガーであり命令でない。
 // ============================================================
 
 const STORE_KEY = 'kanade_candidates_v1';
@@ -340,6 +368,8 @@ function addCandidate() {
     interviewer: document.getElementById('new-interviewer').value.trim(),
     // フェーズ1
     egoCP:'', egoNP:'', egoA:'', egoFC:'', egoAC:'', ennea:'', enneaWing:'', p1note:'',
+    // 適性検査フェーズ2：LSRP（法務確認済み・参考指標）＋本人同意
+    lsrp1:'', lsrp2:'', lsrpNote:'', lsrpConsent:false, lsrpConsentDate:'',
     // スコア
     s_skill:0, s_seika:0, s_senryaku:0, s_henkaku:0,
     s_kouki:0, s_dosatsu:0, s_tanryoku:0, s_kyomei:0, s_values:0,
@@ -377,6 +407,14 @@ function setScore(key, val) {
   updateLiveTotal();
 }
 function setRjp(v) { const c = cur(); if (!c) return; c.rjp = v; save(); renderInterview(); }
+
+// ④ 本人同意の取得・記録（同意取得まではLSRP入力をロック）
+function setLsrpConsent(checked) {
+  const c = cur(); if (!c) return;
+  c.lsrpConsent = checked;
+  c.lsrpConsentDate = checked ? new Date().toISOString().slice(0,16).replace('T',' ') : '';
+  save(); renderInterview();
+}
 
 function updateLiveTotal() {
   const c = cur(); if (!c) return;
@@ -426,8 +464,7 @@ function renderInterview() {
   <div class="section">
     <div class="section-title">フェーズ1 ｜ 適性検査（事前・手入力）</div>
     <div class="note-box" style="margin-bottom:12px">
-      ※ LSRP（サイコパシー尺度）は法的・倫理リスクのため v1 では非搭載（橋下徹＝法務の確認後に追加予定）。
-      検査スコアは面接の「仮説」に使います。
+      検査スコアは面接の「仮説」に使います。エゴグラム・エニアグラムは受検結果を手入力してください。
     </div>
     <label>エゴグラム（5つの自我状態）</label>
     <div class="ego-grid" style="margin-bottom:12px">
@@ -441,6 +478,47 @@ function renderInterview() {
       <div class="field"><label>ウィング</label><input type="text" value="${esc(c.enneaWing)}" oninput="setField('enneaWing', this.value)" placeholder="例：w4"></div>
     </div>
     <div class="field"><label>所見・面接で確認したい仮説</label><textarea oninput="setField('p1note', this.value)" placeholder="検査から立てた仮説をメモ">${esc(c.p1note)}</textarea></div>
+  </div>
+
+  <!-- 適性検査フェーズ2：LSRP（法務確認済み・参考指標） -->
+  <div class="section">
+    <div class="section-title">適性検査フェーズ2 ｜ LSRP（精神病質傾向の参考指標）</div>
+    <div class="legal-note">
+      <b>⚖ 法務確認済み（運用規程No.001 ／ 橋下徹）</b><br>
+      LSRPは<b>医学的診断ではありません</b>。スコアのみを根拠とした採用拒否・配置決定は行えません（職業安定法・障害者差別解消法）。
+      必ず面談・行動観察など<b>事実情報と組み合わせて</b>、複数情報の一つとして参照してください。
+    </div>
+
+    <!-- 本人への説明・同意取得フロー（取得まで入力ロック） -->
+    <label class="consent-row">
+      <input type="checkbox" ${c.lsrpConsent?'checked':''} onchange="setLsrpConsent(this.checked)">
+      <span class="c-text"><b>本人への目的説明と同意を取得しました</b><br>
+        アセスメントの目的を本人に説明し、同意を得たうえで実施します（統一同意書）。同意取得まではスコアを入力できません。
+        ${c.lsrpConsent && c.lsrpConsentDate ? `<span class="consent-ok">✔ 同意取得：${esc(c.lsrpConsentDate)}</span>` : ''}
+      </span>
+    </label>
+
+    <div class="${c.lsrpConsent ? '' : 'lsrp-locked'}">
+      <div class="lsrp-sub-title">LSRPスコア（受検結果を手入力）</div>
+      <div class="two-col">
+        <div class="field"><label>一次サイコパシー（pt）</label><input type="text" inputmode="numeric" value="${esc(c.lsrp1)}" oninput="setField('lsrp1', this.value)" placeholder="例：28"></div>
+        <div class="field"><label>二次サイコパシー（pt）</label><input type="text" inputmode="numeric" value="${esc(c.lsrp2)}" oninput="setField('lsrp2', this.value)" placeholder="例：19"></div>
+      </div>
+
+      <!-- トリガー表示（命令ではない・運用規程第3条） -->
+      <div class="trigger-banner">
+        <span class="t-title">⚑ これはトリガー（きっかけ）です — 命令ではありません</span>
+        スコアが気になる場合の正しい読み方：「スコアのみで判断せず、<b>個別面談で事実を確認</b>し、
+        行動・言動の事実をもとに必要な支援や配置を検討する余地がある」。実際の判断は面接官（柴山さん）が面談・事実確認のうえで行います。
+      </div>
+
+      <div class="field"><label>面談で確認した事実・所見（スコアの裏取り）</label><textarea oninput="setField('lsrpNote', this.value)" placeholder="スコアではなく、面談で確認した具体的な行動・事実を記録">${esc(c.lsrpNote)}</textarea></div>
+    </div>
+
+    <div class="note-box" style="margin-top:10px">
+      🔒 保管・取扱い（運用規程No.001 第4条）：データは本端末のlocalStorageにのみ保存し、外部送信しません。
+      本人からの開示請求に対応。不採用者は採用活動終了後6ヶ月以内に削除（候補者一覧の✕で削除）。
+    </div>
   </div>
 
   <!-- フェーズ2：地上1F -->
@@ -598,6 +676,12 @@ function buildMarkdown(c) {
 - エゴグラム：CP${c.egoCP||'—'} / NP${c.egoNP||'—'} / A${c.egoA||'—'} / FC${c.egoFC||'—'} / AC${c.egoAC||'—'}
 - エニアグラム：${c.ennea||'—'} ${c.enneaWing||''}
 - 所見・仮説：${c.p1note||'—'}
+
+## 適性検査フェーズ2：LSRP（参考指標・法務確認済み）
+- 本人同意：${c.lsrpConsent ? '取得済み（'+(c.lsrpConsentDate||'日時不明')+'）' : '未取得'}
+- 一次サイコパシー：${c.lsrp1||'—'} pt ／ 二次サイコパシー：${c.lsrp2||'—'} pt
+- 面談で確認した事実・所見：${c.lsrpNote||'—'}
+- ※LSRPは医学的診断ではなく参考指標。スコアのみでの採否・配置決定は不可。これはトリガーであり命令ではない（運用規程No.001）。
 
 ## フェーズ2：根拠コメント
 - コンピテンシー：${c.note_comp||'—'}
