@@ -4,502 +4,1262 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>ミツメル PRIVATE — 柴山靖章専用</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%233a3028'/><polygon points='16,3 27,9.5 27,22.5 16,29 5,22.5 5,9.5' fill='none' stroke='%23c8b89a' stroke-width='1.2'/><polygon points='9,10 15,14 9,22' fill='%238a7a6a'/><polygon points='23,10 17,14 23,22' fill='%238a7a6a'/><circle cx='16' cy='16' r='3.5' fill='%23c8b89a'/></svg>">
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;500&family=Noto+Sans+JP:wght@300;400;500&display=swap');
+
   :root {
-    --bg: #f5f1ea; --bg2: #ede8df; --border: #c8b89a;
-    --text: #3a3028; --text2: #6a5a4a; --text3: #9a8a7a;
-    --accent: #8a7a6a; --green: #2d7a52; --red: #c0392b; --gold: #b8860b;
+    --bg: #f5f1ea;
+    --bg2: #ede8df;
+    --border: #c8b89a;
+    --text: #3a3028;
+    --text2: #6a5a4a;
+    --text3: #9a8a7a;
+    --accent: #8a7a6a;
+    --green: #2d7a52;
+    --red: #c0392b;
+    --gold: #b8860b;
     --card: #faf7f2;
   }
+
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding-bottom: 80px; font-size: 14px; }
-  .header { background: var(--text); color: var(--bg); padding: 12px 16px; display: flex; align-items: center; gap: 10px; position: sticky; top: 0; z-index: 100; }
-  .header h1 { font-size: 16px; font-weight: 600; letter-spacing: 2px; }
-  .header .badge { background: #c0392b; color: #fff; font-size: 10px; padding: 2px 8px; border-radius: 3px; letter-spacing: 1px; }
-  .header .sync-badge { margin-left: auto; font-size: 11px; color: var(--border); }
-  .tabs { display: flex; border-bottom: 1px solid var(--border); background: var(--bg2); position: sticky; top: 41px; z-index: 99; }
-  .tab { flex: 1; padding: 11px 4px; text-align: center; font-size: 12px; cursor: pointer; border: none; background: none; color: var(--text3); border-bottom: 2px solid transparent; }
-  .tab.active { color: var(--text); border-bottom-color: var(--accent); background: var(--bg); font-weight: 600; }
-  .screen { display: none; padding: 14px 14px; }
-  .screen.active { display: block; }
-  .sec { background: var(--card); border: 0.5px solid var(--border); border-radius: 6px; padding: 12px; margin-bottom: 12px; }
-  .sec-title { font-size: 11px; font-weight: 600; color: var(--text3); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 10px; }
-  .field { margin-bottom: 10px; }
-  .field label { display: block; font-size: 11px; color: var(--text3); margin-bottom: 4px; }
-  input[type=time], input[type=date], input[type=text], input[type=number], input[type=url], textarea, select {
-    width: 100%; padding: 8px 10px; background: var(--bg); border: 0.5px solid var(--border);
-    border-radius: 4px; color: var(--text); font-size: 13px; font-family: inherit; outline: none;
+
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 0 0 80px 0;
   }
-  textarea { min-height: 70px; resize: vertical; line-height: 1.6; }
-  input[type=range] { flex: 1; accent-color: var(--accent); }
-  .slider-row { display: flex; align-items: center; gap: 8px; }
-  .slider-val { min-width: 28px; text-align: right; font-size: 16px; font-weight: 600; color: var(--accent); }
-  .btn-p { display: block; width: 100%; padding: 11px; background: var(--text); color: var(--bg); border: none; border-radius: 5px; font-size: 13px; font-weight: 600; cursor: pointer; letter-spacing: 1px; margin-bottom: 8px; }
-  .btn-s { display: block; width: 100%; padding: 9px; background: var(--bg); color: var(--text2); border: 0.5px solid var(--border); border-radius: 5px; font-size: 12px; cursor: pointer; margin-bottom: 6px; }
-  .status-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px; }
-  .status-card { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 5px; padding: 10px; text-align: center; }
-  .status-card .lbl { font-size: 10px; color: var(--text3); margin-bottom: 4px; }
-  .status-card .val { font-size: 22px; font-weight: 700; }
-  .hp-val { color: #1a5a9a; } .mp-val { color: #1a7a52; } .lv-val { color: #8a6a1a; font-size: 14px !important; }
-  .mode-badge { text-align: center; padding: 8px; border-radius: 5px; font-size: 12px; font-weight: 600; background: var(--bg2); border: 0.5px solid var(--border); margin-bottom: 10px; }
-  .mode-normal { background: #e8f5ee; color: #1a7a52; border-color: #a8dfc4; }
-  .mode-dblock { background: #fff3cd; color: #8a6a00; border-color: #ffd970; }
-  .mode-2min   { background: #fde8e8; color: #c0392b; border-color: #f0aaaa; }
-  .output-box { white-space: pre-wrap; font-size: 12px; line-height: 1.8; color: var(--text2); background: var(--bg2); border-radius: 4px; padding: 10px; min-height: 40px; display: none; }
+
+  .header {
+    background: var(--text);
+    color: var(--bg);
+    padding: 20px 24px 16px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+  }
+
+  .header h1 {
+    font-family: 'Noto Serif JP', serif;
+    font-size: 20px;
+    font-weight: 400;
+    letter-spacing: 4px;
+  }
+
+  .header span {
+    font-size: 11px;
+    color: var(--border);
+    letter-spacing: 2px;
+  }
+
+  .mode-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg2);
+    position: sticky;
+    top: 61px;
+    z-index: 99;
+  }
+
+  .mode-tab {
+    flex: 1;
+    padding: 14px;
+    text-align: center;
+    font-size: 13px;
+    cursor: pointer;
+    border: none;
+    background: none;
+    color: var(--text3);
+    letter-spacing: 1px;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+  }
+
+  .mode-tab.active {
+    color: var(--text);
+    border-bottom-color: var(--accent);
+    background: var(--bg);
+    font-weight: 500;
+  }
+
+  .screen { display: none; padding: 20px 16px; }
+  .screen.active { display: block; }
+
+  .section {
+    background: var(--card);
+    border: 0.5px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+
+  .section-title {
+    font-size: 11px;
+    color: var(--text3);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    padding-bottom: 8px;
+    border-bottom: 0.5px solid var(--border);
+  }
+
+  .field { margin-bottom: 14px; }
+  .field:last-child { margin-bottom: 0; }
+
+  label {
+    display: block;
+    font-size: 12px;
+    color: var(--text2);
+    margin-bottom: 6px;
+    letter-spacing: 0.5px;
+  }
+
+  input[type="time"],
+  input[type="date"],
+  input[type="number"],
+  textarea,
+  select {
+    width: 100%;
+    padding: 9px 12px;
+    font-size: 14px;
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    border: 0.5px solid var(--border);
+    border-radius: 4px;
+    color: var(--text);
+    outline: none;
+  }
+
+  input[type="time"]:focus,
+  textarea:focus,
+  select:focus { border-color: var(--accent); }
+
+  textarea { min-height: 80px; resize: vertical; line-height: 1.7; }
+  textarea.tall { min-height: 120px; }
+
+  .score-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .score-row input[type="range"] { flex: 1; accent-color: var(--accent); }
+  .score-val { font-size: 16px; font-weight: 500; min-width: 20px; text-align: center; }
+
+  .checkbox-group { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  .checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--bg2);
+    border: 0.5px solid var(--border);
+    border-radius: 20px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.15s;
+  }
+
+  .checkbox-item input { display: none; }
+  .checkbox-item.checked { background: #8a7a6a !important; color: #f5f1ea !important; border-color: #8a7a6a !important; font-weight: 500; }
+
+  .debug-item {
+    background: var(--bg2);
+    border: 0.5px solid var(--border);
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 10px;
+  }
+
+  .debug-item:last-child { margin-bottom: 0; }
+
+  .debug-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text2);
+    margin-bottom: 4px;
+  }
+
+  .debug-desc {
+    font-size: 11px;
+    color: var(--text3);
+    margin-bottom: 10px;
+    line-height: 1.6;
+  }
+
+  .debug-score {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .debug-btn {
+    flex: 1;
+    padding: 7px;
+    border: 0.5px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg);
+    font-size: 14px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+  }
+
+  .debug-btn.selected-maru { background: var(--green); color: white; border-color: var(--green); }
+  .debug-btn.selected-sankaku { background: var(--gold); color: white; border-color: var(--gold); }
+  .debug-btn.selected-batsu { background: var(--red); color: white; border-color: var(--red); }
+
+  .status-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .status-card {
+    background: var(--bg2);
+    border: 0.5px solid var(--border);
+    border-radius: 6px;
+    padding: 12px 8px;
+    text-align: center;
+  }
+
+  .status-card .label { font-size: 11px; color: var(--text3); margin-bottom: 4px; }
+  .status-card .value { font-size: 26px; font-weight: 500; font-family: 'Noto Serif JP', serif; }
+  .hp-val { color: #1a7a52; }
+  .mp-val { color: #1a5a9a; }
+  .lv-val { color: #8a6a1a; }
+
+  .mode-badge {
+    text-align: center;
+    padding: 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 16px;
+    letter-spacing: 1px;
+  }
+
+  .mode-normal { background: #e8f5ee; color: var(--green); border: 0.5px solid #a8dfc4; }
+  .mode-dblock { background: #fff3cd; color: var(--gold); border: 0.5px solid #ffd970; }
+  .mode-2min { background: #fde8e8; color: var(--red); border: 0.5px solid #f5b5b5; }
+
+  .pomo-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .pomo-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 0.5px solid var(--border);
+    background: var(--bg);
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text);
+    transition: background 0.15s;
+  }
+
+  .pomo-btn:hover { background: var(--bg2); }
+  .pomo-count { font-size: 22px; font-weight: 500; min-width: 40px; text-align: center; }
+
+  .btn-primary {
+    width: 100%;
+    padding: 14px;
+    background: var(--text);
+    color: var(--bg);
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: 'Noto Sans JP', sans-serif;
+    letter-spacing: 2px;
+    cursor: pointer;
+    margin-bottom: 10px;
+    transition: opacity 0.15s;
+  }
+
+  .btn-primary:hover { opacity: 0.85; }
+
+  .btn-secondary {
+    width: 100%;
+    padding: 12px;
+    background: var(--bg);
+    color: var(--text);
+    border: 0.5px solid var(--border);
+    border-radius: 6px;
+    font-size: 13px;
+    font-family: 'Noto Sans JP', sans-serif;
+    cursor: pointer;
+    margin-bottom: 8px;
+    transition: background 0.15s;
+  }
+
+  .btn-secondary:hover { background: var(--bg2); }
+
+  .output-box {
+    background: var(--bg2);
+    border: 0.5px solid var(--border);
+    border-radius: 6px;
+    padding: 14px;
+    font-size: 12px;
+    color: var(--text2);
+    white-space: pre-wrap;
+    line-height: 1.8;
+    max-height: 300px;
+    overflow-y: auto;
+    display: none;
+  }
+
   .output-box.visible { display: block; }
-  .loading { display: none; font-size: 12px; color: var(--text3); padding: 8px 0; }
-  .tag-btn { flex: 1; padding: 8px 4px; border-radius: 4px; border: 0.5px solid var(--border); background: var(--bg); font-size: 12px; font-weight: 500; cursor: pointer; }
-  .checkbox-group { display: flex; flex-wrap: wrap; gap: 6px; }
-  .chk { padding: 5px 10px; border: 0.5px solid var(--border); border-radius: 20px; font-size: 12px; cursor: pointer; user-select: none; }
-  .chk.checked { background: var(--text); color: var(--bg); border-color: var(--text); }
-  .pomo-row { display: flex; align-items: center; gap: 10px; }
-  .pomo-btn { width: 32px; height: 32px; border: 0.5px solid var(--border); border-radius: 4px; background: var(--bg2); font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-  .pomo-count { font-size: 22px; font-weight: 700; min-width: 32px; text-align: center; }
-  .debug-item { border-bottom: 0.5px solid var(--border); padding: 10px 0; }
-  .debug-item:last-child { border-bottom: none; }
-  .debug-label { font-size: 12px; font-weight: 600; margin-bottom: 3px; }
-  .debug-desc { font-size: 11px; color: var(--text3); margin-bottom: 6px; line-height: 1.5; }
-  .debug-score { display: flex; gap: 6px; margin-bottom: 6px; }
-  .debug-btn { padding: 5px 14px; border: 0.5px solid var(--border); border-radius: 4px; background: var(--bg2); font-size: 14px; cursor: pointer; }
-  .debug-btn.sel-maru { background: #e8f5ee; border-color: #2d7a52; font-weight: 700; }
-  .debug-btn.sel-sankaku { background: #fff3cd; border-color: #b8860b; font-weight: 700; }
-  .debug-btn.sel-batsu { background: #fde8e8; border-color: #c0392b; font-weight: 700; }
-  .burnout-bar-wrap { margin: 8px 0; }
-  .burnout-bar-bg { background: var(--bg2); border-radius: 4px; height: 8px; overflow: hidden; }
-  .burnout-bar-fill { height: 8px; border-radius: 4px; transition: width 0.4s; }
-  .past-item { border-bottom: 0.5px solid var(--border); padding: 6px 0; cursor: pointer; }
-  .past-body { display: none; font-size: 11px; color: var(--text2); white-space: pre-wrap; padding: 6px; background: var(--bg2); border-radius: 4px; margin-top: 4px; line-height: 1.7; }
-  .past-body.open { display: block; }
-  .sync-ok { color: #2d7a52; } .sync-warn { color: #c0392b; } .sync-saving { color: var(--gold); }
+
+  .loading-text {
+    text-align: center;
+    color: var(--text3);
+    font-size: 13px;
+    font-style: italic;
+    padding: 20px;
+    display: none;
+  }
+
+  .date-display {
+    font-size: 13px;
+    color: var(--gold);
+    font-weight: 600;
+    text-align: right;
+    margin-bottom: 16px;
+    letter-spacing: 1px;
+  }
+
+  .divider {
+    height: 0.5px;
+    background: var(--border);
+    margin: 16px 0;
+  }
+
+  input[type="number"] { -moz-appearance: textfield; }
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+  .sync-badge {
+    font-size: 11px; letter-spacing: 0.5px; padding: 4px 10px;
+    border-radius: 20px; border: 0.5px solid transparent;
+    transition: all 0.3s; min-height: 24px; display: inline-block;
+  }
+  .sync-ok   { color: var(--green); background: #e8f5ee; border-color: #a8dfc4; }
+  .sync-warn { color: var(--gold);  background: #fff3cd; border-color: #ffd970; }
+  .sync-saving { color: var(--text3); background: var(--bg2); border-color: var(--border); }
+
+  .sync-bar {
+    background: var(--bg2); border-bottom: 0.5px solid var(--border);
+    padding: 4px 16px; display: flex; align-items: center; justify-content: flex-end;
+    position: sticky; top: 108px; z-index: 98;
+  }
+
+  .past-record-item {
+    border: 0.5px solid var(--border); border-radius: 6px;
+    margin-bottom: 8px; overflow: hidden;
+  }
+  .past-record-header {
+    padding: 10px 14px; cursor: pointer; display: flex;
+    align-items: center; justify-content: space-between;
+    background: var(--bg2); font-size: 13px;
+  }
+  .past-record-header:hover { background: var(--bg); }
+  .past-record-body {
+    display: none; padding: 12px 14px; font-size: 12px;
+    color: var(--text2); white-space: pre-wrap; line-height: 1.8;
+    background: var(--card); border-top: 0.5px solid var(--border);
+  }
+  .past-record-body.open { display: block; }
+
+  /* ===== デモモード ===== */
+  .demo-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(30, 24, 18, 0.92);
+    z-index: 500;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .demo-overlay.active { display: flex; }
+  .demo-card {
+    background: var(--card);
+    border: 0.5px solid var(--border);
+    border-radius: 12px;
+    max-width: 420px;
+    width: 100%;
+    padding: 28px 24px;
+    text-align: center;
+  }
+  .demo-card h2 {
+    font-family: 'Noto Serif JP', serif;
+    font-size: 18px;
+    font-weight: 400;
+    letter-spacing: 3px;
+    margin-bottom: 12px;
+    color: var(--text);
+  }
+  .demo-card p { font-size: 13px; color: var(--text2); line-height: 1.8; margin-bottom: 16px; }
+  .demo-input {
+    width: 100%; padding: 12px 16px; font-size: 16px;
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--bg); border: 0.5px solid var(--border);
+    border-radius: 6px; color: var(--text);
+    text-align: center; letter-spacing: 4px;
+    margin-bottom: 8px; outline: none;
+  }
+  .demo-input:focus { border-color: var(--accent); }
+  .demo-badge {
+    display: inline-block;
+    background: #fff3cd; color: var(--gold);
+    border: 0.5px solid #ffd970; border-radius: 20px;
+    padding: 3px 12px; font-size: 11px; letter-spacing: 1px;
+    margin-bottom: 16px;
+  }
+  .demo-error { color: var(--red); font-size: 12px; margin-top: 4px; margin-bottom: 8px; display: none; }
+
+  /* ===== 同意取得 ===== */
+  .consent-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(30, 24, 18, 0.96);
+    z-index: 600;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .consent-overlay.active { display: flex; }
 </style>
 </head>
 <body>
 
+<!-- PRIVATE版：デモ・同意オーバーレイなし -->
+
 <div class="header">
+  <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;">
+    <!-- 外六角形 -->
+    <polygon points="16,2 27,8.5 27,23.5 16,30 5,23.5 5,8.5" fill="none" stroke="#c8b89a" stroke-width="1"/>
+    <!-- 内六角形 -->
+    <polygon points="16,6 23,10.5 23,21.5 16,26 9,21.5 9,10.5" fill="none" stroke="#c8b89a" stroke-width="0.5"/>
+    <!-- 左三角 -->
+    <polygon points="7,10 14,14 7,22" fill="#8a7a6a"/>
+    <!-- 右三角 -->
+    <polygon points="25,10 18,14 25,22" fill="#8a7a6a"/>
+    <!-- 中央円 -->
+    <circle cx="16" cy="16" r="4" fill="#c8b89a"/>
+  </svg>
   <h1>ミツメル</h1>
-  <span class="badge">PRIVATE</span>
+  <span style="color:#b8860b;letter-spacing:2px;font-size:10px;border:0.5px solid #b8860b;padding:2px 6px;border-radius:4px;">PRIVATE</span>
+  <button onclick="toggleHelp()" style="margin-left:auto;background:none;border:0.5px solid var(--border);color:var(--bg);border-radius:20px;padding:4px 12px;font-size:11px;cursor:pointer;letter-spacing:1px;">？ ヘルプ</button>
+  <a href="#" onclick="openScanWithConsent();return false;" style="margin-left:8px;background:none;border:0.5px solid #4fc3f7;color:#4fc3f7;border-radius:20px;padding:4px 12px;font-size:11px;cursor:pointer;letter-spacing:1px;text-decoration:none;">🔍 スキャン</a>
+</div>
+
+<!-- 画像プレビューモーダル -->
+<div id="img-preview-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:300;display:none;align-items:center;justify-content:center;" onclick="closeImgPreview()">
+  <img id="img-preview-large" style="max-width:95%;max-height:95%;border-radius:8px;object-fit:contain;">
+</div>
+<div id="help-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:200;overflow-y:auto;padding:20px;">
+  <div style="background:var(--card);border-radius:12px;max-width:640px;margin:0 auto;padding:24px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <h2 style="font-family:'Noto Serif JP',serif;font-size:16px;font-weight:400;letter-spacing:3px;">取扱手順書</h2>
+      <button onclick="toggleHelp()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text3);">✕</button>
+    </div>
+
+    <div style="font-size:13px;line-height:1.9;color:var(--text2);">
+
+      <div style="background:#e8f5ee;border-radius:8px;padding:14px;margin-bottom:16px;border:0.5px solid #a8dfc4;">
+        <p style="font-weight:500;color:#1a7a52;margin-bottom:8px;">🔑 さいしょに1回だけ</p>
+        <p>右上の「🔑 API」を押して、キーを貼り付けてください。</p>
+        <p>ボタンが緑になれば、準備完了です。</p>
+        <p style="color:#6a5a4a;font-size:12px;margin-top:6px;">※キーは console.anthropic.com で取れます（sk-ant- で始まります）</p>
+        <p style="color:#6a5a4a;font-size:12px;">※ブラウザを閉じたら、もう一度入れてください。</p>
+      </div>
+
+      <div style="background:var(--bg2);border-radius:8px;padding:14px;margin-bottom:16px;">
+        <p style="font-weight:500;color:var(--text);margin-bottom:8px;">🖥️ PCでの開き方（1回だけ設定）</p>
+        <p>Windowsキー+R を押して、下の1行を貼り付けて実行してください。</p>
+        <p style="font-family:monospace;background:var(--bg);padding:6px;border-radius:4px;font-size:11px;margin-top:6px;word-break:break-all;">chrome.exe --disable-web-security --user-data-dir="%TEMP%\chrome_dev"</p>
+        <p style="color:var(--text3);font-size:12px;margin-top:6px;">※この開き方でないと、アドバイスが出ません。</p>
+      </div>
+
+      <p style="font-weight:500;color:var(--text);margin-bottom:6px;">📋 毎日はこの順番で</p>
+      <p style="margin-bottom:14px;">朝 → 随時メモ → 夜 → 出力　の順に進めてください。</p>
+
+      <p style="font-weight:500;color:var(--text);margin-bottom:6px;">🌅 朝（2〜3分）</p>
+      <p>寝た時間・体調・気分・今日のキツさ（1〜6）を選んでください。</p>
+      <p>「今日のモードを判定する」を押してください。</p>
+      <p style="color:var(--text3);font-size:12px;">→ きょうの一言アドバイスが出ます。</p>
+
+      <div style="height:1px;background:var(--border);margin:14px 0;"></div>
+
+      <p style="font-weight:500;color:var(--text);margin-bottom:6px;">📝 随時メモ（日中）</p>
+      <p>気づいたら、種類を選んですぐ書いてください。</p>
+      <p><span style="color:#1a5a9a;font-weight:500;">🛡️体調</span>／<span style="color:#1a7a52;font-weight:500;">⚡やったこと</span>／<span style="color:#c0392b;font-weight:500;">🔥削られたこと</span>／<span style="color:#b8860b;font-weight:500;">💡気づき</span></p>
+      <p style="color:var(--text3);font-size:12px;">写真も一緒に貼れます。</p>
+
+      <div style="height:1px;background:var(--border);margin:14px 0;"></div>
+
+      <p style="font-weight:500;color:var(--text);margin-bottom:6px;">🌙 夜（5〜10分・この順番で）</p>
+      <p>① 昼の随時メモが自動でまとまります。足りない分を書き足してください。</p>
+      <p>② 「5つのデバッグ」に 〇△✕ と理由を入れてください。</p>
+      <p>③ 「Try100 達成数」を ＋ で入れてください。</p>
+      <p>④ 「今日のHP/MPを締める」を押してください。（朝→夜のHP/MP/LVが即・無料で出ます）</p>
+      <p style="color:#c0392b;font-size:12px;margin-top:2px;">※必ず①〜③を入れてから④を押す。メモ・デバッグ・Try100から計算するので、先に押すと不正確になります。</p>
+      <p>⑤ 「明日の設計」に予定・遅延を入れてください。</p>
+      <p>⑥ 出力タブに移動して「翌日戦略を生成する」を押してください。</p>
+
+      <div style="height:1px;background:var(--border);margin:14px 0;"></div>
+
+      <p style="font-weight:500;color:var(--text);margin-bottom:6px;">📤 出力（しめ）</p>
+      <p>できた文章は、コピーして保存先に貼ってください。</p>
+      <p>明日の予定は「カレンダーCSV」でカレンダーに取り込めます。</p>
+
+      <div style="height:1px;background:var(--border);margin:14px 0;"></div>
+
+      <div style="background:#e8f0fb;border-radius:8px;padding:14px;margin-bottom:16px;border:0.5px solid #a8c4f0;">
+        <p style="font-weight:500;color:#1a4a8a;margin-bottom:8px;">📱 2台以上で使うとき</p>
+        <p>入力した瞬間に、自動で保存されます。</p>
+        <p>別の端末では、画面を更新すると最新が出ます。</p>
+        <p style="color:#c0392b;">「翌日戦略を生成する」は、1日1回・1台だけで押してください。</p>
+      </div>
+
+      <p style="font-weight:500;color:var(--text);margin-bottom:6px;">⚠️ こんなときは</p>
+      <p>反映されないときは、設定タブの「今すぐ同期」を押してください。</p>
+      <p>0時を過ぎてからの入力は、日付を前日に変えてください。</p>
+      <p>アドバイスを出すときは、ネットにつないでください。</p>
+
+      <div style="background:var(--bg2);border-radius:8px;padding:14px;margin-top:16px;">
+        <p style="font-size:12px;color:var(--text3);text-align:center;">Fusion Partners ミツメル v2.0<br>柴山 靖章 × Claude</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="mode-tabs">
+  <button class="mode-tab active" onclick="switchTab('morning')">朝</button>
+  <button class="mode-tab" onclick="switchTab('memo')">随時メモ</button>
+  <button class="mode-tab" onclick="switchTab('evening')">夜</button>
+  <button class="mode-tab" onclick="switchTab('output')">出力</button>
+  <button class="mode-tab" onclick="switchTab('profile')">設定</button>
+</div>
+<div class="sync-bar">
   <span id="sync-status" class="sync-badge"></span>
 </div>
 
-<div class="tabs">
-  <button class="tab active" onclick="switchTab('morning')">朝</button>
-  <button class="tab" onclick="switchTab('memo')">随時</button>
-  <button class="tab" onclick="switchTab('evening')">夜</button>
-  <button class="tab" onclick="switchTab('output')">出力</button>
-  <button class="tab" onclick="switchTab('settings')">設定</button>
+<!-- 日付ロールオーバー検知バナー（日付キーのズレ再発防止） -->
+<div id="date-rollover-bar" style="display:none;background:#fff3cd;border:0.5px solid #ffd970;color:#8a6a00;padding:9px 12px;font-size:13px;text-align:center;border-radius:6px;margin:8px 16px;line-height:1.5;">
+  日付が変わりました（<span id="rollover-date"></span>）。宵越し入力でなければ切り替えてください。
+  <button onclick="jumpToToday()" style="margin-left:8px;background:#8a6a00;color:#fff;border:none;border-radius:5px;padding:4px 12px;cursor:pointer;font-size:12px;font-weight:500;">今日に切り替える</button>
 </div>
 
-<!-- 朝 -->
-<div id="screen-morning" class="screen active">
-  <div class="sec">
-    <div class="sec-title">対象日</div>
-    <div class="field">
-      <input type="date" id="m-date" onchange="changeDate(this.value)">
-    </div>
-  </div>
-
-  <div class="sec">
-    <div class="sec-title">睡眠</div>
-    <div class="field"><label>就寝</label><input type="time" id="m-sleep" value="23:00" onchange="saveMorning()"></div>
-    <div class="field"><label>起床</label><input type="time" id="m-wake" value="07:00" onchange="saveMorning()"></div>
-  </div>
-
-  <div class="sec">
-    <div class="sec-title">今朝の状態</div>
-    <div class="field">
-      <label>体調</label>
-      <div class="slider-row">
-        <span style="font-size:11px;color:var(--text3)">最悪</span>
-        <input type="range" min="1" max="5" value="3" id="m-body" oninput="document.getElementById('m-body-v').textContent=this.value;saveMorning()">
-        <span style="font-size:11px;color:var(--text3)">最高</span>
-        <span class="slider-val" id="m-body-v">3</span>
-      </div>
-    </div>
-    <div class="field">
-      <label>気分</label>
-      <div class="slider-row">
-        <span style="font-size:11px;color:var(--text3)">最悪</span>
-        <input type="range" min="1" max="5" value="3" id="m-mood" oninput="document.getElementById('m-mood-v').textContent=this.value;saveMorning()">
-        <span style="font-size:11px;color:var(--text3)">最高</span>
-        <span class="slider-val" id="m-mood-v">3</span>
-      </div>
-    </div>
-    <div class="field">
-      <label>タスクコース</label>
-      <div class="slider-row">
-        <span style="font-size:11px;color:var(--text3)">超甘口</span>
-        <input type="range" min="1" max="6" value="3" id="m-course" oninput="updateCourse(this.value);saveMorning()">
-        <span style="font-size:11px;color:var(--text3)">地獄</span>
-      </div>
-      <div id="course-badge" style="margin-top:6px;padding:6px 10px;border-radius:4px;font-size:12px;font-weight:600;background:var(--bg2);border:0.5px solid var(--border);"></div>
-    </div>
-  </div>
-
-  <div class="sec">
-    <div class="sec-title">ノイズ</div>
-    <div class="field">
-      <label>気がかり（複数可）</label>
-      <div class="checkbox-group" id="m-noise-group">
-        <span class="chk" onclick="toggleChk(this)" data-v="仕事">仕事</span>
-        <span class="chk" onclick="toggleChk(this)" data-v="家族">家族</span>
-        <span class="chk" onclick="toggleChk(this)" data-v="お金">お金</span>
-        <span class="chk" onclick="toggleChk(this)" data-v="健康">健康</span>
-        <span class="chk" onclick="toggleChk(this)" data-v="人間関係">人間関係</span>
-        <span class="chk" onclick="toggleChk(this)" data-v="その他">その他</span>
-      </div>
-    </div>
-    <div class="field">
-      <label>具体的に（任意）</label>
-      <textarea id="m-noise-detail" oninput="saveMorning()" placeholder="削られたことを事実で書く"></textarea>
-    </div>
-  </div>
-
-  <div class="sec">
-    <div class="field">
-      <label>今日の一言（任意）</label>
-      <textarea id="m-want" oninput="saveMorning()" placeholder="今日どうしたい？" style="min-height:50px;"></textarea>
-    </div>
-  </div>
-
-  <button class="btn-p" onclick="calcMorning()">今日のモードを判定する</button>
-
-  <div id="morning-result" style="display:none;">
-    <div class="status-grid">
-      <div class="status-card"><div class="lbl">HP</div><div class="val hp-val" id="hp-val">—</div></div>
-      <div class="status-card"><div class="lbl">MP</div><div class="val mp-val" id="mp-val">—</div></div>
-      <div class="status-card"><div class="lbl">LV</div><div class="val lv-val" id="lv-val">—</div></div>
-    </div>
-    <div class="mode-badge" id="mode-badge">—</div>
-    <div id="burnout-section" style="margin-bottom:10px;">
-      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-bottom:3px;">
-        <span>バーンアウトリスク</span><span id="burnout-label">—</span>
-      </div>
-      <div class="burnout-bar-wrap"><div class="burnout-bar-bg"><div id="burnout-bar" class="burnout-bar-fill" style="width:0%;background:var(--green);"></div></div></div>
-    </div>
-    <div class="sec">
-      <div class="sec-title">参謀からの一言</div>
-      <div class="loading" id="morning-loading">分析中...</div>
-      <div class="output-box" id="morning-advice"></div>
-      <button class="btn-s" onclick="copyText('morning-advice')" style="margin-top:8px;">コピー</button>
-    </div>
-  </div>
-</div>
-
-<!-- 随時 -->
+<!-- 随時メモ -->
 <div id="screen-memo" class="screen">
-  <div class="sec">
-    <div class="sec-title">随時メモ</div>
+  <div class="date-display" id="memo-date"></div>
+
+  <div class="section">
+    <div class="section-title">随時メモ — Keepの代わりに</div>
+
     <div class="field">
-      <label>タグ</label>
-      <div style="display:flex;gap:6px;">
-        <button class="tag-btn" onclick="selTag(this,'HP')" style="color:#1a5a9a;">🛡️体調</button>
-        <button class="tag-btn" onclick="selTag(this,'P')"  style="color:#1a7a52;">⚡実績</button>
-        <button class="tag-btn" onclick="selTag(this,'V')"  style="color:#c0392b;">🌊ノイズ</button>
-        <button class="tag-btn" onclick="selTag(this,'G')"  style="color:#b8860b;">💡思考</button>
+      <label>タグを選択</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+        <button class="tag-btn active" onclick="selectTag(this,'HP')" style="flex:1;padding:10px;border-radius:6px;border:0.5px solid var(--border);background:var(--bg2);font-size:13px;font-weight:500;cursor:pointer;color:#1a5a9a;">🛡️ #体調</button>
+        <button class="tag-btn" onclick="selectTag(this,'P')" style="flex:1;padding:10px;border-radius:6px;border:0.5px solid var(--border);background:var(--bg);font-size:13px;font-weight:500;cursor:pointer;color:var(--text2);">⚡ #実績</button>
+        <button class="tag-btn" onclick="selectTag(this,'V')" style="flex:1;padding:10px;border-radius:6px;border:0.5px solid var(--border);background:var(--bg);font-size:13px;font-weight:500;cursor:pointer;color:var(--text2);">🌊 #ノイズ</button>
+        <button class="tag-btn" onclick="selectTag(this,'G')" style="flex:1;padding:10px;border-radius:6px;border:0.5px solid var(--border);background:var(--bg);font-size:13px;font-weight:500;cursor:pointer;color:var(--text2);">💡 #思考</button>
       </div>
     </div>
-    <div class="field"><label>時刻</label>
-      <div style="display:flex;gap:8px;">
+
+    <div class="field">
+      <label>時刻</label>
+      <div style="display:flex;gap:8px;align-items:center;">
         <input type="time" id="memo-time" style="flex:1;">
-        <button onclick="setNow()" class="btn-s" style="width:auto;padding:8px 12px;margin:0;">今</button>
+        <button onclick="setNowTime()" style="padding:9px 14px;background:var(--accent);color:var(--bg);border:none;border-radius:4px;font-size:12px;cursor:pointer;white-space:nowrap;">今の時刻</button>
       </div>
     </div>
+
     <div id="memo-pomo-field" class="field" style="display:none;">
-      <label>ポモ数</label>
+      <label>ポモ数（#Pのみ）</label>
       <div class="pomo-row">
-        <button class="pomo-btn" onclick="adjCount('memo-pomo',-1)">−</button>
+        <button class="pomo-btn" onclick="changeCount('memo-pomo',-1)">−</button>
         <span class="pomo-count" id="memo-pomo-count">0</span>
-        <button class="pomo-btn" onclick="adjCount('memo-pomo',1)">＋</button>
+        <button class="pomo-btn" onclick="changeCount('memo-pomo',1)">＋</button>
+        <span style="font-size:12px;color:var(--text3)">ポモ</span>
       </div>
     </div>
-    <div class="field"><label>内容</label>
-      <textarea id="memo-content" placeholder="気づき・出来事をそのまま"></textarea>
+
+    <div class="field">
+      <label>内容</label>
+      <textarea id="memo-content" placeholder="気づいたこと、起きたこと、ボヤキをそのまま入力"></textarea>
     </div>
-    <button class="btn-p" onclick="addMemo()">追加</button>
+
+    <div class="field">
+      <label>画像URL（任意）— GoogleフォトなどのURLを貼り付け</label>
+      <input type="url" id="memo-image-url" placeholder="https://photos.google.com/..." style="width:100%;padding:9px 12px;font-size:13px;font-family:'Noto Sans JP',sans-serif;background:var(--bg);border:0.5px solid var(--border);border-radius:4px;color:var(--text);outline:none;">
+      <div style="font-size:11px;color:var(--text3);margin-top:4px;">追加後はメモ一覧のリンクをタップして確認できます</div>
+    </div>
+
+    <button class="btn-primary" onclick="addMemo()">追加する</button>
   </div>
 
-  <div class="sec">
-    <div class="sec-title">本日のメモ</div>
+  <div class="section">
+    <div class="section-title">本日のメモ一覧</div>
     <div id="memo-list" style="font-size:13px;color:var(--text2);line-height:2;">
       <span style="color:var(--text3);font-size:12px;">まだメモがありません</span>
     </div>
-    <button class="btn-s" onclick="clearMemos()" style="color:var(--red);border-color:var(--red);margin-top:8px;">メモをリセット</button>
+    <button class="btn-secondary" onclick="clearMemos()" style="margin-top:12px;color:var(--red);border-color:var(--red);">メモをリセット</button>
   </div>
 </div>
 
-<!-- 夜 -->
+<!-- 設定モード -->
+<div id="screen-profile" class="screen">
+  <div class="date-display">ミツメルスキャン — あなたの基礎ステータス</div>
+
+  <div class="section">
+    <div class="section-title">👤 基本情報</div>
+    <div class="field">
+      <label>名前</label>
+      <input type="text" id="p-name" placeholder="例：柴山 靖章">
+    </div>
+    <div class="field">
+      <label>役割・ポジション</label>
+      <input type="text" id="p-role" placeholder="例：代表 / 組織再設計アーキテクト">
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">⚔️ LSRP（サイコパシー判定）</div>
+    <div class="field">
+      <label>判定結果</label>
+      <select id="p-lsrp">
+        <option value="">選択してください</option>
+        <option value="安全圏：適合ピース">★☆☆ 安全圏：適合ピース</option>
+        <option value="要注意：観察対象">★★☆ 要注意：観察対象</option>
+        <option value="危険：組織の猛毒">★★★ 危険：組織の猛毒</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">🔰 RC判定（組織適応）</div>
+    <div class="field">
+      <label>判定結果</label>
+      <select id="p-rc">
+        <option value="">選択してください</option>
+        <option value="安全（凪）">★☆☆ 安全（凪）✅</option>
+        <option value="注意（I-U-）">★★☆ 注意（I-U-）他者否定</option>
+        <option value="依存（I-U+）">★★☆ 依存（I-U+）自律欠如</option>
+        <option value="危険（I+U-）">★★★ 危険（I+U-）組織破壊</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">🧠 エゴグラム（心理状態）</div>
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px;">
+      <div style="text-align:center;">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:4px;">CP</div>
+        <input type="number" id="p-cp" min="0" max="10" value="8" style="width:100%;text-align:center;padding:6px 4px;">
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:4px;">NP</div>
+        <input type="number" id="p-np" min="0" max="10" value="2" style="width:100%;text-align:center;padding:6px 4px;">
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:4px;">A</div>
+        <input type="number" id="p-a" min="0" max="10" value="3" style="width:100%;text-align:center;padding:6px 4px;">
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:4px;">FC</div>
+        <input type="number" id="p-fc" min="0" max="10" value="5" style="width:100%;text-align:center;padding:6px 4px;">
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:4px;">AC</div>
+        <input type="number" id="p-ac" min="0" max="10" value="8" style="width:100%;text-align:center;padding:6px 4px;">
+      </div>
+    </div>
+    <div id="ego-bar" style="font-size:12px;color:var(--text2);line-height:2;background:var(--bg2);border-radius:6px;padding:10px;font-family:monospace;"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">🎭 エニアグラム（キャラクタークラス）</div>
+    <div class="field">
+      <label>第1位</label>
+      <select id="p-enea1">
+        <option value="">選択してください</option>
+        <option value="001(完全主義者)">001 完全主義者</option>
+        <option value="002(献身家)">002 献身家</option>
+        <option value="003(達成者)" selected>003 達成者</option>
+        <option value="004(個人主義者)">004 個人主義者</option>
+        <option value="005(研究者)">005 研究者</option>
+        <option value="006(忠実家)">006 忠実家</option>
+        <option value="007(楽天家)">007 楽天家</option>
+        <option value="008(挑戦者)">008 挑戦者</option>
+        <option value="009(調停者)">009 調停者</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>第2位</label>
+      <select id="p-enea2">
+        <option value="">選択してください</option>
+        <option value="001(完全主義者)">001 完全主義者</option>
+        <option value="002(献身家)">002 献身家</option>
+        <option value="003(達成者)">003 達成者</option>
+        <option value="004(個人主義者)">004 個人主義者</option>
+        <option value="005(研究者)">005 研究者</option>
+        <option value="006(忠実家)">006 忠実家</option>
+        <option value="007(楽天家)">007 楽天家</option>
+        <option value="008(挑戦者)">008 挑戦者</option>
+        <option value="009(調停者)" selected>009 調停者</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>第3位</label>
+      <select id="p-enea3">
+        <option value="">選択してください</option>
+        <option value="001(完全主義者)">001 完全主義者</option>
+        <option value="002(献身家)">002 献身家</option>
+        <option value="003(達成者)">003 達成者</option>
+        <option value="004(個人主義者)">004 個人主義者</option>
+        <option value="005(研究者)">005 研究者</option>
+        <option value="006(忠実家)">006 忠実家</option>
+        <option value="007(楽天家)">007 楽天家</option>
+        <option value="008(挑戦者)">008 挑戦者</option>
+        <option value="009(調停者)">009 調停者</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">📝 キャリアアンカー・強み・弱み</div>
+    <div class="field">
+      <label>キャリアアンカー（何があっても譲れないもの）</label>
+      <textarea id="p-anchor" placeholder="例：専門職能、管理職能、安全安定など" style="min-height:60px;"></textarea>
+    </div>
+    <div class="field">
+      <label>MUST（好きなこと・得意なこと）</label>
+      <textarea id="p-must" placeholder="例：組織設計、数値分析、人材育成" style="min-height:60px;"></textarea>
+    </div>
+    <div class="field">
+      <label>NEVER（嫌いなこと・苦手なこと）</label>
+      <textarea id="p-never" placeholder="例：精神論、穴埋め作業、優先順位づけ" style="min-height:60px;"></textarea>
+    </div>
+  </div>
+
+  <button class="btn-secondary" onclick="openScanImport()" style="margin-bottom:10px;width:100%;">📥 スキャン結果をインポート（JSONを貼り付け）</button>
+  <button class="btn-primary" onclick="saveProfile()">プロファイルを保存する</button>
+  <div id="profile-saved" style="display:none;text-align:center;color:var(--green);font-size:13px;margin-top:10px;">✓ 保存しました。以降のアドバイスに反映されます。</div>
+
+  <div class="section" style="margin-top:12px;border:1px solid var(--gold);background:rgba(184,134,11,0.05);">
+    <div class="section-title" style="color:var(--gold);">🔑 APIキー（PRIVATE版）</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.7;">ミツメル（mitsumeru_app.html）で設定済みなら入力不要です。<br>未設定の場合のみここで入力してください。</p>
+    <div class="field">
+      <input type="password" id="private-api-key-input" placeholder="sk-ant-..." style="font-family:monospace;font-size:12px;">
+    </div>
+    <button class="btn-primary" onclick="saveApiKeyFromSettings()">APIキーを保存する</button>
+    <div id="private-api-key-saved" style="display:none;color:var(--green);font-size:12px;margin-top:6px;text-align:center;">✓ 保存しました</div>
+  </div>
+
+  <div class="section" style="margin-top:12px;">
+    <div class="section-title">☁️ クラウド同期</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.7;">KVを正典として、最新データを強制取得します。<br>別デバイスで入力した内容を反映したい時に使います。</p>
+    <button class="btn-secondary" onclick="forceSyncFromCloud()" style="margin-bottom:8px;">☁️ 今すぐ同期（KVから取得）</button>
+    <button class="btn-secondary" onclick="testWorkerConnection()" style="margin-bottom:8px;">🔌 Worker接続テスト</button>
+    <div id="worker-test-result" style="display:none;padding:10px 12px;border-radius:6px;font-size:12px;line-height:1.7;margin-bottom:8px;"></div>
+    <div style="font-size:11px;color:var(--text3);">対象日：<span id="sync-target-date"></span></div>
+  </div>
+</div>
+
+<!-- 朝モード -->
+<div id="screen-morning" class="screen active">
+  <div class="date-display" id="morning-date"></div>
+
+  <!-- 自動生成された今日の編成（毎朝7:00にKVへ書き込まれた内容を読み取り専用で表示） -->
+  <div class="section" id="dispatch-section" style="display:none;background:#e8f0fb;border:0.5px solid #a8c4f0;">
+    <div class="section-title" style="color:#1a4a8a;">🌅 今日の編成</div>
+    <div id="dispatch-content" style="white-space:pre-wrap;font-size:13px;line-height:1.8;color:var(--text2);"></div>
+    <div id="dispatch-meta" style="font-size:11px;color:var(--text3);margin-top:10px;"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">対象日（宵越し・遅延入力の場合は変更）</div>
+    <div class="field">
+      <input type="date" id="m-date" onchange="changeTargetDate(this.value)">
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">睡眠</div>
+    <div class="field">
+      <label>就寝時間（昨夜）</label>
+      <input type="time" id="m-sleep" onchange="saveMorning()" value="23:00">
+    </div>
+    <div class="field">
+      <label>起床時間（今朝）</label>
+      <input type="time" id="m-wake" onchange="saveMorning()" value="07:00">
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">今朝の状態</div>
+    <div class="field">
+      <label>体調（直感で）</label>
+      <div class="score-row">
+        <span style="font-size:11px;color:var(--text3)">最悪</span>
+        <input type="range" min="1" max="5" id="m-body" oninput="document.getElementById('m-body-val').textContent=this.value; saveMorning()">
+        <span style="font-size:11px;color:var(--text3)">最高</span>
+        <span class="score-val" id="m-body-val">—</span>
+      </div>
+    </div>
+    <div class="field">
+      <label>気分・精神状態（直感で）</label>
+      <div class="score-row">
+        <span style="font-size:11px;color:var(--text3)">最悪</span>
+        <input type="range" min="1" max="5" id="m-mood" oninput="document.getElementById('m-mood-val').textContent=this.value; saveMorning()">
+        <span style="font-size:11px;color:var(--text3)">最高</span>
+        <span class="score-val" id="m-mood-val">—</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">ノイズ</div>
+    <div class="field">
+      <label>気がかりになっていること（複数可）</label>
+      <div class="checkbox-group" id="m-noise-group">
+        <label class="checkbox-item" onclick="toggleCheck(this,event)"><input type="checkbox" value="仕事のこと">仕事のこと</label>
+        <label class="checkbox-item" onclick="toggleCheck(this,event)"><input type="checkbox" value="家族のこと">家族のこと</label>
+        <label class="checkbox-item" onclick="toggleCheck(this,event)"><input type="checkbox" value="友人のこと">友人のこと</label>
+        <label class="checkbox-item" onclick="toggleCheck(this,event)"><input type="checkbox" value="自分のこと">自分のこと</label>
+        <label class="checkbox-item" onclick="toggleCheck(this,event)"><input type="checkbox" value="お金のこと">お金のこと</label>
+        <label class="checkbox-item" onclick="toggleCheck(this,event)"><input type="checkbox" value="健康のこと">健康のこと</label>
+        <label class="checkbox-item" onclick="toggleCheck(this,event)"><input type="checkbox" value="その他">その他</label>
+      </div>
+    </div>
+    <div class="field">
+      <label>具体的に何がありましたか？</label>
+      <textarea id="m-noise-detail" placeholder="誰のどんな言葉・行動に削られたか、事実だけを吐き出す"></textarea>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">今日のスタート</div>
+    <div class="field">
+      <label>本日のタスクコース</label>
+      <div class="score-row">
+        <span style="font-size:11px;color:var(--text3)">超甘口</span>
+        <input type="range" min="1" max="6" id="m-course" oninput="updateCourse(this.value); saveMorning()">
+        <span style="font-size:11px;color:var(--text3)">地獄</span>
+      </div>
+      <div id="course-badge" style="margin-top:10px;text-align:center;padding:8px;border-radius:6px;font-size:13px;font-weight:500;background:var(--bg2);border:0.5px solid var(--border);">
+        コース3 — 中辛：いつもより少なめで動く
+      </div>
+    </div>
+    <div class="field">
+      <label>今日の一言（任意）</label>
+      <textarea id="m-want" oninput="saveMorning()" placeholder="面接前で緊張している、など。なければ空欄でOK" style="min-height:60px;"></textarea>
+    </div>
+  </div>
+
+  <button class="btn-primary" onclick="calcMorning()">今日のモードを判定する</button>
+
+  <div id="morning-result" style="display:none;">
+    <div class="status-grid">
+      <div class="status-card"><div class="label">HP</div><div class="value hp-val" id="hp-val">—</div></div>
+      <div class="status-card"><div class="label">MP</div><div class="value mp-val" id="mp-val">—</div></div>
+      <div class="status-card"><div class="label">LV</div><div class="value lv-val" id="lv-val">—</div></div>
+    </div>
+    <div class="mode-badge" id="mode-badge">判定中...</div>
+    <div class="section">
+      <div class="section-title">参謀からの一言</div>
+      <div class="loading-text" id="morning-loading">分析中...</div>
+      <div class="output-box" id="morning-advice"></div>
+      <button class="btn-secondary" onclick="copyMorningAdvice()" style="margin-top:10px;">アドバイスをコピー</button>
+    </div>
+  </div>
+</div>
+
+<!-- 夜モード -->
 <div id="screen-evening" class="screen">
-  <div class="sec">
-    <div class="sec-title">本日メモ確認</div>
-    <div id="eve-memo-preview" style="font-size:12px;color:var(--text2);line-height:1.8;">
-      <span style="color:var(--text3);">随時タブからメモを追加してください</span>
+  <div class="date-display" id="evening-date"></div>
+
+
+  <div class="section">
+    <div class="section-title">本日の随時メモ確認</div>
+    <div id="evening-memo-preview" style="font-size:13px;color:var(--text2);line-height:1.8;min-height:40px;">
+      <span style="color:var(--text3);font-size:12px;">随時メモがありません。随時メモタブから追加してください。</span>
     </div>
-    <div class="field" style="margin-top:10px;">
-      <label>補足・追記</label>
-      <textarea id="e-supplement" oninput="saveEvening()" placeholder="随時メモで拾えなかったことがあれば"></textarea>
+    <div class="field" style="margin-top:12px;">
+      <label>補足・追記（随時メモに書ききれなかったこと）</label>
+      <textarea id="e-supplement" oninput="saveEvening()" placeholder="随時メモで拾えなかった出来事や気づきがあれば追記してください。なければ空欄でOK" style="min-height:60px;"></textarea>
     </div>
   </div>
 
-  <div class="sec">
-    <div class="sec-title">カウント（自動集計）</div>
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px;">
-      <div style="background:var(--bg2);border:0.5px solid var(--border);border-radius:5px;padding:8px;text-align:center;">
-        <div style="font-size:10px;color:var(--text3);margin-bottom:3px;">#V ノイズ</div>
-        <div style="font-size:20px;font-weight:700;color:#c0392b;" id="auto-noise">0</div>
+  <div class="section">
+    <div class="section-title">本日のカウント（随時メモから自動集計）</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px;">
+      <div style="background:var(--bg2);border:0.5px solid var(--border);border-radius:6px;padding:10px;text-align:center;">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:4px;">#V ノイズ回数</div>
+        <div style="font-size:22px;font-weight:500;color:#c0392b;" id="auto-noise-count">0</div>
       </div>
-      <div style="background:var(--bg2);border:0.5px solid var(--border);border-radius:5px;padding:8px;text-align:center;">
-        <div style="font-size:10px;color:var(--text3);margin-bottom:3px;">#P ポモ計</div>
-        <div style="font-size:20px;font-weight:700;color:#1a7a52;" id="auto-pomo">0</div>
+      <div style="background:var(--bg2);border:0.5px solid var(--border);border-radius:6px;padding:10px;text-align:center;">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:4px;">#P ポモ合計</div>
+        <div style="font-size:22px;font-weight:500;color:#1a7a52;" id="auto-pomo-count">0</div>
       </div>
-      <div style="background:var(--bg2);border:0.5px solid var(--border);border-radius:5px;padding:8px;text-align:center;">
-        <div style="font-size:10px;color:var(--text3);margin-bottom:3px;">Try100</div>
-        <div class="pomo-row" style="justify-content:center;margin-top:2px;">
-          <button class="pomo-btn" onclick="adjCount('try100',-1)" style="width:24px;height:24px;font-size:14px;">−</button>
-          <span class="pomo-count" id="try100-count" style="font-size:18px;">0</span>
-          <button class="pomo-btn" onclick="adjCount('try100',1)" style="width:24px;height:24px;font-size:14px;">＋</button>
-        </div>
+      <div style="background:var(--bg2);border:0.5px solid var(--border);border-radius:6px;padding:10px;text-align:center;">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:4px;">LV（累積）</div>
+        <div style="font-size:20px;font-weight:500;color:#8a6a1a;" id="auto-lv">LV1/0</div>
+      </div>
+    </div>
+    <div class="field">
+      <label>Try100 達成数（手動）</label>
+      <div class="pomo-row">
+        <button class="pomo-btn" onclick="changeCount('try100',-1)">−</button>
+        <span class="pomo-count" id="try100-count">0</span>
+        <button class="pomo-btn" onclick="changeCount('try100',1)">＋</button>
+        <span style="font-size:12px;color:var(--text3)">個</span>
       </div>
     </div>
   </div>
 
-  <div class="sec">
-    <div class="sec-title">5つのデバッグ</div>
+  <div class="section">
+    <div class="section-title">5つのデバッグ</div>
+
     <div class="debug-item">
-      <div class="debug-label">Q10 役割</div>
-      <div class="debug-desc">「穴埋め」か「設計」か？仕組みを1行でも書き換えたか？</div>
+      <div class="debug-label">Q10 役割のデバッグ</div>
+      <div class="debug-desc">その行動は「穴埋め」か「設計」か？ミスが二度と起きない仕組みを一行でも書き換えたか？</div>
       <div class="debug-score">
-        <button class="debug-btn" onclick="selDebug(this,'d1','maru')">〇</button>
-        <button class="debug-btn" onclick="selDebug(this,'d1','sankaku')">△</button>
-        <button class="debug-btn" onclick="selDebug(this,'d1','batsu')">✕</button>
+        <button class="debug-btn" onclick="selectDebug(this,'d1','maru')">〇</button>
+        <button class="debug-btn" onclick="selectDebug(this,'d1','sankaku')">△</button>
+        <button class="debug-btn" onclick="selectDebug(this,'d1','batsu')">✕</button>
       </div>
-      <textarea id="d1-reason" placeholder="理由" style="min-height:40px;" oninput="saveEvening()"></textarea>
+      <textarea id="d1-reason" placeholder="理由・気づきを一言"></textarea>
     </div>
+
     <div class="debug-item">
-      <div class="debug-label">Q11 委譲</div>
-      <div class="debug-desc">AIや仕組みに渡せる余地はないか？</div>
+      <div class="debug-label">Q11 委譲のデバッグ</div>
+      <div class="debug-desc">それはAIや仕組みに渡せる余地はないか？誰がやっても同じ結果が出るフローに落とし込めるか？</div>
       <div class="debug-score">
-        <button class="debug-btn" onclick="selDebug(this,'d2','maru')">〇</button>
-        <button class="debug-btn" onclick="selDebug(this,'d2','sankaku')">△</button>
-        <button class="debug-btn" onclick="selDebug(this,'d2','batsu')">✕</button>
+        <button class="debug-btn" onclick="selectDebug(this,'d2','maru')">〇</button>
+        <button class="debug-btn" onclick="selectDebug(this,'d2','sankaku')">△</button>
+        <button class="debug-btn" onclick="selectDebug(this,'d2','batsu')">✕</button>
       </div>
-      <textarea id="d2-reason" placeholder="理由" style="min-height:40px;" oninput="saveEvening()"></textarea>
+      <textarea id="d2-reason" placeholder="理由・気づきを一言"></textarea>
     </div>
+
     <div class="debug-item">
-      <div class="debug-label">Q12 動機</div>
-      <div class="debug-desc">「自分がやった方が早い」誘惑に負けていないか？</div>
+      <div class="debug-label">Q12 動機のデバッグ</div>
+      <div class="debug-desc">「自分がやった方が早い」という誘惑に負けていないか？ドラえもんのヒゲが顔を出していないか？</div>
       <div class="debug-score">
-        <button class="debug-btn" onclick="selDebug(this,'d3','maru')">〇</button>
-        <button class="debug-btn" onclick="selDebug(this,'d3','sankaku')">△</button>
-        <button class="debug-btn" onclick="selDebug(this,'d3','batsu')">✕</button>
+        <button class="debug-btn" onclick="selectDebug(this,'d3','maru')">〇</button>
+        <button class="debug-btn" onclick="selectDebug(this,'d3','sankaku')">△</button>
+        <button class="debug-btn" onclick="selectDebug(this,'d3','batsu')">✕</button>
       </div>
-      <textarea id="d3-reason" placeholder="理由" style="min-height:40px;" oninput="saveEvening()"></textarea>
+      <textarea id="d3-reason" placeholder="理由・気づきを一言"></textarea>
     </div>
+
     <div class="debug-item">
-      <div class="debug-label">Q13 資産</div>
-      <div class="debug-desc">「消費」か「投資」か？マニュアル化・テンプレート化したか？</div>
+      <div class="debug-label">Q13 資産のデバッグ</div>
+      <div class="debug-desc">今日の活動は「消費」か「投資」か？未来の自分の時間を増やすマニュアル化・テンプレート化を行ったか？</div>
       <div class="debug-score">
-        <button class="debug-btn" onclick="selDebug(this,'d4','maru')">〇</button>
-        <button class="debug-btn" onclick="selDebug(this,'d4','sankaku')">△</button>
-        <button class="debug-btn" onclick="selDebug(this,'d4','batsu')">✕</button>
+        <button class="debug-btn" onclick="selectDebug(this,'d4','maru')">〇</button>
+        <button class="debug-btn" onclick="selectDebug(this,'d4','sankaku')">△</button>
+        <button class="debug-btn" onclick="selectDebug(this,'d4','batsu')">✕</button>
       </div>
-      <textarea id="d4-reason" placeholder="理由" style="min-height:40px;" oninput="saveEvening()"></textarea>
+      <textarea id="d4-reason" placeholder="理由・気づきを一言"></textarea>
     </div>
+
     <div class="debug-item">
-      <div class="debug-label">Q14 余白</div>
-      <div class="debug-desc">アーキテクトとして思考した時間は？「凪」の時間を確保できたか？</div>
+      <div class="debug-label">Q14 余白のデバッグ</div>
+      <div class="debug-desc">1440分のうち、アーキテクトとして思考した時間は？実務に飲み込まれず「凪」の時間を確保できたか？</div>
       <div class="debug-score">
-        <button class="debug-btn" onclick="selDebug(this,'d5','maru')">〇</button>
-        <button class="debug-btn" onclick="selDebug(this,'d5','sankaku')">△</button>
-        <button class="debug-btn" onclick="selDebug(this,'d5','batsu')">✕</button>
+        <button class="debug-btn" onclick="selectDebug(this,'d5','maru')">〇</button>
+        <button class="debug-btn" onclick="selectDebug(this,'d5','sankaku')">△</button>
+        <button class="debug-btn" onclick="selectDebug(this,'d5','batsu')">✕</button>
       </div>
-      <textarea id="d5-reason" placeholder="理由" style="min-height:40px;" oninput="saveEvening()"></textarea>
+      <textarea id="d5-reason" placeholder="理由・気づきを一言"></textarea>
     </div>
   </div>
 
-  <div class="sec">
-    <div class="sec-title">HP/MPを締める</div>
-    <button class="btn-p" onclick="closeDay()">今日を締める（即時・無料）</button>
-    <div id="close-result" style="display:none;margin-top:10px;"></div>
+  <div class="section">
+    <div class="section-title">🌙 今日のHP/MPを締める</div>
+    <p style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:12px;">
+      朝の初期HP/MPから、今日のポモ・ノイズ(#V)・デバッグ(〇△✕)を差し引いて、一日を消耗した後の残量とLVを算出します。データから再計算するので、いつ押しても同じ結果・即時・無料です。質的評価は出力タブの「翌日戦略を生成する」で行われます。
+    </p>
+    <button class="btn-primary" onclick="closeDayHPMP()">今日のHP/MPを締める</button>
+    <div id="hpmp-close-result" style="display:none;margin-top:14px;"></div>
   </div>
 
-  <div class="sec">
-    <div class="sec-title">明日の設計</div>
-    <div class="field"><label>明日の確定アポ・タスク</label>
-      <textarea id="e-tomorrow" oninput="saveEvening()" placeholder="例：0900 2ポモ CareMaker面談"></textarea>
+  <div class="section">
+    <div class="section-title">明日の設計</div>
+    <div class="section-title" style="font-size:13px;margin-bottom:8px;">📅 先行予定マップ</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:10px;">複数日分の確定アポを一覧管理します。</p>
+    <div style="overflow-x:auto;">
+      <table id="advance-schedule-table" style="width:100%;border-collapse:collapse;font-size:12px;">
+        <thead>
+          <tr style="background:var(--bg2);border-bottom:1px solid var(--border);">
+            <th style="padding:6px 4px;text-align:center;color:var(--text2);font-weight:500;min-width:80px;">日付</th>
+            <th style="padding:6px 4px;text-align:center;color:var(--text2);font-weight:500;min-width:72px;">開始</th>
+            <th style="padding:6px 4px;text-align:center;color:var(--text2);font-weight:500;min-width:72px;">終了</th>
+            <th style="padding:6px 4px;text-align:center;color:var(--text2);font-weight:500;min-width:50px;">ポモ数</th>
+            <th style="padding:6px 4px;text-align:center;color:var(--text2);font-weight:500;min-width:80px;">急重度</th>
+            <th style="padding:6px 4px;text-align:left;color:var(--text2);font-weight:500;">内容</th>
+            <th style="padding:6px 4px;text-align:center;color:var(--text2);font-weight:500;min-width:36px;"></th>
+          </tr>
+        </thead>
+        <tbody id="advance-schedule-body"></tbody>
+      </table>
     </div>
-    <div class="field"><label>先送りタスク</label>
+    <button onclick="addAdvanceRow()" style="margin-top:10px;margin-bottom:16px;padding:6px 14px;border-radius:6px;border:0.5px solid var(--border);background:var(--bg2);font-size:12px;cursor:pointer;color:var(--text);">＋ 行を追加</button>
+    <div class="field">
+      <label>遅延イベント（先送りタスク）</label>
       <textarea id="e-delay" oninput="saveEvening()" placeholder="先送りしたタスクを記録"></textarea>
     </div>
-    <div class="field"><label>フィードバック・NotebookLMメモ</label>
-      <textarea id="e-feedback" oninput="saveEvening()" placeholder="システムへの気づき・改善案など"></textarea>
-    </div>
-  </div>
-</div>
-
-<!-- 出力 -->
-<div id="screen-output" class="screen">
-  <div class="sec">
-    <div class="sec-title">翌日戦略</div>
-    <button class="btn-p" onclick="generateEvening()">翌日戦略を生成する（max 8000tokens）</button>
-    <div class="loading" id="output-loading">Claude が分析中（max 8000tokens）...</div>
-    <div class="output-box" id="output-markdown"></div>
-    <button class="btn-s" onclick="copyText('output-markdown')" style="margin-top:8px;display:none;" id="copy-output-btn">テキストをコピー</button>
-  </div>
-
-  <div class="sec" style="background:#e8f0fb;border-color:#a8c4f0;">
-    <div class="sec-title" style="color:#1a4a8a;">FusionOS ステータス送信</div>
-    <div id="fusionos-last" style="font-size:11px;color:var(--text3);margin-bottom:6px;">最終送信：未送信</div>
-    <div id="fusionos-display" style="font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.7;"></div>
-    <button class="btn-p" onclick="sendFusionOS()" style="background:#1a4a8a;">FusionOSに送信する</button>
-  </div>
-
-  <div class="sec">
-    <div class="sec-title">週次サマリー</div>
-    <button class="btn-s" onclick="generateWeekly()">今週をまとめる</button>
-    <div class="loading" id="weekly-loading">週次データを分析中...</div>
-    <div class="output-box" id="weekly-box"></div>
-    <button class="btn-s" id="copy-weekly-btn" onclick="copyText('weekly-box')" style="display:none;margin-top:6px;">コピー</button>
-  </div>
-
-  <div class="sec">
-    <div class="sec-title">過去7日</div>
-    <button class="btn-s" onclick="loadPast()">読み込む</button>
-    <div id="past-list" style="margin-top:8px;"><span style="font-size:12px;color:var(--text3);">「読み込む」を押してください</span></div>
-  </div>
-</div>
-
-<!-- 設定 -->
-<div id="screen-settings" class="screen">
-  <div class="sec">
-    <div class="sec-title">プロファイル</div>
-    <div class="field"><label>名前</label><input type="text" id="p-name" placeholder="柴山 靖章"></div>
-    <div class="field"><label>役割</label><input type="text" id="p-role" placeholder="代表 / 組織再設計アーキテクト"></div>
-    <div class="field"><label>MUST（強み・好きなこと）</label><textarea id="p-must" placeholder="組織設計・数値分析・仕組み化" style="min-height:50px;"></textarea></div>
-    <div class="field"><label>NEVER（苦手・やりたくないこと）</label><textarea id="p-never" placeholder="精神論・穴埋め作業" style="min-height:50px;"></textarea></div>
-    <div class="field"><label>エゴグラム（CP/NP/A/FC/AC）</label><input type="text" id="p-ego" placeholder="CP:8 NP:2 A:3 FC:5 AC:8"></div>
-    <div class="field"><label>エニアグラム</label><input type="text" id="p-enea" placeholder="第1位: 008(挑戦者)"></div>
-    <button class="btn-p" onclick="saveProfile()">プロファイルを保存</button>
-    <div id="profile-saved" style="display:none;text-align:center;color:var(--green);font-size:12px;margin-top:6px;">✓ 保存しました</div>
-  </div>
-
-  <div class="sec">
-    <div class="sec-title">APIキー</div>
     <div class="field">
-      <label>Anthropic APIキー</label>
-      <input type="password" id="settings-api-key" placeholder="sk-ant-..." style="font-family:monospace;">
+      <label>明日のTry100・読む本・参考URL</label>
+      <textarea id="e-try100" oninput="saveEvening()" placeholder="明日やりたいこと、読みたい本、NotebookLMに入れたい資料など箇条書きで"></textarea>
     </div>
-    <button class="btn-p" onclick="saveApiKey()">APIキーを保存</button>
-    <div id="api-key-saved" style="display:none;text-align:center;color:var(--green);font-size:12px;margin-top:6px;">✓ 保存しました。再読み込みします...</div>
   </div>
 
-  <div class="sec">
-    <div class="sec-title">クラウド同期</div>
-    <p style="font-size:11px;color:var(--text2);margin-bottom:8px;line-height:1.6;">KVから最新データを強制取得します。</p>
-    <button class="btn-s" onclick="forceSync()">今すぐ同期（KVから取得）</button>
+  <div class="section">
+    <div class="section-title">フィードバック</div>
+    <div class="field">
+      <label>SuccessOSへのフィードバック</label>
+      <textarea id="e-feedback" oninput="saveEvening()" placeholder="システムへの気づき・改善点"></textarea>
+    </div>
+    <div class="field">
+      <label>NotebookLMのまとめコメント（あれば貼り付け）</label>
+      <textarea id="e-notebooklm" oninput="saveEvening()" placeholder="HiNotesやNotebookLMの要約テキストをそのままペースト。なければ空欄でOK"></textarea>
+    </div>
   </div>
 
-  <div class="sec">
-    <div class="sec-title">データ管理</div>
-    <p style="font-size:11px;color:var(--text2);margin-bottom:8px;line-height:1.6;">
-      localStorageキー：<code>mitsumeru_priv_*</code><br>
-      KVキー：<code>priv_*</code>
-    </p>
-    <div style="font-size:11px;color:var(--text3);">対象日：<span id="sync-date-display"></span></div>
+</div>
+
+<!-- 出力モード -->
+<div id="screen-output" class="screen">
+  <div class="section">
+    <div class="section-title">① ミツメル行動監査サマリー</div>
+    <button class="btn-primary" onclick="generateEvening()" style="margin-bottom:12px;">翌日戦略を生成する</button>
+    <div class="loading-text" id="output-loading">Claude が分析中です...</div>
+    <div class="output-box" id="output-markdown"></div>
+    <div id="output-copy-row" style="display:none;flex-direction:column;gap:8px;margin-top:10px;">
+      <div style="display:flex;gap:8px;">
+        <button class="btn-secondary" id="copy-nlm-btn" onclick="copyForNotebookLM()" style="flex:1;">📋 NotebookLMにコピー</button>
+        <button class="btn-secondary" id="copy-keep-btn" onclick="copyTextForKeep()" style="flex:1;">📋 テキスト版でコピー（Keep用）</button>
+      </div>
+      <button id="copy-daily-btn" class="btn-secondary" onclick="copySummaryBox('output-markdown','copy-daily-btn')" style="width:100%;">📋 日次監査サマリーをコピー</button>
+    </div>
   </div>
 
-  <div class="sec" style="border:1px solid var(--gold);background:rgba(184,134,11,0.06);">
-    <div class="sec-title" style="color:var(--gold);">既存データ一括移行</div>
-    <p style="font-size:11px;color:var(--text2);margin-bottom:10px;line-height:1.7;">
-      mitsumeru_app.html で蓄積したデータ（朝・夜・メモ・プロフィール・LV・全履歴）を<br>
-      このプライベート版に移行します。元データは消えません。
-    </p>
-    <button class="btn-p" onclick="migrateFromApp()" style="background:var(--gold);color:#fff;">一括移行を実行する</button>
-    <div id="migrate-log" style="margin-top:10px;font-size:11px;color:var(--text2);line-height:1.7;white-space:pre-wrap;"></div>
+  <div class="section">
+    <div class="section-title">② 明日のカレンダーCSV</div>
+    <div class="output-box" id="output-csv"></div>
+    <button class="btn-secondary" onclick="downloadCSV('calendar')" style="margin-top:10px;">カレンダーCSVをダウンロード</button>
+  </div>
+
+  <div class="section">
+    <div class="section-title">③ 先送りカレンダーCSV</div>
+    <div id="ai-calendar-comment" style="display:none;background:#e8f5ee;border:0.5px solid #a8dfc4;border-radius:6px;padding:10px 14px;font-size:12px;color:#1a5a2a;margin-bottom:10px;line-height:1.7;"></div>
+    <div class="output-box" id="output-delay-csv"></div>
+    <button class="btn-secondary" onclick="downloadCSV('delay')" style="margin-top:10px;">先送りCSVをダウンロード</button>
+  </div>
+
+  <div class="section">
+    <div class="section-title">📅 過去の記録</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:12px;">直近7日分の記録を確認できます。タップで内容を展開。</p>
+    <button class="btn-secondary" onclick="loadPastRecords()" style="margin-bottom:12px;">過去7日を読み込む</button>
+    <div id="past-records-list"><span style="font-size:12px;color:var(--text3);">「読み込む」を押してください</span></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">📅 週次サマリー</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:12px;">直近7日分の記録をClaudeが読んで、HP/MP推移・消耗パターン・来週の優先タスクを提案します。毎週月曜に使う想定です。</p>
+    <button class="btn-secondary" onclick="generateWeeklySummary()" style="margin-bottom:8px;">今週をまとめる</button>
+    <div class="loading-text" id="weekly-loading">週次データを分析中...</div>
+    <div class="output-box" id="weekly-summary"></div>
+    <button id="copy-weekly-btn" class="btn-secondary" onclick="copySummaryBox('weekly-summary','copy-weekly-btn')" style="margin-top:8px;display:none;">週次サマリーをコピー</button>
+  </div>
+
+  <div class="section">
+    <div class="section-title">📊 月次サマリー</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:12px;">今月の全記録をClaudeが読んでサマリーを生成します。</p>
+    <button class="btn-secondary" onclick="generateMonthlySummary()" style="margin-bottom:8px;">今月をまとめる</button>
+    <div class="loading-text" id="monthly-loading">月次データを分析中...</div>
+    <div class="output-box" id="monthly-summary"></div>
+    <button id="copy-monthly-btn" class="btn-secondary" onclick="copySummaryBox('monthly-summary','copy-monthly-btn')" style="margin-top:8px;display:none;">月次サマリーをコピー</button>
   </div>
 </div>
 
 <script>
-// ================================================================
-// ミツメル PRIVATE — 柴山靖章専用
-// localStorage: mitsumeru_priv_* (既存mitsumeru_*と完全分離)
-// KV キー:      priv_* (既存と分離)
-// APIキー: 下の PRIVATE_API_KEY にローカルで設定する
-// ================================================================
-
-// mitsumeru_app.html の localStorage（mitsumeru_api_key）を自動参照する
-// 手動上書きしたい場合のみ下記に設定（通常は空のままでよい）
-const PRIVATE_API_KEY = '';
-
-function getApiKey() {
-  return PRIVATE_API_KEY || localStorage.getItem('mitsumeru_api_key') || '';
-}
-
-const SYNC_URL = 'https://mitsumeru-sync.fusion-partners-office.workers.dev';
-const LS_PREFIX = 'mitsumeru_';
-const KV_PREFIX = '';
-
-// ===== 状態変数 =====
-let memos = [];
-let selectedTag = 'P';
 let counts = { noise: 0, pomo: 0, try100: 0, 'memo-pomo': 0 };
 let debugScores = { d1: '', d2: '', d3: '', d4: '', d5: '' };
+let calendarCSV = '';
+let delayCSV = '';
+let aiCalendarComment = '';
 let syncPending = false;
-let targetDate = '';
 
-// ===== 日付ユーティリティ =====
+// ===== 日付キー管理 =====
+// 端末のローカル時刻(JST)基準で YYYY-MM-DD を生成する。
+// toISOString() はUTC基準のため、JST早朝(0:00〜9:00)は前日扱いになり
+// 端末間で日付キーがズレて同期に失敗する。必ずこの関数を使うこと。
 function localDateStr(d) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
-function initDate() {
-  targetDate = localDateStr(new Date());
-  document.getElementById('m-date').value = targetDate;
-  document.getElementById('sync-date-display').textContent = targetDate;
-  const now = new Date();
-  const fmt = d => `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${'日月火水木金土'[d.getDay()]}）`;
-  const dateStr = fmt(now);
-  document.querySelectorAll('.date-label').forEach(el => el.textContent = dateStr);
-  setNow();
+const TODAY = localDateStr(new Date());
+let targetDate = TODAY; // 現在の対象日
+
+// localStorage キー（日付別）
+function lsKey(type, date) {
+  return 'mitsumeru_' + type + '_' + (date || targetDate);
 }
 
-// ===== localStorage (priv専用キー) =====
-function lsKey(type, date) { return LS_PREFIX + type + '_' + (date || targetDate); }
+let memos = [];
+let selectedTag = 'HP';
+// ========================================
+// PRIVATE版：APIキーはlocalStorageから自動取得
+// 手動上書きしたい場合のみ下記に設定
+const PRIVATE_API_KEY = '';
+// ========================================
+let apiKey = PRIVATE_API_KEY || localStorage.getItem('mitsumeru_api_key') || '';
+let demoActive = false; // 常にfalse（PRIVATE版はデモなし）
+
+// ===== 旧データ移行 =====
+(function migrateOldData() {
+  const oldMorning = localStorage.getItem('mitsumeru_morning');
+  const oldEvening = localStorage.getItem('mitsumeru_evening');
+  const oldMemos   = localStorage.getItem('mitsumeru_memos');
+  const oldData    = localStorage.getItem('mitsumeru_data');
+  const oldDay     = localStorage.getItem('mitsumeru_day') || TODAY;
+
+  if (oldMorning && !localStorage.getItem(lsKey('morning', oldDay))) {
+    try {
+      const d = JSON.parse(oldMorning);
+      localStorage.setItem(lsKey('morning', oldDay), JSON.stringify({...d, _ts: Date.now()}));
+    } catch(e) {}
+    localStorage.removeItem('mitsumeru_morning');
+  }
+  if (oldEvening && !localStorage.getItem(lsKey('evening', oldDay))) {
+    try {
+      const d = JSON.parse(oldEvening);
+      localStorage.setItem(lsKey('evening', oldDay), JSON.stringify({...d, _ts: Date.now()}));
+    } catch(e) {}
+    localStorage.removeItem('mitsumeru_evening');
+  }
+  if (oldMemos && !localStorage.getItem(lsKey('memos', oldDay))) {
+    try {
+      const arr = JSON.parse(oldMemos);
+      localStorage.setItem(lsKey('memos', oldDay), JSON.stringify({data: arr, _ts: Date.now()}));
+    } catch(e) {}
+    localStorage.removeItem('mitsumeru_memos');
+  }
+  if (oldData && !localStorage.getItem(lsKey('morning', oldDay))) {
+    try {
+      const d = JSON.parse(oldData);
+      localStorage.setItem(lsKey('morning', oldDay), JSON.stringify({...d, _ts: Date.now()}));
+    } catch(e) {}
+    localStorage.removeItem('mitsumeru_data');
+  }
+  localStorage.removeItem('mitsumeru_day');
+})();
+
+// localStorage 読み書き
 function lsLoad(type, date) {
   try { return JSON.parse(localStorage.getItem(lsKey(type, date)) || 'null'); } catch(e) { return null; }
 }
 function lsSave(type, data, date) {
-  localStorage.setItem(lsKey(type, date), JSON.stringify({ ...data, _ts: Date.now() }));
+  localStorage.setItem(lsKey(type, date), JSON.stringify({...data, _ts: Date.now()}));
 }
 
-// ===== LV =====
-function getLVBase() { return parseInt(localStorage.getItem(LS_PREFIX + 'lv_total') || '0'); }
-function formatLV(total) { return 'LV' + (Math.floor(total/100)+1) + '/' + (total%100); }
-
-// ===== 同期ステータス =====
-function showSync(state) {
+// ===== 同期ステータス表示 =====
+function showSyncStatus(state) {
   const el = document.getElementById('sync-status');
   if (!el) return;
-  clearTimeout(el._t);
-  if (state === 'synced') { el.textContent = '同期済み ✓'; el.className = 'sync-badge sync-ok'; el._t = setTimeout(() => { el.textContent = ''; el.className = 'sync-badge'; }, 3000); syncPending = false; }
-  else if (state === 'saving') { el.textContent = '同期中...'; el.className = 'sync-badge sync-saving'; }
-  else if (state === 'failed') { el.textContent = '未同期 ⚠'; el.className = 'sync-badge sync-warn'; syncPending = true; }
-  else if (state === 'offline') { el.textContent = 'オフライン'; el.className = 'sync-badge sync-warn'; syncPending = true; }
+  clearTimeout(el._timer);
+  if (state === 'synced') {
+    el.textContent = '同期済み ✓';
+    el.className = 'sync-badge sync-ok';
+    syncPending = false;
+    el._timer = setTimeout(() => { el.textContent = ''; el.className = 'sync-badge'; }, 3000);
+  } else if (state === 'saving') {
+    el.textContent = '同期中...';
+    el.className = 'sync-badge sync-saving';
+  } else if (state === 'failed') {
+    el.textContent = '未同期 ⚠️ 次回起動時に同期';
+    el.className = 'sync-badge sync-warn';
+    syncPending = true;
+  } else if (state === 'offline') {
+    el.textContent = 'オフライン — 復帰時に自動同期';
+    el.className = 'sync-badge sync-warn';
+    syncPending = true;
+  }
 }
 
-// ===== Cloudflare KV (priv_キー) =====
-async function kvSave(type, data, date) {
-  const key = KV_PREFIX + type + '_' + (date || targetDate);
-  showSync('saving');
+// ===== Cloudflare KV =====
+const SYNC_URL = 'https://mitsumeru-sync.fusion-partners-office.workers.dev';
+
+async function cloudSave(type, data, date) {
+  const key = type + '_' + (date || targetDate);
+  showSyncStatus('saving');
   try {
     const res = await fetch(`${SYNC_URL}?key=${encodeURIComponent(key)}`, {
-      method: 'PUT', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...data, _ts: Date.now() })
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({...data, _ts: Date.now()})
     });
-    showSync(res.ok ? 'synced' : 'failed');
-  } catch(e) { showSync(navigator.onLine ? 'failed' : 'offline'); }
+    if (res.ok) { showSyncStatus('synced'); }
+    else { showSyncStatus('failed'); }
+  } catch(e) {
+    showSyncStatus(navigator.onLine ? 'failed' : 'offline');
+  }
 }
-async function kvLoad(type, date) {
-  const key = KV_PREFIX + type + '_' + (date || targetDate);
+
+async function cloudSaveGlobal(type, data) {
+  try {
+    await fetch(`${SYNC_URL}?key=${encodeURIComponent(type + '_global')}`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({...data, _ts: Date.now()})
+    });
+  } catch(e) {}
+}
+
+async function cloudSaveFusionOSStatus(data) {
+  const date = targetDate || localDateStr(new Date());
+  try {
+    await fetch(`${SYNC_URL}?key=${encodeURIComponent('fusionos_status_' + date)}`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({...data, source: 'mitsumeru', date, _ts: Date.now()})
+    });
+  } catch(e) {}
+}
+
+async function cloudLoadGlobal(type) {
+  try {
+    const res = await fetch(`${SYNC_URL}?key=${encodeURIComponent(type + '_global')}`);
+    if (!res.ok) return null;
+    const json = await res.json();
+    if (!json.value) return null;
+    return typeof json.value === 'string' ? JSON.parse(json.value) : json.value;
+  } catch(e) { return null; }
+}
+
+async function cloudLoad(type, date) {
+  const key = type + '_' + (date || targetDate);
   try {
     const res = await fetch(`${SYNC_URL}?key=${encodeURIComponent(key)}`);
     if (!res.ok) return null;
@@ -508,51 +1268,415 @@ async function kvLoad(type, date) {
     return typeof json.value === 'string' ? JSON.parse(json.value) : json.value;
   } catch(e) { return null; }
 }
-async function kvSaveGlobal(type, data) {
-  try {
-    await fetch(`${SYNC_URL}?key=${encodeURIComponent(KV_PREFIX + type + '_global')}`, {
-      method: 'PUT', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...data, _ts: Date.now() })
-    });
-  } catch(e) {}
-}
-async function kvLoadGlobal(type) {
-  try {
-    const res = await fetch(`${SYNC_URL}?key=${encodeURIComponent(KV_PREFIX + type + '_global')}`);
-    if (!res.ok) return null;
-    const json = await res.json();
-    if (!json.value) return null;
-    return typeof json.value === 'string' ? JSON.parse(json.value) : json.value;
-  } catch(e) { return null; }
-}
-function newerOf(a, b) { if (!a) return b; if (!b) return a; return ((a._ts||0) >= (b._ts||0)) ? a : b; }
 
-// FusionOSステータスはpriv専用キーで送信
-async function kvSaveFusionOS(data) {
-  const key = KV_PREFIX + 'fusionos_status_' + targetDate;
-  try {
-    await fetch(`${SYNC_URL}?key=${encodeURIComponent(key)}`, {
-      method: 'PUT', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...data, source: 'mitsumeru_private', date: targetDate, _ts: Date.now() })
-    });
-  } catch(e) {}
+// タイムスタンプが新しい方を返す
+function newerOf(a, b) {
+  if (!a) return b;
+  if (!b) return a;
+  return ((a._ts||0) >= (b._ts||0)) ? a : b;
 }
 
-// ===== Claude API =====
-function callClaude(prompt, onSuccess, onError, maxTokens = 4000) {
-  const apiKey = getApiKey();
-  if (!apiKey) {
-    onError('APIキーが見つかりません。先にミツメル（mitsumeru_app.html）でAPIキーを設定してください。');
-    return;
+function formatLV(totalPoints) {
+  const level = Math.floor(totalPoints / 100) + 1;
+  const pts = totalPoints % 100;
+  return 'LV' + level + '/' + pts;
+}
+function getLVBase() {
+  return parseInt(localStorage.getItem('mitsumeru_lv_total') || '0');
+}
+
+// ===== データ保存（日付キー + KV即時同期）=====
+function saveMemos() {
+  const payload = { data: memos, _ts: Date.now() };
+  localStorage.setItem(lsKey('memos'), JSON.stringify(payload));
+  cloudSave('memos', payload);
+}
+function insertIntoTextarea(id, text) {
+  const el = document.getElementById(id);
+  const start = el.selectionStart, end = el.selectionEnd;
+  el.value = el.value.substring(0, start) + text + el.value.substring(end);
+  el.selectionStart = el.selectionEnd = start + text.length;
+  el.focus();
+  saveEvening();
+}
+
+function saveEvening() {
+  const data = { _ts: Date.now() };
+  ['e-supplement','e-tomorrow','e-delay','e-try100','e-feedback','e-notebooklm',
+   'd1-reason','d2-reason','d3-reason','d4-reason','d5-reason'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) data[id] = el.value;
+  });
+  data['debugScores'] = debugScores;
+  data['try100-count'] = counts.try100;
+  data['advanceSchedule'] = getAdvanceScheduleData();
+  localStorage.setItem(lsKey('evening'), JSON.stringify(data));
+  cloudSave('evening', data);
+}
+
+// ===== 先行予定マップ =====
+function addAdvanceRow(row) {
+  const tbody = document.getElementById('advance-schedule-body');
+  const tr = document.createElement('tr');
+  tr.style.borderBottom = '0.5px solid var(--border)';
+  const date       = row ? (row.date       || '') : '';
+  const startHour  = row ? (row.startHour  || row.hour   || '') : '';
+  const startMin   = row ? (row.startMinute|| row.minute || '') : '';
+  const endHour    = row ? (row.endHour    || '') : '';
+  const endMin     = row ? (row.endMinute  || '') : '';
+  const pomo       = row ? (row.pomo       || '') : '';
+  const priority   = row ? (row.priority   || '') : '';
+  const content    = row ? (row.content    || '') : '';
+
+  const ss = 'border:0.5px solid var(--border);background:var(--bg2);color:var(--text);border-radius:4px;font-size:10px;padding:1px;';
+  const hOpts = '<option value=""></option>' + Array.from({length:24},(_,i)=>{const v=String(i).padStart(2,'0');return '<option>'+v+'</option>';}).join('');
+  const mOpts = '<option value=""></option>'+['00','15','30','45'].map(m=>'<option>'+m+'</option>').join('');
+  const priHtml = ['①','②','③','④'].map(p=>'<button onclick="setAdvancePriority(this,\''+p+'\')" class="adv-pri-btn" data-val="'+p+'" style="padding:2px 4px;border-radius:4px;border:0.5px solid var(--border);background:var(--bg2);color:var(--text);font-size:10px;cursor:pointer;">'+p+'</button>').join('');
+  const pomoOpts = '<option value=""></option>'+['1','2','3','4','5','6','7','8','9','10'].map(p=>'<option>'+p+'</option>').join('')+'<option>未定</option>';
+
+  tr.innerHTML = `
+    <td style="padding:4px 2px;">
+      <input class="adv-date" type="date" onchange="saveEvening()" style="width:110px;border:0.5px solid var(--border);background:var(--bg2);color:var(--text);border-radius:4px;font-size:11px;padding:3px 4px;touch-action:manipulation;">
+    </td>
+    <td style="padding:4px 2px;text-align:center;">
+      <div style="display:flex;gap:1px;align-items:center;justify-content:center;">
+        <select class="adv-sh" onchange="saveEvening()" style="${ss}width:32px;">${hOpts}</select><span style="font-size:10px;color:var(--text2);">:</span><select class="adv-sm" onchange="saveEvening()" style="${ss}width:30px;">${mOpts}</select>
+      </div>
+    </td>
+    <td style="padding:4px 2px;text-align:center;">
+      <div style="display:flex;gap:1px;align-items:center;justify-content:center;">
+        <select class="adv-eh" onchange="saveEvening()" style="${ss}width:32px;">${hOpts}</select><span style="font-size:10px;color:var(--text2);">:</span><select class="adv-em" onchange="saveEvening()" style="${ss}width:30px;">${mOpts}</select>
+      </div>
+    </td>
+    <td style="padding:4px 2px;text-align:center;">
+      <select class="adv-pomo" onchange="saveEvening()" style="border:0.5px solid var(--border);background:var(--bg2);color:var(--text);border-radius:4px;font-size:11px;padding:2px;width:44px;">${pomoOpts}</select>
+    </td>
+    <td style="padding:4px 2px;text-align:center;">
+      <div style="display:flex;gap:2px;justify-content:center;">${priHtml}</div>
+    </td>
+    <td style="padding:4px 2px;">
+      <input class="adv-content" type="text" oninput="saveEvening()" placeholder="内容" style="width:100%;min-width:80px;border:0.5px solid var(--border);background:var(--bg2);color:var(--text);border-radius:4px;font-size:11px;padding:3px 4px;">
+    </td>
+    <td style="padding:4px 2px;text-align:center;">
+      <button onclick="removeAdvanceRow(this)" style="padding:2px 6px;border-radius:4px;border:0.5px solid var(--border);background:var(--bg2);color:#c0392b;font-size:11px;cursor:pointer;">✕</button>
+    </td>
+  `;
+  tbody.appendChild(tr);
+  tr.querySelector('.adv-date').value  = date;
+  tr.querySelector('.adv-sh').value    = startHour;
+  tr.querySelector('.adv-sm').value    = startMin || (startHour ? '00' : '');
+  tr.querySelector('.adv-eh').value    = endHour;
+  tr.querySelector('.adv-em').value    = endMin   || (endHour   ? '00' : '');
+  tr.querySelector('.adv-pomo').value  = pomo;
+  tr.querySelector('.adv-content').value = content;
+  if (priority) {
+    const btn = tr.querySelector('.adv-pri-btn[data-val="'+priority+'"]');
+    if (btn) { btn.style.background = 'var(--accent)'; btn.style.color = '#fff'; }
   }
+}
+function setAdvancePomo(btn, val) {
+  const td = btn.closest('td');
+  td.querySelectorAll('.adv-pomo-btn').forEach(b => {
+    b.style.background = 'var(--bg2)'; b.style.color = 'var(--text)';
+  });
+  btn.style.background = 'var(--accent)'; btn.style.color = '#fff';
+  saveEvening();
+}
+function setAdvancePriority(btn, val) {
+  const td = btn.closest('td');
+  td.querySelectorAll('.adv-pri-btn').forEach(b => {
+    b.style.background = 'var(--bg2)'; b.style.color = 'var(--text)';
+  });
+  btn.style.background = 'var(--accent)'; btn.style.color = '#fff';
+  saveEvening();
+}
+function removeAdvanceRow(btn) {
+  btn.closest('tr').remove();
+  saveEvening();
+}
+function getAdvanceScheduleData() {
+  const rows = [];
+  document.querySelectorAll('#advance-schedule-body tr').forEach(tr => {
+    const priBtn = tr.querySelector('.adv-pri-btn[style*="var(--accent)"]');
+    rows.push({
+      date:        (tr.querySelector('.adv-date')   ||{value:''}).value,
+      startHour:   (tr.querySelector('.adv-sh')     ||{value:''}).value,
+      startMinute: (tr.querySelector('.adv-sm')     ||{value:''}).value,
+      endHour:     (tr.querySelector('.adv-eh')     ||{value:''}).value,
+      endMinute:   (tr.querySelector('.adv-em')     ||{value:''}).value,
+      pomo:        (tr.querySelector('.adv-pomo')   ||{value:''}).value,
+      priority:    priBtn ? priBtn.dataset.val : '',
+      content:     (tr.querySelector('.adv-content')||{value:''}).value
+    });
+  });
+  return rows;
+}
+function initAdvanceSchedule(data) {
+  const tbody = document.getElementById('advance-schedule-body');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  const emptyRow = () => ({day:'',date:'',startHour:'',startMinute:'',endHour:'',endMinute:'',pomo:'',priority:'',content:''});
+  const base = Array.isArray(data) ? data.slice() : [];
+  // 末尾の完全空行を除去（旧7行デフォルトの移行対応）
+  while (base.length > 0) {
+    const r = base[base.length - 1];
+    if (!r.day && !r.date && !r.startHour && !r.hour && !r.endHour && !r.pomo && !r.priority && !r.content) {
+      base.pop();
+    } else { break; }
+  }
+  while (base.length < 3) base.push(emptyRow());
+  base.forEach(r => addAdvanceRow(r));
+}
+function saveMorning() {
+  const data = { _ts: Date.now() };
+  ['m-sleep','m-wake','m-body','m-mood','m-noise-detail','m-want','m-course'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) data[id] = el.value;
+  });
+  const noises = [];
+  document.querySelectorAll('#m-noise-group .checkbox-item').forEach(label => {
+    if (label.classList.contains('checked')) noises.push(label.querySelector('input').value);
+  });
+  data['noises'] = noises;
+  const advice = document.getElementById('morning-advice');
+  if (advice) data['morning-advice'] = advice.textContent;
+  const hpVal = document.getElementById('hp-val');
+  const mpVal = document.getElementById('mp-val');
+  const modeBadge = document.getElementById('mode-badge');
+  const morningResult = document.getElementById('morning-result');
+  if (hpVal) data['hp-val'] = hpVal.textContent;
+  if (mpVal) data['mp-val'] = mpVal.textContent;
+  if (modeBadge) { data['mode-badge-text'] = modeBadge.textContent; data['mode-badge-class'] = modeBadge.className; }
+  if (morningResult) data['morning-result-visible'] = morningResult.style.display !== 'none';
+  data['lv-base'] = getLVBase();
+  localStorage.setItem(lsKey('morning'), JSON.stringify(data));
+  cloudSave('morning', data);
+}
+
+// ===== UI復元ヘルパー =====
+// 今日の編成パネル（読み取り専用）。KVキー dispatch_<日付> の {text, _ts} を表示する。
+function applyDispatchData(d) {
+  const sec = document.getElementById('dispatch-section');
+  if (!sec) return;
+  const text = d ? (typeof d === 'string' ? d : d.text) : '';
+  if (!text || !text.trim()) { sec.style.display = 'none'; return; }
+  const content = document.getElementById('dispatch-content');
+  if (content) content.textContent = text;
+  const meta = document.getElementById('dispatch-meta');
+  if (meta) {
+    const ts = (d && d._ts) ? new Date(d._ts) : null;
+    meta.textContent = ts ? `自動編成：${ts.getFullYear()}/${ts.getMonth()+1}/${ts.getDate()} ${String(ts.getHours()).padStart(2,'0')}:${String(ts.getMinutes()).padStart(2,'0')}` : '';
+  }
+  sec.style.display = 'block';
+}
+
+function applyMorningData(d) {
+  if (!d) return;
+  const bodyEl = document.getElementById('m-body');
+  if (bodyEl) { const v = d['m-body']||'3'; bodyEl.value=v; const bv=document.getElementById('m-body-val'); if(bv) bv.textContent=v; }
+  const moodEl = document.getElementById('m-mood');
+  if (moodEl) { const v = d['m-mood']||'3'; moodEl.value=v; const mv=document.getElementById('m-mood-val'); if(mv) mv.textContent=v; }
+  const courseEl = document.getElementById('m-course');
+  if (courseEl) { const v = d['m-course']||'3'; courseEl.value=v; updateCourse(v); }
+  ['m-sleep','m-wake','m-noise-detail','m-want'].forEach(id => {
+    const el = document.getElementById(id); if (el && d[id]!==undefined) el.value = d[id];
+  });
+  if (d.noises) {
+    document.querySelectorAll('#m-noise-group .checkbox-item').forEach(label => {
+      label.classList.toggle('checked', d.noises.includes(label.querySelector('input').value));
+    });
+  }
+  if (d['hp-val'] && d['hp-val']!=='—') { const e=document.getElementById('hp-val'); if(e) e.textContent=d['hp-val']; }
+  if (d['mp-val'] && d['mp-val']!=='—') { const e=document.getElementById('mp-val'); if(e) e.textContent=d['mp-val']; }
+  if (d['lv-base'] !== undefined) { const e=document.getElementById('lv-val'); if(e) e.textContent=formatLV(d['lv-base']); }
+  if (d['mode-badge-text']) { const b=document.getElementById('mode-badge'); if(b){b.textContent=d['mode-badge-text']; if(d['mode-badge-class']) b.className=d['mode-badge-class'];} }
+  if (d['morning-result-visible']) { const r=document.getElementById('morning-result'); if(r) r.style.display='block'; }
+  if (d['morning-advice']&&d['morning-advice'].trim()) { const a=document.getElementById('morning-advice'); if(a){a.textContent=d['morning-advice'];a.classList.add('visible');} }
+}
+
+function applyEveningData(d) {
+  if (!d) return;
+  ['e-supplement','e-tomorrow','e-delay','e-try100','e-feedback','e-notebooklm',
+   'd1-reason','d2-reason','d3-reason','d4-reason','d5-reason'].forEach(id => {
+    const el = document.getElementById(id); if (el && d[id]!==undefined) el.value=d[id];
+  });
+  if (d['try100-count'] !== undefined) {
+    counts.try100 = d['try100-count'];
+    const t = document.getElementById('try100-count');
+    if (t) t.textContent = counts.try100;
+  }
+  if (d.debugScores) {
+    debugScores = d.debugScores;
+    ['d1','d2','d3','d4','d5'].forEach(key => {
+      const score = debugScores[key]; if (!score) return;
+      const cls = score==='〇'?'maru':score==='△'?'sankaku':'batsu';
+      const items = document.querySelectorAll('.debug-item');
+      const idx = parseInt(key[1])-1;
+      if (items[idx]) {
+        const btns = items[idx].querySelectorAll('.debug-btn');
+        btns.forEach(b=>b.classList.remove('selected-maru','selected-sankaku','selected-batsu'));
+        const btnIdx = {maru:0,sankaku:1,batsu:2}[cls];
+        if (btns[btnIdx]) btns[btnIdx].classList.add('selected-'+cls);
+      }
+    });
+  }
+  initAdvanceSchedule(d.advanceSchedule || []);
+}
+
+function applyMemosData(d) {
+  if (!d) return;
+  memos = Array.isArray(d) ? d : (Array.isArray(d.data) ? d.data : []);
+  calcAutoCount();
+  renderMemos();
+}
+
+// ===== 起動時：KV優先でデータ読み込み =====
+window.addEventListener('DOMContentLoaded', async function() {
+  // ① まずlocalStorageで即時復元
+  const lsMorning  = lsLoad('morning');
+  const lsEvening  = lsLoad('evening');
+  const lsMemos    = lsLoad('memos');
+  const lsOutput   = lsLoad('output');
+  const lsCalendar = lsLoad('calendar');
+  const lsDelay    = lsLoad('delay');
+  const lsDispatch = lsLoad('dispatch');
+
+  applyMorningData(lsMorning);
+  applyEveningData(lsEvening);
+  if (!lsEvening || !lsEvening.advanceSchedule) initAdvanceSchedule([]);
+  applyMemosData(lsMemos);
+  applyDispatchData(lsDispatch);
+
+  if (lsOutput && lsOutput.text) {
+    const mdBox = document.getElementById('output-markdown');
+    if (mdBox) { mdBox.textContent = lsOutput.text; mdBox.classList.add('visible'); showOutputCopyBtns(); }
+  }
+  if (lsCalendar && lsCalendar.csv) {
+    calendarCSV = lsCalendar.csv;
+    const csvBox = document.getElementById('output-csv');
+    if (csvBox) { csvBox.textContent = calendarCSV; csvBox.classList.add('visible'); }
+  }
+  if (lsDelay && lsDelay.csv) {
+    delayCSV = lsDelay.csv;
+    const dBox = document.getElementById('output-delay-csv');
+    if (dBox) { dBox.textContent = delayCSV; dBox.classList.add('visible'); }
+  }
+
+  loadProfile();
+
+  // ② KVから最新を取得してタイムスタンプで上書き判断
+  const [kvMemos, kvMorning, kvEvening, kvProfile, kvLV, kvOutput, kvCalendar, kvDelay, kvDispatch] = await Promise.all([
+    cloudLoad('memos'), cloudLoad('morning'), cloudLoad('evening'),
+    cloudLoadGlobal('profile'), cloudLoadGlobal('lv'),
+    cloudLoad('output'), cloudLoad('calendar'), cloudLoad('delay'), cloudLoad('dispatch')
+  ]);
+
+  // 今日の編成：KVが新しければ表示を更新しローカルにもキャッシュ
+  const bestDispatch = newerOf(lsDispatch, kvDispatch);
+  if (bestDispatch && (typeof bestDispatch === 'string' || bestDispatch.text)) {
+    applyDispatchData(bestDispatch);
+    if (bestDispatch !== lsDispatch) localStorage.setItem(lsKey('dispatch'), JSON.stringify(bestDispatch));
+  }
+
+  const bestMorning = newerOf(lsMorning, kvMorning);
+  if (bestMorning !== lsMorning && kvMorning) {
+    applyMorningData(kvMorning);
+    localStorage.setItem(lsKey('morning'), JSON.stringify(kvMorning));
+  }
+
+  const bestEvening = newerOf(lsEvening, kvEvening);
+  if (bestEvening !== lsEvening && kvEvening) {
+    applyEveningData(kvEvening);
+    localStorage.setItem(lsKey('evening'), JSON.stringify(kvEvening));
+  }
+
+  const lsMemosTs  = lsMemos ? (lsMemos._ts||0) : 0;
+  const kvMemosTs  = kvMemos ? (kvMemos._ts||0) : 0;
+  if (kvMemos && kvMemosTs >= lsMemosTs) {
+    applyMemosData(kvMemos);
+    localStorage.setItem(lsKey('memos'), JSON.stringify(kvMemos));
+  }
+
+  if (kvProfile && kvProfile.name) {
+    localStorage.setItem('mitsumeru_profile', JSON.stringify(kvProfile));
+    loadProfile();
+  }
+  if (kvLV && kvLV.total !== undefined && kvLV.total > getLVBase()) {
+    localStorage.setItem('mitsumeru_lv_total', kvLV.total);
+    calcAutoCount();
+  }
+
+  // 出力・CSV をKVから復元（別端末同期）
+  const bestOutput = newerOf(lsOutput, kvOutput);
+  if (bestOutput && bestOutput.text) {
+    const mdBox = document.getElementById('output-markdown');
+    if (mdBox && !mdBox.textContent) { mdBox.textContent = bestOutput.text; mdBox.classList.add('visible'); showOutputCopyBtns(); }
+    if (bestOutput !== lsOutput) localStorage.setItem(lsKey('output'), JSON.stringify(bestOutput));
+  }
+  const bestCalendar = newerOf(lsCalendar, kvCalendar);
+  if (bestCalendar && bestCalendar.csv) {
+    calendarCSV = bestCalendar.csv;
+    const csvBox = document.getElementById('output-csv');
+    if (csvBox && !csvBox.textContent) { csvBox.textContent = calendarCSV; csvBox.classList.add('visible'); }
+    if (bestCalendar !== lsCalendar) localStorage.setItem(lsKey('calendar'), JSON.stringify(bestCalendar));
+  }
+  const bestDelay = newerOf(lsDelay, kvDelay);
+  if (bestDelay && bestDelay.csv) {
+    delayCSV = bestDelay.csv;
+    const dBox = document.getElementById('output-delay-csv');
+    if (dBox && !dBox.textContent) { dBox.textContent = delayCSV; dBox.classList.add('visible'); }
+    if (bestDelay !== lsDelay) localStorage.setItem(lsKey('delay'), JSON.stringify(bestDelay));
+  }
+
+  // ③ オフライン復帰時の自動同期
+  window.addEventListener('online', async function() {
+    if (!syncPending) return;
+    showSyncStatus('saving');
+    const m = lsLoad('morning'), e = lsLoad('evening'), mm = lsLoad('memos');
+    await Promise.all([
+      m  ? cloudSave('morning', m)  : Promise.resolve(),
+      e  ? cloudSave('evening', e)  : Promise.resolve(),
+      mm ? cloudSave('memos', mm)   : Promise.resolve()
+    ]);
+    showSyncStatus('synced');
+  });
+});
+
+// 設定タブ：強制同期
+async function forceSyncFromCloud() {
+  showSyncStatus('saving');
+  const [kvMemos, kvMorning, kvEvening] = await Promise.all([
+    cloudLoad('memos'), cloudLoad('morning'), cloudLoad('evening')
+  ]);
+  if (kvMorning) { applyMorningData(kvMorning); localStorage.setItem(lsKey('morning'), JSON.stringify(kvMorning)); }
+  if (kvEvening) { applyEveningData(kvEvening); localStorage.setItem(lsKey('evening'), JSON.stringify(kvEvening)); }
+  if (kvMemos)   { applyMemosData(kvMemos);     localStorage.setItem(lsKey('memos'),   JSON.stringify(kvMemos)); }
+  showSyncStatus('synced');
+  alert('KVから最新データを取得しました。');
+}
+
+function getApiKey() {
+  if (apiKey) return apiKey;
+  apiKey = localStorage.getItem('mitsumeru_api_key') || '';
+  return apiKey || null;
+}
+
+function saveApiKeyFromSettings() {
+  const key = (document.getElementById('private-api-key-input') || {value:''}).value.trim();
+  if (!key) return;
+  apiKey = key;
+  localStorage.setItem('mitsumeru_api_key', key);
+  const saved = document.getElementById('private-api-key-saved');
+  if (saved) { saved.style.display = 'block'; setTimeout(() => saved.style.display = 'none', 2000); }
+}
+
+function callClaude(prompt, onSuccess, onError, maxTokens) {
+  maxTokens = maxTokens || 4000;
+  const key = getApiKey();
+  if (!key) { onError('APIキーが設定されていません。設定タブ → APIキー欄で設定してください。'); return; }
   fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true'
-    },
+    headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
     body: JSON.stringify({
       model: 'claude-sonnet-4-6',
       max_tokens: maxTokens,
@@ -560,394 +1684,477 @@ function callClaude(prompt, onSuccess, onError, maxTokens = 4000) {
     })
   }).then(r => r.json()).then(data => {
     if (data.error) { onError(data.error.message); return; }
-    onSuccess(data.content?.map(c => c.text || '').join('') || 'エラー');
+    const text = data.content?.map(c => c.text || '').join('') || 'エラーが発生しました';
+    onSuccess(text);
   }).catch(e => onError(e.message));
 }
 
-// ===== プロファイル =====
-function saveProfile() {
-  const p = {
-    name: document.getElementById('p-name').value,
-    role: document.getElementById('p-role').value,
-    must: document.getElementById('p-must').value,
-    never: document.getElementById('p-never').value,
-    ego: document.getElementById('p-ego').value,
-    enea: document.getElementById('p-enea').value,
-  };
-  localStorage.setItem(LS_PREFIX + 'profile', JSON.stringify(p));
-  kvSaveGlobal('profile', p);
-  document.getElementById('profile-saved').style.display = 'block';
-  setTimeout(() => document.getElementById('profile-saved').style.display = 'none', 2500);
-}
-function loadProfile() {
-  try {
-    const p = JSON.parse(localStorage.getItem(LS_PREFIX + 'profile') || 'null');
-    if (!p) return;
-    if (p.name) document.getElementById('p-name').value = p.name;
-    if (p.role) document.getElementById('p-role').value = p.role;
-    if (p.must) document.getElementById('p-must').value = p.must;
-    if (p.never) document.getElementById('p-never').value = p.never;
-    if (p.ego) document.getElementById('p-ego').value = p.ego;
-    if (p.enea) document.getElementById('p-enea').value = p.enea;
-  } catch(e) {}
-}
-function getProfileText() {
-  try {
-    const p = JSON.parse(localStorage.getItem(LS_PREFIX + 'profile') || 'null');
-    if (!p) return 'プロファイル未設定';
-    return `名前:${p.name||'柴山靖章'} 役割:${p.role||'Fusion Partners代表'}\nMUST:${p.must||''} NEVER:${p.never||''}\nエゴグラム:${p.ego||''} エニアグラム:${p.enea||''}`;
-  } catch(e) { return '柴山靖章 / Fusion Partners代表'; }
-}
-
-// ===== タブ切り替え =====
-function switchTab(tab) {
-  document.querySelectorAll('.tab').forEach((t,i) => {
-    t.classList.toggle('active', ['morning','memo','evening','output','settings'][i] === tab);
-  });
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById('screen-' + tab).classList.add('active');
-}
-
-// ===== コース =====
 const courseData = {
   1: { name: '超甘口', desc: '寝てるだけでOK', bg: '#e8f0fe', color: '#1a5a9a' },
-  2: { name: '甘口', desc: '2分タスクのみ', bg: '#fff3cd', color: '#8a6a00' },
-  3: { name: '中辛', desc: '少なめで動く', bg: '#e8f5ee', color: '#1a7a52' },
+  2: { name: '甘口', desc: 'D-block・2分タスクのみ', bg: '#fff3cd', color: '#8a6a00' },
+  3: { name: '中辛', desc: 'いつもより少なめで動く', bg: '#e8f5ee', color: '#1a7a52' },
   4: { name: '辛口', desc: '通常モード', bg: '#fff0e8', color: '#c05a00' },
   5: { name: '激辛', desc: '全力モード', bg: '#fde8e8', color: '#c0392b' },
-  6: { name: '地獄', desc: '締め切り前', bg: '#2a1a1a', color: '#ff6644' },
+  6: { name: '地獄', desc: '締め切り・本番前', bg: '#2a1a1a', color: '#ff6644' },
 };
+
 function updateCourse(val) {
   const c = courseData[val];
-  const el = document.getElementById('course-badge');
-  el.textContent = `コース${val}—${c.name}：${c.desc}`;
-  el.style.background = c.bg; el.style.color = c.color;
+  const badge = document.getElementById('course-badge');
+  badge.textContent = `コース${val} — ${c.name}：${c.desc}`;
+  badge.style.background = c.bg;
+  badge.style.color = c.color;
+  badge.style.borderColor = c.color + '44';
 }
 
-// ===== ノイズチェックボックス =====
-function toggleChk(el) {
-  el.classList.toggle('checked');
-  saveMorning();
-}
-function getNoises() {
-  return Array.from(document.querySelectorAll('#m-noise-group .chk.checked')).map(el => el.dataset.v);
-}
-function applyNoises(noises) {
-  document.querySelectorAll('#m-noise-group .chk').forEach(el => {
-    el.classList.toggle('checked', noises.includes(el.dataset.v));
+async function changeTargetDate(newDate) {
+  if (!newDate || newDate === targetDate) return;
+  // 現在のデータを保存してから切り替え
+  saveMorning(); saveEvening(); saveMemos();
+  targetDate = newDate;
+  document.getElementById('m-date').value = newDate;
+
+  // UI初期化
+  memos = []; counts = { noise:0, pomo:0, try100:0, 'memo-pomo':0 };
+  debugScores = { d1:'', d2:'', d3:'', d4:'', d5:'' };
+  const _t100El = document.getElementById('try100-count'); if (_t100El) _t100El.textContent = '0';
+  const bodyEl=document.getElementById('m-body'), moodEl=document.getElementById('m-mood'), courseEl=document.getElementById('m-course');
+  if(bodyEl){bodyEl.value=3; document.getElementById('m-body-val').textContent=3;}
+  if(moodEl){moodEl.value=3; document.getElementById('m-mood-val').textContent=3;}
+  if(courseEl){courseEl.value=3; updateCourse(3);}
+  const resultEl=document.getElementById('morning-result'); if(resultEl) resultEl.style.display='none';
+  const hpmpCloseEl=document.getElementById('hpmp-close-result'); if(hpmpCloseEl) hpmpCloseEl.style.display='none';
+  ['m-sleep','m-wake','m-noise-detail','m-want'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value=id==='m-sleep'?'23:00':id==='m-wake'?'07:00':'';
   });
+  document.querySelectorAll('#m-noise-group .checkbox-item').forEach(l=>l.classList.remove('checked'));
+  ['e-supplement','e-tomorrow','e-delay','e-try100','e-feedback','e-notebooklm',
+   'd1-reason','d2-reason','d3-reason','d4-reason','d5-reason'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  document.querySelectorAll('.debug-btn').forEach(b=>b.classList.remove('selected-maru','selected-sankaku','selected-batsu'));
+  renderMemos(); calcAutoCount();
+
+  // 新しい日付のデータをKV優先で読み込む
+  const [kvM, kvE, kvMm] = await Promise.all([
+    cloudLoad('morning', newDate), cloudLoad('evening', newDate), cloudLoad('memos', newDate)
+  ]);
+  const lsM = lsLoad('morning', newDate), lsE = lsLoad('evening', newDate), lsMm = lsLoad('memos', newDate);
+  applyMorningData(newerOf(lsM, kvM));
+  applyEveningData(newerOf(lsE, kvE));
+  const bestMm = newerOf(lsMm, kvMm); if (bestMm) applyMemosData(bestMm);
 }
 
-// ===== 睡眠時間計算 =====
-function calcSleepHours() {
-  const sleep = document.getElementById('m-sleep').value;
-  const wake = document.getElementById('m-wake').value;
-  if (!sleep || !wake) return 7;
-  const [sh, sm] = sleep.split(':').map(Number);
-  const [wh, wm] = wake.split(':').map(Number);
-  let mins = (wh*60+wm) - (sh*60+sm);
-  if (mins < 0) mins += 1440;
-  return mins / 60;
+function setDates() {
+  const now = new Date();
+  const fmt = d => `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${'日月火水木金土'[d.getDay()]}）`;
+  document.getElementById('morning-date').textContent = fmt(now);
+  document.getElementById('evening-date').textContent = fmt(now);
+  document.getElementById('memo-date').textContent = fmt(now);
+  document.getElementById('m-date').value = targetDate;
+  setNowTime();
+}
+setDates();
+loadProfile();
+updateSyncTargetDisplay();
+checkConsent();
+if (apiKey) {
+  const btn = document.getElementById('api-btn');
+  if (btn) btn.style.color = '#4caf82';
 }
 
-// ===== 7日間トレンド =====
-function getLast7DaysTrend() {
-  const results = [];
-  const today = new Date();
-  for (let i = 1; i <= 7; i++) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i);
-    const ds = localDateStr(d);
-    const data = lsLoad('morning', ds);
-    if (data && data['hp-val']) {
-      results.push({ date: ds, hp: parseInt(data['hp-val'])||0, mp: parseInt(data['mp-val']||'0')||0 });
-    }
+// ===== 日付ロールオーバー検知（日付キーのズレ再発防止）=====
+// TODAY/targetDate はページ読込時に一度だけ算出され凍結される。0時をまたいで
+// 開いたまま使うと、保存キー(新しい日)と読込キー(古い日)がズレてデータが
+// 「消えた」ように見える。日付が変わったらバナーで通知し、ユーザーが切替を選ぶ。
+// （宵越し入力で手動で過去日を選んでいる時は通知しない）
+let _appToday = TODAY;
+function checkDateRollover() {
+  if (document.hidden) return;
+  const fresh = localDateStr(new Date());
+  if (fresh === _appToday) return;                 // 日付は変わっていない
+  const wasOnToday = (targetDate === _appToday);   // 手動で過去日を選んでいなければ true
+  _appToday = fresh;
+  if (wasOnToday) {                                // 「今日」を見ていたのに日付が変わった
+    const bar = document.getElementById('date-rollover-bar');
+    const lbl = document.getElementById('rollover-date');
+    if (bar && lbl) { lbl.textContent = fresh; bar.style.display = 'block'; }
   }
-  if (results.length === 0) return { count: 0, avgHP: 70, avgMP: 70, text: '7日分データなし' };
-  const avgHP = Math.round(results.reduce((s,r) => s+r.hp, 0) / results.length);
-  const avgMP = Math.round(results.reduce((s,r) => s+r.mp, 0) / results.length);
-  return { count: results.length, avgHP, avgMP, text: `過去${results.length}日平均 HP:${avgHP} MP:${avgMP}` };
 }
-
-// ===== バーンアウトスコア V2 =====
-function calcBurnoutV2(close, sleepHours, courseVal) {
-  if (!close.hasMorning) return 0;
-  const base = (100-close.endHP)*0.3 + (100-close.endMP)*0.4 + close.noiseCount*5 + close.cntBatsu*8;
-  const sleepFactor = sleepHours < 5 ? 20 : sleepHours < 6 ? 10 : 0;
-  const cv = parseInt(courseVal)||4;
-  const courseFactor = (cv >= 5 && close.endHP < 50) ? 8 : 0;
-  const pomoFactor = close.pomoTotal > 14 ? 10 : close.pomoTotal > 10 ? 5 : 0;
-  const trend = getLast7DaysTrend();
-  const trendFactor = trend.count >= 3 ? (trend.avgHP < 50 ? 15 : trend.avgHP < 60 ? 8 : 0) : 0;
-  return Math.min(100, Math.round(base + sleepFactor + courseFactor + pomoFactor + trendFactor));
+function jumpToToday() {
+  const bar = document.getElementById('date-rollover-bar');
+  if (bar) bar.style.display = 'none';
+  changeTargetDate(localDateStr(new Date()));
 }
+document.addEventListener('visibilitychange', checkDateRollover);
+window.addEventListener('focus', checkDateRollover);
+setInterval(checkDateRollover, 60000);
 
-// ===== 朝の保存・復元 =====
-function saveMorning() {
-  const data = {
-    'm-sleep': document.getElementById('m-sleep').value,
-    'm-wake': document.getElementById('m-wake').value,
-    'm-body': document.getElementById('m-body').value,
-    'm-mood': document.getElementById('m-mood').value,
-    'm-course': document.getElementById('m-course').value,
-    'm-noise-detail': document.getElementById('m-noise-detail').value,
-    'm-want': document.getElementById('m-want').value,
-    'noises': getNoises(),
-    'hp-val': document.getElementById('hp-val').textContent,
-    'mp-val': document.getElementById('mp-val').textContent,
-    'mode-badge-text': document.getElementById('mode-badge').textContent,
-    'mode-badge-class': document.getElementById('mode-badge').className,
-    'morning-result-visible': document.getElementById('morning-result').style.display !== 'none',
-    'morning-advice': document.getElementById('morning-advice').textContent,
-    'lv-base': getLVBase(),
+function saveProfile() {
+  const profile = {
+    name: document.getElementById('p-name').value,
+    role: document.getElementById('p-role').value,
+    lsrp: document.getElementById('p-lsrp').value,
+    rc: document.getElementById('p-rc').value,
+    ego: {
+      cp: document.getElementById('p-cp').value,
+      np: document.getElementById('p-np').value,
+      a: document.getElementById('p-a').value,
+      fc: document.getElementById('p-fc').value,
+      ac: document.getElementById('p-ac').value,
+    },
+    enea: [
+      document.getElementById('p-enea1').value,
+      document.getElementById('p-enea2').value,
+      document.getElementById('p-enea3').value,
+    ],
+    anchor: document.getElementById('p-anchor').value,
+    must: document.getElementById('p-must').value,
+    never: document.getElementById('p-never').value,
   };
-  lsSave('morning', data);
-  kvSave('morning', data);
+  localStorage.setItem('mitsumeru_profile', JSON.stringify(profile));
+  cloudSaveGlobal('profile', profile);
+  updateEgoBar();
+  document.getElementById('profile-saved').style.display = 'block';
+  setTimeout(() => document.getElementById('profile-saved').style.display = 'none', 3000);
 }
-function applyMorning(d) {
-  if (!d) return;
-  ['m-sleep','m-wake','m-noise-detail','m-want'].forEach(id => {
-    const el = document.getElementById(id); if (el && d[id] !== undefined) el.value = d[id];
+
+function loadProfile() {
+  const saved = localStorage.getItem('mitsumeru_profile');
+  if (!saved) return;
+  const p = JSON.parse(saved);
+  if (p.name) document.getElementById('p-name').value = p.name;
+  if (p.role) document.getElementById('p-role').value = p.role;
+  if (p.lsrp) document.getElementById('p-lsrp').value = p.lsrp;
+  if (p.rc) document.getElementById('p-rc').value = p.rc;
+  if (p.ego) {
+    document.getElementById('p-cp').value = p.ego.cp;
+    document.getElementById('p-np').value = p.ego.np;
+    document.getElementById('p-a').value = p.ego.a;
+    document.getElementById('p-fc').value = p.ego.fc;
+    document.getElementById('p-ac').value = p.ego.ac;
+  }
+  if (p.enea) {
+    if (p.enea[0]) document.getElementById('p-enea1').value = p.enea[0];
+    if (p.enea[1]) document.getElementById('p-enea2').value = p.enea[1];
+    if (p.enea[2]) document.getElementById('p-enea3').value = p.enea[2];
+  }
+  if (p.anchor) document.getElementById('p-anchor').value = p.anchor;
+  if (p.must) document.getElementById('p-must').value = p.must;
+  if (p.never) document.getElementById('p-never').value = p.never;
+  updateEgoBar();
+}
+
+function updateEgoBar() {
+  const cp = document.getElementById('p-cp').value;
+  const np = document.getElementById('p-np').value;
+  const a = document.getElementById('p-a').value;
+  const fc = document.getElementById('p-fc').value;
+  const ac = document.getElementById('p-ac').value;
+  const bar = (val) => '■'.repeat(parseInt(val)) + '□'.repeat(10 - parseInt(val));
+  document.getElementById('ego-bar').innerHTML =
+    `CP: ${bar(cp)} (${cp})<br>NP: ${bar(np)} (${np})<br>A : ${bar(a)} (${a})<br>FC: ${bar(fc)} (${fc})<br>AC: ${bar(ac)} (${ac})`;
+}
+
+function getProfileText() {
+  const saved = localStorage.getItem('mitsumeru_profile');
+  if (!saved) return 'プロファイル未設定';
+  const p = JSON.parse(saved);
+  return `名前:${p.name} 役割:${p.role}
+LSRP:${p.lsrp} RC:${p.rc}
+エゴグラム CP:${p.ego?.cp} NP:${p.ego?.np} A:${p.ego?.a} FC:${p.ego?.fc} AC:${p.ego?.ac}
+エニアグラム 第1位:${p.enea?.[0]} 第2位:${p.enea?.[1]} 第3位:${p.enea?.[2]}
+MUST:${p.must} NEVER:${p.never}
+キャリアアンカー:${p.anchor}`;
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.mode-tab').forEach((t,i) => {
+    t.classList.toggle('active', ['morning','memo','evening','output','profile'][i] === tab);
   });
-  if (d['m-body']) { document.getElementById('m-body').value = d['m-body']; document.getElementById('m-body-v').textContent = d['m-body']; }
-  if (d['m-mood']) { document.getElementById('m-mood').value = d['m-mood']; document.getElementById('m-mood-v').textContent = d['m-mood']; }
-  if (d['m-course']) { document.getElementById('m-course').value = d['m-course']; updateCourse(d['m-course']); }
-  if (d.noises) applyNoises(d.noises);
-  if (d['hp-val'] && d['hp-val'] !== '—') document.getElementById('hp-val').textContent = d['hp-val'];
-  if (d['mp-val'] && d['mp-val'] !== '—') document.getElementById('mp-val').textContent = d['mp-val'];
-  if (d['lv-base'] !== undefined) document.getElementById('lv-val').textContent = formatLV(d['lv-base']);
-  if (d['mode-badge-text']) { const b = document.getElementById('mode-badge'); b.textContent = d['mode-badge-text']; if (d['mode-badge-class']) b.className = d['mode-badge-class']; }
-  if (d['morning-result-visible']) document.getElementById('morning-result').style.display = 'block';
-  if (d['morning-advice'] && d['morning-advice'].trim()) { const a = document.getElementById('morning-advice'); a.textContent = d['morning-advice']; a.classList.add('visible'); }
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-'+tab).classList.add('active');
+  if (tab === 'profile') updateEgoBar();
 }
 
-// ===== 朝：HP/MP算出 =====
-function calcMorning() {
-  const sleepHours = calcSleepHours();
-  const sleepScore = Math.min(100, Math.round(sleepHours / 7 * 100));
-  const body = parseInt(document.getElementById('m-body').value);
-  const mood = parseInt(document.getElementById('m-mood').value);
-  const hpAdj = Math.min(100, Math.round(sleepScore * (body / 4)));
-
-  const noises = getNoises();
-  const noiseDetail = document.getElementById('m-noise-detail').value || '';
-  const want = document.getElementById('m-want').value;
-  const courseVal = document.getElementById('m-course').value;
-  const course = courseData[courseVal];
-
-  const mpBase = Math.round((mood / 4) * 100);
-  const noiseCheckPen = noises.length * 10;
-  let noiseTextPen = 0;
-  if (noiseDetail.length > 0 && noiseDetail.length <= 40) noiseTextPen = 5;
-  else if (noiseDetail.length > 40 && noiseDetail.length <= 100) noiseTextPen = 10;
-  else if (noiseDetail.length > 100) noiseTextPen = 15;
-  if (/[怒叫罵悪消耗苦辛傷暴鬱不安]/.test(noiseDetail)) noiseTextPen += 5;
-  const courseAdj = {'1':-10,'2':-5,'3':-3,'4':0,'5':5,'6':8}[courseVal] || 0;
-  const mp = Math.min(110, Math.max(0, mpBase - noiseCheckPen - noiseTextPen + courseAdj));
-
-  document.getElementById('hp-val').textContent = hpAdj;
-  document.getElementById('mp-val').textContent = mp;
-  document.getElementById('lv-val').textContent = formatLV(getLVBase());
-
-  let mode, modeClass, modeText;
-  if (hpAdj >= 60 && mp >= 60) { mode='normal'; modeText='通常モード — 今日は動けます'; modeClass='mode-badge mode-normal'; }
-  else if (hpAdj >= 40 || mp >= 40) { mode='dblock'; modeText='D-blockモード — 最小限に絞る'; modeClass='mode-badge mode-dblock'; }
-  else { mode='2min'; modeText='2分タスクモード — 小さいことだけ'; modeClass='mode-badge mode-2min'; }
-
-  const badge = document.getElementById('mode-badge');
-  badge.textContent = modeText; badge.className = modeClass;
-  document.getElementById('morning-result').style.display = 'block';
-
-  // バーンアウトメーター（朝時点・予測）
-  const dummyClose = { hasMorning: true, endHP: hpAdj, endMP: mp, noiseCount: noises.length, cntBatsu: 0, pomoTotal: 0 };
-  const burnout = calcBurnoutV2(dummyClose, sleepHours, courseVal);
-  showBurnoutMeter(burnout);
-
-  saveMorning();
-  kvSaveFusionOS({ hp: hpAdj, mp, mode_level: mode, mode: modeText });
-
-  // 7日間トレンド取得
-  const trend = getLast7DaysTrend();
-
-  const prompt = `あなたはFusion Partners代表の「SuccessOS 統合経営参謀」です。
-
-【ユーザープロファイル】
-${getProfileText()}
-
-【今朝の状態】
-HP: ${hpAdj}/100　MP: ${mp}/100　モード: ${modeText}
-タスクコース: コース${courseVal}（${course.name}：${course.desc}）
-睡眠: ${sleepHours.toFixed(1)}時間
-ノイズ: ${noises.join('、')||'なし'}　詳細: ${noiseDetail||'なし'}
-今日の一言: ${want||'なし'}
-
-【過去7日間トレンド】
-${trend.text}
-
-上記データをもとに以下を出力してください。
-
-【参謀からの一言】
-3〜5文。同志として隣に立つ言葉。この人だけに向けた言葉。ユーモア1つ自然に入れる。
-
-【今日のTop3タスク】
-HP/MPとコースをもとに「これだけはやる」タスクを3つ、優先順位順に箇条書き。迷いなく動けるリストにする。`;
-
-  const loading = document.getElementById('morning-loading');
-  const advice = document.getElementById('morning-advice');
-  loading.style.display = 'block'; advice.classList.remove('visible');
-
-  callClaude(prompt,
-    text => { loading.style.display = 'none'; advice.textContent = text; advice.classList.add('visible'); saveMorning(); },
-    err => { loading.style.display = 'none'; advice.textContent = 'エラー：' + err; advice.classList.add('visible'); }
-  );
-}
-
-function showBurnoutMeter(score) {
-  document.getElementById('burnout-label').textContent = score + '/100 ' + (score >= 70 ? '⚠️高リスク' : score >= 40 ? '注意' : '良好');
-  const bar = document.getElementById('burnout-bar');
-  bar.style.width = score + '%';
-  bar.style.background = score >= 70 ? '#c0392b' : score >= 40 ? '#b8860b' : '#2d7a52';
-}
-
-// ===== 随時メモ =====
-const TAG_ICONS = { HP: '🛡️', P: '⚡', V: '🌊', G: '💡' };
-const TAG_LABELS = { HP: '体調', P: '実績', V: 'ノイズ', G: '思考' };
-const TAG_COLORS = { HP: '#1a5a9a', P: '#1a7a52', V: '#c0392b', G: '#b8860b' };
-
-function selTag(btn, tag) {
+function selectTag(btn, tag) {
   selectedTag = tag;
-  const tagBg = { HP: '#e8f0fe', P: '#e8f5ee', V: '#fde8e8', G: '#fff3cd' };
-  document.querySelectorAll('.tag-btn').forEach(b => { b.style.background = 'var(--bg)'; b.style.fontWeight = '400'; });
-  btn.style.background = tagBg[tag]; btn.style.fontWeight = '600';
+  const tagColors = { HP: '#e8f0fe', P: '#e8f5ee', V: '#fde8e8', G: '#fff3cd' };
+  document.querySelectorAll('.tag-btn').forEach(b => {
+    b.style.background = 'var(--bg)';
+    b.style.fontWeight = '400';
+  });
+  btn.style.background = tagColors[tag];
+  btn.style.fontWeight = '500';
   document.getElementById('memo-pomo-field').style.display = tag === 'P' ? 'block' : 'none';
 }
-function setNow() {
+
+function setNowTime() {
   const now = new Date();
-  document.getElementById('memo-time').value = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  const h = String(now.getHours()).padStart(2,'0');
+  const m = String(now.getMinutes()).padStart(2,'0');
+  document.getElementById('memo-time').value = `${h}:${m}`;
 }
-function adjCount(key, delta) {
-  counts[key] = Math.max(0, (counts[key]||0) + delta);
-  const el = document.getElementById(key + '-count');
-  if (el) el.textContent = counts[key];
-  if (key === 'try100') saveEvening();
+
+function openImgPreview(src) {
+  const overlay = document.getElementById('img-preview-overlay');
+  document.getElementById('img-preview-large').src = src;
+  overlay.style.display = 'flex';
 }
+
+function closeImgPreview() {
+  document.getElementById('img-preview-overlay').style.display = 'none';
+}
+
+function setApiKey() {
+  const key = prompt('AnthropicのAPIキーを入力してください（sk-ant-...）：\n\n取得方法：console.anthropic.com → API Keys → Create Key\n\n現在のキー：' + (apiKey ? apiKey.substring(0,10)+'...' : '未設定'));
+  if (key === null) return;
+  if (key.trim().startsWith('sk-')) {
+    apiKey = key.trim();
+    localStorage.setItem('mitsumeru_api_key', apiKey);
+    document.getElementById('api-btn').style.color = '#4caf82';
+    alert('APIキーを設定しました！');
+  } else if (key.trim() === '') {
+    apiKey = '';
+    localStorage.removeItem('mitsumeru_api_key');
+    document.getElementById('api-btn').style.color = 'var(--bg)';
+    alert('APIキーをクリアしました。');
+  } else {
+    alert('APIキーの形式が正しくありません。\n「sk-ant-」から始まる文字列を入力してください。\n\nヘッダーの「🔑 API」ボタンから再設定できます。');
+  }
+}
+
+function copyMorningAdvice() {
+  const hp = document.getElementById('hp-val').textContent;
+  const mp = document.getElementById('mp-val').textContent;
+  const mode = document.getElementById('mode-badge').textContent;
+  const advice = document.getElementById('morning-advice').textContent;
+  const now = new Date();
+  const dateStr = `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日`;
+  const courseVal = document.getElementById('m-course').value;
+  const course = courseData[courseVal];
+  const text = `# ミツメル朝の確認｜${dateStr}
+
+## ステータス
+- HP: ${hp}/100
+- MP: ${mp}/100
+- タスクコース: コース${courseVal}（${course.name}：${course.desc}）
+- モード: ${mode}
+
+## 参謀からの一言
+${advice}`;
+  navigator.clipboard.writeText(text).then(() => {
+    alert('アドバイスをコピーしました！');
+  });
+}
+
+function toggleHelp() {
+  const overlay = document.getElementById('help-overlay');
+  overlay.style.display = overlay.style.display === 'none' ? 'block' : 'none';
+}
+
+const tagIcons = { HP: '🛡️', P: '⚡', V: '🌊', G: '💡' };
+const tagLabels = { HP: '体調', P: '実績', V: 'ノイズ', G: '思考' };
+
+function calcAutoCount() {
+  const noiseCount = memos.filter(m => m.tag === 'V').length;
+  const pomoTotal = memos.filter(m => m.tag === 'P').reduce((sum, m) => sum + (m.pomos || 0), 0);
+  const n = document.getElementById('auto-noise-count');
+  const p = document.getElementById('auto-pomo-count');
+  const l = document.getElementById('auto-lv');
+  if (n) n.textContent = noiseCount;
+  if (p) p.textContent = pomoTotal;
+  const _mLV = lsLoad('morning') || {};
+  const _lvBase = _mLV['lv-base'] !== undefined ? _mLV['lv-base'] : getLVBase();
+  if (l) l.textContent = formatLV(_lvBase + pomoTotal * 10);
+  counts.noise = noiseCount;
+  counts.pomo = pomoTotal;
+}
+
+function previewMemoImageUrl() {
+  const url = document.getElementById('memo-image-url').value.trim();
+  if (!url) return;
+  document.getElementById('memo-image-thumb').src = url;
+  document.getElementById('memo-image-preview').style.display = 'block';
+}
+
+function clearMemoImage() {
+  document.getElementById('memo-image-url').value = '';
+  document.getElementById('memo-image-thumb').src = '';
+  document.getElementById('memo-image-preview').style.display = 'none';
+}
+
 function addMemo() {
+  const time = document.getElementById('memo-time').value;
   const content = document.getElementById('memo-content').value.trim();
   if (!content) return;
-  const time = document.getElementById('memo-time').value;
   const pomos = selectedTag === 'P' ? counts['memo-pomo'] : null;
-  memos.push({ tag: selectedTag, time: time.replace(':',''), pomos, content });
-  saveMemos(); renderMemos(); updateEveMemoPreview(); calcAutoCount();
+  const timeStr = time ? time.replace(':','') : '';
+  const imgUrl = document.getElementById('memo-image-url').value.trim() || null;
+  memos.push({ tag: selectedTag, time: timeStr, pomos, content, image: imgUrl });
+  saveMemos();
+  renderMemos();
+  updateEveningMemoPreview();
+  calcAutoCount();
   document.getElementById('memo-content').value = '';
   counts['memo-pomo'] = 0;
   document.getElementById('memo-pomo-count').textContent = '0';
+  document.getElementById('memo-image-url').value = '';
+  setNowTime();
 }
-function deleteMemo(i) { memos.splice(i, 1); saveMemos(); renderMemos(); calcAutoCount(); }
-function clearMemos() { if (confirm('メモをリセットしますか？')) { memos = []; saveMemos(); renderMemos(); calcAutoCount(); } }
+
+function updateEveningMemoPreview() {
+  const preview = document.getElementById('evening-memo-preview');
+  if (!preview) return;
+  if (memos.length === 0) {
+    preview.innerHTML = '<span style="color:var(--text3);font-size:12px;">随時メモがありません。随時メモタブから追加してください。</span>';
+    return;
+  }
+  const tagColors = { HP: '#1a5a9a', P: '#1a7a52', V: '#c0392b', G: '#b8860b' };
+  preview.innerHTML = memos.map(m => `
+    <div style="display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:0.5px solid var(--border);">
+      <span style="color:${tagColors[m.tag]};font-weight:500;min-width:44px;font-size:12px;">${tagIcons[m.tag]}#${tagLabels[m.tag]}</span>
+      <span style="color:var(--text3);min-width:38px;font-size:12px;">${m.time||'--:--'}</span>
+      ${m.pomos!==null?`<span style="color:var(--accent);min-width:36px;font-size:12px;">${m.pomos}ポモ</span>`:'<span style="min-width:36px;"></span>'}
+      <div style="flex:1;">
+        <span style="font-size:13px;">${m.content}</span>
+        ${m.image ? `<div style="margin-top:4px;"><a href="${m.image}" target="_blank" style="font-size:12px;color:var(--accent);text-decoration:none;">📷 画像を開く →</a></div>` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
 function renderMemos() {
   const list = document.getElementById('memo-list');
-  if (memos.length === 0) { list.innerHTML = '<span style="color:var(--text3);font-size:12px;">まだメモがありません</span>'; updateEveMemoPreview(); return; }
+  if (memos.length === 0) {
+    list.innerHTML = '<span style="color:var(--text3);font-size:12px;">まだメモがありません</span>';
+    return;
+  }
+  const tagColors = { HP: '#1a5a9a', P: '#1a7a52', V: '#c0392b', G: '#b8860b' };
   list.innerHTML = memos.map((m, i) => `
-    <div style="display:flex;gap:8px;padding:7px 0;border-bottom:0.5px solid var(--border);align-items:flex-start;">
-      <span style="color:${TAG_COLORS[m.tag]};font-size:11px;min-width:48px;font-weight:600;">${TAG_ICONS[m.tag]}#${TAG_LABELS[m.tag]}</span>
-      <span style="color:var(--text3);font-size:11px;min-width:36px;">${m.time||'--:--'}</span>
-      ${m.pomos!==null ? `<span style="color:var(--accent);font-size:11px;min-width:32px;">${m.pomos}P</span>` : '<span style="min-width:32px;"></span>'}
-      <span style="flex:1;font-size:13px;line-height:1.5;">${m.content}</span>
-      <button onclick="deleteMemo(${i})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:15px;padding:0 3px;flex-shrink:0;">×</button>
-    </div>`).join('');
-  updateEveMemoPreview();
-}
-function updateEveMemoPreview() {
-  const el = document.getElementById('eve-memo-preview');
-  if (!el) return;
-  if (memos.length === 0) { el.innerHTML = '<span style="color:var(--text3);">随時タブからメモを追加してください</span>'; return; }
-  el.innerHTML = memos.map(m => `<div style="display:flex;gap:6px;padding:4px 0;border-bottom:0.5px solid var(--border);">
-    <span style="color:${TAG_COLORS[m.tag]};font-size:11px;font-weight:600;min-width:46px;">${TAG_ICONS[m.tag]}#${TAG_LABELS[m.tag]}</span>
-    <span style="color:var(--text3);font-size:11px;min-width:34px;">${m.time||'--:--'}</span>
-    ${m.pomos!==null ? `<span style="color:var(--accent);font-size:11px;min-width:30px;">${m.pomos}P</span>` : ''}
-    <span style="flex:1;font-size:12px;">${m.content}</span>
-  </div>`).join('');
-}
-function calcAutoCount() {
-  counts.noise = memos.filter(m => m.tag === 'V').length;
-  counts.pomo = memos.filter(m => m.tag === 'P').reduce((s,m) => s + (m.pomos||0), 0);
-  const n = document.getElementById('auto-noise'); if (n) n.textContent = counts.noise;
-  const p = document.getElementById('auto-pomo'); if (p) p.textContent = counts.pomo;
+    <div style="display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:0.5px solid var(--border);">
+      <span style="color:${tagColors[m.tag]};font-weight:500;min-width:44px;font-size:12px;">${tagIcons[m.tag]}#${tagLabels[m.tag]}</span>
+      <span style="color:var(--text3);min-width:38px;font-size:12px;">${m.time||'--:--'}</span>
+      ${m.pomos!==null?`<span style="color:var(--accent);min-width:36px;font-size:12px;">${m.pomos}ポモ</span>`:'<span style="min-width:36px;"></span>'}
+      <div style="flex:1;">
+        <span style="font-size:13px;line-height:1.6;">${m.content}</span>
+        ${m.image ? `<div style="margin-top:4px;"><a href="${m.image}" target="_blank" style="font-size:12px;color:var(--accent);text-decoration:none;">📷 画像を開く →</a></div>` : ''}
+      </div>
+      <button onclick="editMemo(${i})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:0 4px;flex-shrink:0;">✏️</button>
+      <button onclick="deleteMemo(${i})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;padding:0 4px;flex-shrink:0;">×</button>
+    </div>
+  `).join('');
+  updateEveningMemoPreview();
 }
 
-// ===== メモ保存・復元 =====
-function saveMemos() {
-  const payload = { data: memos, _ts: Date.now() };
-  localStorage.setItem(lsKey('memos'), JSON.stringify(payload));
-  kvSave('memos', payload);
-}
-function applyMemos(d) {
-  if (!d) return;
-  memos = Array.isArray(d) ? d : (Array.isArray(d.data) ? d.data : []);
-  calcAutoCount(); renderMemos();
+function editMemo(i) {
+  const m = memos[i];
+  // タグを選択状態に
+  selectedTag = m.tag;
+  document.querySelectorAll('.tag-btn').forEach(b => {
+    b.style.background = 'var(--bg)';
+    b.style.fontWeight = '400';
+  });
+  const tagBg = { HP: '#e8f0fe', P: '#e8f5ee', V: '#fde8e8', G: '#fff3cd' };
+  const tagBtns = document.querySelectorAll('.tag-btn');
+  const tagOrder = ['HP','P','V','G'];
+  tagBtns.forEach((b,idx) => {
+    if(tagOrder[idx] === m.tag) {
+      b.style.background = tagBg[m.tag];
+      b.style.fontWeight = '500';
+    }
+  });
+  // 時刻・内容・ポモをフォームにセット
+  const timeFormatted = m.time ? m.time.substring(0,2)+':'+m.time.substring(2,4) : '';
+  document.getElementById('memo-time').value = timeFormatted;
+  document.getElementById('memo-content').value = m.content;
+  if(m.pomos !== null) {
+    counts['memo-pomo'] = m.pomos;
+    document.getElementById('memo-pomo-count').textContent = m.pomos;
+    document.getElementById('memo-pomo-field').style.display = 'block';
+  } else {
+    document.getElementById('memo-pomo-field').style.display = 'none';
+  }
+  // 元のメモを削除
+  memos.splice(i, 1);
+  renderMemos();
+  calcAutoCount();
+  // フォームにスクロール
+  document.getElementById('memo-content').scrollIntoView({ behavior: 'smooth' });
+  document.getElementById('memo-content').focus();
 }
 
-// ===== 夜保存・復元 =====
-function saveEvening() {
-  const data = { _ts: Date.now() };
-  ['e-supplement','e-tomorrow','e-delay','e-feedback','d1-reason','d2-reason','d3-reason','d4-reason','d5-reason'].forEach(id => {
-    const el = document.getElementById(id); if (el) data[id] = el.value;
-  });
-  data.debugScores = debugScores;
-  data['try100-count'] = counts.try100;
-  localStorage.setItem(lsKey('evening'), JSON.stringify(data));
-  kvSave('evening', data);
+function deleteMemo(i) {
+  memos.splice(i, 1);
+  saveMemos();
+  renderMemos();
+  calcAutoCount();
 }
-function applyEvening(d) {
-  if (!d) return;
-  ['e-supplement','e-tomorrow','e-delay','e-feedback','d1-reason','d2-reason','d3-reason','d4-reason','d5-reason'].forEach(id => {
-    const el = document.getElementById(id); if (el && d[id] !== undefined) el.value = d[id];
-  });
-  if (d['try100-count'] !== undefined) { counts.try100 = d['try100-count']; const el = document.getElementById('try100-count'); if (el) el.textContent = counts.try100; }
-  if (d.debugScores) {
-    debugScores = d.debugScores;
-    ['d1','d2','d3','d4','d5'].forEach(key => {
-      const score = debugScores[key]; if (!score) return;
-      const cls = score === '〇' ? 'maru' : score === '△' ? 'sankaku' : 'batsu';
-      const items = document.querySelectorAll('.debug-item');
-      const idx = parseInt(key[1]) - 1;
-      if (items[idx]) {
-        items[idx].querySelectorAll('.debug-btn').forEach(b => b.className = 'debug-btn');
-        const btnIdx = { maru:0, sankaku:1, batsu:2 }[cls];
-        if (items[idx].querySelectorAll('.debug-btn')[btnIdx]) {
-          items[idx].querySelectorAll('.debug-btn')[btnIdx].className = 'debug-btn sel-' + cls;
-        }
-      }
-    });
+
+function clearMemos() {
+  if (confirm('本日のメモをリセットしますか？')) {
+    memos = [];
+    saveMemos();
+    renderMemos();
+    calcAutoCount();
   }
 }
 
-// ===== デバッグ選択 =====
-function selDebug(btn, key, val) {
+function getMemoSummary() {
+  if (memos.length === 0) return 'なし';
+  return memos.map(m => {
+    const pomoStr = m.pomos !== null ? ` ${m.pomos}ポモ` : '';
+    return `#${m.tag} ${m.time}${pomoStr} ${m.content}`;
+  }).join('\n');
+}
+
+function toggleCheck(el, event) {
+  if (event) event.preventDefault();
+  el.classList.toggle('checked');
+  saveMorning();
+}
+
+function changeCount(key, delta) {
+  counts[key] = Math.max(0, counts[key] + delta);
+  document.getElementById(key+'-count').textContent = counts[key];
+  if (key === 'pomo') {
+    document.getElementById('lv-preview').textContent = counts.pomo * 10;
+  }
+  if (key === 'try100') saveEvening();  // Try100達成数を夜の記録に永続化（リセット防止）
+}
+
+function selectDebug(btn, key, val) {
   const parent = btn.closest('.debug-item');
-  parent.querySelectorAll('.debug-btn').forEach(b => b.className = 'debug-btn');
-  btn.className = 'debug-btn sel-' + val;
+  parent.querySelectorAll('.debug-btn').forEach(b => {
+    b.classList.remove('selected-maru','selected-sankaku','selected-batsu');
+  });
+  btn.classList.add('selected-'+val);
   debugScores[key] = val === 'maru' ? '〇' : val === 'sankaku' ? '△' : '✕';
   saveEvening();
 }
 
-// ===== 夜：HP/MP締め =====
+// 夜の締め（決定論）をまとめて算出。締めボタンと翌日戦略の両方で使う共通関数。
 function computeDayClose() {
   const mo = lsLoad('morning') || {};
   const startHP = parseInt(mo['hp-val'], 10);
   const startMP = parseInt(mo['mp-val'], 10);
   const hasMorning = !isNaN(startHP) && !isNaN(startMP);
-  const pomoTotal = memos.filter(m => m.tag === 'P').reduce((s,m) => s + (m.pomos||0), 0);
+  const pomoTotal  = memos.filter(m => m.tag === 'P').reduce((s, m) => s + (m.pomos || 0), 0);
   const noiseCount = memos.filter(m => m.tag === 'V').length;
+  // ポモ：全数 HP-2/個、11個目以降のみ MP-3/個
   const hpFromPomo = pomoTotal * 2;
   const mpFromPomo = Math.max(0, pomoTotal - 10) * 3;
+  // ノイズ(#V)：MP-5/件
   const mpFromNoise = noiseCount * 5;
+  // デバッグ：✕ HP-3/MP-8、△ HP0/MP-4、〇 変化なし
   let hpFromDebug = 0, mpFromDebug = 0, cntBatsu = 0, cntSankaku = 0;
   ['d1','d2','d3','d4','d5'].forEach(k => {
-    const s = debugScores[k]; if (!s || s === '〇') return;
+    const s = debugScores[k];
+    if (!s || s === '〇') return;
     if (s === '△') { mpFromDebug += 4; cntSankaku++; return; }
-    hpFromDebug += 3; mpFromDebug += 8; cntBatsu++;
+    hpFromDebug += 3; mpFromDebug += 8; cntBatsu++; // ✕
   });
+  // Try100達成：MPプラス（探索・挑戦の達成は気力を満たす）
   const try100Done = counts.try100 || 0;
   const mpFromTry100 = try100Done * 3;
   const endHP = hasMorning ? Math.max(0, startHP - hpFromPomo - hpFromDebug) : NaN;
@@ -959,68 +2166,415 @@ function computeDayClose() {
            cntBatsu, cntSankaku, try100Done, mpFromTry100, lvBase, todayPts };
 }
 
-function closeDay() {
-  const c = computeDayClose();
-  if (!c.hasMorning) { alert('先に朝タブでモード判定してください。'); return; }
-  const box = document.getElementById('close-result');
+// ===== 夜：今日のHP/MPを締める（決定論のみ。質的評価は出力タブの翌日戦略AIが担う）=====
+
+// HP/MP/LV 3カード＋内訳を描画（朝タブと同じstatus-grid並び）
+function renderDayClose(c, hp, mp) {
+  const box = document.getElementById('hpmp-close-result');
   box.style.display = 'block';
-  const sleepHours = calcSleepHours();
-  const courseVal = document.getElementById('m-course').value;
-  const burnout = calcBurnoutV2(c, sleepHours, courseVal);
-  showBurnoutMeter(burnout);
-  box.innerHTML = `
-    <div class="status-grid" style="margin-bottom:8px;">
-      <div class="status-card"><div class="lbl">HP 朝→夜</div><div class="val hp-val" style="font-size:16px;">${c.startHP}→${c.endHP}</div></div>
-      <div class="status-card"><div class="lbl">MP 朝→夜</div><div class="val mp-val" style="font-size:16px;">${c.startMP}→${c.endMP}</div></div>
-      <div class="status-card"><div class="lbl">LV</div><div class="val lv-val">${formatLV(c.lvBase)}→${formatLV(c.lvBase+c.todayPts)}</div></div>
-    </div>
-    <div style="font-size:11px;color:var(--text3);line-height:1.8;">
-      バーンアウトリスク（V2）: <strong>${burnout}/100</strong><br>
-      ポモ${c.pomoTotal}個→HP-${c.hpFromPomo}${c.mpFromPomo?` / MP-${c.mpFromPomo}`:''}<br>
-      ノイズ${c.noiseCount}件→MP-${c.mpFromNoise}<br>
-      デバッグ ✕${c.cntBatsu}/△${c.cntSankaku}→HP-${c.hpFromDebug} / MP-${c.mpFromDebug}<br>
-      Try100 ${c.try100Done}件→MP+${c.mpFromTry100}
+  const breakdown = `
+    <div style="font-size:11px;color:var(--text3);line-height:1.9;">
+      内訳：<br>
+      ・ポモ ${c.pomoTotal}個 → HP −${c.hpFromPomo}${c.mpFromPomo ? ` ／ MP −${c.mpFromPomo}（11個目以降）` : ''}<br>
+      ・ノイズ(#V) ${c.noiseCount}件 → MP −${c.mpFromNoise}<br>
+      ・デバッグ ✕${c.cntBatsu}・△${c.cntSankaku} → HP −${c.hpFromDebug} ／ MP −${c.mpFromDebug}<br>
+      ・Try100達成 ${c.try100Done}件 → <span style="color:var(--green);">MP ＋${c.mpFromTry100}</span>
     </div>`;
-  localStorage.setItem(LS_PREFIX + 'lv_total', c.lvBase + c.todayPts);
-  kvSaveFusionOS({
-    hp: c.endHP, mp: c.endMP,
-    mode_level: c.endHP>=60&&c.endMP>=60?'normal':c.endHP>=40||c.endMP>=40?'dblock':'minimal',
-    burnout_score: burnout, noise_count: c.noiseCount, debug_x_count: c.cntBatsu, pomo_total: c.pomoTotal
+  box.innerHTML = `
+    <div class="status-grid" style="margin-bottom:10px;">
+      <div class="status-card"><div class="label">HP（朝→夜）</div><div class="value hp-val" style="font-size:18px;">${c.startHP} → ${hp}</div></div>
+      <div class="status-card"><div class="label">MP（朝→夜）</div><div class="value mp-val" style="font-size:18px;">${c.startMP} → ${mp}</div></div>
+      <div class="status-card"><div class="label">LV（朝→夜）</div><div class="value lv-val" style="font-size:14px;line-height:1.5;">${formatLV(c.lvBase)}<br>→ ${formatLV(c.lvBase + c.todayPts)}</div></div>
+    </div>
+    ${breakdown}`;
+}
+
+// 締める：即時・無料・何度押しても同じ結果
+function closeDayHPMP() {
+  const c = computeDayClose();
+  if (!c.hasMorning) {
+    alert('先に朝タブで「今日のモードを判定する」を押して、HP/MPを算出してください。');
+    return;
+  }
+  renderDayClose(c, c.endHP, c.endMP);
+}
+
+function calcSleepHP() {
+  const sleep = document.getElementById('m-sleep').value;
+  const wake = document.getElementById('m-wake').value;
+  if (!sleep || !wake) return 70;
+  const [sh, sm] = sleep.split(':').map(Number);
+  const [wh, wm] = wake.split(':').map(Number);
+  let sleepMins = (wh * 60 + wm) - (sh * 60 + sm);
+  if (sleepMins < 0) sleepMins += 24 * 60;
+  const hours = sleepMins / 60;
+  return Math.min(100, Math.round(hours / 7 * 100));
+}
+
+function calcMorning() {
+  // v7: スライダー4=基準(100)、睡眠7h=100%
+  const sleepScore = calcSleepHP();
+  const body = parseInt(document.getElementById('m-body').value);
+  const mood = parseInt(document.getElementById('m-mood').value);
+  const hpAdj = Math.min(100, Math.round(sleepScore * (body / 4)));
+
+  // ノイズ・コース（プロンプトでも共用）
+  const noises = Array.from(document.querySelectorAll('#m-noise-group .checked input')).map(i => i.value);
+  const noiseDetail = document.getElementById('m-noise-detail').value || '';
+  const want = document.getElementById('m-want').value;
+  const courseVal = document.getElementById('m-course').value;
+  const course = courseData[courseVal];
+
+  // MP計算: 気分4=100、ノイズ・コースで調整
+  const mpBase = Math.round((mood / 4) * 100);
+  const noiseCheckPenalty = noises.length * 10;
+  let noiseTextPenalty = 0;
+  if (noiseDetail.length > 0 && noiseDetail.length <= 40) noiseTextPenalty = 5;
+  else if (noiseDetail.length > 40 && noiseDetail.length <= 100) noiseTextPenalty = 10;
+  else if (noiseDetail.length > 100) noiseTextPenalty = 15;
+  if (/[怒叫罵悪消耗苦辛傷暴鬱不安]/.test(noiseDetail)) noiseTextPenalty += 5;
+  const courseAdjMap = {'1':-10,'2':-5,'3':-3,'4':0,'5':5,'6':8};
+  const courseAdj = courseAdjMap[courseVal] !== undefined ? courseAdjMap[courseVal] : 0;
+  const mp = Math.min(110, Math.max(0, mpBase - noiseCheckPenalty - noiseTextPenalty + courseAdj));
+
+  document.getElementById('hp-val').textContent = hpAdj;
+  document.getElementById('mp-val').textContent = mp;
+  const lvValEl = document.getElementById('lv-val');
+  if (lvValEl) lvValEl.textContent = formatLV(getLVBase());
+
+  let mode, modeClass, modeText;
+  if (hpAdj >= 60 && mp >= 60) { mode = 'normal'; modeText = '通常モード — 今日は動けます'; modeClass = 'mode-normal'; }
+  else if (hpAdj >= 40 || mp >= 40) { mode = 'dblock'; modeText = 'D-blockモード — 最小限に絞りましょう'; modeClass = 'mode-dblock'; }
+  else { mode = '2min'; modeText = '2分タスクモード — 小さいことだけ'; modeClass = 'mode-2min'; }
+
+  const badge = document.getElementById('mode-badge');
+  badge.textContent = modeText;
+  badge.className = 'mode-badge ' + modeClass;
+
+  document.getElementById('morning-result').style.display = 'block';
+  saveMorning();
+  cloudSaveFusionOSStatus({ hp: hpAdj, mp, mode_level: mode, mode: modeText });
+
+  // noises/noiseDetail/want/courseVal/course は上で宣言済み
+
+  const prompt = `あなたはFusion Partners代表の「SuccessOS 統合経営参謀」です。
+【ユーザープロファイル】
+${getProfileText()}
+
+今朝の状態確認データ：
+HP: ${hpAdj}/100、MP: ${mp}/100
+モード判定: ${modeText}
+本日のタスクコース: コース${courseVal}（${course.name}：${course.desc}）
+ノイズ: ${noises.join('、') || 'なし'}
+具体的なノイズ: ${noiseDetail || 'なし'}
+今日の一言: ${want || 'なし'}
+
+上記データをもとに、以下の2つを出力してください。
+
+【参謀からの一言】
+3〜5文。以下のトーンで書くこと：
+・上から目線の励ましは禁止。同志として隣に立つ言葉を使う
+・柴山さんの今日のHP/MP/コース/ノイズを読んで、その人だけに向けた言葉にする
+・「今日も動こうかな」と思わせる熱さと具体性
+・ユーモアを1つ自然に入れる
+・比喩より事実ベースの言葉を使う
+・アウェアファイより熱く、上司より近い同志のトーン
+
+【今日のTop3タスク】
+私が優先順位を迷わないよう、あなたが代わりに判断して決めてください。
+HP・MPとタスクコースをもとに、今日「これだけはやる」タスクを3つ、優先順位順に箇条書きで出力してください。
+D-blockモードは「最小限の具体的行動」を、通常モード以上は「積極的に詰め込んで」ください。
+私の代わりに決断し、迷いなく動けるリストにしてください。`;
+
+  const loading = document.getElementById('morning-loading');
+  const advice = document.getElementById('morning-advice');
+  loading.style.display = 'block';
+  advice.classList.remove('visible');
+
+  callClaude(prompt,
+    text => {
+      loading.style.display = 'none';
+      advice.textContent = text;
+      advice.classList.add('visible');
+      saveMorning(); // 判定結果＋アドバイスを保存
+    },
+    err => {
+      loading.style.display = 'none';
+      advice.textContent = 'エラー：' + err;
+      advice.classList.add('visible');
+    }
+  );
+}
+
+// ===== 遅延履歴管理 =====
+function getDelayHistory() {
+  try { return JSON.parse(localStorage.getItem('mitsumeru_delay_history') || '{}'); } catch(e) { return {}; }
+}
+
+function updateDelayHistory(delayText) {
+  const history = getDelayHistory();
+  const today = targetDate;
+  const tasks = delayText.split('\n').filter(l => l.trim()).map(l => l.trim());
+  tasks.forEach(task => {
+    if (!history[task]) {
+      history[task] = { firstSeen: today, lastSeen: today };
+    } else {
+      history[task].lastSeen = today;
+    }
+    const first = new Date(history[task].firstSeen);
+    const last  = new Date(history[task].lastSeen);
+    history[task].delayDays = Math.round((last - first) / 86400000);
+  });
+  localStorage.setItem('mitsumeru_delay_history', JSON.stringify(history));
+  cloudSaveGlobal('delay_history', history);
+  return history;
+}
+
+function buildDelayWithFlags(delayText, history) {
+  if (!delayText.trim()) return '';
+  return delayText.split('\n').filter(l => l.trim()).map(task => {
+    const t = task.trim();
+    const h = history[t];
+    const days = h ? (h.delayDays || 0) : 0;
+    const flag = days >= 3 ? ` ⚠️長期先送り（${days}日）` : days > 0 ? ` (${days}日目)` : '';
+    return `${t}${flag}`;
+  }).join('\n');
+}
+
+// AIによるアイゼンハワー分類
+async function runAICalendarAnalysis(tomorrow, delayWithFlags, hp, mp, eveSummary) {
+  const hpNum = parseInt(hp), mpNum = parseInt(mp);
+  const isLowEnergy = (!isNaN(hpNum) && hpNum <= 70) || (!isNaN(mpNum) && mpNum <= 70);
+  const limitNote = isLowEnergy
+    ? `※夜の締め後 HP=${hp}/MP=${mp} で低エネルギー。明日の追加タスクは最大2つまでに絞ること。`
+    : '';
+
+  const prompt = `あなたはFusion Partners代表の「SuccessOS 統合経営参謀」です。
+
+${eveSummary || ''}
+
+【明日の確定アポ】
+${tomorrow || 'なし'}
+
+【先送りタスクリスト（⚠️は3日以上の長期先送り）】
+${delayWithFlags || 'なし'}
+
+【明日に持ち越すエネルギー（夜の締め後）】HP:${hp}/100 MP:${mp}/100
+${limitNote}
+
+上の「今日の終わり方（消耗・成長・デバッグ結果）」を必ず踏まえ、明日の負荷を調整してください。
+以下の区切りマーカーを必ず使い、各セクションを出力してください。他のテキストは不要です。
+
+===CALENDAR===
+確定アポ以外で①急・重要なタスクのみ。形式：HHMM ポモ数 タスク内容（1行1件）
+===REVIEW===
+②重要・急でない（今週中にやること）を箇条書き
+===DELEGATE===
+③急・重要でない（委任・簡略化候補）を箇条書き
+===CUTLOSS===
+④先送り3日以上（損切り提案）を箇条書き
+===COMMENT===
+伴走コメント2〜3文。必ず「今日の終わり方」を根拠として具体的に引用して評価する（例：MPが○○まで落ちた／デバッグ✕が△件あった／Try100を△件達成した、等の事実を挙げ、だから明日をこう設計した、と述べる）。
+===END===`;
+
+  return new Promise(resolve => {
+    callClaude(prompt,
+      text => resolve(parseAICalendarSections(text)),
+      ()   => resolve(null)
+    );
   });
 }
 
-// ===== 夜：翌日戦略生成 =====
+function parseAICalendarSections(text) {
+  const get = (from, to) => {
+    const re = new RegExp('===' + from + '===\\s*([\\s\\S]*?)(?:===' + to + '===|$)');
+    const m = text.match(re);
+    return m ? m[1].trim() : '';
+  };
+  return {
+    calendar: get('CALENDAR','REVIEW'),
+    review:   get('REVIEW','DELEGATE'),
+    delegate: get('DELEGATE','CUTLOSS'),
+    cutloss:  get('CUTLOSS','COMMENT'),
+    comment:  get('COMMENT','END')
+  };
+}
+
+function parseSchedule(text) {
+  const lines = text.split('\n').filter(l => l.trim());
+  const events = [];
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const dateStr = `${tomorrow.getFullYear()}/${String(tomorrow.getMonth()+1).padStart(2,'0')}/${String(tomorrow.getDate()).padStart(2,'0')}`;
+
+  for (const line of lines) {
+    const m = line.match(/^(\d{4})\s+(\d+)\s*(?:ポモ)?\s+(.+)/) || line.match(/^(\d{4})\s+(\d+)\s*(?:ポモ)?(.+)/);
+    if (m) {
+      const startH = Math.floor(parseInt(m[1]) / 100);
+      const startM = parseInt(m[1]) % 100;
+      const pomos = parseInt(m[2]);
+      const totalMins = pomos * 30;
+      const endH = Math.floor((startH * 60 + startM + totalMins) / 60);
+      const endM = (startH * 60 + startM + totalMins) % 60;
+      const startTime = `${String(startH).padStart(2,'0')}:${String(startM).padStart(2,'0')}`;
+      const endTime = `${String(endH).padStart(2,'0')}:${String(endM).padStart(2,'0')}`;
+      events.push({ date: dateStr, start: startTime, end: endTime, title: m[3].trim(), pomos });
+    }
+  }
+  return { events, dateStr };
+}
+
 async function generateEvening() {
   saveEvening();
-  const c = computeDayClose();
-  const mo = lsLoad('morning') || {};
-  const hp = mo['hp-val'] || '—';
-  const mp = mo['mp-val'] || '—';
-  const endHP = c.hasMorning ? c.endHP : '—';
-  const endMP = c.hasMorning ? c.endMP : '—';
+  const supplement  = document.getElementById('e-supplement').value.trim();
+  const tomorrow    = (document.getElementById('e-tomorrow') || {value:''}).value.trim();
+  const delay       = document.getElementById('e-delay').value.trim();
+  const try100      = document.getElementById('e-try100').value.trim();
+  const feedback    = document.getElementById('e-feedback').value.trim();
+  const notebooklm  = document.getElementById('e-notebooklm').value.trim();
+
   const p = memos.filter(m=>m.tag==='P').map(m=>m.content).join(' / ') || 'なし';
   const v = memos.filter(m=>m.tag==='V').map(m=>m.content).join(' / ') || 'なし';
   const g = memos.filter(m=>m.tag==='G').map(m=>m.content).join(' / ') || 'なし';
-  const debugText = `役割:${debugScores.d1} 委譲:${debugScores.d2} 動機:${debugScores.d3} 資産:${debugScores.d4} 余白:${debugScores.d5}`;
-  const supplement = document.getElementById('e-supplement').value.trim();
-  const tomorrow = document.getElementById('e-tomorrow').value.trim();
-  const delay = document.getElementById('e-delay').value.trim();
-  const feedback = document.getElementById('e-feedback').value.trim();
+
+  const debugText = `役割:${debugScores.d1}、委譲:${debugScores.d2}、動機:${debugScores.d3}、資産:${debugScores.d4}、余白:${debugScores.d5}`;
+  const lsMorningE = lsLoad('morning') || {};
+  const _lvBaseE = lsMorningE['lv-base'] !== undefined ? lsMorningE['lv-base'] : getLVBase();
+  const lvTotal = _lvBaseE + counts.pomo * 10;
+  const lv = counts.pomo * 10;
+  // 今日のポモ数を累積に確定保存（翌日に引き継がれる）
+  localStorage.setItem('mitsumeru_lv_total', lvTotal);
+  cloudSaveGlobal('lv', { total: lvTotal, _ts: Date.now() });
   const now = new Date();
   const dateStr = `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日`;
-  const sleepHours = calcSleepHours();
-  const courseVal = document.getElementById('m-course').value;
-  const burnout = calcBurnoutV2(c, sleepHours, courseVal);
-  const trend = getLast7DaysTrend();
-  const lv = c.todayPts;
+  const hp = lsMorningE['hp-val'] || '—';
+  const mp = lsMorningE['mp-val'] || '—';
+
+  // 夜の締め（決定論）を再計算し、翌日戦略の基準・要約にする
+  const close = computeDayClose();
+  const endHP = close.hasMorning ? close.endHP : '—';
+  const endMP = close.hasMorning ? close.endMP : '—';
+  const eveSummary = `【今日の終わり方（夜の締め）】
+HP: ${hp}→${endHP} ／ MP: ${mp}→${endMP}
+消耗: ポモ${close.pomoTotal}個・ノイズ${close.noiseCount}件・デバッグ✕${close.cntBatsu}/△${close.cntSankaku}／回復: Try100 ${close.try100Done}件
+デバッグ5項目: ${debugText}
+ノイズ(#V): ${v}
+気づき(#G): ${g}
+今日の成長: ${formatLV(close.lvBase)}→${formatLV(close.lvBase + close.todayPts)}（ポモ${close.pomoTotal}個）`;
+
+  const tomorrowDate = new Date(); tomorrowDate.setDate(tomorrowDate.getDate() + 1);
+  const tomorrowDateStr = `${tomorrowDate.getFullYear()}/${String(tomorrowDate.getMonth()+1).padStart(2,'0')}/${String(tomorrowDate.getDate()).padStart(2,'0')}`;
+  const delayDate2 = new Date(); delayDate2.setDate(delayDate2.getDate() + 2);
+  const delayDateStr = `${delayDate2.getFullYear()}/${String(delayDate2.getMonth()+1).padStart(2,'0')}/${String(delayDate2.getDate()).padStart(2,'0')}`;
+
+  // 遅延履歴を更新し、フラグ付きリストを生成
+  const delayHistory = delay.trim() ? updateDelayHistory(delay) : getDelayHistory();
+  const delayWithFlags = buildDelayWithFlags(delay, delayHistory);
+
+  // 繰り返しタスク確認メッセージ
+  const repeatedTasks = delay.split('\n').filter(l=>l.trim()).filter(t => {
+    const h = delayHistory[t.trim()]; return h && (h.delayDays||0) >= 3;
+  });
+  if (repeatedTasks.length > 0) {
+    const msg = repeatedTasks.map(t => `・${t.trim()}（${(delayHistory[t.trim()]?.delayDays||0)}日先送り）`).join('\n');
+    if (!confirm(`以下のタスクが長期先送りです。本当に必要ですか？\n\n${msg}\n\nOK → そのまま続ける　キャンセル → 夜タブに戻って整理する`)) return;
+  }
 
   switchTab('output');
   const loading = document.getElementById('output-loading');
   const mdBox = document.getElementById('output-markdown');
-  const copyBtn = document.getElementById('copy-output-btn');
+  const csvBox = document.getElementById('output-csv');
+  const delayCsvBox = document.getElementById('output-delay-csv');
+  const commentBox = document.getElementById('ai-calendar-comment');
+
   loading.style.display = 'block';
-  mdBox.classList.remove('visible');
-  copyBtn.style.display = 'none';
+  mdBox.classList.remove('visible'); csvBox.classList.remove('visible'); delayCsvBox.classList.remove('visible');
+  if (commentBox) { commentBox.style.display='none'; commentBox.textContent=''; }
+
+  // ① AI分類（アイゼンハワー）を先に実行
+  const aiResult = await runAICalendarAnalysis(tomorrow, delayWithFlags, endHP, endMP, eveSummary);
+
+  // ② 確定アポ CSV（確定アポ + AI①）
+  const { events: confirmedEvents } = parseSchedule(tomorrow);
+  let csvRows = ['Subject,Start Date,Start Time,End Date,End Time,All Day Event,Description'];
+  confirmedEvents.forEach(e => {
+    csvRows.push(`"【確定】${e.title}（${e.pomos}ポモ）",${e.date},${e.start},${e.date},${e.end},False,"${e.title}"`);
+  });
+  if (aiResult && aiResult.calendar) {
+    const { events: aiEvents } = parseSchedule(aiResult.calendar);
+    aiEvents.forEach(e => {
+      csvRows.push(`"【①急重要】${e.title}（${e.pomos}ポモ）",${e.date},${e.start},${e.date},${e.end},False,"AI判断：急・重要"`);
+    });
+  }
+  // 先行予定マップを calendarCSV に追加（重複除去）
+  const advSeenKeys = new Set();
+  getAdvanceScheduleData().filter(r => r.date && r.content && /^\d{4}-\d{2}-\d{2}$/.test(r.date)).forEach(r => {
+    const dedupKey = r.date + '|' + r.content.trim() + '|' + (r.startHour || '') + ':' + (r.startMinute || '');
+    if (advSeenKeys.has(dedupKey)) return;
+    advSeenKeys.add(dedupKey);
+    const d = r.date.replace(/-/g, '/');
+    const sh = r.startHour ? r.startHour + ':' + (r.startMinute || '00') : '';
+    const eh = r.endHour   ? r.endHour   + ':' + (r.endMinute   || '00') : '';
+    const allDay = sh ? 'False' : 'True';
+    const label = '【先行予定】' + r.content + (r.pomo ? '（' + r.pomo + 'ポモ）' : '') + (r.priority || '');
+    const c = (r.content || '').replace(/"/g, '""');
+    csvRows.push('"' + label + '",' + d + ',' + sh + ',' + d + ',' + eh + ',' + allDay + ',"' + c + '"');
+  });
+  calendarCSV = csvRows.join('\n');
+  const calendarPayload = { csv: calendarCSV, _ts: Date.now() };
+  localStorage.setItem(lsKey('calendar'), JSON.stringify(calendarPayload));
+  cloudSave('calendar', calendarPayload);
+
+  // ③ 要検討リスト CSV（②③④）
+  let delayRows = ['Subject,Start Date,Start Time,End Date,End Time,All Day Event,Description'];
+  if (aiResult) {
+    const addSection = (label, text) => {
+      if (!text) return;
+      text.split('\n').filter(l=>l.trim()).forEach(line => {
+        const t = line.replace(/^[・\-\*]\s*/,'').trim();
+        delayRows.push(`"${label}：${t}",${delayDateStr},,,,True,"${label}"`);
+      });
+    };
+    addSection('②重要・今週中', aiResult.review);
+    addSection('③委任・簡略化', aiResult.delegate);
+    addSection('④損切り検討', aiResult.cutloss);
+  } else if (delay.trim()) {
+    delay.split('\n').filter(l=>l.trim()).forEach(line => {
+      delayRows.push(`"【先送り】${line.trim()}",${delayDateStr},,,,True,"本日未完了"`);
+    });
+  }
+  delayCSV = delayRows.join('\n');
+  const delayPayload = { csv: delayCSV, _ts: Date.now() };
+  localStorage.setItem(lsKey('delay'), JSON.stringify(delayPayload));
+  cloudSave('delay', delayPayload);
+
+  csvBox.textContent = calendarCSV; csvBox.classList.add('visible');
+  delayCsvBox.textContent = delayCSV; delayCsvBox.classList.add('visible');
+
+  // 伴走コメント表示
+  if (aiResult && aiResult.comment && commentBox) {
+    commentBox.textContent = '💬 ' + aiResult.comment;
+    commentBox.style.display = 'block';
+  }
+
+  // ④ メインサマリー生成
+  const aiScheduleSuggestion = aiResult ? `【AI提案スケジュール（①急・重要）】\n${aiResult.calendar||'なし'}\n\n【要検討リスト】\n②今週中:${aiResult.review||'なし'}\n③委任:${aiResult.delegate||'なし'}\n④損切り:${aiResult.cutloss||'なし'}` : '';
+
+  // 7日間トレンド取得
+  const trend7 = (() => {
+    const results = [];
+    const today = new Date();
+    for (let i = 1; i <= 7; i++) {
+      const d = new Date(today); d.setDate(d.getDate() - i);
+      const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      const m = lsLoad('morning', ds);
+      if (m && m['hp-val']) results.push({ ds, hp: parseInt(m['hp-val'])||0, mp: parseInt(m['mp-val']||'0')||0 });
+    }
+    if (!results.length) return '記録なし';
+    const avgHP = Math.round(results.reduce((s,r)=>s+r.hp,0)/results.length);
+    const avgMP = Math.round(results.reduce((s,r)=>s+r.mp,0)/results.length);
+    return `過去${results.length}日平均 HP:${avgHP} MP:${avgMP}`;
+  })();
 
   const prompt = `あなたはFusion Partners代表の「SuccessOS 統合経営参謀」です。
 
@@ -1030,28 +2584,26 @@ ${getProfileText()}
 以下のルールを厳守してください：
 - 客観的な事実のみ抽出
 - 感情的な脚色・推測・ハルシネーション禁止
-- マークダウン装飾禁止（#・太字の多用禁止）
+- マークダウン装飾禁止（#・##・太字の多用禁止）
 - 該当事実がない場合は「特になし」と明記
 - 語尾は「です・ます」調
-- MUST・NEVER・エゴグラム・エニアグラムを踏まえた提案をすること
+- MUST・NEVER・エゴグラム・エニアグラムを踏まえた分析・提案をすること
 
 ---
 指定日：${dateStr}
-HP:${hp}→${endHP}/100　MP:${mp}→${endMP}/100
-本日ポモ:${c.pomoTotal}個(+${lv}pt)　LV:${formatLV(c.lvBase)}→${formatLV(c.lvBase+c.todayPts)}
-バーンアウトリスク（V2）:${burnout}/100
+HP:${hp}→${endHP}/100　MP:${mp}→${endMP}/100　本日ポモ:${counts.pomo}ポモ(+${lv}pt)　LV:${formatLV(close.lvBase)}→${formatLV(close.lvBase + close.todayPts)}
+過去7日間トレンド：${trend7}
 
-P（実施事項）：${p}
+P（事実）：${p}
 V（ノイズ）：${v}
 G（気づき）：${g}
-デバッグ（役割/委譲/動機/資産/余白）：${debugText}
-HP/MP消耗：ポモ${c.pomoTotal}→HP-${c.hpFromPomo}、ノイズ${c.noiseCount}→MP-${c.mpFromNoise}、✕${c.cntBatsu}/△${c.cntSankaku}→HP-${c.hpFromDebug}/MP-${c.mpFromDebug}、Try100 ${c.try100Done}→MP+${c.mpFromTry100}
+デバッグ評価（役割/委譲/動機/資産/余白）：${debugText}
+HP/MP消耗内訳：ポモ${close.pomoTotal}個→HP-${close.hpFromPomo}${close.mpFromPomo ? `/MP-${close.mpFromPomo}` : ''}、ノイズ${close.noiseCount}件→MP-${close.mpFromNoise}、デバッグ✕${close.cntBatsu}/△${close.cntSankaku}→HP-${close.hpFromDebug}/MP-${close.mpFromDebug}、Try100 ${close.try100Done}件→MP+${close.mpFromTry100}
 
-過去7日間トレンド：${trend.text}
-補足：${supplement||'なし'}
-明日の確定：${tomorrow||'なし'}
-先送り：${delay||'なし'}
-フィードバック：${feedback||'なし'}
+補足・追記：${supplement || 'なし'}
+明日の確定アポ：${tomorrow || 'なし'}
+先送りタスク（フラグ付き）：${delayWithFlags || 'なし'}
+${aiScheduleSuggestion ? '\n' + aiScheduleSuggestion : ''}
 ---
 
 【1】本日のP（実施事項）
@@ -1060,299 +2612,647 @@ HP/MP消耗：ポモ${c.pomoTotal}→HP-${c.hpFromPomo}、ノイズ${c.noiseCoun
 【2】本日のV（ノイズ・ボトルネック）
 浮き彫りになった問題・懸念・保留事項
 
-【3】本日のG（気づき・アイデア）
+【3】本日のG（気づき・アイデア・Tryの種）
 今後の戦略やFusion OS構築に繋がる視点
 
 【4】明日の行動戦略
+ポモ数は必ず数字で記載し省略禁止：
+
 最優先タスク（急重度①）：内容（Xポモ）
 重要タスク（急重度②）：内容（Xポモ）
 軽微タスク（急重度③）：内容（Xポモ）
-保留・将来（急重度④）：内容
+保留・将来タスク（急重度④）：内容（ポモ未定）
 
-【5】本日ステータスと明日への一言
-HP：${endHP}/100　MP：${endMP}/100　LV：${formatLV(c.lvBase+c.todayPts)}（本日+${lv}pt）
-バーンアウトリスク：${burnout}/100${burnout >= 70 ? '（高リスク—明日は負荷を下げること）' : burnout >= 40 ? '（注意—回復タスクを1つ入れること）' : '（良好）'}
-根拠：デバッグ評価・ポモ数・ノイズ件数の具体的数値を引用して1〜2文
-明日への一言：3〜5文。同志として隣に立つ言葉。今日の数値を読んでこの人だけに向けた言葉。ユーモア1つ。
+急重度の定義：
+①翌日必達・急用で重要
+②翌日中・重要だが急用でない
+③今週中・急用だが重要でない
+④将来対応
+
+【5】本日のステータスと明日への一言
+以下の形式で必ず記載してください：
+HP：${endHP}/100　MP：${endMP}/100　LV：${formatLV(close.lvBase + close.todayPts)}（本日+${lv}pt、${counts.pomo}ポモ）
+根拠：デバッグ評価（役割/委譲/動機/資産/余白の〇△✕）・ポモ数・ノイズ件数など上記の具体的な数値を引用して、HP/MPがこの値になった要因を1〜2文で記載（例：ポモ12個でHP-24、デバッグ✕2件でHP-6/MP-16、など）
+明日への一言：3〜5文。以下のトーンで書くこと：
+・上から目線の励ましは禁止。同志として隣に立つ言葉を使う
+・今日のHP/MP数値・デバッグ結果・ポモ数・ノイズ内容を読んで、この人だけに向けた言葉にする
+・「明日も動こうかな」と思わせる熱さと具体性
+・ユーモアを1つ自然に入れる
+・比喩より事実ベースの言葉を使う
+・アウェアファイより熱く、上司より近い同志のトーン
 
 ---
 【明日のVault管理Codeへの指示】
-・ダッシュボード更新：[完了タスクを箇条書き]
-・session_log追記：[今日のサマリーを1行]`;
+以下をVault管理Codeに貼ってください：
+
+・ダッシュボード更新：[今日の完了タスクを箇条書きで列挙する]
+・アーカイブ移動：[済みファイルがあれば記載。なければ「なし」]
+・session_log追記：[今日のサマリーを1行で記載]`;
 
   callClaude(prompt,
     text => {
       loading.style.display = 'none';
-      mdBox.textContent = text; mdBox.classList.add('visible');
-      copyBtn.style.display = 'block';
+      mdBox.textContent = text;
+      mdBox.classList.add('visible');
       const outputPayload = { text, _ts: Date.now() };
       localStorage.setItem(lsKey('output'), JSON.stringify(outputPayload));
-      kvSave('output', outputPayload);
-      const headline = (text.match(/明日への一言[：:]([^\n]+)/) || [])[1]?.trim().slice(0,60) || '';
-      kvSaveFusionOS({
-        hp: typeof c.endHP==='number'?c.endHP:50,
-        mp: typeof c.endMP==='number'?c.endMP:50,
-        mode_level: (typeof c.endHP==='number'&&c.endHP>=60&&typeof c.endMP==='number'&&c.endMP>=60)?'normal':
-                    (typeof c.endHP==='number'&&c.endHP>=40||typeof c.endMP==='number'&&c.endMP>=40)?'dblock':'minimal',
-        burnout_score: burnout, noise_count: c.noiseCount, debug_x_count: c.cntBatsu,
-        pomo_total: c.pomoTotal, strategy_headline: headline
-      });
-      updateFusionOSDisplay({ hp: c.endHP, mp: c.endMP, burnout_score: burnout, mode_level: 'updated', pomo_total: c.pomoTotal });
+      cloudSave('output', outputPayload);
+      const _bsHP = typeof close.endHP === 'number' ? close.endHP : 50;
+      const _bsMP = typeof close.endMP === 'number' ? close.endMP : 50;
+      // バーンアウトV2（睡眠・コース・ポモ・7日トレンド加味）
+      const _sleepH = (() => { try { const lsM = lsLoad('morning')||{}; const s=lsM['m-sleep']||'23:00', w=lsM['m-wake']||'07:00'; const [sh,sm]=s.split(':').map(Number),[wh,wm]=w.split(':').map(Number); let m=(wh*60+wm)-(sh*60+sm); if(m<0)m+=1440; return m/60; } catch(e){return 7;} })();
+      const _cv = parseInt((document.getElementById('m-course')||{value:'4'}).value)||4;
+      const _base = (100-_bsHP)*0.3+(100-_bsMP)*0.4+close.noiseCount*5+close.cntBatsu*8;
+      const _sf = _sleepH<5?20:_sleepH<6?10:0;
+      const _cf = (_cv>=5&&_bsHP<50)?8:0;
+      const _pf = close.pomoTotal>14?10:close.pomoTotal>10?5:0;
+      const _burnout = Math.min(100, Math.round(_base+_sf+_cf+_pf));
+      const _modeLevel = _bsHP>=60&&_bsMP>=60 ? 'normal' : (_bsHP>=40||_bsMP>=40 ? 'dblock' : 'minimal');
+      const _headline = (text.match(/明日への一言[：:]([^\n]+)/) || [])[1]?.trim().slice(0,60) || '';
+      cloudSaveFusionOSStatus({ hp: _bsHP, mp: _bsMP, mode_level: _modeLevel,
+        mode: _modeLevel==='normal'?'通常モード':_modeLevel==='dblock'?'D-blockモード':'2分タスクモード',
+        burnout_score: _burnout, noise_count: close.noiseCount, debug_x_count: close.cntBatsu,
+        pomo_total: close.pomoTotal, strategy_headline: _headline });
+      showOutputCopyBtns();
     },
-    err => { loading.style.display = 'none'; mdBox.textContent = 'エラー：' + err; mdBox.classList.add('visible'); }
-  , 8000);
+    err => {
+      loading.style.display = 'none';
+      mdBox.textContent = 'エラー：' + err;
+      mdBox.classList.add('visible');
+    },
+    8000
+  );
 }
 
-// ===== FusionOS手動送信 =====
-async function sendFusionOS() {
-  const c = computeDayClose();
-  const mo = lsLoad('morning') || {};
-  const hp = c.hasMorning ? c.endHP : parseInt(mo['hp-val']||'0');
-  const mp = c.hasMorning ? c.endMP : parseInt(mo['mp-val']||'0');
-  const sleepHours = calcSleepHours();
-  const courseVal = document.getElementById('m-course').value;
-  const burnout = calcBurnoutV2(c, sleepHours, courseVal);
-  const modeLevel = hp>=60&&mp>=60?'normal':hp>=40||mp>=40?'dblock':'minimal';
-  const modeText = modeLevel==='normal'?'通常モード':modeLevel==='dblock'?'D-blockモード':'2分タスクモード';
-  const mdBox = document.getElementById('output-markdown');
-  const headline = (mdBox?.textContent?.match(/明日への一言[：:]([^\n]+)/)||[])[1]?.trim().slice(0,60)||'';
-  await kvSaveFusionOS({ hp, mp, mode_level: modeLevel, mode: modeText, burnout_score: burnout,
-    noise_count: c.noiseCount, debug_x_count: c.cntBatsu, pomo_total: c.pomoTotal, strategy_headline: headline });
+function copyOutput(id) {
+  const text = document.getElementById(id).textContent;
+  navigator.clipboard.writeText(text).then(() => { alert('コピーしました！'); });
+}
+
+function showOutputCopyBtns() {
+  const row = document.getElementById('output-copy-row');
+  if (row) row.style.display = 'flex';
+}
+
+function copySummaryBox(boxId, btnId) {
+  const text = document.getElementById(boxId).textContent;
+  if (!text) { alert('まだサマリーがありません。先にまとめるボタンを押してください。'); return; }
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById(btnId);
+    if (!btn) return;
+    const orig = btn.textContent;
+    btn.textContent = 'コピーしました ✓';
+    btn.style.color = 'var(--green)';
+    btn.style.borderColor = 'var(--green)';
+    setTimeout(() => { btn.textContent = orig; btn.style.color = ''; btn.style.borderColor = ''; }, 2500);
+  });
+}
+
+function copyForNotebookLM() {
+  const text = document.getElementById('output-markdown').textContent;
+  if (!text) { alert('まだ出力がありません。「翌日戦略を生成する」を実行してください。'); return; }
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copy-nlm-btn');
+    const orig = btn.textContent;
+    btn.textContent = 'コピーしました ✓';
+    btn.style.color = 'var(--green)';
+    btn.style.borderColor = 'var(--green)';
+    setTimeout(() => { btn.textContent = orig; btn.style.color = ''; btn.style.borderColor = ''; }, 2500);
+  });
+}
+
+function downloadAsText() {
+  const text = document.getElementById('output-markdown').textContent;
+  if (!text) { alert('まだ出力がありません。'); return; }
+  const dateStr = targetDate.replace(/-/g, '');
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `mitsumeru_${dateStr}.txt`;
+  link.click();
+}
+
+// テキスト版をクリップボードへコピー（Google Keep等への貼り付け用）
+function copyTextForKeep() {
+  const text = document.getElementById('output-markdown').textContent;
+  if (!text) { alert('まだ出力がありません。「翌日戦略を生成する」を実行してください。'); return; }
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copy-keep-btn');
+    if (!btn) return;
+    const orig = btn.textContent;
+    btn.textContent = 'コピーしました ✓';
+    btn.style.color = 'var(--green)';
+    btn.style.borderColor = 'var(--green)';
+    setTimeout(() => { btn.textContent = orig; btn.style.color = ''; btn.style.borderColor = ''; }, 2500);
+  });
+}
+
+function downloadHTML() {
   const now = new Date();
-  const ts = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-  document.getElementById('fusionos-last').textContent = `最終送信：${ts}`;
-  updateFusionOSDisplay({ hp, mp, burnout_score: burnout, pomo_total: c.pomoTotal });
+  const dateStr = `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日`;
+  const fileDate = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+  const tagColors = { HP: '#1a5a9a', P: '#1a7a52', V: '#c0392b', G: '#b8860b' };
+  const tagBg = { HP: '#e8f0fe', P: '#e8f5ee', V: '#fde8e8', G: '#fff3cd' };
+
+  const memoHTML = memos.length === 0
+    ? '<p style="color:#999;font-size:13px;">記録なし</p>'
+    : memos.map(m => `
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid #e8e4dc;">
+        <span style="background:${tagBg[m.tag]};color:${tagColors[m.tag]};font-weight:600;font-size:12px;padding:3px 8px;border-radius:12px;white-space:nowrap;">#${m.tag}</span>
+        <span style="color:#9a8a7a;font-size:12px;min-width:40px;">${m.time||'--:--'}</span>
+        ${m.pomos!==null?`<span style="color:#8a7a6a;font-size:12px;min-width:40px;">${m.pomos}ポモ</span>`:''}
+        <div style="flex:1;">
+          <p style="margin:0;font-size:14px;line-height:1.7;color:#3a3028;">${m.content}</p>
+          ${m.image?`<img src="${m.image}" style="margin-top:8px;max-width:100%;max-height:300px;border-radius:6px;border:1px solid #e8e4dc;">`: ''}
+        </div>
+      </div>
+    `).join('');
+
+  const summary = document.getElementById('output-markdown').textContent || '（まだ生成されていません）';
+
+  const html = `<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>ミツメル記録 ${dateStr}</title>
+<style>
+  body{font-family:'Hiragino Sans',sans-serif;background:#f5f1ea;color:#3a3028;max-width:720px;margin:0 auto;padding:24px 16px;}
+  h1{font-size:18px;font-weight:400;letter-spacing:3px;color:#3a3028;border-bottom:1px solid #c8b89a;padding-bottom:12px;margin-bottom:20px;}
+  h2{font-size:13px;letter-spacing:2px;color:#9a8a7a;margin:20px 0 10px;text-transform:uppercase;}
+  .card{background:#faf7f2;border:0.5px solid #c8b89a;border-radius:8px;padding:16px;margin-bottom:16px;}
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;}
+  .stat{background:#ede8df;border-radius:6px;padding:10px;text-align:center;}
+  .stat-label{font-size:11px;color:#9a8a7a;margin-bottom:4px;}
+  .stat-val{font-size:24px;font-weight:500;}
+  pre{white-space:pre-wrap;font-family:inherit;font-size:13px;line-height:1.8;color:#6a5a4a;}
+</style>
+</head>
+<body>
+<h1>ミツメル記録｜${dateStr}</h1>
+
+<h2>本日のステータス</h2>
+<div class="stats">
+  <div class="stat"><div class="stat-label">ノイズ回数</div><div class="stat-val" style="color:#c0392b;">${counts.noise}</div></div>
+  <div class="stat"><div class="stat-label">ポモ合計</div><div class="stat-val" style="color:#1a7a52;">${counts.pomo}</div></div>
+  <div class="stat"><div class="stat-label">LV</div><div class="stat-val" style="color:#8a6a1a;">${counts.pomo*10}</div></div>
+</div>
+
+<h2>随時メモ（画像含む）</h2>
+<div class="card">${memoHTML}</div>
+
+<h2>行動監査サマリー</h2>
+<div class="card"><pre>${summary}</pre></div>
+
+<p style="font-size:11px;color:#9a8a7a;text-align:center;margin-top:24px;">Fusion Partners — ミツメル ${dateStr}</p>
+
+</html>`;
+
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `mitsumeru_${fileDate}.html`;
+  link.click();
 }
 
-function updateFusionOSDisplay(d) {
-  const el = document.getElementById('fusionos-display');
-  if (!el) return;
-  el.textContent = `HP:${d.hp} MP:${d.mp} | バーンアウト:${d.burnout_score}/100 | ポモ:${d.pomo_total}`;
+function downloadMarkdown() {
+  const text = document.getElementById('output-markdown').textContent;
+  if (!text || text === 'エラーが発生しました。もう一度お試しください。') return;
+  const now = new Date();
+  const dateStr = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+  const blob = new Blob([text], { type: 'text/markdown;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `mitsumeru_${dateStr}.md`;
+  link.click();
 }
 
-// ===== 週次サマリー =====
-async function generateWeekly() {
+function downloadCSV(type) {
+  const content = type === 'calendar' ? calendarCSV : delayCSV;
+  const filename = type === 'calendar' ? 'tomorrow_calendar.csv' : 'delay_calendar.csv';
+  const blob = new Blob(['\uFEFF' + content], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  link.click();
+}
+
+// ===== \u904E\u53BB\u8A18\u9332\u8868\u793A =====
+async function loadPastRecords() {
+  const list = document.getElementById('past-records-list');
+  list.innerHTML = '<span style="font-size:12px;color:var(--text3);">\u8AAD\u307F\u8FBC\u307F\u4E2D...</span>';
+  const results = [];
+  const today = new Date();
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const dateStr = localDateStr(d);
+    const [kvM, kvE, kvMm] = await Promise.all([
+      cloudLoad('morning', dateStr), cloudLoad('evening', dateStr), cloudLoad('memos', dateStr)
+    ]);
+    const lsM = lsLoad('morning', dateStr), lsE = lsLoad('evening', dateStr), lsMm = lsLoad('memos', dateStr);
+    const morning = newerOf(lsM, kvM);
+    const evening = newerOf(lsE, kvE);
+    const memosObj = newerOf(lsMm, kvMm);
+    const hasSomeData = morning || evening || memosObj;
+    results.push({ dateStr, morning, evening, memosObj, hasSomeData });
+  }
+  if (results.every(r => !r.hasSomeData)) {
+    list.innerHTML = '<span style="font-size:12px;color:var(--text3);">\u8A18\u9332\u304C\u898B\u3064\u304B\u308A\u307E\u305B\u3093\u3067\u3057\u305F</span>';
+    return;
+  }
+  list.innerHTML = results.map((r, idx) => {
+    if (!r.hasSomeData) return '';
+    const d = new Date(r.dateStr);
+    const label = `${r.dateStr}\uFF08${'\u65E5\u6708\u706B\u6C34\u6728\u91D1\u571F'[d.getDay()]}\uFF09`;
+    const hp = r.morning ? (r.morning['hp-val']||'\u2014') : '\u2014';
+    const mp = r.morning ? (r.morning['mp-val']||'\u2014') : '\u2014';
+    const memoCount = r.memosObj ? (Array.isArray(r.memosObj.data) ? r.memosObj.data.length : 0) : 0;
+    const summary = r.evening ? (r.evening['e-supplement']||'') : '';
+    return `<div class="past-record-item">
+      <div class="past-record-header" onclick="togglePastRecord(${idx})">
+        <span>${label}</span>
+        <span style="font-size:12px;color:var(--text3);">HP:${hp} MP:${mp} \u30E1\u30E2${memoCount}\u4EF6 \u25B6</span>
+      </div>
+      <div class="past-record-body" id="past-body-${idx}">HP:${hp} / MP:${mp}
+\u968F\u6642\u30E1\u30E2\uFF1A${memoCount}\u4EF6
+${r.memosObj && Array.isArray(r.memosObj.data) ? r.memosObj.data.map(m=>`#${m.tag} ${m.time||''} ${m.content}`).join('\n') : ''}
+\u88DC\u8DB3\uFF1A${summary||'\u306A\u3057'}
+\u660E\u65E5\u306E\u4E88\u5B9A\uFF1A${r.evening ? (r.evening['e-tomorrow']||'\u306A\u3057') : '\u306A\u3057'}</div>
+    </div>`;
+  }).join('');
+}
+
+function togglePastRecord(idx) {
+  const body = document.getElementById('past-body-' + idx);
+  if (body) body.classList.toggle('open');
+}
+
+// ===== \u6708\u6B21\u30B5\u30DE\u30EA\u30FC =====
+async function generateWeeklySummary() {
   const loading = document.getElementById('weekly-loading');
-  const box = document.getElementById('weekly-box');
-  loading.style.display = 'block'; box.classList.remove('visible');
+  const box = document.getElementById('weekly-summary');
+  loading.style.display = 'block';
+  box.classList.remove('visible');
+
   const records = [];
   const today = new Date();
+
   for (let i = 6; i >= 0; i--) {
-    const d = new Date(today); d.setDate(today.getDate()-i);
-    const ds = localDateStr(d);
-    const [kvM, kvE, kvMm] = await Promise.all([kvLoad('morning',ds), kvLoad('evening',ds), kvLoad('memos',ds)]);
-    const morning = newerOf(lsLoad('morning',ds), kvM);
-    const evening = newerOf(lsLoad('evening',ds), kvE);
-    const memosObj = newerOf(lsLoad('memos',ds), kvMm);
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    const dateStr = localDateStr(d);
+    const [kvM, kvE, kvMm] = await Promise.all([
+      cloudLoad('morning', dateStr), cloudLoad('evening', dateStr), cloudLoad('memos', dateStr)
+    ]);
+    const lsM = lsLoad('morning', dateStr), lsE = lsLoad('evening', dateStr), lsMm = lsLoad('memos', dateStr);
+    const morning = newerOf(lsM, kvM), evening = newerOf(lsE, kvE), memosObj = newerOf(lsMm, kvMm);
     if (!morning && !evening) continue;
     const mArr = memosObj ? (Array.isArray(memosObj.data) ? memosObj.data : []) : [];
-    const pomo = mArr.filter(m=>m.tag==='P').reduce((s,m)=>s+(m.pomos||0),0);
-    records.push(`## ${ds}\nHP:${morning?morning['hp-val']:'—'} MP:${morning?morning['mp-val']:'—'} ポモ:${pomo}\nP:${mArr.filter(m=>m.tag==='P').map(m=>m.content).join('/')}\nV:${mArr.filter(m=>m.tag==='V').map(m=>m.content).join('/')}\n補足:${evening?evening['e-supplement']||'':''}`);
+    const pomoTotal = mArr.filter(m => m.tag === 'P').reduce((s, m) => s + (m.pomos || 0), 0);
+    const hp = morning ? morning['hp-val'] : '—';
+    const mp = morning ? morning['mp-val'] : '—';
+    records.push(
+      `## ${dateStr}\n` +
+      `HP:${hp} MP:${mp} ポモ:${pomoTotal}\n` +
+      `実績:${mArr.filter(m => m.tag === 'P').map(m => m.content).join(' / ') || 'なし'}\n` +
+      `ノイズ:${mArr.filter(m => m.tag === 'V').map(m => m.content).join(' / ') || 'なし'}\n` +
+      `補足:${evening ? (evening['e-supplement'] || '') : ''}`
+    );
   }
-  if (records.length === 0) { loading.style.display='none'; box.textContent='記録が見つかりませんでした。'; box.classList.add('visible'); return; }
-  const startD = (() => { const d=new Date(today); d.setDate(today.getDate()-6); return localDateStr(d); })();
-  callClaude(
-    `あなたはFusion Partners代表の「SuccessOS 統合経営参謀」です。\n以下は${startD}〜${localDateStr(today)}の記録です。週次サマリーを出力してください。\n\n${records.join('\n\n')}\n\n# 週次サマリー（${startD}〜${localDateStr(today)}）\n## HP/MP推移と傾向\n## 主な成果\n## 消耗パターン分析\n## 来週の優先タスク（3つ以内）\n## ひとこと`,
-    text => { loading.style.display='none'; box.textContent=text; box.classList.add('visible'); document.getElementById('copy-weekly-btn').style.display='block'; },
+
+  if (records.length === 0) {
+    loading.style.display = 'none';
+    box.textContent = '直近7日分の記録が見つかりませんでした。';
+    box.classList.add('visible');
+    return;
+  }
+
+  const startDate = (() => { const d = new Date(today); d.setDate(today.getDate() - 6); return localDateStr(d); })();
+  const endDate = localDateStr(today);
+
+  const prompt = `あなたはFusion Partners代表の「SuccessOS 統合経営参謀」です。
+以下は${startDate}〜${endDate}の7日間の記録です。週次サマリーを生成してください。
+
+${records.join('\n\n')}
+
+以下の形式で出力してください：
+# 週次サマリー（${startDate}〜${endDate}）
+## HP/MP推移と傾向
+（平均値・最高・最低・消耗した日とその要因の分析）
+## 今週の主な成果
+## 消耗パターン分析
+（どんな状況・タスクでエネルギーが下がったか）
+## 来週の優先タスク提案
+（エネルギー状態を踏まえた3つ以内の重点タスク）
+## ひとこと所感`;
+
+  callClaude(prompt,
+    text => { loading.style.display='none'; box.textContent=text; box.classList.add('visible'); document.getElementById('copy-weekly-btn').style.display='inline-block'; },
     err  => { loading.style.display='none'; box.textContent='エラー：'+err; box.classList.add('visible'); }
   );
 }
 
-// ===== 過去7日表示 =====
-async function loadPast() {
-  const list = document.getElementById('past-list');
-  list.innerHTML = '<span style="font-size:12px;color:var(--text3);">読み込み中...</span>';
-  const results = [];
-  const today = new Date();
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(today); d.setDate(d.getDate()-i);
-    const ds = localDateStr(d);
-    const [kvM, kvMm] = await Promise.all([kvLoad('morning',ds), kvLoad('memos',ds)]);
-    const morning = newerOf(lsLoad('morning',ds), kvM);
-    const memosObj = newerOf(lsLoad('memos',ds), kvMm);
+async function generateMonthlySummary() {
+  const loading = document.getElementById('monthly-loading');
+  const box = document.getElementById('monthly-summary');
+  loading.style.display = 'block';
+  box.classList.remove('visible');
+
+  const now = new Date();
+  const year = now.getFullYear(), month = now.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const records = [];
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    if (dateStr > localDateStr(now)) break;
+    const [kvM, kvE, kvMm] = await Promise.all([
+      cloudLoad('morning', dateStr), cloudLoad('evening', dateStr), cloudLoad('memos', dateStr)
+    ]);
+    const lsM = lsLoad('morning', dateStr), lsE = lsLoad('evening', dateStr), lsMm = lsLoad('memos', dateStr);
+    const morning = newerOf(lsM, kvM), evening = newerOf(lsE, kvE), memosObj = newerOf(lsMm, kvMm);
+    if (!morning && !evening) continue;
     const mArr = memosObj ? (Array.isArray(memosObj.data) ? memosObj.data : []) : [];
-    if (!morning && mArr.length===0) continue;
-    results.push({ ds, morning, mArr });
-  }
-  if (results.length === 0) { list.innerHTML = '<span style="font-size:12px;color:var(--text3);">記録が見つかりませんでした</span>'; return; }
-  list.innerHTML = results.map((r,i) => `
-    <div class="past-item" onclick="togglePast(${i})">
-      <div style="display:flex;justify-content:space-between;font-size:12px;">
-        <span>${r.ds}</span>
-        <span style="color:var(--text3);">HP:${r.morning?r.morning['hp-val']:'—'} MP:${r.morning?r.morning['mp-val']:'—'} メモ${r.mArr.length}件 ▶</span>
-      </div>
-      <div class="past-body" id="past-body-${i}">${r.mArr.map(m=>`#${m.tag} ${m.time||''} ${m.content}`).join('\n')||'（メモなし）'}</div>
-    </div>`).join('');
-}
-function togglePast(i) { const b = document.getElementById('past-body-'+i); if(b) b.classList.toggle('open'); }
-
-// ===== 日付変更 =====
-async function changeDate(newDate) {
-  if (!newDate || newDate === targetDate) return;
-  saveMorning(); saveEvening(); saveMemos();
-  targetDate = newDate;
-  document.getElementById('sync-date-display').textContent = targetDate;
-  memos = []; counts = { noise:0, pomo:0, try100:0, 'memo-pomo':0 };
-  debugScores = { d1:'',d2:'',d3:'',d4:'',d5:'' };
-  document.getElementById('morning-result').style.display = 'none';
-  document.getElementById('close-result').style.display = 'none';
-  renderMemos(); calcAutoCount();
-  const [kvM, kvE, kvMm] = await Promise.all([kvLoad('morning'), kvLoad('evening'), kvLoad('memos')]);
-  applyMorning(newerOf(lsLoad('morning'), kvM));
-  applyEvening(newerOf(lsLoad('evening'), kvE));
-  applyMemos(newerOf(lsLoad('memos'), kvMm));
-}
-
-// ===== クラウド強制同期 =====
-async function forceSync() {
-  showSync('saving');
-  const [kvM, kvE, kvMm] = await Promise.all([kvLoad('morning'), kvLoad('evening'), kvLoad('memos')]);
-  if (kvM) { applyMorning(kvM); localStorage.setItem(lsKey('morning'), JSON.stringify(kvM)); }
-  if (kvE) { applyEvening(kvE); localStorage.setItem(lsKey('evening'), JSON.stringify(kvE)); }
-  if (kvMm) { applyMemos(kvMm); localStorage.setItem(lsKey('memos'), JSON.stringify(kvMm)); }
-  showSync('synced');
-  alert('KVから最新データを取得しました。');
-}
-
-// ===== コピー =====
-function copyText(id) {
-  const text = document.getElementById(id).textContent;
-  if (!text) { alert('コピーするテキストがありません。'); return; }
-  navigator.clipboard.writeText(text).then(() => alert('コピーしました。'));
-}
-
-// ===== APIキー保存 =====
-function saveApiKey() {
-  const key = document.getElementById('settings-api-key').value.trim();
-  if (!key) return;
-  localStorage.setItem('mitsumeru_api_key', key);
-  document.getElementById('api-key-saved').style.display = 'block';
-  setTimeout(() => location.reload(), 1200);
-}
-
-// 起動時にAPIキー入力欄を現在の値で埋める
-function loadApiKeyField() {
-  const k = localStorage.getItem('mitsumeru_api_key') || '';
-  if (k) document.getElementById('settings-api-key').value = k;
-}
-
-// ===== mitsumeru_app.html からの一括移行 =====
-async function migrateFromApp() {
-  const log = document.getElementById('migrate-log');
-  const btn = document.querySelector('[onclick="migrateFromApp()"]');
-  btn.disabled = true;
-  log.textContent = '▶ localStorage を読み込み中...';
-
-  // 1. localStorage 全キーを収集
-  const allKeys = [];
-  for (let i = 0; i < localStorage.length; i++) allKeys.push(localStorage.key(i));
-
-  const SKIP = new Set(['mitsumeru_api_key','mitsumeru_consent_date','mitsumeru_demo_count']);
-  const datesToMigrate = new Set();
-  let lsCount = 0;
-
-  for (const key of allKeys) {
-    if (!key.startsWith('mitsumeru_') || key.startsWith('mitsumeru_priv_')) continue;
-    if (SKIP.has(key)) continue;
-    const newKey = key.replace('mitsumeru_', 'mitsumeru_priv_');
-    localStorage.setItem(newKey, localStorage.getItem(key));
-    lsCount++;
-    const m = key.match(/(\d{4}-\d{2}-\d{2})$/);
-    if (m) datesToMigrate.add(m[1]);
-  }
-  log.textContent = `✓ localStorage: ${lsCount}件コピー完了（${datesToMigrate.size}日分）\n▶ KV移行中...（しばらくお待ちください）`;
-
-  // 2. KV 日付ごとに移行
-  const TYPES = ['morning','evening','memos','output','calendar','delay','dispatch'];
-  let kvCount = 0, kvErr = 0;
-
-  for (const date of datesToMigrate) {
-    for (const type of TYPES) {
-      try {
-        const res = await fetch(`${SYNC_URL}?key=${encodeURIComponent(type+'_'+date)}`);
-        if (!res.ok) continue;
-        const data = await res.json();
-        if (!data) continue;
-        const putRes = await fetch(`${SYNC_URL}?key=${encodeURIComponent('priv_'+type+'_'+date)}`, {
-          method: 'PUT',
-          headers: {'Content-Type':'application/json'},
-          body: JSON.stringify(data)
-        });
-        if (putRes.ok) kvCount++; else kvErr++;
-      } catch(e) { kvErr++; }
-    }
-    log.textContent = `✓ localStorage: ${lsCount}件\n▶ KV移行中... ${kvCount}件完了（残り処理中）`;
-    await new Promise(r => setTimeout(r, 0)); // UI更新
+    const pomoTotal = mArr.filter(m=>m.tag==='P').reduce((s,m)=>s+(m.pomos||0),0);
+    records.push(`## ${dateStr}\nHP:${morning?morning['hp-val']:'\u2014'} MP:${morning?morning['mp-val']:'\u2014'} \u30DD\u30E2:${pomoTotal}\n\u5B9F\u7E3E:${mArr.filter(m=>m.tag==='P').map(m=>m.content).join('/')}\n\u30CE\u30A4\u30BA:${mArr.filter(m=>m.tag==='V').map(m=>m.content).join('/')}\n\u88DC\u8DB3:${evening?evening['e-supplement']||'':''}`.trim());
   }
 
-  // 3. KV グローバルキー移行（profile / lv）
-  for (const gKey of ['profile','lv']) {
-    try {
-      const res = await fetch(`${SYNC_URL}?key=${encodeURIComponent(gKey)}`);
-      if (!res.ok) continue;
-      const data = await res.json();
-      if (!data) continue;
-      await fetch(`${SYNC_URL}?key=${encodeURIComponent('priv_'+gKey)}`, {
-        method: 'PUT',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify(data)
-      });
-      kvCount++;
-    } catch(e) {}
+  if (records.length === 0) {
+    loading.style.display = 'none';
+    box.textContent = '\u4ECA\u6708\u306E\u8A18\u9332\u304C\u898B\u3064\u304B\u308A\u307E\u305B\u3093\u3067\u3057\u305F\u3002';
+    box.classList.add('visible');
+    return;
   }
 
-  log.textContent = `✅ 移行完了！\n・localStorage: ${lsCount}件\n・KV: ${kvCount}件${kvErr>0?`（エラー${kvErr}件）`:''}\n\n2秒後に自動リロードします...`;
-  setTimeout(() => location.reload(), 2000);
+  const yearMonth = `${year}\u5E74${month+1}\u6708`;
+  const prompt = `\u3042\u306A\u305F\u306FFusion Partners\u4EE3\u8868\u306E\u300CSuccessOS \u7D71\u5408\u7D4C\u55B6\u53C2\u8B00\u300D\u3067\u3059\u3002
+\u4EE5\u4E0B\u306F${yearMonth}\u306E\u5168\u8A18\u9332\u3067\u3059\u3002\u6708\u6B21\u30B5\u30DE\u30EA\u30FC\u3092\u751F\u6210\u3057\u3066\u304F\u3060\u3055\u3044\u3002
+
+${records.join('\n\n')}
+
+\u4EE5\u4E0B\u306E\u5F62\u5F0F\u3067\u51FA\u529B\u3057\u3066\u304F\u3060\u3055\u3044\uFF1A
+# ${yearMonth} \u6708\u6B21\u30B5\u30DE\u30EA\u30FC
+## \u5168\u4F53\u8A55\u4FA1\uFF08HP/MP/\u30DD\u30E2\u306E\u6708\u9593\u63A8\u79FB\uFF09
+## \u4E3B\u306AV\uFF08\u30CE\u30A4\u30BA\uFF09\u30D1\u30BF\u30FC\u30F3
+## \u4E3B\u306A\u6210\u679C\u30FB\u5B9F\u7E3E
+## \u7FCC\u6708\u3078\u306E\u63D0\u8A00`;
+
+  callClaude(prompt,
+    text => { loading.style.display='none'; box.textContent=text; box.classList.add('visible'); document.getElementById('copy-monthly-btn').style.display='inline-block'; },
+    err  => { loading.style.display='none'; box.textContent='\u30A8\u30E9\u30FC\uFF1A'+err; box.classList.add('visible'); }
+  );
 }
 
-// ===== 起動時初期化 =====
-window.addEventListener('DOMContentLoaded', async function() {
-  if (!getApiKey()) alert('⚠️ APIキーが見つかりません。\nミツメル（mitsumeru_app.html）を開いてAPIキーを設定してください。\n設定後にこのページを再読み込みすれば自動で引き継ぎます。');
+// sync-target-date \u8868\u793A\u66F4\u65B0
+function updateSyncTargetDisplay() {
+  const el = document.getElementById('sync-target-date');
+  if (el) el.textContent = targetDate;
+}
 
-  initDate();
-  updateCourse(3);
-  loadProfile();
-  loadApiKeyField();
+// ===== Worker \u63A5\u7D9A\u30C6\u30B9\u30C8 =====
+async function testWorkerConnection() {
+  const resultEl = document.getElementById('worker-test-result');
+  resultEl.style.display = 'block';
+  resultEl.style.background = 'var(--bg2)';
+  resultEl.style.border = '0.5px solid var(--border)';
+  resultEl.style.color = 'var(--text2)';
+  resultEl.textContent = '\u63A5\u7D9A\u30C6\u30B9\u30C8\u4E2D...';
 
-  // まずlocalStorageで即時復元
-  const lsM = lsLoad('morning'), lsE = lsLoad('evening'), lsMm = lsLoad('memos');
-  applyMorning(lsM); applyEvening(lsE);
-  if (lsMm) applyMemos(lsMm);
+  const testKey = encodeURIComponent('__ping_test__');
+  const testPayload = JSON.stringify({ ping: true, _ts: Date.now() });
+  const results = [];
 
-  const lsOutput = lsLoad('output');
-  if (lsOutput && lsOutput.text) {
-    const mdBox = document.getElementById('output-markdown');
-    mdBox.textContent = lsOutput.text; mdBox.classList.add('visible');
-    document.getElementById('copy-output-btn').style.display = 'block';
+  // 1. OPTIONS \u30D7\u30EA\u30D5\u30E9\u30A4\u30C8
+  try {
+    const r = await fetch(`${SYNC_URL}?key=${testKey}`, { method: 'OPTIONS' });
+    const corsOrigin = r.headers.get('Access-Control-Allow-Origin');
+    const corsMethods = r.headers.get('Access-Control-Allow-Methods');
+    results.push(r.ok
+      ? `\u2705 OPTIONS\uFF08\u30D7\u30EA\u30D5\u30E9\u30A4\u30C8\uFF09: OK\n   Allow-Origin: ${corsOrigin||'\u306A\u3057'}\n   Allow-Methods: ${corsMethods||'\u306A\u3057'}`
+      : `\u26A0\uFE0F OPTIONS: HTTP ${r.status}`
+    );
+  } catch(e) {
+    results.push(`\u274C OPTIONS: \u5931\u6557 \u2014 ${e.message}`);
   }
 
-  // ② KVから最新取得
-  const [kvM, kvE, kvMm, kvProfile, kvLV] = await Promise.all([
-    kvLoad('morning'), kvLoad('evening'), kvLoad('memos'),
-    kvLoadGlobal('profile'), kvLoadGlobal('lv')
-  ]);
-
-  const bestM = newerOf(lsM, kvM);
-  if (bestM !== lsM && kvM) { applyMorning(kvM); localStorage.setItem(lsKey('morning'), JSON.stringify(kvM)); }
-  const bestE = newerOf(lsE, kvE);
-  if (bestE !== lsE && kvE) { applyEvening(kvE); localStorage.setItem(lsKey('evening'), JSON.stringify(kvE)); }
-  const lsMmTs = lsMm ? (lsMm._ts||0) : 0, kvMmTs = kvMm ? (kvMm._ts||0) : 0;
-  if (kvMm && kvMmTs >= lsMmTs) { applyMemos(kvMm); localStorage.setItem(lsKey('memos'), JSON.stringify(kvMm)); }
-
-  if (kvProfile && kvProfile.name) { localStorage.setItem(LS_PREFIX+'profile', JSON.stringify(kvProfile)); loadProfile(); }
-  if (kvLV && kvLV.total !== undefined) {
-    const cur = getLVBase();
-    if (kvLV.total > cur) localStorage.setItem(LS_PREFIX+'lv_total', kvLV.total);
+  // 2. PUT\uFF08\u66F8\u304D\u8FBC\u307F\uFF09
+  try {
+    const r = await fetch(`${SYNC_URL}?key=${testKey}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: testPayload
+    });
+    results.push(r.ok ? `\u2705 PUT\uFF08\u66F8\u304D\u8FBC\u307F\uFF09: OK` : `\u274C PUT: HTTP ${r.status}`);
+  } catch(e) {
+    results.push(`\u274C PUT: \u5931\u6557 \u2014 ${e.message}`);
   }
 
-  // ③ オフライン復帰自動同期
-  window.addEventListener('online', async () => {
-    if (!syncPending) return;
-    const m=lsLoad('morning'), e=lsLoad('evening'), mm=lsLoad('memos');
-    await Promise.all([m?kvSave('morning',m):Promise.resolve(), e?kvSave('evening',e):Promise.resolve(), mm?kvSave('memos',mm):Promise.resolve()]);
-    showSync('synced');
-  });
-});
+  // 3. GET\uFF08\u8AAD\u307F\u8FBC\u307F\uFF09
+  try {
+    const r = await fetch(`${SYNC_URL}?key=${testKey}`);
+    const json = await r.json();
+    const hasValue = json && json.value;
+    results.push(r.ok && hasValue
+      ? `\u2705 GET\uFF08\u8AAD\u307F\u8FBC\u307F\uFF09: OK \u2014 \u5024\u3092\u78BA\u8A8D`
+      : `\u26A0\uFE0F GET: HTTP ${r.status} / value=${JSON.stringify(json)}`
+    );
+  } catch(e) {
+    results.push(`\u274C GET: \u5931\u6557 \u2014 ${e.message}`);
+  }
+
+  const allOk = results.every(r => r.startsWith('\u2705'));
+  resultEl.style.background = allOk ? '#e8f5ee' : '#fff3cd';
+  resultEl.style.border    = allOk ? '0.5px solid #a8dfc4' : '0.5px solid #ffd970';
+  resultEl.style.color     = allOk ? '#1a5a2a' : '#7a5a00';
+  resultEl.textContent = results.join('\n');
+
+  if (!allOk) {
+    resultEl.textContent += '\n\n\u26A0\uFE0F CORS\u30A8\u30E9\u30FC\u304C\u51FA\u3066\u3044\u308B\u5834\u5408\u306F\nWorker\u306B\u4EE5\u4E0B\u306E\u30D8\u30C3\u30C0\u30FC\u304C\u5FC5\u8981\u3067\u3059\uFF1A\nAccess-Control-Allow-Origin: *\nAccess-Control-Allow-Methods: GET, PUT, OPTIONS\nAccess-Control-Allow-Headers: Content-Type';
+  }
+}
+
+// ===== デモモード =====
+const DEMO_MORNING_TEXT = `【参謀からの一言】
+入力されたHP/MPとコースを見る限り、今日は動ける地盤がある。ノイズはあるが、それより自分の設計に集中できる状態だ。一つユーモアを添えるとすれば——MPが少し低いのは昨夜のオールドファッションが足りなかっただけだ。今日も進もう。いつもと同じように、一歩ずつ。あなたのペースで動く日が、一番積み上がる。
+
+【今日のTop3タスク】
+1. 最優先プロジェクトのスコープを1ポモで確定し「今日やること・やらないこと」を1枚に整理する
+2. 発信コンテンツのドラフトを30分で書いて、AIに壁打ちして次稿の土台を作る
+3. 返信待ち・確認待ちのメールを2分タスクで処理し、頭の引っかかりをゼロにする`;
+
+const DEMO_CALENDAR_TEXT = `===CALENDAR===
+0900 2 スコープ確定・実装準備
+1400 1 進捗確認・調整
+===REVIEW===
+・コンテンツ前編の仕上げ（今週中）
+・次フェーズの設計メモ作成
+===DELEGATE===
+・定型メール返信（テンプレート化候補）
+・資料整理（仕組み化できる作業）
+===CUTLOSS===
+（なし）
+===COMMENT===
+今日の消耗は想定内だった。MPがほどよく残っている状態で夜を迎えられた。明日は設計に集中できる日なので、朝一番に今日やること・やらないことを決めてから動き出すといい。余白を意図的に作ることで、午後のアウトプットが生きる。
+===END===`;
+
+const DEMO_EVENING_TEXT = `【1】本日のP（実施事項）
+・最優先プロジェクトのスコープ確定（2ポモ）
+・コンテンツ構成ドラフト作成（1ポモ）
+・Claude壁打ちセッション・方針確定（1ポモ）
+
+【2】本日のV（ノイズ・ボトルネック）
+・返事待ち案件が頭に残り、集中が一部分散した
+・タスクの優先順位づけで設計より実装に入りすぎる場面があった
+
+【3】本日のG（気づき・アイデア・Tryの種）
+・「設計に徹する」というアーキテクト・シフトの原則を今日の現場で再確認できた
+・仕組み化の余地があるルーティンを1つ特定。来週中にテンプレート化する
+
+【4】明日の行動戦略
+最優先タスク（急重度①）：確定事項の実装着手（3ポモ）
+重要タスク（急重度②）：コンテンツ前編完成・投稿（2ポモ）
+軽微タスク（急重度③）：進捗確認メール送信（1ポモ）
+保留・将来タスク（急重度④）：次期システム連携設計（ポモ未定）
+
+【5】本日のステータスと明日への一言
+HP：72/100　MP：65/100　LV：LV4/80（本日+40pt、4ポモ）
+根拠：ポモ4個でHP-8、ノイズ2件でMP-10、デバッグ△1件でMP-4。Try100達成2件でMP+6。消耗は想定内で、Try100が下支えしている。
+明日への一言：今日の手応えはちゃんとある。同じテンポで明日も入れ。HPもMPも十分残っている——むしろ今週一番動ける日かもしれない。「できそうな気がする」じゃなくて「やる」で入ろう。うまくいかなくてもミツメルがいる。
+
+---
+【明日のVault管理Codeへの指示】
+以下をVault管理Codeに貼ってください：
+
+・ダッシュボード更新：スコープ確定完了 / コンテンツ構成ドラフト作成
+・アーカイブ移動：なし
+・session_log追記：本日のサマリーを1行で記載`;
+
+function checkDemoOrApiKey() {
+  if (!apiKey) apiKey = localStorage.getItem('mitsumeru_api_key') || '';
+  if (apiKey) return;
+  const demoCount = parseInt(localStorage.getItem('mitsumeru_demo_count') || '0');
+  if (demoCount >= 5) {
+    document.getElementById('limit-overlay').classList.add('active');
+    return;
+  }
+  document.getElementById('invite-overlay').classList.add('active');
+}
+
+function submitInviteCode() {
+  const input = document.getElementById('invite-code-input').value.trim().toUpperCase();
+  const errEl = document.getElementById('invite-error');
+  if (input !== DEMO_CODE) {
+    errEl.style.display = 'block';
+    document.getElementById('invite-code-input').value = '';
+    return;
+  }
+  errEl.style.display = 'none';
+  const demoCount = parseInt(localStorage.getItem('mitsumeru_demo_count') || '0');
+  if (demoCount >= 5) {
+    document.getElementById('invite-overlay').classList.remove('active');
+    document.getElementById('limit-overlay').classList.add('active');
+    return;
+  }
+  localStorage.setItem('mitsumeru_demo_count', demoCount + 1);
+  demoActive = true;
+  document.getElementById('invite-overlay').classList.remove('active');
+  const badge = document.createElement('span');
+  badge.textContent = 'DEMO ' + (demoCount + 1) + '/5';
+  badge.style.cssText = 'background:#fff3cd;color:#8a6a00;border:0.5px solid #ffd970;border-radius:20px;padding:3px 10px;font-size:11px;letter-spacing:1px;margin-left:8px;';
+  document.querySelector('.header').appendChild(badge);
+}
+
+function useOwnApiKey() {
+  document.getElementById('invite-overlay').classList.remove('active');
+  document.getElementById('limit-overlay').classList.remove('active');
+  setApiKey();
+  if (apiKey) demoActive = false;
+}
+
+function hasConsent() {
+  return !!localStorage.getItem('mitsumeru_consent_date');
+}
+
+function giveConsent() {
+  localStorage.setItem('mitsumeru_consent_date', new Date().toISOString());
+  document.getElementById('consent-overlay').classList.remove('active');
+  if (!apiKey) apiKey = localStorage.getItem('mitsumeru_api_key') || '';
+  checkDemoOrApiKey();
+}
+
+function checkConsent() {
+  if (!hasConsent()) {
+    document.getElementById('consent-overlay').classList.add('active');
+  } else {
+    checkDemoOrApiKey();
+  }
+}
+
+function openScanWithConsent() {
+  if (!confirm('心理アセスメントには要配慮個人情報が含まれます。\n\n入力した情報はAI分析のためAnthropicのサーバーに送信されます。\n\n続けますか？')) return;
+  window.open('./mitsumeru_scan.html', '_blank');
+}
 </script>
+
+<!-- スキャンインポートモーダル -->
+<div id="scan-import-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:300;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--card);border-radius:12px;max-width:560px;width:100%;padding:24px;">
+    <div style="font-family:'Noto Serif JP',serif;font-size:16px;margin-bottom:12px;">📥 スキャン結果をインポート</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:10px;">ミツメルスキャンの「結果をコピー（JSON）」ボタンで取得したJSONをここに貼り付けてください。</p>
+    <textarea id="scan-import-json" rows="10" style="width:100%;font-size:11px;font-family:monospace;padding:10px;border:0.5px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);resize:vertical;" placeholder='{"lsrp":{...}}'></textarea>
+    <div style="display:flex;gap:10px;margin-top:14px;">
+      <button class="btn-primary" onclick="importScanResult()" style="flex:1;">フィールドに反映する</button>
+      <button class="btn-secondary" onclick="closeScanImport()" style="flex:1;">キャンセル</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function openScanImport() {
+  document.getElementById('scan-import-overlay').style.display = 'flex';
+}
+function closeScanImport() {
+  document.getElementById('scan-import-overlay').style.display = 'none';
+  document.getElementById('scan-import-json').value = '';
+}
+function importScanResult() {
+  const raw = document.getElementById('scan-import-json').value.trim();
+  let data;
+  try { data = JSON.parse(raw); } catch(e) { alert('JSONの形式が正しくありません。'); return; }
+  const ennMap = {'T1':'001(完全主義者)','T2':'002(献身家)','T3':'003(達成者)','T4':'004(個人主義者)','T5':'005(研究者)','T6':'006(忠実家)','T7':'007(楽天家)','T8':'008(挑戦者)','T9':'009(調停者)'};
+  const lsrpMap = {'安全':'安全圏：適合ピース','警戒':'要注意：観察対象','危険':'危険：組織の猛毒'};
+  const rcMap = {'凪':'安全（凪）','冷徹':'危険（I+U-）組織破壊','危険':'危険（I+U-）組織破壊','停滞':'依存（I-U+）自律欠如','衝動':'注意（I-U-）他者否定'};
+  // LSRP: level文字列に「危険」「警戒」「安全」が含まれるかチェック
+  if (data.lsrp) {
+    const level = data.lsrp.level || '';
+    const key = level.includes('危険') ? '危険' : level.includes('警戒') ? '警戒' : '安全';
+    const lEl = document.getElementById('p-lsrp');
+    if (lEl) { const mapped = lsrpMap[key] || ''; for (let o of lEl.options) { if (o.value === mapped) { lEl.value = mapped; break; } } }
+  }
+  // RC: rc["判定"] を使用
+  if (data.rc) {
+    const rEl = document.getElementById('p-rc');
+    if (rEl) { const mapped = rcMap[data.rc['判定']] || ''; for (let o of rEl.options) { if (o.value === mapped) { rEl.value = mapped; break; } } }
+  }
+  // エゴグラム: data.egogram直下にCP/NP/A/FC/ACがフラットにある
+  if (data.egogram) {
+    const s = data.egogram;
+    ['CP','NP','A','FC','AC'].forEach(k => { const el = document.getElementById('p-'+k.toLowerCase()); if(el && s[k]!==undefined) el.value=s[k]; });
+  }
+  // エニアグラム: data.enneagram.top3 を使用
+  if (data.enneagram && data.enneagram.top3) {
+    data.enneagram.top3.slice(0,3).forEach((item,i) => {
+      const el = document.getElementById(['p-enea1','p-enea2','p-enea3'][i]);
+      if (!el) return;
+      const mapped = ennMap[item.type] || '';
+      for (let o of el.options) { if (o.value === mapped) { el.value = mapped; break; } }
+    });
+  }
+  alert('スキャン結果をフィールドに反映しました。\n内容を確認して「保存する」ボタンを押してください。');
+  closeScanImport();
+}
+</script>
+
 </body>
 </html>
