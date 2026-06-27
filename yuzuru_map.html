@@ -4,107 +4,103 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>弦システム 商圏マップ【デモ】— Fusion Partners</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23c0392b'/><text x='16' y='24' font-size='20' text-anchor='middle'>🗺️</text></svg>">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: "Hiragino Kaku Gothic Pro", Meiryo, sans-serif; background: #0d1117; }
-    #header {
-      background: linear-gradient(135deg, #1a237e 0%, #283593 100%);
-      color: #fff; padding: 12px 20px;
-      display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
-      border-bottom: 2px solid #3949ab;
-    }
-    #header h1 { font-size: 17px; letter-spacing: .5px; }
-    #header .demo-badge {
-      background: #ff6f00; color: #fff; font-size: 11px; font-weight: bold;
-      padding: 2px 8px; border-radius: 4px; letter-spacing: 1px;
-    }
-    .stat {
-      font-size: 13px; background: rgba(255,255,255,.12);
-      padding: 4px 12px; border-radius: 20px;
-    }
-    .stat span { font-weight: bold; font-size: 16px; margin-right: 2px; }
-    #controls {
-      background: #161b22; padding: 8px 20px;
-      display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
-      border-bottom: 1px solid #30363d;
-    }
-    #controls label { font-size: 13px; color: #8b949e; }
-    #controls select {
-      font-size: 13px; padding: 4px 10px; border-radius: 6px;
-      border: 1px solid #30363d; background: #21262d; color: #c9d1d9;
-    }
-    #map { height: calc(100vh - 90px); }
-    .legend {
-      background: rgba(13,17,23,.92); color: #c9d1d9;
-      padding: 10px 14px; border-radius: 8px;
-      line-height: 1.9; font-size: 13px;
-      border: 1px solid #30363d;
-    }
-    .legend b { color: #fff; }
-    .dot {
-      display: inline-block; width: 12px; height: 12px;
-      border-radius: 50%; margin-right: 6px; vertical-align: middle;
-      border: 1.5px solid rgba(255,255,255,.3);
-    }
-    .popup-table { font-size: 12px; border-collapse: collapse; min-width: 220px; }
-    .popup-table td { padding: 3px 6px; }
-    .popup-table td:first-child { color: #888; white-space: nowrap; padding-right: 10px; }
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:"Hiragino Kaku Gothic Pro",Meiryo,sans-serif;background:#0d1117;display:flex;flex-direction:column;height:100vh;overflow:hidden;}
+    #header{background:linear-gradient(135deg,#1a237e,#283593);color:#fff;padding:10px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;border-bottom:2px solid #3949ab;flex-shrink:0;}
+    #header h1{font-size:16px;letter-spacing:.5px;white-space:nowrap;}
+    .demo-badge{background:#ff6f00;color:#fff;font-size:10px;font-weight:bold;padding:2px 7px;border-radius:4px;letter-spacing:1px;}
+    .stat{font-size:12px;background:rgba(255,255,255,.12);padding:3px 10px;border-radius:20px;white-space:nowrap;}
+    .stat span{font-weight:bold;font-size:15px;margin-right:2px;}
+    #controls{background:#161b22;padding:6px 16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;border-bottom:1px solid #30363d;flex-shrink:0;}
+    #controls label{font-size:12px;color:#8b949e;}
+    #controls select{font-size:12px;padding:3px 8px;border-radius:5px;border:1px solid #30363d;background:#21262d;color:#c9d1d9;}
+    #body{display:flex;flex:1;overflow:hidden;}
+    #sidebar{width:300px;background:#0d1117;border-right:1px solid #30363d;display:flex;flex-direction:column;flex-shrink:0;overflow:hidden;}
+    #sidebar-header{padding:10px 14px;background:#161b22;border-bottom:1px solid #30363d;display:flex;justify-content:space-between;align-items:center;}
+    #sidebar-header span{font-size:13px;color:#c9d1d9;font-weight:bold;}
+    #sidebar-count{font-size:11px;color:#8b949e;}
+    #facility-list{flex:1;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:6px;}
+    #facility-list::-webkit-scrollbar{width:4px;}
+    #facility-list::-webkit-scrollbar-thumb{background:#30363d;border-radius:2px;}
+    .fac-card{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:10px 12px;cursor:pointer;transition:border-color .15s;}
+    .fac-card:hover{border-color:#58a6ff;}
+    .fac-card.active{border-color:#58a6ff;background:#1c2333;}
+    .fac-rank{display:inline-block;font-size:10px;font-weight:bold;padding:1px 7px;border-radius:10px;margin-bottom:5px;}
+    .fac-name{font-size:13px;color:#e6edf3;font-weight:bold;margin-bottom:3px;line-height:1.3;}
+    .fac-meta{font-size:11px;color:#8b949e;margin-bottom:4px;}
+    .fac-score{font-size:12px;color:#f0c674;font-weight:bold;}
+    .fac-status-badge{display:inline-block;font-size:10px;padding:1px 7px;border-radius:10px;margin-left:6px;}
+    #csv-btn{margin:8px;padding:8px;background:#238636;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit;}
+    #csv-btn:hover{background:#2ea043;}
+    #map{flex:1;}
+    .legend{background:rgba(13,17,23,.92);color:#c9d1d9;padding:10px 14px;border-radius:8px;line-height:1.9;font-size:12px;border:1px solid #30363d;}
+    .legend b{color:#fff;}
+    .dot{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:5px;vertical-align:middle;border:1.5px solid rgba(255,255,255,.3);}
+    .popup-wrap{font-family:Meiryo,sans-serif;min-width:230px;}
+    .popup-title{font-size:14px;font-weight:bold;margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid #eee;}
+    .popup-table{font-size:12px;border-collapse:collapse;width:100%;}
+    .popup-table td{padding:3px 5px;vertical-align:top;}
+    .popup-table td:first-child{color:#888;white-space:nowrap;padding-right:8px;min-width:50px;}
+    .status-select{font-size:12px;padding:3px 6px;border:1px solid #ccc;border-radius:4px;margin-top:6px;width:100%;cursor:pointer;}
   </style>
 </head>
 <body>
 <div id="header">
   <h1>弦システム 商圏マップ</h1>
   <span class="demo-badge">DEMO</span>
-  <div class="stat">全 <span>8</span> 件</div>
-  <div class="stat" style="background:rgba(229,57,53,.25)">A <span style="color:#ff8a80">5</span> 件</div>
-  <div class="stat" style="background:rgba(251,140,0,.25)">B <span style="color:#ffcc80">1</span> 件</div>
-  <div class="stat" style="background:rgba(30,136,229,.25)">C <span style="color:#82b1ff">2</span> 件</div>
+  <div class="stat">全 <span id="total-count">8</span> 件</div>
+  <div class="stat" style="background:rgba(229,57,53,.25)">A <span style="color:#ff8a80" id="a-count">5</span></div>
+  <div class="stat" style="background:rgba(251,140,0,.25)">B <span style="color:#ffcc80" id="b-count">1</span></div>
+  <div class="stat" style="background:rgba(30,136,229,.25)">C <span style="color:#82b1ff" id="c-count">2</span></div>
   <div style="margin-left:auto;font-size:11px;color:rgba(255,255,255,.5)">Fusion Partners © 2026</div>
 </div>
 <div id="controls">
-  <label>ランク：
-    <select id="rankFilter">
-      <option value="ALL">すべて</option>
-      <option value="A">A（即アプローチ）</option>
-      <option value="AB">A + B</option>
-      <option value="B">B のみ</option>
-      <option value="C">C のみ</option>
-    </select>
-  </label>
-  <label>種別：
-    <select id="typeFilter">
-      <option value="ALL">すべて</option>
-      <option value="特別養護老人ホーム">特別養護老人ホーム</option>
-      <option value="通所介護">通所介護</option>
-      <option value="訪問介護">訪問介護</option>
-      <option value="グループホーム">グループホーム</option>
-      <option value="就労">就労支援</option>
-    </select>
-  </label>
-  <label>状況：
-    <select id="statusFilter">
-      <option value="ALL">すべて</option>
-      <option value="未接触">未接触</option>
-      <option value="接触済">接触済</option>
-      <option value="提案中">提案中</option>
-      <option value="成約">成約</option>
-    </select>
-  </label>
-  <span style="font-size:12px;color:#8b949e;margin-left:auto">
-    ピンをクリックすると詳細を表示
-  </span>
+  <label>ランク：<select id="rankFilter">
+    <option value="ALL">すべて</option>
+    <option value="A">A（即アプローチ）</option>
+    <option value="AB">A + B</option>
+    <option value="B">B のみ</option>
+    <option value="C">C のみ</option>
+  </select></label>
+  <label>種別：<select id="typeFilter">
+    <option value="ALL">すべて</option>
+    <option value="特別養護老人ホーム">特養</option>
+    <option value="通所介護">通所介護</option>
+    <option value="訪問介護">訪問介護</option>
+    <option value="グループホーム">グループホーム</option>
+    <option value="就労">就労支援</option>
+  </select></label>
+  <label>状況：<select id="statusFilter">
+    <option value="ALL">すべて</option>
+    <option value="未接触">未接触</option>
+    <option value="接触済">接触済</option>
+    <option value="提案中">提案中</option>
+    <option value="成約">成約</option>
+  </select></label>
+  <span style="font-size:11px;color:#8b949e;margin-left:auto">← リスト or ピンをクリックで詳細</span>
 </div>
-<div id="map"></div>
+<div id="body">
+  <div id="sidebar">
+    <div id="sidebar-header">
+      <span>営業先リスト（スコア順）</span>
+      <span id="sidebar-count">0件</span>
+    </div>
+    <div id="facility-list"></div>
+    <button id="csv-btn">📥 現在の一覧をCSVで出力</button>
+  </div>
+  <div id="map"></div>
+</div>
 
 <script>
-const DATA = {
+const RAW_DATA = {
   "type": "FeatureCollection",
   "features": [
     {
       "type": "Feature",
+      "id": 0,
       "geometry": {
         "type": "Point",
         "coordinates": [
@@ -116,11 +112,14 @@ const DATA = {
         "name": "あおぞら介護センター",
         "corp": "社会福祉法人あおぞら会",
         "type": "特別養護老人ホーム",
-        "phone": "06-1234-5678",
         "addr": "大阪府大阪市西成区萩之茶屋1-1-1",
+        "phone": "06-1234-5678",
         "capacity": 45,
         "waitlist": 15,
         "kaizen": "未取得",
+        "years": 2.2,
+        "lat": 34.648,
+        "lon": 135.489,
         "score": 65,
         "rank": "A",
         "reason": "処遇改善加算未取得(+30) / 開設2.2年(+20) / 定員45名(+15)",
@@ -130,6 +129,7 @@ const DATA = {
     },
     {
       "type": "Feature",
+      "id": 1,
       "geometry": {
         "type": "Point",
         "coordinates": [
@@ -141,11 +141,14 @@ const DATA = {
         "name": "かがやき就労支援センター",
         "corp": "NPO法人かがやき",
         "type": "就労継続支援B型",
-        "phone": "06-3456-7890",
         "addr": "大阪府東大阪市高井田西3-3-3",
+        "phone": "06-3456-7890",
         "capacity": 35,
         "waitlist": 12,
         "kaizen": "未取得",
+        "years": 1.4,
+        "lat": 34.679,
+        "lon": 135.601,
         "score": 75,
         "rank": "A",
         "reason": "処遇改善加算未取得(+30) / 開設1.4年(+20) / 定員35名(+15) / 待機12名(+10)",
@@ -155,6 +158,7 @@ const DATA = {
     },
     {
       "type": "Feature",
+      "id": 2,
       "geometry": {
         "type": "Point",
         "coordinates": [
@@ -166,11 +170,14 @@ const DATA = {
         "name": "なごみデイサービス",
         "corp": "医療法人なごみ会",
         "type": "通所介護",
-        "phone": "06-4567-8901",
         "addr": "大阪府吹田市江坂町4-4-4",
+        "phone": "06-4567-8901",
         "capacity": 50,
         "waitlist": 18,
         "kaizen": "未取得",
+        "years": 3.8,
+        "lat": 34.76,
+        "lon": 135.524,
         "score": 75,
         "rank": "A",
         "reason": "処遇改善加算未取得(+30) / 開設3.8年(+20) / 定員50名(+15) / 待機18名(+10)",
@@ -180,6 +187,7 @@ const DATA = {
     },
     {
       "type": "Feature",
+      "id": 3,
       "geometry": {
         "type": "Point",
         "coordinates": [
@@ -191,11 +199,14 @@ const DATA = {
         "name": "つながり障害福祉サービス",
         "corp": "NPO法人つながり",
         "type": "就労移行支援",
-        "phone": "072-456-7890",
         "addr": "大阪府枚方市岡東町6-6-6",
+        "phone": "072-456-7890",
         "capacity": 20,
         "waitlist": 3,
         "kaizen": "未取得",
+        "years": 0.4,
+        "lat": 34.814,
+        "lon": 135.651,
         "score": 50,
         "rank": "A",
         "reason": "処遇改善加算未取得(+30) / 開設0.4年(+20)",
@@ -205,6 +216,7 @@ const DATA = {
     },
     {
       "type": "Feature",
+      "id": 4,
       "geometry": {
         "type": "Point",
         "coordinates": [
@@ -216,11 +228,14 @@ const DATA = {
         "name": "さくらグループホーム",
         "corp": "社会福祉法人さくら会",
         "type": "認知症対応型グループホーム",
-        "phone": "072-567-8901",
         "addr": "大阪府茨木市双葉町7-7-7",
+        "phone": "072-567-8901",
         "capacity": 18,
         "waitlist": 0,
         "kaizen": "未取得",
+        "years": 5.9,
+        "lat": 34.816,
+        "lon": 135.569,
         "score": 30,
         "rank": "B",
         "reason": "処遇改善加算未取得(+30)",
@@ -230,6 +245,7 @@ const DATA = {
     },
     {
       "type": "Feature",
+      "id": 5,
       "geometry": {
         "type": "Point",
         "coordinates": [
@@ -241,11 +257,14 @@ const DATA = {
         "name": "光和訪問介護ステーション",
         "corp": "医療法人光和会",
         "type": "訪問介護",
-        "phone": "0724-78-9012",
         "addr": "大阪府岸和田市宮本町8-8-8",
+        "phone": "0724-78-9012",
         "capacity": 40,
         "waitlist": 0,
         "kaizen": "未取得",
+        "years": 10.1,
+        "lat": 34.462,
+        "lon": 135.361,
         "score": 45,
         "rank": "A",
         "reason": "処遇改善加算未取得(+30) / 定員40名(+15)",
@@ -255,6 +274,7 @@ const DATA = {
     },
     {
       "type": "Feature",
+      "id": 6,
       "geometry": {
         "type": "Point",
         "coordinates": [
@@ -266,20 +286,24 @@ const DATA = {
         "name": "みのり特別養護老人ホーム",
         "corp": "社会福祉法人みのり福祉会",
         "type": "特別養護老人ホーム",
-        "phone": "06-5678-9012",
         "addr": "大阪府豊中市曽根東町5-5-5",
+        "phone": "06-5678-9012",
         "capacity": 80,
         "waitlist": 5,
         "kaizen": "取得済",
+        "years": 8.3,
+        "lat": 34.782,
+        "lon": 135.468,
         "score": 5,
         "rank": "C",
-        "reason": "過去加算取得歴あり(-10) → 該当なし",
+        "reason": "過去加算取得歴あり(-10)",
         "color": "#1e88e5",
         "status": "未接触"
       }
     },
     {
       "type": "Feature",
+      "id": 7,
       "geometry": {
         "type": "Point",
         "coordinates": [
@@ -291,11 +315,14 @@ const DATA = {
         "name": "ひまわりグループホーム",
         "corp": "社会福祉法人ひまわり会",
         "type": "認知症対応型グループホーム",
-        "phone": "072-234-5678",
         "addr": "大阪府堺市堺区新堀町2-2-2",
+        "phone": "072-234-5678",
         "capacity": 18,
         "waitlist": 0,
         "kaizen": "取得済",
+        "years": 25.1,
+        "lat": 34.573,
+        "lon": 135.482,
         "score": -15,
         "rank": "C",
         "reason": "過去加算取得歴あり(-10) / 老舗小規模(-5)",
@@ -305,88 +332,167 @@ const DATA = {
     }
   ]
 };
+const STATUS_COLORS = {"未接触": "#546e7a", "接触済": "#1565c0", "提案中": "#e65100", "成約": "#2e7d32"};
+const STATUS_LIST   = ["未接触", "接触済", "提案中", "成約"];
+const RANK_COLOR    = {A:"#e53935",B:"#fb8c00",C:"#1e88e5"};
 
-const map = L.map('map', {zoomControl: true}).setView([34.686, 135.520], 10);
+// localStorageからステータスを復元
+const STORAGE_KEY = 'yuzuru_status';
+function loadStatuses() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch { return {}; }
+}
+function saveStatus(id, status) {
+  const s = loadStatuses(); s[id] = status; localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+}
+
+// データ初期化
+const statuses = loadStatuses();
+const data = RAW_DATA.features.map(f => {
+  const p = {...f.properties};
+  p.status = statuses[f.id] ?? p.status;
+  return {...f, properties: p};
+});
+
+// 地図初期化
+const map = L.map('map').setView([34.686, 135.520], 10);
 L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-  attribution: '© OpenStreetMap © CARTO',
-  maxZoom: 18,
+  attribution:'© OpenStreetMap © CARTO', maxZoom:18
 }).addTo(map);
 
 let layerGroup = L.layerGroup().addTo(map);
+let markerMap = {};
+let activeId = null;
 
-function makeMarker(f) {
-  const p = f.properties;
-  const icon = L.divIcon({
-    className: '',
-    html: `<div style="
-      width:20px;height:20px;border-radius:50%;
-      background:${p.color};
-      border:2.5px solid rgba(255,255,255,.8);
-      box-shadow:0 2px 8px rgba(0,0,0,.6);
-      cursor:pointer;
-    "></div>`,
-    iconSize: [20,20], iconAnchor: [10,10],
-  });
-
-  const rankBadge = {A:'🔴 Aランク（即アプローチ）', B:'🟡 Bランク（準優先）', C:'🔵 Cランク（様子見）'};
-
-  const popup = `
-    <div style="font-family:Meiryo,sans-serif;min-width:240px">
-      <div style="font-size:15px;font-weight:bold;margin-bottom:6px;border-bottom:1px solid #eee;padding-bottom:6px">
-        ${p.name}
-      </div>
-      <div style="font-size:12px;color:#555;margin-bottom:8px">${rankBadge[p.rank] || p.rank}</div>
-      <table class="popup-table">
-        <tr><td>法人</td><td><b>${p.corp}</b></td></tr>
-        <tr><td>種別</td><td>${p.type}</td></tr>
-        <tr><td>住所</td><td>${p.addr}</td></tr>
-        <tr><td>電話</td><td><a href="tel:${p.phone}" style="color:#1565c0">${p.phone}</a></td></tr>
-        <tr><td>定員</td><td>${p.capacity}名</td></tr>
-        <tr><td>待機</td><td>${p.waitlist}名</td></tr>
-        <tr><td>加算</td><td style="color:${p.kaizen==='未取得'?'#c62828':'#2e7d32'};font-weight:bold">${p.kaizen}</td></tr>
-        <tr><td>スコア</td><td><b>${p.score}点</b></td></tr>
-        <tr><td>理由</td><td style="color:#555;font-size:11px">${p.reason}</td></tr>
-        <tr><td>状況</td><td><span style="background:#e8f5e9;color:#2e7d32;padding:1px 6px;border-radius:3px">${p.status}</span></td></tr>
-      </table>
-    </div>
-  `;
-  return L.marker(f.geometry.coordinates.slice().reverse(), {icon})
-    .bindPopup(popup, {maxWidth: 300});
-}
-
-function renderMarkers() {
+function getVisible() {
   const rv = document.getElementById('rankFilter').value;
   const tv = document.getElementById('typeFilter').value;
   const sv = document.getElementById('statusFilter').value;
-  layerGroup.clearLayers();
-  DATA.features.forEach(f => {
+  return data.filter(f => {
     const p = f.properties;
     const rm = rv==='ALL'||(rv==='AB'&&(p.rank==='A'||p.rank==='B'))||p.rank===rv;
     const tm = tv==='ALL'||p.type.includes(tv);
     const sm = sv==='ALL'||p.status===sv;
-    if (rm && tm && sm) makeMarker(f).addTo(layerGroup);
+    return rm && tm && sm;
+  }).sort((a,b) => b.properties.score - a.properties.score);
+}
+
+function makeIcon(p, active=false) {
+  return L.divIcon({
+    className:'',
+    html:`<div style="width:${active?24:18}px;height:${active?24:18}px;border-radius:50%;background:${p.color};border:${active?'3px solid #fff':'2px solid rgba(255,255,255,.7)'};box-shadow:0 2px 8px rgba(0,0,0,.6);transition:all .15s;"></div>`,
+    iconSize:[active?24:18,active?24:18],iconAnchor:[active?12:9,active?12:9],
   });
 }
 
-['rankFilter','typeFilter','statusFilter'].forEach(id =>
-  document.getElementById(id).addEventListener('change', renderMarkers)
-);
-renderMarkers();
+function makePopupHTML(p, id) {
+  const rankLabel = {A:'🔴 Aランク',B:'🟡 Bランク',C:'🔵 Cランク'};
+  const statusOpts = STATUS_LIST.map(s =>
+    `<option value="${s}" ${p.status===s?'selected':''}>${s}</option>`).join('');
+  return `<div class="popup-wrap">
+    <div class="popup-title">${p.name}</div>
+    <div style="font-size:11px;color:#666;margin-bottom:8px">${rankLabel[p.rank]||p.rank} ／ ${p.score}点</div>
+    <table class="popup-table">
+      <tr><td>法人</td><td><b>${p.corp}</b></td></tr>
+      <tr><td>種別</td><td>${p.type}</td></tr>
+      <tr><td>住所</td><td>${p.addr}</td></tr>
+      <tr><td>電話</td><td><a href="tel:${p.phone}" style="color:#1565c0">${p.phone}</a></td></tr>
+      <tr><td>定員</td><td>${p.capacity}名 ／ 待機${p.waitlist}名</td></tr>
+      <tr><td>加算</td><td style="color:${p.kaizen==='未取得'?'#c62828':'#2e7d32'};font-weight:bold">${p.kaizen}</td></tr>
+      <tr><td>理由</td><td style="color:#555;font-size:11px">${p.reason}</td></tr>
+    </table>
+    <div style="margin-top:8px;font-size:11px;color:#666">アプローチ状況：</div>
+    <select class="status-select" onchange="updateStatus(${id},this.value)">${statusOpts}</select>
+  </div>`;
+}
 
+function updateStatus(id, status) {
+  data[id].properties.status = status;
+  saveStatus(id, status);
+  render();
+  // ポップアップを開き直す
+  if (markerMap[id]) {
+    markerMap[id].setPopupContent(makePopupHTML(data[id].properties, id));
+  }
+}
+
+function render() {
+  layerGroup.clearLayers();
+  markerMap = {};
+  const visible = getVisible();
+  visible.forEach(f => {
+    const p = f.properties;
+    const id = f.id;
+    const marker = L.marker(f.geometry.coordinates.slice().reverse(), {icon: makeIcon(p, id===activeId)})
+      .bindPopup(makePopupHTML(p, id), {maxWidth:290,className:''})
+      .on('click', () => { activeId=id; render(); })
+      .on('popupclose', () => { if(activeId===id){activeId=null; render();} });
+    marker.addTo(layerGroup);
+    markerMap[id] = marker;
+  });
+  renderSidebar(visible);
+}
+
+function renderSidebar(visible) {
+  const list = document.getElementById('facility-list');
+  document.getElementById('sidebar-count').textContent = visible.length + '件';
+  list.innerHTML = '';
+  visible.forEach(f => {
+    const p = f.properties;
+    const id = f.id;
+    const sc = STATUS_COLORS[p.status] || '#546e7a';
+    const card = document.createElement('div');
+    card.className = 'fac-card' + (id===activeId?' active':'');
+    card.innerHTML = `
+      <div><span class="fac-rank" style="background:${p.color}22;color:${p.color};border:1px solid ${p.color}44">${p.rank}ランク</span>
+           <span class="fac-status-badge" style="background:${sc}22;color:${sc};border:1px solid ${sc}44">${p.status}</span></div>
+      <div class="fac-name">${p.name}</div>
+      <div class="fac-meta">${p.corp} ／ ${p.type}</div>
+      <div class="fac-score">スコア ${p.score}点 ／ <span style="font-size:11px;font-weight:normal;color:#8b949e">${p.phone}</span></div>
+    `;
+    card.onclick = () => {
+      activeId = id;
+      render();
+      if(markerMap[id]) { markerMap[id].openPopup(); map.panTo(f.geometry.coordinates.slice().reverse()); }
+    };
+    list.appendChild(card);
+  });
+}
+
+// CSV出力
+document.getElementById('csv-btn').onclick = () => {
+  const visible = getVisible();
+  const cols = ['施設名','法人名','種別','住所','電話番号','定員','待機者数','処遇改善加算','スコア','ランク','スコア理由','アプローチ状況'];
+  const rows = visible.map(f => {
+    const p = f.properties;
+    return [p.name,p.corp,p.type,p.addr,p.phone,p.capacity,p.waitlist,p.kaizen,p.score,p.rank,p.reason,p.status]
+      .map(v => `"${String(v).replace(/"/g,'""')}"`).join(',');
+  });
+  const csv = '﻿' + cols.join(',') + '\n' + rows.join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8'}));
+  a.download = '弦システム_営業先リスト_' + new Date().toISOString().slice(0,10).replace(/-/g,'') + '.csv';
+  a.click();
+};
+
+['rankFilter','typeFilter','statusFilter'].forEach(id =>
+  document.getElementById(id).addEventListener('change', () => { activeId=null; render(); })
+);
+
+// 凡例
 const legend = L.control({position:'bottomright'});
 legend.onAdd = () => {
   const d = L.DomUtil.create('div','legend');
-  d.innerHTML = `
-    <b>優先度ランク</b><br>
-    <span class="dot" style="background:#e53935"></span>A：処遇改善加算未取得 等<br>
+  d.innerHTML = `<b>優先度ランク</b><br>
+    <span class="dot" style="background:#e53935"></span>A：即アプローチ<br>
     <span class="dot" style="background:#fb8c00"></span>B：準優先<br>
     <span class="dot" style="background:#1e88e5"></span>C：様子見<br>
-    <hr style="border-color:#30363d;margin:6px 0">
-    <span style="font-size:11px;color:#8b949e">スコアが高い順に営業</span>
-  `;
+    <hr style="border-color:#30363d;margin:5px 0">
+    <span style="font-size:10px;color:#8b949e">状況はクリックで変更・自動保存</span>`;
   return d;
 };
 legend.addTo(map);
+
+render();
 </script>
 </body>
 </html>
