@@ -727,6 +727,10 @@ function switchScreen(name) {
   document.querySelectorAll('.mode-tab').forEach(t=>t.classList.toggle('active', t.dataset.screen===name));
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('screen-'+name).classList.add('active');
+  // P2修正：遷移先画面を最新データで再描画する（profile遷移直後に0/55と出る再描画漏れバグ）
+  if (name === 'profile') renderProfile();
+  else if (name === 'interview') renderInterview();
+  else if (name === 'list') renderList();
   window.scrollTo(0,0);
 }
 let toastT;
