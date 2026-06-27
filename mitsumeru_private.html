@@ -1757,10 +1757,13 @@ function setDates() {
 setDates();
 loadProfile();
 updateSyncTargetDisplay();
-checkConsent();
-if (apiKey) {
-  const btn = document.getElementById('api-btn');
-  if (btn) btn.style.color = '#4caf82';
+// PRIVATE版：同意・デモ不要。APIキーのみ確認
+if (!getApiKey()) {
+  const notice = document.createElement('div');
+  notice.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#b8860b;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;z-index:999;';
+  notice.textContent = '⚠ APIキーが未設定です。設定タブ → APIキーで設定してください。';
+  document.body.appendChild(notice);
+  setTimeout(() => notice.remove(), 5000);
 }
 
 // ===== 日付ロールオーバー検知（日付キーのズレ再発防止）=====
@@ -1907,21 +1910,9 @@ function closeImgPreview() {
 }
 
 function setApiKey() {
-  const key = prompt('AnthropicのAPIキーを入力してください（sk-ant-...）：\n\n取得方法：console.anthropic.com → API Keys → Create Key\n\n現在のキー：' + (apiKey ? apiKey.substring(0,10)+'...' : '未設定'));
-  if (key === null) return;
-  if (key.trim().startsWith('sk-')) {
-    apiKey = key.trim();
-    localStorage.setItem('mitsumeru_api_key', apiKey);
-    document.getElementById('api-btn').style.color = '#4caf82';
-    alert('APIキーを設定しました！');
-  } else if (key.trim() === '') {
-    apiKey = '';
-    localStorage.removeItem('mitsumeru_api_key');
-    document.getElementById('api-btn').style.color = 'var(--bg)';
-    alert('APIキーをクリアしました。');
-  } else {
-    alert('APIキーの形式が正しくありません。\n「sk-ant-」から始まる文字列を入力してください。\n\nヘッダーの「🔑 API」ボタンから再設定できます。');
-  }
+  // PRIVATE版：設定タブのAPIキー欄を使用
+  switchTab('settings');
+  setTimeout(() => document.getElementById('private-api-key-input')?.focus(), 100);
 }
 
 function copyMorningAdvice() {
@@ -3130,62 +3121,18 @@ HP：72/100　MP：65/100　LV：LV4/80（本日+40pt、4ポモ）
 
 function checkDemoOrApiKey() {
   if (!apiKey) apiKey = localStorage.getItem('mitsumeru_api_key') || '';
-  if (apiKey) return;
-  const demoCount = parseInt(localStorage.getItem('mitsumeru_demo_count') || '0');
-  if (demoCount >= 5) {
-    document.getElementById('limit-overlay').classList.add('active');
-    return;
-  }
-  document.getElementById('invite-overlay').classList.add('active');
 }
 
-function submitInviteCode() {
-  const input = document.getElementById('invite-code-input').value.trim().toUpperCase();
-  const errEl = document.getElementById('invite-error');
-  if (input !== DEMO_CODE) {
-    errEl.style.display = 'block';
-    document.getElementById('invite-code-input').value = '';
-    return;
-  }
-  errEl.style.display = 'none';
-  const demoCount = parseInt(localStorage.getItem('mitsumeru_demo_count') || '0');
-  if (demoCount >= 5) {
-    document.getElementById('invite-overlay').classList.remove('active');
-    document.getElementById('limit-overlay').classList.add('active');
-    return;
-  }
-  localStorage.setItem('mitsumeru_demo_count', demoCount + 1);
-  demoActive = true;
-  document.getElementById('invite-overlay').classList.remove('active');
-  const badge = document.createElement('span');
-  badge.textContent = 'DEMO ' + (demoCount + 1) + '/5';
-  badge.style.cssText = 'background:#fff3cd;color:#8a6a00;border:0.5px solid #ffd970;border-radius:20px;padding:3px 10px;font-size:11px;letter-spacing:1px;margin-left:8px;';
-  document.querySelector('.header').appendChild(badge);
-}
+function submitInviteCode() {} // PRIVATE版：不使用
 
-function useOwnApiKey() {
-  document.getElementById('invite-overlay').classList.remove('active');
-  document.getElementById('limit-overlay').classList.remove('active');
-  setApiKey();
-  if (apiKey) demoActive = false;
-}
+function useOwnApiKey() { setApiKey(); } // PRIVATE版：設定タブへ誘導
 
-function hasConsent() {
-  return !!localStorage.getItem('mitsumeru_consent_date');
-}
+function hasConsent() { return true; } // PRIVATE版：同意不要
 
-function giveConsent() {
-  localStorage.setItem('mitsumeru_consent_date', new Date().toISOString());
-  document.getElementById('consent-overlay').classList.remove('active');
-  if (!apiKey) apiKey = localStorage.getItem('mitsumeru_api_key') || '';
-  checkDemoOrApiKey();
-}
+function giveConsent() {} // PRIVATE版：不使用
 
 function checkConsent() {
-  if (!hasConsent()) {
-    document.getElementById('consent-overlay').classList.add('active');
-  } else {
-    checkDemoOrApiKey();
+  checkDemoOrApiKey();
   }
 }
 
