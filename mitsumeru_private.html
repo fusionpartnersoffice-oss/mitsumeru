@@ -393,10 +393,19 @@
     <div class="sec-title">データ管理</div>
     <p style="font-size:11px;color:var(--text2);margin-bottom:8px;line-height:1.6;">
       localStorageキー：<code>mitsumeru_priv_*</code><br>
-      KVキー：<code>priv_*</code><br>
-      ※既存のmitsumeru_app.htmlとは完全分離
+      KVキー：<code>priv_*</code>
     </p>
     <div style="font-size:11px;color:var(--text3);">対象日：<span id="sync-date-display"></span></div>
+  </div>
+
+  <div class="sec" style="border:1px solid var(--gold);background:rgba(184,134,11,0.06);">
+    <div class="sec-title" style="color:var(--gold);">既存データ一括移行</div>
+    <p style="font-size:11px;color:var(--text2);margin-bottom:10px;line-height:1.7;">
+      mitsumeru_app.html で蓄積したデータ（朝・夜・メモ・プロフィール・LV・全履歴）を<br>
+      このプライベート版に移行します。元データは消えません。
+    </p>
+    <button class="btn-p" onclick="migrateFromApp()" style="background:var(--gold);color:#fff;">一括移行を実行する</button>
+    <div id="migrate-log" style="margin-top:10px;font-size:11px;color:var(--text2);line-height:1.7;white-space:pre-wrap;"></div>
   </div>
 </div>
 
@@ -1196,6 +1205,75 @@ function copyText(id) {
   const text = document.getElementById(id).textContent;
   if (!text) { alert('コピーするテキストがありません。'); return; }
   navigator.clipboard.writeText(text).then(() => alert('コピーしました。'));
+}
+
+// ===== mitsumeru_app.html からの一括移行 =====
+async function migrateFromApp() {
+  const log = document.getElementById('migrate-log');
+  const btn = document.querySelector('[onclick="migrateFromApp()"]');
+  btn.disabled = true;
+  log.textContent = '▶ localStorage を読み込み中...';
+
+  // 1. localStorage 全キーを収集
+  const allKeys = [];
+  for (let i = 0; i < localStorage.length; i++) allKeys.push(localStorage.key(i));
+
+  const SKIP = new Set(['mitsumeru_api_key','mitsumeru_consent_date','mitsumeru_demo_count']);
+  const datesToMigrate = new Set();
+  let lsCount = 0;
+
+  for (const key of allKeys) {
+    if (!key.startsWith('mitsumeru_') || key.startsWith('mitsumeru_priv_')) continue;
+    if (SKIP.has(key)) continue;
+    const newKey = key.replace('mitsumeru_', 'mitsumeru_priv_');
+    localStorage.setItem(newKey, localStorage.getItem(key));
+    lsCount++;
+    const m = key.match(/(\d{4}-\d{2}-\d{2})$/);
+    if (m) datesToMigrate.add(m[1]);
+  }
+  log.textContent = `✓ localStorage: ${lsCount}件コピー完了（${datesToMigrate.size}日分）\n▶ KV移行中...（しばらくお待ちください）`;
+
+  // 2. KV 日付ごとに移行
+  const TYPES = ['morning','evening','memos','output','calendar','delay','dispatch'];
+  let kvCount = 0, kvErr = 0;
+
+  for (const date of datesToMigrate) {
+    for (const type of TYPES) {
+      try {
+        const res = await fetch(`${SYNC_URL}?key=${encodeURIComponent(type+'_'+date)}`);
+        if (!res.ok) continue;
+        const data = await res.json();
+        if (!data) continue;
+        const putRes = await fetch(`${SYNC_URL}?key=${encodeURIComponent('priv_'+type+'_'+date)}`, {
+          method: 'PUT',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify(data)
+        });
+        if (putRes.ok) kvCount++; else kvErr++;
+      } catch(e) { kvErr++; }
+    }
+    log.textContent = `✓ localStorage: ${lsCount}件\n▶ KV移行中... ${kvCount}件完了（残り処理中）`;
+    await new Promise(r => setTimeout(r, 0)); // UI更新
+  }
+
+  // 3. KV グローバルキー移行（profile / lv）
+  for (const gKey of ['profile','lv']) {
+    try {
+      const res = await fetch(`${SYNC_URL}?key=${encodeURIComponent(gKey)}`);
+      if (!res.ok) continue;
+      const data = await res.json();
+      if (!data) continue;
+      await fetch(`${SYNC_URL}?key=${encodeURIComponent('priv_'+gKey)}`, {
+        method: 'PUT',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(data)
+      });
+      kvCount++;
+    } catch(e) {}
+  }
+
+  log.textContent = `✅ 移行完了！\n・localStorage: ${lsCount}件\n・KV: ${kvCount}件${kvErr>0?`（エラー${kvErr}件）`:''}\n\n2秒後に自動リロードします...`;
+  setTimeout(() => location.reload(), 2000);
 }
 
 // ===== 起動時初期化 =====
