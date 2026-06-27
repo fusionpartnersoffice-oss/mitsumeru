@@ -82,6 +82,31 @@ html,body{
   line-height:1.15;
   color:var(--navy);
 }
+.h1 .hatara{
+  font-weight:400;
+  color:var(--gold2);
+}
+.h1 .hatara small{
+  font-size:.42em;
+  font-weight:400;
+  letter-spacing:1px;
+  color:var(--gold2);
+  vertical-align:.18em;
+}
+.hero-sub{
+  font-family:'Hiragino Mincho ProN','Yu Mincho','Georgia',serif;
+  font-size:clamp(16px,2.2vw,24px);
+  font-weight:300;
+  color:var(--navy);
+  letter-spacing:.5px;
+  margin-top:16px;
+  line-height:1.6;
+}
+.hero-sub em{
+  font-style:normal;
+  border-bottom:2px solid var(--gold3);
+  padding-bottom:2px;
+}
 .rule{
   width:36px;height:2px;
   background:var(--gold3);
@@ -388,7 +413,8 @@ html,body{
   <header class="head">
     <img src="logo.png" alt="Fusion Partners">
     <div class="eyebrow">Fusion OS — 5 Systems</div>
-    <div class="h1">5つのシステムへの、<br>入口。</div>
+    <h1 class="h1">FusionOS——<span class="hatara">傍楽<small>（ハタラク）</small></span>のOS</h1>
+    <div class="hero-sub"><em>「相談できる人が傍にいるみたいだ」</em></div>
     <div class="rule"></div>
     <div class="lead">
       医療・福祉現場の「属人化のバグ」を、仕組みで解決する。<br>
