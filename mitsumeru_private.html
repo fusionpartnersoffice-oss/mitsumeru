@@ -1206,7 +1206,18 @@ window.addEventListener('DOMContentLoaded', async function() {
   updateCourse(3);
   loadProfile();
 
-  // ① まずlocalStorageで即時復元
+  // ① 既存ミツメル（mitsumeru_app.html）のデータを読み取り専用でインポート
+  // キー: mitsumeru_morning_* → mitsumeru_priv_morning_* へコピー（書き込みはpriv側のみ）
+  ['morning','evening','memos'].forEach(type => {
+    const privKey = lsKey(type);
+    const appKey  = 'mitsumeru_' + type + '_' + targetDate;
+    if (!localStorage.getItem(privKey)) {
+      const appData = localStorage.getItem(appKey);
+      if (appData) localStorage.setItem(privKey, appData);
+    }
+  });
+
+  // ② まずlocalStorageで即時復元
   const lsM = lsLoad('morning'), lsE = lsLoad('evening'), lsMm = lsLoad('memos');
   applyMorning(lsM); applyEvening(lsE);
   if (lsMm) applyMemos(lsMm);
