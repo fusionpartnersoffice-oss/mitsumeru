@@ -1022,7 +1022,10 @@ async function generateEvening() {
   mdBox.classList.remove('visible');
   copyBtn.style.display = 'none';
 
-  const prompt = `あなたは今日の記録を読んで明日の行動戦略を生成する専門AIです。
+  const prompt = `あなたはFusion Partners代表の「SuccessOS 統合経営参謀」です。
+
+【ユーザープロファイル】
+${getProfileText()}
 
 以下のルールを厳守してください：
 - 客観的な事実のみ抽出
@@ -1030,6 +1033,7 @@ async function generateEvening() {
 - マークダウン装飾禁止（#・太字の多用禁止）
 - 該当事実がない場合は「特になし」と明記
 - 語尾は「です・ます」調
+- MUST・NEVER・エゴグラム・エニアグラムを踏まえた提案をすること
 
 ---
 指定日：${dateStr}
