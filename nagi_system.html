@@ -1886,6 +1886,7 @@ function addCorp(){
   document.getElementById('new-corp-name').value='';
   renderCorpsList();
   refreshCorpSelector();
+  refreshOfficeSelectors();
 }
 
 function deleteCorp(id){
@@ -4305,18 +4306,48 @@ ${pipeLines.length ? pipeLines.join('\n') : '  データなし'}
 //  ミツメル連携：本日の状態を取得して羅針盤に表示
 // ════════════════════════════════════════════════════
 
+function modeToLevel(text){
+  if(!text) return '';
+  const t = text.toLowerCase();
+  if(t==='critical'||text.includes('クリティカル')) return 'critical';
+  if(t==='heavy'||text.includes('ヘビー')) return 'heavy';
+  if(t==='focus'||text.includes('フォーカス')) return 'focus';
+  if(t==='light'||text.includes('ライト')) return 'light';
+  if(t==='normal'||text.includes('通常')) return 'normal';
+  return text;
+}
+
+function normalizeMitsumeruData(d){
+  return {
+    hp: d.hp,
+    mp: d.mp,
+    mode_level: modeToLevel(d.mode_level || d.mode || ''),
+    burnout_score: d.burnout_score ?? d.burnout ?? 0,
+    strategy_headline: d.strategy_headline || d.strategy || ''
+  };
+}
+
 function loadMitsumeruStatus(){
   const panel = document.getElementById('mitsumeru-status-panel');
   if(!panel) return;
   panel.innerHTML = '<div style="color:var(--sub);font-size:0.78rem;padding:8px 0;"><span style="display:inline-block;animation:spin 1s linear infinite;">⏳</span> 取得中...</div>';
 
-  const today = new Date().toISOString().slice(0,10); // YYYY-MM-DD
-  const key = `fusionos_status_${today}`;
-  const url = `https://mitsumeru-sync.fusion-partners-office.workers.dev?key=${encodeURIComponent(key)}`;
+  const today = new Date().toISOString().slice(0,10);
 
+  // localStorage優先（ミツメルと同一オリジン = 同一デバイスで即時反映）
+  const localRaw = localStorage.getItem(`mitsumeru_lite_morning_${today}`);
+  if(localRaw){
+    try{
+      renderMitsumeruStatus(normalizeMitsumeruData(JSON.parse(localRaw)), today);
+      return;
+    }catch(e){}
+  }
+
+  // フォールバック：Cloudflare Worker（クロスデバイス）
+  const url = `https://mitsumeru-sync.fusion-partners-office.workers.dev?key=${encodeURIComponent('fusionos_status_'+today)}`;
   fetch(url)
     .then(r => { if(!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
-    .then(d => renderMitsumeruStatus(d, today))
+    .then(d => renderMitsumeruStatus(normalizeMitsumeruData(d), today))
     .catch(e => {
       panel.innerHTML = `<div style="font-size:0.78rem;color:var(--sub);padding:8px 0;">
         ─ データなし（${today}）<span style="margin-left:8px;font-size:0.68rem;color:var(--sub);">${e.message}</span>
