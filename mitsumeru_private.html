@@ -408,8 +408,13 @@
 // APIキー: 下の PRIVATE_API_KEY にローカルで設定する
 // ================================================================
 
-// *** ここにAPIキーを設定してください（Gitには上げない） ***
+// mitsumeru_app.html の localStorage（mitsumeru_api_key）を自動参照する
+// 手動上書きしたい場合のみ下記に設定（通常は空のままでよい）
 const PRIVATE_API_KEY = '';
+
+function getApiKey() {
+  return PRIVATE_API_KEY || localStorage.getItem('mitsumeru_api_key') || '';
+}
 
 const SYNC_URL = 'https://mitsumeru-sync.fusion-partners-office.workers.dev';
 const LS_PREFIX = 'mitsumeru_priv_';
@@ -516,15 +521,16 @@ async function kvSaveFusionOS(data) {
 
 // ===== Claude API =====
 function callClaude(prompt, onSuccess, onError, maxTokens = 4000) {
-  if (!PRIVATE_API_KEY) {
-    onError('APIキーが未設定です。ファイル先頭の PRIVATE_API_KEY を設定してください。');
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    onError('APIキーが見つかりません。先にミツメル（mitsumeru_app.html）でAPIキーを設定してください。');
     return;
   }
   fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': PRIVATE_API_KEY,
+      'x-api-key': apiKey,
       'anthropic-version': '2023-06-01',
       'anthropic-dangerous-direct-browser-access': 'true'
     },
@@ -1194,7 +1200,7 @@ function copyText(id) {
 
 // ===== 起動時初期化 =====
 window.addEventListener('DOMContentLoaded', async function() {
-  if (!PRIVATE_API_KEY) alert('⚠️ APIキーが未設定です。\nmitsumeru_private.html の先頭にある\nPRIVATE_API_KEY を設定してください。');
+  if (!getApiKey()) alert('⚠️ APIキーが見つかりません。\nミツメル（mitsumeru_app.html）を開いてAPIキーを設定してください。\n設定後にこのページを再読み込みすれば自動で引き継ぎます。');
 
   initDate();
   updateCourse(3);
