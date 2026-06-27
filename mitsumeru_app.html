@@ -1262,6 +1262,16 @@ async function cloudSaveGlobal(type, data) {
   } catch(e) {}
 }
 
+async function cloudSaveFusionOSStatus(data) {
+  const date = targetDate || localDateStr(new Date());
+  try {
+    await fetch(`${SYNC_URL}?key=${encodeURIComponent('fusionos_status_' + date)}`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({...data, source: 'mitsumeru', date, _ts: Date.now()})
+    });
+  } catch(e) {}
+}
+
 async function cloudLoadGlobal(type) {
   try {
     const res = await fetch(`${SYNC_URL}?key=${encodeURIComponent(type + '_global')}`);
@@ -2279,6 +2289,7 @@ function calcMorning() {
 
   document.getElementById('morning-result').style.display = 'block';
   saveMorning();
+  cloudSaveFusionOSStatus({ hp: hpAdj, mp, mode_level: mode, mode: modeText });
 
   // noises/noiseDetail/want/courseVal/course は上で宣言済み
 
@@ -2661,6 +2672,15 @@ HP：${endHP}/100　MP：${endMP}/100　LV：${formatLV(close.lvBase + close.tod
       const outputPayload = { text, _ts: Date.now() };
       localStorage.setItem(lsKey('output'), JSON.stringify(outputPayload));
       cloudSave('output', outputPayload);
+      const _bsHP = typeof close.endHP === 'number' ? close.endHP : 50;
+      const _bsMP = typeof close.endMP === 'number' ? close.endMP : 50;
+      const _burnout = Math.min(100, Math.round((100-_bsHP)*0.3 + (100-_bsMP)*0.4 + close.noiseCount*5 + close.cntBatsu*8));
+      const _modeLevel = _bsHP>=60&&_bsMP>=60 ? 'normal' : (_bsHP>=40||_bsMP>=40 ? 'dblock' : 'minimal');
+      const _headline = (text.match(/明日への一言[：:]([^\n]+)/) || [])[1]?.trim().slice(0,60) || '';
+      cloudSaveFusionOSStatus({ hp: _bsHP, mp: _bsMP, mode_level: _modeLevel,
+        mode: _modeLevel==='normal'?'通常モード':_modeLevel==='dblock'?'D-blockモード':'2分タスクモード',
+        burnout_score: _burnout, noise_count: close.noiseCount, debug_x_count: close.cntBatsu,
+        pomo_total: close.pomoTotal, strategy_headline: _headline });
       showOutputCopyBtns();
     },
     err => {
