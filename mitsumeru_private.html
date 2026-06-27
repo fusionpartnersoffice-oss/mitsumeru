@@ -384,6 +384,16 @@
   </div>
 
   <div class="sec">
+    <div class="sec-title">APIキー</div>
+    <div class="field">
+      <label>Anthropic APIキー</label>
+      <input type="password" id="settings-api-key" placeholder="sk-ant-..." style="font-family:monospace;">
+    </div>
+    <button class="btn-p" onclick="saveApiKey()">APIキーを保存</button>
+    <div id="api-key-saved" style="display:none;text-align:center;color:var(--green);font-size:12px;margin-top:6px;">✓ 保存しました。再読み込みします...</div>
+  </div>
+
+  <div class="sec">
     <div class="sec-title">クラウド同期</div>
     <p style="font-size:11px;color:var(--text2);margin-bottom:8px;line-height:1.6;">KVから最新データを強制取得します。</p>
     <button class="btn-s" onclick="forceSync()">今すぐ同期（KVから取得）</button>
@@ -1207,6 +1217,21 @@ function copyText(id) {
   navigator.clipboard.writeText(text).then(() => alert('コピーしました。'));
 }
 
+// ===== APIキー保存 =====
+function saveApiKey() {
+  const key = document.getElementById('settings-api-key').value.trim();
+  if (!key) return;
+  localStorage.setItem('mitsumeru_api_key', key);
+  document.getElementById('api-key-saved').style.display = 'block';
+  setTimeout(() => location.reload(), 1200);
+}
+
+// 起動時にAPIキー入力欄を現在の値で埋める
+function loadApiKeyField() {
+  const k = localStorage.getItem('mitsumeru_api_key') || '';
+  if (k) document.getElementById('settings-api-key').value = k;
+}
+
 // ===== mitsumeru_app.html からの一括移行 =====
 async function migrateFromApp() {
   const log = document.getElementById('migrate-log');
@@ -1283,6 +1308,7 @@ window.addEventListener('DOMContentLoaded', async function() {
   initDate();
   updateCourse(3);
   loadProfile();
+  loadApiKeyField();
 
   // ① 既存ミツメル（mitsumeru_app.html）のデータを読み取り専用でインポート
   // キー: mitsumeru_morning_* → mitsumeru_priv_morning_* へコピー（書き込みはpriv側のみ）
