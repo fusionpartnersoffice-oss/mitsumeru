@@ -420,6 +420,10 @@ function render() {
   layerGroup.clearLayers();
   markerMap = {};
   const visible = getVisible();
+  document.getElementById('total-count').textContent = visible.length;
+  document.getElementById('a-count').textContent = visible.filter(f=>f.properties.rank==='A').length;
+  document.getElementById('b-count').textContent = visible.filter(f=>f.properties.rank==='B').length;
+  document.getElementById('c-count').textContent = visible.filter(f=>f.properties.rank==='C').length;
   visible.forEach(f => {
     const p = f.properties;
     const id = f.id;
