@@ -487,6 +487,8 @@ function showApiKeyInput() {
   banner.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
+let _pendingOutput = false; // generateOutput中にdemo_exceededが発生したフラグ
+
 function applyApiKey() {
   const key = document.getElementById('apikeyInput').value.trim();
   if (!key.startsWith('sk-ant-')) { alert('sk-ant- で始まるAnthropicAPIキーを入力してください。'); return; }
@@ -495,11 +497,17 @@ function applyApiKey() {
   document.getElementById('apikeyActive').style.display = 'block';
   document.getElementById('apikeyClear').style.display = 'inline-block';
   document.getElementById('demoInfo').style.display = 'none';
-  // エラー表示を消してドリルを再試行
   document.getElementById('errorMsg').style.display = 'none';
-  const nextBtn = document.getElementById('nextBtn');
-  if (nextBtn.style.display !== 'none') { nextBtn.click(); }
-  else { askNextQuestion(); }
+  // 出力生成中に止まっていた場合はgenerateOutputを再実行
+  if (_pendingOutput) {
+    _pendingOutput = false;
+    showPhase('phase1');
+    generateOutput();
+  } else {
+    const nextBtn = document.getElementById('nextBtn');
+    if (nextBtn.style.display !== 'none') { nextBtn.click(); }
+    else { askNextQuestion(); }
+  }
 }
 
 function removeApiKey() {
@@ -879,8 +887,8 @@ async function generateOutput() {
     if (flat1) { _renderAndShow(flat1); return; }
   } catch (e) {
     if (e.message === '__demo_exceeded__') {
+      _pendingOutput = true;
       document.getElementById('aiQuestion').textContent = 'デモ回数（3回）を使い切りました。上のバナーにAPIキーを入力してください。';
-      showPhase('phase0');
       return;
     }
   }
