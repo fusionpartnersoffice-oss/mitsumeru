@@ -805,41 +805,74 @@ function goBackToPrevQuestion() {
   document.getElementById('drillAnswer').focus();
 }
 
-// ── JSONパース ──
-function tryParseFlat(raw) {
-  try {
-    let jsonStr = raw;
-    const blockMatch = raw.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-    if (blockMatch) jsonStr = blockMatch[1];
-    const objMatch = jsonStr.match(/\{[\s\S]*\}/);
-    if (!objMatch) return null;
-    const cleaned = objMatch[0].replace(/[\r\n\t]+/g, ' ');
-    const flat = JSON.parse(cleaned);
-    if (!flat.surface || !flat.root || !flat.action1) return null;
-    return flat;
-  } catch { return null; }
+// ── テキストから値を抽出（ラベルの後の内容） ──
+function extractSection(text, label) {
+  // 【ラベル】の後のテキストを取得
+  const re = new RegExp(label + '[】:]?\\s*([^\\n【]{5,})', 'i');
+  const m = text.match(re);
+  return m ? m[1].trim() : '';
 }
 
-function parsePlainTextResult(raw) {
-  const get = (label) => {
-    const re = new RegExp('【' + label + '】\\s*([\\s\\S]*?)(?=【|$)');
-    const m = raw.match(re);
-    return m ? m[1].trim().replace(/\n+/g, ' ') : '（分析データなし）';
-  };
-  return {
-    iceberg: {
-      surface:      get('今見えていること'),
-      pattern:      get('繰り返しているくせ・傾向'),
-      structure:    get('組織の仕組みの問題'),
-      mental_model: get('思い込み・慣習'),
-      root:         get('本当の原因')
-    },
-    field_actions: [get('明日からやること①'), get('明日からやること②'), get('明日からやること③')],
-    planner: {
-      analysis: get('なぜこの組織で起きているか'),
-      proposals: [get('仕組み・ルールで変えること'), get('話し合い・情報共有の場を変えること'), get('半年〜1年の組織づくり')]
+function parseAnyFormat(raw) {
+  if (!raw || raw.length < 20) return null;
+
+  // JSON試行
+  try {
+    let jsonStr = raw;
+    const block = raw.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+    if (block) jsonStr = block[1];
+    const obj = jsonStr.match(/\{[\s\S]*\}/);
+    if (obj) {
+      const flat = JSON.parse(obj[0]);
+      if (flat.surface && flat.root && flat.action1) {
+        return {
+          iceberg: { surface: flat.surface, pattern: flat.pattern||'', structure: flat.structure||'', mental_model: flat.mental_model||'', root: flat.root },
+          field_actions: [flat.action1||'', flat.action2||'', flat.action3||''],
+          planner: { analysis: flat.analysis||'', proposals: [flat.proposal1||'', flat.proposal2||'', flat.proposal3||''] }
+        };
+      }
     }
-  };
+  } catch { /* 次へ */ }
+
+  // セクション抽出試行
+  const surface   = extractSection(raw, '今.?見えて') || extractSection(raw, '出来事') || extractSection(raw, '1[\\.|．|、]?');
+  const pattern   = extractSection(raw, 'くせ.?傾向') || extractSection(raw, '繰り返') || extractSection(raw, '2[\\.|．|、]?');
+  const structure = extractSection(raw, '仕組み') || extractSection(raw, '3[\\.|．|、]?');
+  const mental    = extractSection(raw, '思い込み') || extractSection(raw, '慣習') || extractSection(raw, '4[\\.|．|、]?');
+  const root      = extractSection(raw, '本当の原因') || extractSection(raw, '根.{0,3}原因') || extractSection(raw, '5[\\.|．|、]?');
+  const action1   = extractSection(raw, '①') || extractSection(raw, '明日') || extractSection(raw, 'action1');
+  const action2   = extractSection(raw, '②') || extractSection(raw, '今週') || extractSection(raw, 'action2');
+  const action3   = extractSection(raw, '③') || extractSection(raw, '関係者') || extractSection(raw, 'action3');
+  const analysis  = extractSection(raw, 'なぜ.{1,10}組織') || extractSection(raw, '分析');
+  const prop1     = extractSection(raw, '仕組み.{0,5}ルール') || extractSection(raw, 'proposal1');
+  const prop2     = extractSection(raw, '話し合い') || extractSection(raw, '情報共有') || extractSection(raw, 'proposal2');
+  const prop3     = extractSection(raw, '半年') || extractSection(raw, '1年') || extractSection(raw, 'proposal3');
+
+  if (root || surface) {
+    return {
+      iceberg: { surface: surface||raw.slice(0,120), pattern: pattern||'', structure: structure||'', mental_model: mental||'', root: root||'' },
+      field_actions: [action1||'', action2||'', action3||''],
+      planner: { analysis: analysis||'', proposals: [prop1||'', prop2||'', prop3||''] }
+    };
+  }
+
+  // 最終フォールバック：段落を順番に割り当て
+  const paras = raw.split(/\n{2,}/).map(p => p.trim()).filter(p => p.length > 10);
+  if (paras.length >= 3) {
+    return {
+      iceberg: {
+        surface:      paras[0] || '',
+        pattern:      paras[1] || '',
+        structure:    paras[2] || '',
+        mental_model: paras[3] || '',
+        root:         paras[4] || paras[paras.length - 1] || ''
+      },
+      field_actions: [paras[5]||'', paras[6]||'', paras[7]||''],
+      planner: { analysis: paras[8]||'', proposals: [paras[9]||'', paras[10]||'', paras[11]||''] }
+    };
+  }
+
+  return null;
 }
 
 // ── 最終出力生成 ──
@@ -880,35 +913,23 @@ async function generateOutput() {
 【話し合い・情報共有の場を変えること】
 【半年〜1年の組織づくり】`;
 
-  document.getElementById('aiQuestion').innerHTML = '<span class="loading-dots">分析中（1/3）</span>';
+  document.getElementById('aiQuestion').innerHTML = '<span class="loading-dots">根っこを分析中</span>';
   try {
-    const raw1 = await callWorker(summaryConv, jsonPrompt, 4096);
-    const flat1 = tryParseFlat(raw1);
-    if (flat1) { _renderAndShow(flat1); return; }
+    const raw = await callWorker(summaryConv, jsonPrompt, 4096);
+    const result = parseAnyFormat(raw);
+    if (result) {
+      _renderAndShow(result);
+    } else {
+      // パース完全失敗：生テキストをそのまま表示
+      _renderRaw(raw);
+    }
   } catch (e) {
     if (e.message === '__demo_exceeded__') {
       _pendingOutput = true;
       document.getElementById('aiQuestion').textContent = 'デモ回数（3回）を使い切りました。上のバナーにAPIキーを入力してください。';
       return;
     }
-  }
-
-  document.getElementById('aiQuestion').innerHTML = '<span class="loading-dots">再分析中（2/3）</span>';
-  try {
-    const raw2 = await callWorker(summaryConv, jsonPrompt, 4096);
-    const flat2 = tryParseFlat(raw2);
-    if (flat2) { _renderAndShow(flat2); return; }
-  } catch { /* fall through */ }
-
-  document.getElementById('aiQuestion').innerHTML = '<span class="loading-dots">別形式で分析中（3/3）</span>';
-  try {
-    const raw3 = await callWorker(summaryConv, plainPrompt, 4096);
-    const result3 = parsePlainTextResult(raw3);
-    renderOutput(result3);
-    saveToHistory(result3);
-    showPhase('phase2');
-    updateProgress(6);
-  } catch (e) {
+    // それ以外のエラーはもう一度試す
     document.getElementById('errorMsg').textContent = 'エラー: ' + e.message;
     document.getElementById('errorMsg').style.display = 'block';
     document.getElementById('aiQuestion').textContent = '出力の生成に失敗しました。';
@@ -919,11 +940,19 @@ async function generateOutput() {
   }
 }
 
-function _renderAndShow(flat) {
+function _renderAndShow(result) {
+  renderOutput(result);
+  saveToHistory(result);
+  showPhase('phase2');
+  updateProgress(6);
+}
+
+function _renderRaw(raw) {
+  // パース失敗時：生テキストを「本当の原因」欄に表示して結果画面へ
   const result = {
-    iceberg: { surface: flat.surface, pattern: flat.pattern, structure: flat.structure, mental_model: flat.mental_model, root: flat.root },
-    field_actions: [flat.action1, flat.action2, flat.action3],
-    planner: { analysis: flat.analysis, proposals: [flat.proposal1, flat.proposal2, flat.proposal3] }
+    iceberg: { surface: '（自動抽出できませんでした）', pattern: '', structure: '', mental_model: '', root: raw },
+    field_actions: ['', '', ''],
+    planner: { analysis: '', proposals: ['', '', ''] }
   };
   renderOutput(result);
   saveToHistory(result);
