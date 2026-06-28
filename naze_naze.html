@@ -968,12 +968,12 @@ function renderOutput(result) {
   document.getElementById('outRoot').textContent = result.iceberg.root;
 
   document.getElementById('fieldActions').innerHTML = result.field_actions.map((a, i) =>
-    `<div class="action-item"><div class="action-num">${i + 1}</div><div class="action-text">${a}</div></div>`
+    `<div class="action-item"><div class="action-num">${i + 1}</div><div class="action-text">${escapeHtml(a)}</div></div>`
   ).join('');
 
   document.getElementById('plannerAnalysis').textContent = result.planner.analysis;
   document.getElementById('plannerProposals').innerHTML = result.planner.proposals.map(p =>
-    `<div class="proposal-item"><div class="proposal-mark">▶</div><div class="proposal-text">${p}</div></div>`
+    `<div class="proposal-item"><div class="proposal-mark">▶</div><div class="proposal-text">${escapeHtml(p)}</div></div>`
   ).join('');
 
   const now = new Date();
@@ -989,7 +989,7 @@ function switchTab(name) {
 }
 
 function resetAll() {
-  round = 0; conversation = []; initialText = ''; orgName = ''; userRole = '';
+  round = 0; conversation = []; initialText = ''; orgName = ''; userRole = ''; _pendingOutput = false;
   document.getElementById('initialInput').value = '';
   document.getElementById('orgName').value = '';
   document.getElementById('role').value = '';
