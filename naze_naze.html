@@ -276,9 +276,33 @@
     main { padding: 14px 12px 60px; }
     .print-btns { flex-direction: column; }
   }
+  .gate{position:fixed;inset:0;z-index:600;background:rgba(8,12,18,.95);display:none;align-items:center;justify-content:center;padding:18px;}
+  .gate.active{display:flex;}
+  .gate-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);max-width:410px;width:100%;padding:24px 20px;text-align:center;}
+  .gate-card h2{font-size:1.05rem;color:var(--accent);margin-bottom:10px;}
+  .gate-card p{font-size:.82rem;color:var(--sub);line-height:1.75;margin-bottom:14px;}
+  .gate-note{font-size:.7rem;color:var(--sub);line-height:1.7;text-align:left;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:16px;}
+  .gate-btn{width:100%;padding:11px;border-radius:var(--radius);font-size:.92rem;font-weight:700;cursor:pointer;font-family:inherit;background:var(--accent);color:#1a0029;border:none;}
+  .gate-btn:hover{opacity:.9;}
+  @media print { .gate { display: none !important; } }
 </style>
 </head>
 <body>
+
+<!-- 同意ゲート -->
+<div class="gate active" id="consentGate">
+  <div class="gate-card">
+    <h2>🔍 なぜなぜ分析</h2>
+    <p>ご利用の前に、データの取り扱いをご確認ください。</p>
+    <div class="gate-note">
+      ・入力内容はAnthropicのAI（Claude）に送信され、分析に使用されます。<br>
+      ・送信データはAnthropicのプライバシーポリシーに準拠して処理されます。<br>
+      ・分析結果はお使いの端末（localStorage）にのみ保存されます。<br>
+      ・本ツールは問題分析の補助用途です。結果の利用は自己責任です。
+    </div>
+    <button class="gate-btn" onclick="giveConsent()">同意して始める</button>
+  </div>
+</div>
 
 <header>
   <div style="font-size:1.4rem">🔍</div>
@@ -525,7 +549,12 @@ function initApiKeyBanner() {
     document.getElementById('demoInfo').style.display = 'none';
   }
 }
-document.addEventListener('DOMContentLoaded', initApiKeyBanner);
+document.addEventListener('DOMContentLoaded', () => { initApiKeyBanner(); checkConsent(); });
+
+// ── 同意ゲート ──
+function hasConsent() { return !!localStorage.getItem(STORE_KEY + '_consent'); }
+function giveConsent() { localStorage.setItem(STORE_KEY + '_consent', '1'); document.getElementById('consentGate').classList.remove('active'); }
+function checkConsent() { if (!hasConsent()) document.getElementById('consentGate').classList.add('active'); }
 
 async function callWorker(messages, systemPrompt, maxTokens = 1024, onChunk = null) {
   const userKey = getUserApiKey();
