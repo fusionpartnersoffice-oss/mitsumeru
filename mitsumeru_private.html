@@ -326,6 +326,27 @@
 
   .output-box.visible { display: block; }
 
+  .voice-btn {
+    padding: 9px 12px;
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    border-radius: 4px;
+    font-size: 17px;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.2s;
+    line-height: 1;
+  }
+  .voice-btn.recording {
+    background: var(--red);
+    animation: voicePulse 1s ease-in-out infinite;
+  }
+  @keyframes voicePulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.55; }
+  }
+
   .loading-text {
     text-align: center;
     color: var(--text3);
@@ -606,7 +627,10 @@
 
     <div class="field">
       <label>内容</label>
-      <textarea id="memo-content" placeholder="気づいたこと、起きたこと、ボヤキをそのまま入力"></textarea>
+      <div style="display:flex;gap:8px;align-items:flex-start;">
+        <textarea id="memo-content" placeholder="気づいたこと、起きたこと、ボヤキをそのまま入力" style="flex:1;"></textarea>
+        <button id="voice-btn-memo" class="voice-btn" onclick="toggleVoiceInput('memo-content','voice-btn-memo')" title="音声入力（タップで開始／停止）">🎤</button>
+      </div>
     </div>
 
     <div class="field">
@@ -3169,24 +3193,20 @@ function importScanResult() {
   const ennMap = {'T1':'001(完全主義者)','T2':'002(献身家)','T3':'003(達成者)','T4':'004(個人主義者)','T5':'005(研究者)','T6':'006(忠実家)','T7':'007(楽天家)','T8':'008(挑戦者)','T9':'009(調停者)'};
   const lsrpMap = {'安全':'安全圏：適合ピース','警戒':'要注意：観察対象','危険':'危険：組織の猛毒'};
   const rcMap = {'凪':'安全（凪）','冷徹':'危険（I+U-）組織破壊','危険':'危険（I+U-）組織破壊','停滞':'依存（I-U+）自律欠如','衝動':'注意（I-U-）他者否定'};
-  // LSRP: level文字列に「危険」「警戒」「安全」が含まれるかチェック
   if (data.lsrp) {
     const level = data.lsrp.level || '';
     const key = level.includes('危険') ? '危険' : level.includes('警戒') ? '警戒' : '安全';
     const lEl = document.getElementById('p-lsrp');
     if (lEl) { const mapped = lsrpMap[key] || ''; for (let o of lEl.options) { if (o.value === mapped) { lEl.value = mapped; break; } } }
   }
-  // RC: rc["判定"] を使用
   if (data.rc) {
     const rEl = document.getElementById('p-rc');
     if (rEl) { const mapped = rcMap[data.rc['判定']] || ''; for (let o of rEl.options) { if (o.value === mapped) { rEl.value = mapped; break; } } }
   }
-  // エゴグラム: data.egogram直下にCP/NP/A/FC/ACがフラットにある
   if (data.egogram) {
     const s = data.egogram;
     ['CP','NP','A','FC','AC'].forEach(k => { const el = document.getElementById('p-'+k.toLowerCase()); if(el && s[k]!==undefined) el.value=s[k]; });
   }
-  // エニアグラム: data.enneagram.top3 を使用
   if (data.enneagram && data.enneagram.top3) {
     data.enneagram.top3.slice(0,3).forEach((item,i) => {
       const el = document.getElementById(['p-enea1','p-enea2','p-enea3'][i]);
@@ -3197,6 +3217,48 @@ function importScanResult() {
   }
   alert('スキャン結果をフィールドに反映しました。\n内容を確認して「保存する」ボタンを押してください。');
   closeScanImport();
+}
+
+// ===== 音声入力 =====
+let _voiceRecognizer = null;
+function toggleVoiceInput(targetId, btnId) {
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    alert('このブラウザは音声入力に対応していません。\nChrome または Edge をお使いください。');
+    return;
+  }
+  const btn = document.getElementById(btnId);
+  if (_voiceRecognizer) {
+    _voiceRecognizer.stop();
+    return;
+  }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  _voiceRecognizer = new SR();
+  _voiceRecognizer.lang = 'ja-JP';
+  _voiceRecognizer.interimResults = false;
+  _voiceRecognizer.continuous = true;
+  if (btn) { btn.textContent = '⏹'; btn.classList.add('recording'); }
+  _voiceRecognizer.onresult = function(e) {
+    const target = document.getElementById(targetId);
+    if (!target) return;
+    let transcript = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) transcript += e.results[i][0].transcript;
+    }
+    if (transcript) {
+      target.value = (target.value ? target.value + '\n' : '') + transcript;
+      target.dispatchEvent(new Event('input'));
+    }
+  };
+  _voiceRecognizer.onerror = function(e) {
+    if (btn) { btn.textContent = '🎤'; btn.classList.remove('recording'); }
+    _voiceRecognizer = null;
+    if (e.error !== 'aborted' && e.error !== 'no-speech') alert('音声入力エラー：' + e.error);
+  };
+  _voiceRecognizer.onend = function() {
+    if (btn) { btn.textContent = '🎤'; btn.classList.remove('recording'); }
+    _voiceRecognizer = null;
+  };
+  _voiceRecognizer.start();
 }
 </script>
 

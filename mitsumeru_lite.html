@@ -517,6 +517,7 @@
     </div>
   </div>
 
+  <div id="ai-counter" style="text-align:center;font-size:11px;color:var(--text3);margin-bottom:8px;letter-spacing:0.5px;"></div>
   <button class="btn-primary" onclick="calcMorning()">今日のモードを判定する</button>
 
   <div id="morning-result" style="display:none;">
@@ -633,6 +634,7 @@ window.addEventListener('DOMContentLoaded', function() {
   applyMemosData(lsMemos);
   setDates();
   checkConsent();
+  updateAICounter();
   if (apiKey) {
     const btn = document.getElementById('api-btn');
     if (btn) btn.style.color = '#4caf82';
@@ -969,14 +971,20 @@ function setApiKey() {
 
 function callClaude(prompt, onSuccess, onError) {
   if (!hasConsent()) { onError('利用規約・プライバシーポリシーへの同意が必要です。ページを再読み込みしてください。'); return; }
+  if (getRemainingAI() <= 0) {
+    onError('今月のAI利用上限（20回）に達しました。\n来月になるとリセットされます。');
+    return;
+  }
   const key = getApiKey();
   if (!key) { onError('APIキーが設定されていません。'); return; }
+  incrementAIUsage();
+  updateAICounter();
   fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
     body: JSON.stringify({
       model: 'claude-sonnet-4-6',
-      max_tokens: 4000,
+      max_tokens: 1500,
       messages: [{ role: 'user', content: prompt }]
     })
   }).then(r => r.json()).then(data => {
@@ -984,6 +992,22 @@ function callClaude(prompt, onSuccess, onError) {
     const text = data.content?.map(c => c.text || '').join('') || 'エラーが発生しました';
     onSuccess(text);
   }).catch(e => onError(e.message));
+}
+
+// ===== AI使用回数管理（月20回制限） =====
+function _aiMonthKey() {
+  const n = new Date();
+  return 'mitsumeru_lite_ai_count_' + n.getFullYear() + String(n.getMonth()+1).padStart(2,'0');
+}
+function getAIUsageCount() { return parseInt(localStorage.getItem(_aiMonthKey()) || '0'); }
+function incrementAIUsage() { localStorage.setItem(_aiMonthKey(), String(getAIUsageCount()+1)); }
+function getRemainingAI() { return Math.max(0, 20 - getAIUsageCount()); }
+function updateAICounter() {
+  const el = document.getElementById('ai-counter');
+  if (!el) return;
+  const rem = getRemainingAI();
+  el.textContent = `今月の残りAI回数：${rem}/20`;
+  el.style.color = rem <= 3 ? 'var(--red)' : rem <= 7 ? 'var(--gold)' : 'var(--text3)';
 }
 
 // ===== 同意取得 =====
