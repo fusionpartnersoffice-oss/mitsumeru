@@ -85,8 +85,18 @@ async function handleAnalyze(request, env) {
     return jsonRes({ error: 'messages（配列）と system が必要です' }, 400);
   }
 
+  const { apikey } = body;
+
   // ── 認証 ──
-  if (mode === 'stripe') {
+  let useApiKey = env.ANTHROPIC_API_KEY;
+
+  if (mode === 'apikey') {
+    // ユーザー自身のAPIキーを使用（sk-ant- で始まる場合のみ許可）
+    if (!apikey || !String(apikey).startsWith('sk-ant-')) {
+      return jsonRes({ error: '有効なAnthropicAPIキー（sk-ant-...）が必要です' }, 401);
+    }
+    useApiKey = String(apikey).substring(0, 200);
+  } else if (mode === 'stripe') {
     if (!token) return jsonRes({ error: 'token が必要です' }, 401);
     const record = await getKV(env).get('stripe_token_' + String(token).substring(0, 64));
     if (!record) return jsonRes({ error: 'トークンが無効または期限切れです' }, 403);
@@ -98,7 +108,7 @@ async function handleAnalyze(request, env) {
     const current = parseInt(await getKV(env).get(countKey) || '0');
     if (current >= DEMO_MAX) {
       return jsonRes({
-        error: 'デモ回数の上限（3回）に達しました。正式版をお申し込みください。',
+        error: 'デモ回数の上限（3回）に達しました。APIキーを入力するか、正式版をお申し込みください。',
         demo_exceeded: true,
       }, 403);
     }
@@ -111,7 +121,7 @@ async function handleAnalyze(request, env) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': env.ANTHROPIC_API_KEY,
+      'x-api-key': useApiKey,
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({

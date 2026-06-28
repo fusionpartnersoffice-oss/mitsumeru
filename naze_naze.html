@@ -224,6 +224,30 @@
 
   .demo-info { background: rgba(255,183,77,0.1); border: 1px solid rgba(255,183,77,0.3); border-radius: var(--radius); padding: 10px 14px; font-size: 0.78rem; color: var(--accent3); margin-bottom: 16px; }
 
+  /* APIキー入力バナー */
+  .apikey-banner {
+    background: rgba(206,147,216,0.08); border: 1px solid rgba(206,147,216,0.35);
+    border-radius: var(--radius); padding: 16px; margin-bottom: 16px; display: none;
+  }
+  .apikey-banner h3 { font-size: 0.9rem; color: var(--accent); margin-bottom: 6px; }
+  .apikey-banner p { font-size: 0.78rem; color: var(--sub); margin-bottom: 10px; line-height: 1.5; }
+  .apikey-row { display: flex; gap: 8px; }
+  .apikey-input {
+    flex: 1; background: var(--card); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text); padding: 9px 12px;
+    font-size: 0.85rem; outline: none; font-family: monospace;
+  }
+  .apikey-input:focus { border-color: var(--accent); }
+  .apikey-set-btn {
+    background: var(--accent); color: #1a0029; border: none;
+    border-radius: 8px; padding: 9px 16px; font-size: 0.85rem;
+    font-weight: 700; cursor: pointer; white-space: nowrap;
+  }
+  .apikey-set-btn:hover { opacity: 0.85; }
+  .apikey-clear { font-size: 0.72rem; color: var(--sub); cursor: pointer; margin-top: 6px; display: inline-block; }
+  .apikey-clear:hover { color: var(--danger); }
+  .apikey-active { font-size: 0.75rem; color: var(--accent2); margin-top: 4px; display: none; }
+
   .print-date { display: none; }
   @media print {
     header, .progress-wrap, .output-tabs, .reset-btn, .print-btns, .section-badge, .modal-overlay { display: none !important; }
@@ -284,7 +308,18 @@
     <div class="section-title">今、何が問題になっていますか？</div>
     <p class="section-desc">困っていること・気になっていることを、思ったまま書いてください。<br>「なんで？」を5回繰り返して、問題の根っこまで掘り下げます。</p>
 
-    <div class="demo-info">🔍 デモ版：3回まで無料でお試しいただけます。APIキーをお持ちの方はWorker経由で直接ご利用いただけます。</div>
+    <div class="demo-info" id="demoInfo">🔍 デモ版：3回まで無料でお試しいただけます。APIキーをお持ちの方は下のバナーから登録してください。</div>
+
+    <div class="apikey-banner" id="apikeyBanner">
+      <h3>🔑 AnthropicAPIキーを登録する</h3>
+      <p>デモ回数（3回）を使い切りました。APIキーを入力すると制限なしでご利用いただけます。<br>キーはこのタブを閉じると自動的に消えます（サーバーには保存されません）。</p>
+      <div class="apikey-row">
+        <input class="apikey-input" id="apikeyInput" type="password" placeholder="sk-ant-...">
+        <button class="apikey-set-btn" onclick="applyApiKey()">登録して続ける</button>
+      </div>
+      <div class="apikey-active" id="apikeyActive">✅ APIキー登録済み ─ 制限なしで利用中</div>
+      <span class="apikey-clear" id="apikeyClear" onclick="removeApiKey()" style="display:none">キーを削除する</span>
+    </div>
 
     <div class="info-form">
       <div class="form-group">
@@ -437,14 +472,55 @@ function getDemoId() {
 }
 
 // ── Worker経由API呼び出し ──
+// ── APIキー管理（sessionStorageのみ、ブラウザを閉じると消える） ──
+function getUserApiKey() { return sessionStorage.getItem(STORE_KEY + '_apikey') || ''; }
+function setUserApiKey(key) { sessionStorage.setItem(STORE_KEY + '_apikey', key); }
+function clearUserApiKey() { sessionStorage.removeItem(STORE_KEY + '_apikey'); }
+
+function showApiKeyInput() {
+  const banner = document.getElementById('apikeyBanner');
+  banner.style.display = 'block';
+  document.getElementById('apikeyInput').focus();
+  banner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function applyApiKey() {
+  const key = document.getElementById('apikeyInput').value.trim();
+  if (!key.startsWith('sk-ant-')) { alert('sk-ant- で始まるAnthropicAPIキーを入力してください。'); return; }
+  setUserApiKey(key);
+  document.getElementById('apikeyInput').value = '';
+  document.getElementById('apikeyActive').style.display = 'block';
+  document.getElementById('apikeyClear').style.display = 'inline-block';
+  document.getElementById('demoInfo').style.display = 'none';
+  // エラー表示を消してドリルを再試行
+  document.getElementById('errorMsg').style.display = 'none';
+  const nextBtn = document.getElementById('nextBtn');
+  if (nextBtn.style.display !== 'none') { nextBtn.click(); }
+  else { askNextQuestion(); }
+}
+
+function removeApiKey() {
+  clearUserApiKey();
+  document.getElementById('apikeyActive').style.display = 'none';
+  document.getElementById('apikeyClear').style.display = 'none';
+  document.getElementById('demoInfo').style.display = 'block';
+}
+
+function initApiKeyBanner() {
+  if (getUserApiKey()) {
+    document.getElementById('apikeyBanner').style.display = 'block';
+    document.getElementById('apikeyActive').style.display = 'block';
+    document.getElementById('apikeyClear').style.display = 'inline-block';
+    document.getElementById('demoInfo').style.display = 'none';
+  }
+}
+document.addEventListener('DOMContentLoaded', initApiKeyBanner);
+
 async function callWorker(messages, systemPrompt, maxTokens = 1024, onChunk = null) {
-  const body = {
-    mode: 'demo',
-    fingerprint: getDemoId(),
-    messages,
-    system: systemPrompt,
-    maxTokens,
-  };
+  const userKey = getUserApiKey();
+  const body = userKey
+    ? { mode: 'apikey', apikey: userKey, messages, system: systemPrompt, maxTokens }
+    : { mode: 'demo', fingerprint: getDemoId(), messages, system: systemPrompt, maxTokens };
 
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 120000);
@@ -467,7 +543,8 @@ async function callWorker(messages, systemPrompt, maxTokens = 1024, onChunk = nu
     clearTimeout(timer);
     const err = await res.json().catch(() => ({}));
     if (err.demo_exceeded) {
-      throw new Error('デモ回数（3回）の上限に達しました。続けてご利用いただくには正式版をお申し込みください。');
+      showApiKeyInput();
+      throw new Error('__demo_exceeded__');
     }
     throw new Error(err.error || `APIエラー (${res.status})`);
   }
@@ -656,6 +733,11 @@ async function askNextQuestion() {
     document.getElementById('drillAnswer').focus();
   } catch (e) {
     clearInterval(loadTimer);
+    if (e.message === '__demo_exceeded__') {
+      questionEl.textContent = 'デモ回数（3回）を使い切りました。上のバナーにAPIキーを入力してください。';
+      nextBtn.style.display = 'none';
+      return;
+    }
     errorEl.textContent = 'エラー: ' + e.message;
     errorEl.style.display = 'block';
     questionEl.textContent = 'AIへの接続に失敗しました。';
@@ -793,10 +875,9 @@ async function generateOutput() {
     const flat1 = tryParseFlat(raw1);
     if (flat1) { _renderAndShow(flat1); return; }
   } catch (e) {
-    if (e.message.includes('デモ回数')) {
-      document.getElementById('errorMsg').textContent = e.message;
-      document.getElementById('errorMsg').style.display = 'block';
-      document.getElementById('aiQuestion').textContent = '';
+    if (e.message === '__demo_exceeded__') {
+      document.getElementById('aiQuestion').textContent = 'デモ回数（3回）を使い切りました。上のバナーにAPIキーを入力してください。';
+      showPhase('phase0');
       return;
     }
   }
