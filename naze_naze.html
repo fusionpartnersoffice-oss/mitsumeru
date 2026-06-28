@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>なぜなぜ分析 | Fusion Partners</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23e67e22'/><text x='16' y='24' font-size='20' text-anchor='middle'>🔍</text></svg>">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<style>
+  :root {
+    --bg: #0f1923; --surface: #1a2634; --card: #223044;
+    --accent: #ce93d8; --accent2: #81c784; --accent3: #ffb74d;
+    --danger: #ef5350; --text: #e8eaf0; --sub: #8fa3b8;
+    --border: #2e4460; --radius: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Hiragino Kaku Gothic Pro', 'Meiryo', sans-serif; min-height: 100vh; }
+
+  header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 12px 20px; display: flex; align-items: center; gap: 10px; }
+  header h1 { font-size: 1.1rem; font-weight: 700; color: var(--accent); flex: 1; }
+  .header-sub { font-size: 0.75rem; color: var(--sub); }
+  .api-btn { background: var(--card); border: 1px solid var(--border); color: var(--sub); border-radius: 6px; padding: 5px 12px; font-size: 0.75rem; cursor: pointer; }
+  .api-btn:hover { color: var(--text); border-color: var(--sub); }
+
+  .progress-wrap { background: var(--surface); border-bottom: 1px solid var(--border); padding: 10px 20px; }
+  .progress-steps { display: flex; gap: 6px; margin-bottom: 5px; }
+  .step-dot { flex: 1; height: 4px; border-radius: 2px; background: var(--border); transition: background 0.3s; }
+  .step-dot.done { background: var(--accent2); }
+  .step-dot.active { background: var(--accent); }
+  .progress-label { font-size: 0.73rem; color: var(--sub); }
+
+  main { max-width: 720px; margin: 0 auto; padding: 20px 16px 80px; }
+  .phase { display: none; }
+  .phase.active { display: block; }
+
+  .section-badge { display: inline-block; background: var(--accent); color: #1a0029; font-size: 0.68rem; font-weight: 700; padding: 2px 10px; border-radius: 20px; margin-bottom: 10px; }
+  .section-title { font-size: 1.1rem; color: var(--text); margin-bottom: 4px; }
+  .section-desc { font-size: 0.82rem; color: var(--sub); margin-bottom: 20px; line-height: 1.6; }
+
+  .info-form { display: flex; flex-direction: column; gap: 14px; }
+  .form-group label { font-size: 0.82rem; color: var(--sub); display: block; margin-bottom: 5px; }
+  .form-group input, .form-group select {
+    width: 100%; background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); color: var(--text); padding: 10px 14px;
+    font-size: 0.92rem; outline: none;
+  }
+  .form-group input:focus, .form-group select:focus { border-color: var(--accent); }
+  .form-group select option { background: var(--card); }
+  .form-group textarea {
+    width: 100%; background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); color: var(--text); padding: 12px 14px;
+    font-size: 0.92rem; outline: none; resize: vertical; min-height: 90px;
+    font-family: inherit; line-height: 1.6;
+  }
+  .form-group textarea:focus { border-color: var(--accent); }
+
+  .start-btn {
+    width: 100%; padding: 14px; background: var(--accent); color: #1a0029;
+    border: none; border-radius: var(--radius); font-size: 1rem; font-weight: 700;
+    cursor: pointer; margin-top: 6px; transition: opacity 0.2s;
+  }
+  .start-btn:hover { opacity: 0.88; }
+  .start-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ── Phase 1: ドリル ── */
+  .drill-layout { display: flex; gap: 16px; align-items: flex-start; }
+  .drill-map-panel {
+    width: 196px; flex-shrink: 0;
+    background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 14px 12px; position: sticky; top: 16px;
+  }
+  .drill-qa-panel { flex: 1; min-width: 0; }
+  .map-panel-title { font-size: 0.8rem; font-weight: 700; color: var(--accent); margin-bottom: 12px; }
+  .map-layer-item {
+    display: flex; align-items: flex-start; gap: 8px;
+    padding: 8px 9px; border-radius: 8px; margin-bottom: 5px; transition: all 0.3s;
+    border: 1px solid transparent;
+  }
+  .map-layer-item.done { background: rgba(129,199,132,0.1); border-color: rgba(129,199,132,0.3); }
+  .map-layer-item.active { background: rgba(206,147,216,0.15); border-color: var(--accent); }
+  .map-layer-item.pending { opacity: 0.38; }
+  .map-layer-icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+  .map-layer-body { flex: 1; min-width: 0; }
+  .map-layer-name { font-size: 0.76rem; font-weight: 700; line-height: 1.3; }
+  .map-layer-desc { font-size: 0.65rem; color: var(--sub); margin-top: 2px; }
+  .map-layer-check { color: var(--accent2); font-size: 0.78rem; flex-shrink: 0; margin-left: auto; padding-top: 2px; }
+  .map-now-label {
+    font-size: 0.68rem; color: var(--sub); text-align: center;
+    margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border); line-height: 1.5;
+  }
+
+  .drill-round { font-size: 0.75rem; color: var(--sub); margin-bottom: 14px; }
+  .drill-round span { color: var(--accent); font-weight: 700; }
+
+  .ai-bubble {
+    background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 16px; margin-bottom: 14px;
+  }
+  .ai-bubble .ai-label { font-size: 0.7rem; color: var(--accent); margin-bottom: 6px; font-weight: 700; }
+  .ai-bubble .ai-text { font-size: 0.92rem; line-height: 1.7; white-space: pre-wrap; }
+
+  .summary-box {
+    background: rgba(206,147,216,0.07); border: 1px solid rgba(206,147,216,0.2);
+    border-radius: var(--radius); padding: 10px 14px; margin-bottom: 14px;
+    font-size: 0.8rem; color: var(--sub); line-height: 1.5;
+  }
+  .summary-box strong { color: var(--accent); }
+
+  .answer-area { position: relative; margin-bottom: 10px; }
+  .answer-area textarea {
+    width: 100%; background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); color: var(--text); padding: 12px 14px;
+    font-size: 0.92rem; outline: none; resize: vertical; min-height: 80px;
+    font-family: inherit; line-height: 1.6;
+  }
+  .answer-area textarea:focus { border-color: var(--accent); }
+
+  .next-btn {
+    width: 100%; padding: 12px; background: var(--accent); color: #1a0029;
+    border: none; border-radius: var(--radius); font-size: 0.95rem; font-weight: 700;
+    cursor: pointer; transition: opacity 0.2s;
+  }
+  .next-btn:hover { opacity: 0.88; }
+  .next-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .loading-dots::after { content: ''; animation: dots 1.2s infinite; }
+  @keyframes dots { 0%{content:'.'} 33%{content:'..'} 66%{content:'...'} }
+
+  .error-msg { background: rgba(239,83,80,0.1); border: 1px solid var(--danger); border-radius: var(--radius); padding: 12px 14px; font-size: 0.85rem; color: var(--danger); margin-bottom: 14px; }
+
+  /* ── Phase 2: 出力 ── */
+  .output-tabs { display: flex; gap: 6px; margin-bottom: 16px; }
+  .out-tab {
+    flex: 1; padding: 9px; background: var(--card); border: 1px solid var(--border);
+    border-radius: 8px; text-align: center; cursor: pointer; font-size: 0.82rem; color: var(--sub);
+    transition: all 0.2s;
+  }
+  .out-tab.active { background: rgba(206,147,216,0.12); border-color: var(--accent); color: var(--accent); font-weight: 700; }
+  .out-panel { display: none; }
+  .out-panel.active { display: block; }
+
+  .iceberg-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 14px; margin-bottom: 12px;
+  }
+  .iceberg-card .layer-label { font-size: 0.7rem; font-weight: 700; margin-bottom: 4px; }
+  .iceberg-card .layer-text { font-size: 0.88rem; line-height: 1.6; color: var(--text); }
+  .layer-surface .layer-label { color: var(--accent3); }
+  .layer-pattern .layer-label { color: #ba68c8; }
+  .layer-structure .layer-label { color: #9575cd; }
+  .layer-mental .layer-label { color: #7986cb; }
+  .layer-root .layer-label { color: var(--accent); }
+  .layer-root { border-color: rgba(206,147,216,0.4); }
+
+  .action-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 14px; margin-bottom: 10px;
+  }
+  .action-card h3 { font-size: 0.85rem; color: var(--accent2); margin-bottom: 10px; font-weight: 700; }
+  .action-item { display: flex; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .action-item:last-child { border-bottom: none; }
+  .action-num { font-size: 0.75rem; font-weight: 700; color: var(--accent2); min-width: 20px; }
+  .action-text { font-size: 0.88rem; line-height: 1.5; }
+
+  .proposal-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 14px; margin-bottom: 10px;
+  }
+  .proposal-card h3 { font-size: 0.85rem; color: var(--accent); margin-bottom: 8px; font-weight: 700; }
+  .analysis-text { font-size: 0.85rem; color: var(--sub); line-height: 1.7; margin-bottom: 12px; }
+  .proposal-item { display: flex; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--border); }
+  .proposal-item:last-child { border-bottom: none; }
+  .proposal-mark { color: var(--accent); font-weight: 700; font-size: 0.82rem; min-width: 16px; }
+  .proposal-text { font-size: 0.87rem; line-height: 1.5; }
+
+  .print-btns { display: flex; gap: 8px; margin-top: 12px; }
+  .print-btn {
+    flex: 1; padding: 11px; border-radius: var(--radius); font-size: 0.85rem;
+    cursor: pointer; font-weight: 600; transition: opacity 0.2s;
+  }
+  .print-btn-pdf { background: var(--accent); color: #1a0029; border: none; }
+  .print-btn-print { background: transparent; border: 1px solid var(--accent); color: var(--accent); }
+  .print-btn:hover { opacity: 0.82; }
+
+  .reset-btn {
+    width: 100%; padding: 11px; background: transparent; border: 1px solid var(--border);
+    color: var(--sub); border-radius: var(--radius); font-size: 0.85rem; cursor: pointer;
+    margin-top: 20px; transition: all 0.2s;
+  }
+  .reset-btn:hover { border-color: var(--sub); color: var(--text); }
+
+  /* 履歴モーダル */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.62);
+    display: none; align-items: flex-start; justify-content: center;
+    z-index: 1000; padding: 40px 16px; overflow-y: auto;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal-box {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); max-width: 560px; width: 100%; padding: 18px;
+  }
+  .modal-box h2 { font-size: 1rem; color: var(--accent); margin-bottom: 4px; }
+  .modal-sub { font-size: 0.75rem; color: var(--sub); margin-bottom: 14px; }
+  .hist-item {
+    background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+    padding: 11px 13px; margin-bottom: 9px; display: flex; align-items: center; gap: 10px; cursor: pointer;
+  }
+  .hist-main { flex: 1; min-width: 0; }
+  .hist-date { font-size: 0.82rem; color: var(--text); font-weight: 600; }
+  .hist-meta { font-size: 0.72rem; color: var(--sub); margin-top: 2px; }
+  .hist-root { font-size: 0.74rem; color: var(--sub); margin-top: 4px; line-height: 1.4; }
+  .hist-del {
+    background: transparent; border: 1px solid var(--border); color: var(--sub);
+    border-radius: 6px; width: 30px; height: 30px; cursor: pointer; flex-shrink: 0; font-size: 0.85rem;
+  }
+  .hist-del:hover { border-color: var(--danger); color: var(--danger); }
+  .hist-empty { text-align: center; color: var(--sub); padding: 24px 0; font-size: 0.85rem; }
+  .modal-close {
+    width: 100%; padding: 10px; margin-top: 8px; background: transparent;
+    border: 1px solid var(--border); color: var(--sub); border-radius: var(--radius); cursor: pointer;
+  }
+  .modal-close:hover { border-color: var(--sub); color: var(--text); }
+
+  .demo-info { background: rgba(255,183,77,0.1); border: 1px solid rgba(255,183,77,0.3); border-radius: var(--radius); padding: 10px 14px; font-size: 0.78rem; color: var(--accent3); margin-bottom: 16px; }
+
+  .print-date { display: none; }
+  @media print {
+    header, .progress-wrap, .output-tabs, .reset-btn, .print-btns, .section-badge, .modal-overlay { display: none !important; }
+    body { background: #fff; color: #000; }
+    main { padding: 0; max-width: 100%; }
+    .phase { display: block !important; }
+    #phase0, #phase1 { display: none !important; }
+    #phase2 { display: block !important; }
+    .out-panel { display: block !important; page-break-inside: avoid; margin-bottom: 16px; }
+    .section-title { font-size: 1.2rem; font-weight: 700; margin-bottom: 4px; color: #000; }
+    .iceberg-card, .action-card, .proposal-card { background: #f9f9f9; border: 1px solid #ccc; border-radius: 6px; padding: 10px 14px; margin-bottom: 10px; page-break-inside: avoid; }
+    .layer-label, .action-card h3, .proposal-card h3 { color: #333 !important; }
+    .layer-text, .action-text, .proposal-text, .analysis-text { color: #000; }
+    .print-date { display: block !important; font-size: 0.8rem; color: #666; margin-bottom: 16px; }
+  }
+
+  @media (max-width: 640px) {
+    .drill-layout { flex-direction: column; }
+    .drill-map-panel { width: 100%; position: static; }
+    .map-layer-desc { display: none; }
+  }
+  @media (max-width: 480px) {
+    header { padding: 10px 12px; }
+    header h1 { font-size: 1rem; }
+    .header-sub { display: none; }
+    main { padding: 14px 12px 60px; }
+    .print-btns { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div style="font-size:1.4rem">🔍</div>
+  <h1>なぜなぜ分析</h1>
+  <span class="header-sub">問題の根っこを掘り下げる</span>
+  <button class="api-btn" onclick="showHistory()">📚 履歴</button>
+</header>
+
+<div class="progress-wrap">
+  <div class="progress-steps" id="progressDots">
+    <div class="step-dot active" id="dot0"></div>
+    <div class="step-dot" id="dot1"></div>
+    <div class="step-dot" id="dot2"></div>
+    <div class="step-dot" id="dot3"></div>
+    <div class="step-dot" id="dot4"></div>
+    <div class="step-dot" id="dot5"></div>
+    <div class="step-dot" id="dot6"></div>
+  </div>
+  <div class="progress-label" id="progressLabel">STEP 1 / 7 ─ 状況入力</div>
+</div>
+
+<main>
+
+  <!-- Phase 0: 入力 -->
+  <div class="phase active" id="phase0">
+    <span class="section-badge">STEP 1</span>
+    <div class="section-title">今、何が問題になっていますか？</div>
+    <p class="section-desc">困っていること・気になっていることを、思ったまま書いてください。<br>「なんで？」を5回繰り返して、問題の根っこまで掘り下げます。</p>
+
+    <div class="demo-info">🔍 デモ版：3回まで無料でお試しいただけます。APIキーをお持ちの方はWorker経由で直接ご利用いただけます。</div>
+
+    <div class="info-form">
+      <div class="form-group">
+        <label>組織名・施設名（任意）</label>
+        <input type="text" id="orgName" placeholder="例：〇〇介護老人保健施設">
+      </div>
+      <div class="form-group">
+        <label>あなたの役職</label>
+        <select id="role">
+          <option value="">選択してください</option>
+          <option value="管理者">管理者</option>
+          <option value="サービス提供責任者">サービス提供責任者</option>
+          <option value="リーダー・主任">リーダー・主任</option>
+          <option value="現場スタッフ">現場スタッフ</option>
+          <option value="経営者">経営者</option>
+          <option value="その他">その他</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>今、一番困っていること・解決したい問題</label>
+        <textarea id="initialInput" placeholder="例：スタッフが報告を上げてこない。何度言っても改善しない。なぜそうなっているのかわからない。"></textarea>
+      </div>
+      <button class="start-btn" id="startBtn" onclick="startDrill()">掘り下げを始める →</button>
+    </div>
+  </div>
+
+  <!-- Phase 1: なぜなぜドリル -->
+  <div class="phase" id="phase1">
+    <div class="drill-layout">
+
+      <div class="drill-map-panel">
+        <div class="map-panel-title">🏔 氷山モデル</div>
+        <div id="mapLayersList"></div>
+        <div class="map-now-label" id="mapNowLabel"></div>
+      </div>
+
+      <div class="drill-qa-panel">
+        <span class="section-badge" id="drillBadge">STEP 2</span>
+        <div class="section-title" id="drillTitle">なんでそうなってるの？（1回目）</div>
+        <div class="drill-round">掘り下げ <span id="roundNum">1</span> / 5</div>
+
+        <div id="errorMsg" class="error-msg" style="display:none"></div>
+
+        <div id="summaryBox" class="summary-box" style="display:none">
+          <strong>ここまで分かったこと：</strong><br>
+          <span id="summaryText"></span>
+        </div>
+
+        <div class="ai-bubble" id="aiBubble">
+          <div class="ai-label">🔍 なぜなぜ分析AI</div>
+          <div class="ai-text" id="aiQuestion"><span class="loading-dots">考えています</span></div>
+        </div>
+
+        <div class="answer-area" id="answerArea" style="display:none">
+          <textarea id="drillAnswer" placeholder="思ったまま答えてください。短くても大丈夫です。"></textarea>
+        </div>
+
+        <button class="next-btn" id="nextBtn" style="display:none" onclick="nextRound()">次へ →</button>
+        <button class="next-btn" id="backBtn" style="display:none;margin-top:8px;background:transparent;border:1px solid var(--border);color:var(--sub);" onclick="goBackToPrevQuestion()">← 前の質問に戻る</button>
+        <button class="reset-btn" onclick="resetAll()">↩ 最初からやり直す</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Phase 2: 出力 -->
+  <div class="phase" id="phase2">
+    <span class="section-badge">分析完了</span>
+    <div class="section-title">問題の根っこ分析 ＋ やることリスト</div>
+    <p class="section-desc" style="margin-bottom:16px">3つの視点で結果を出しています。切り替えてご確認ください。</p>
+    <div class="print-date" id="printDate"></div>
+
+    <div class="output-tabs">
+      <div class="out-tab active" id="tabIceberg" onclick="switchTab('iceberg')">🏔 問題の根っこ</div>
+      <div class="out-tab" id="tabField" onclick="switchTab('field')">👷 現場向け</div>
+      <div class="out-tab" id="tabPlanner" onclick="switchTab('planner')">📋 管理者向け</div>
+    </div>
+
+    <div class="out-panel active" id="panelIceberg">
+      <div class="iceberg-card layer-surface">
+        <div class="layer-label">🌊 今、見えていること</div>
+        <div class="layer-text" id="outSurface"></div>
+      </div>
+      <div class="iceberg-card layer-pattern">
+        <div class="layer-label">🔄 繰り返しているくせ・傾向</div>
+        <div class="layer-text" id="outPattern"></div>
+      </div>
+      <div class="iceberg-card layer-structure">
+        <div class="layer-label">🏗 組織の仕組みの問題</div>
+        <div class="layer-text" id="outStructure"></div>
+      </div>
+      <div class="iceberg-card layer-mental">
+        <div class="layer-label">💭 思い込み・慣習</div>
+        <div class="layer-text" id="outMental"></div>
+      </div>
+      <div class="iceberg-card layer-root">
+        <div class="layer-label">🎯 本当の原因（根っこ）</div>
+        <div class="layer-text" id="outRoot"></div>
+      </div>
+    </div>
+
+    <div class="out-panel" id="panelField">
+      <div class="action-card">
+        <h3>👷 明日からやること</h3>
+        <div id="fieldActions"></div>
+      </div>
+    </div>
+
+    <div class="out-panel" id="panelPlanner">
+      <div class="proposal-card">
+        <h3>📋 組織の仕組みを変えるために</h3>
+        <div class="analysis-text" id="plannerAnalysis"></div>
+        <div id="plannerProposals"></div>
+      </div>
+    </div>
+
+    <div class="print-btns">
+      <button class="print-btn print-btn-pdf" onclick="downloadPdf()">📄 PDFで保存</button>
+      <button class="print-btn print-btn-print" onclick="window.print()">🖨 印刷する</button>
+    </div>
+    <button class="reset-btn" onclick="resetAll()">↩ 最初からやり直す</button>
+  </div>
+
+</main>
+
+<!-- 履歴モーダル -->
+<div class="modal-overlay" id="historyModal">
+  <div class="modal-box">
+    <h2>📚 分析履歴</h2>
+    <div class="modal-sub">この端末に保存された過去の分析結果です（最大50件）。</div>
+    <div id="historyList"></div>
+    <button class="modal-close" onclick="closeHistory()">閉じる</button>
+  </div>
+</div>
+
+<script>
+// ── Worker設定 ──
+const WORKER_URL = 'https://hibiki-worker.fusion-partners-office.workers.dev';
+const DEMO_MAX = 3;
+const STORE_KEY = 'naze_naze';
+
+// ── デモID管理 ──
+function getDemoId() {
+  let id = localStorage.getItem(STORE_KEY + '_demo_id');
+  if (!id) {
+    id = 'fp_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+    localStorage.setItem(STORE_KEY + '_demo_id', id);
+  }
+  return id;
+}
+
+// ── Worker経由API呼び出し ──
+async function callWorker(messages, systemPrompt, maxTokens = 1024, onChunk = null) {
+  const body = {
+    mode: 'demo',
+    fingerprint: getDemoId(),
+    messages,
+    system: systemPrompt,
+    maxTokens,
+  };
+
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 120000);
+
+  let res;
+  try {
+    res = await fetch(WORKER_URL + '/analyze', {
+      method: 'POST',
+      signal: ctrl.signal,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+  } catch (err) {
+    clearTimeout(timer);
+    if (err.name === 'AbortError') throw new Error('タイムアウトしました。もう一度お試しください。');
+    throw new Error('通信エラー: ' + err.message);
+  }
+
+  if (!res.ok) {
+    clearTimeout(timer);
+    const err = await res.json().catch(() => ({}));
+    if (err.demo_exceeded) {
+      throw new Error('デモ回数（3回）の上限に達しました。続けてご利用いただくには正式版をお申し込みください。');
+    }
+    throw new Error(err.error || `APIエラー (${res.status})`);
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let fullText = '';
+  let buffer = '';
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      await new Promise(r => setTimeout(r, 0));
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const payload = line.slice(6).trim();
+        if (!payload || payload === '[DONE]') continue;
+        try {
+          const evt = JSON.parse(payload);
+          if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
+            fullText += evt.delta.text;
+            if (onChunk) onChunk(fullText);
+          }
+        } catch { /* ignore */ }
+      }
+    }
+  } finally {
+    clearTimeout(timer);
+    reader.releaseLock();
+  }
+
+  if (!fullText) throw new Error('AIから応答がありませんでした');
+  return fullText;
+}
+
+// ── 状態管理 ──
+let round = 0;
+const MAX_ROUNDS = 5;
+let conversation = [];
+let initialText = '';
+let orgName = '';
+let userRole = '';
+
+const MAP_LAYERS = [
+  { icon: '🌊', name: '今、見えていること', desc: '出来事・行動（水面上）' },
+  { icon: '🔄', name: 'くせ・傾向', desc: '繰り返しているパターン' },
+  { icon: '🏗',  name: '仕組みの問題', desc: '制度・役割・フローの歪み' },
+  { icon: '💭', name: '思い込み・慣習', desc: '当たり前の信念・文化' },
+  { icon: '🎯', name: '本当の原因', desc: '根っこ（水面下の最深部）' },
+];
+
+// ── プログレス ──
+function updateProgress(step) {
+  for (let i = 0; i <= 6; i++) {
+    const dot = document.getElementById('dot' + i);
+    if (i < step) dot.className = 'step-dot done';
+    else if (i === step) dot.className = 'step-dot active';
+    else dot.className = 'step-dot';
+  }
+  const labels = ['状況入力', '1回目', '2回目', '3回目', '4回目', '5回目', '結果表示'];
+  document.getElementById('progressLabel').textContent = `STEP ${step + 1} / 7 ─ ${labels[step]}`;
+}
+
+function updateMapPanel(currentRound) {
+  const listEl = document.getElementById('mapLayersList');
+  listEl.innerHTML = MAP_LAYERS.map((layer, i) => {
+    const state = i < currentRound ? 'done' : i === currentRound ? 'active' : 'pending';
+    const check = state === 'done' ? '<span class="map-layer-check">✓</span>' : '';
+    return `<div class="map-layer-item ${state}">
+      <span class="map-layer-icon">${layer.icon}</span>
+      <div class="map-layer-body">
+        <div class="map-layer-name">${layer.name}</div>
+        <div class="map-layer-desc">${layer.desc}</div>
+      </div>${check}
+    </div>`;
+  }).join('');
+  const idx = Math.min(currentRound, MAP_LAYERS.length - 1);
+  document.getElementById('mapNowLabel').textContent =
+    currentRound >= 5 ? '✓ 全層の掘り下げ完了' : '今ここ → ' + MAP_LAYERS[idx].name;
+}
+
+function showPhase(id) {
+  ['phase0', 'phase1', 'phase2'].forEach(p => {
+    document.getElementById(p).className = 'phase' + (p === id ? ' active' : '');
+  });
+}
+
+// ── システムプロンプト ──
+function buildSystemPrompt() {
+  return `あなたは組織・現場の問題解決の専門家です。
+役割：${userRole || '管理職'}の方が話す「現場の困りごと」を起点に、「なんでそうなっているのか？」を繰り返し掘り下げて問題の根っこを見つけます。
+
+【掘り下げの階層】
+①今、見えていること: 目に見える出来事・行動
+②繰り返しているくせ・傾向: 同じことが何度も起きていないか
+③組織の仕組みの問題: 制度・役割・流れの問題
+④思い込み・慣習: 「当たり前」になっている信念や文化
+⑤本当の原因: 根っこにある本質的な問題
+
+【ルール】
+- 質問は1つだけ。短く。現場の言葉で。
+- 「なぜ〜なのでしょうか？」ではなく「なんで〜なんですか？」という口調で
+- 相手の言葉をまず受け止めてから掘り下げる
+- 責めるような言い方はしない
+- 1文で状況を要約してから次の質問を投げる
+- 出力形式: 「（要約1文）\n\nなんで〜なんですか？」`;
+}
+
+// ── ドリル開始 ──
+async function startDrill() {
+  initialText = document.getElementById('initialInput').value.trim();
+  orgName = document.getElementById('orgName').value.trim();
+  userRole = document.getElementById('role').value;
+
+  if (!initialText) { alert('困っていることを入力してください。'); return; }
+
+  document.getElementById('startBtn').disabled = true;
+  showPhase('phase1');
+  round = 0;
+  conversation = [];
+  updateMapPanel(0);
+  updateProgress(1);
+
+  const firstMsg = (orgName ? `【${orgName}】` : '') + `【${userRole || '管理職'}】\n\n${initialText}`;
+  conversation.push({ role: 'user', content: firstMsg });
+
+  await askNextQuestion();
+}
+
+// ── 次の質問 ──
+async function askNextQuestion() {
+  const questionEl = document.getElementById('aiQuestion');
+  const answerArea = document.getElementById('answerArea');
+  const nextBtn = document.getElementById('nextBtn');
+  const errorEl = document.getElementById('errorMsg');
+
+  errorEl.style.display = 'none';
+  answerArea.style.display = 'none';
+  nextBtn.style.display = 'none';
+  nextBtn.disabled = false;
+  document.getElementById('backBtn').style.display = 'none';
+
+  let elapsed = 0;
+  const loadTimer = setInterval(() => {
+    elapsed++;
+    const msg = elapsed < 10 ? '考えています' : `考えています（${elapsed}秒）`;
+    questionEl.innerHTML = `<span class="loading-dots">${msg}</span>`;
+  }, 1000);
+  questionEl.innerHTML = '<span class="loading-dots">考えています</span>';
+
+  document.getElementById('drillBadge').textContent = `STEP ${round + 2}`;
+  document.getElementById('drillTitle').textContent = `なんでそうなってるの？（${round + 1}回目）`;
+  document.getElementById('roundNum').textContent = round + 1;
+  updateMapPanel(round);
+
+  if (round > 0 && conversation.length >= 2) {
+    const lastAI = conversation.filter(m => m.role === 'assistant').slice(-1)[0];
+    if (lastAI) {
+      document.getElementById('summaryText').textContent = lastAI.content.split('\n')[0];
+      document.getElementById('summaryBox').style.display = 'block';
+    }
+  }
+
+  await new Promise(r => setTimeout(r, 0));
+
+  try {
+    const reply = await callWorker(conversation, buildSystemPrompt(), 1024, (text) => {
+      clearInterval(loadTimer);
+      questionEl.textContent = text;
+    });
+    clearInterval(loadTimer);
+    conversation.push({ role: 'assistant', content: reply });
+
+    questionEl.textContent = reply;
+    document.getElementById('drillAnswer').value = '';
+    answerArea.style.display = 'block';
+    document.getElementById('backBtn').style.display = round > 0 ? 'block' : 'none';
+    nextBtn.disabled = false;
+    nextBtn.style.display = 'block';
+    nextBtn.textContent = round < MAX_ROUNDS - 1 ? '次へ →' : '結果を見る →';
+    nextBtn.onclick = nextRound;
+    document.getElementById('drillAnswer').focus();
+  } catch (e) {
+    clearInterval(loadTimer);
+    errorEl.textContent = 'エラー: ' + e.message;
+    errorEl.style.display = 'block';
+    questionEl.textContent = 'AIへの接続に失敗しました。';
+    nextBtn.disabled = false;
+    nextBtn.textContent = 'もう一度試す';
+    nextBtn.style.display = 'block';
+    nextBtn.onclick = askNextQuestion;
+    document.getElementById('backBtn').style.display = round > 0 ? 'block' : 'none';
+  }
+}
+
+// ── 次ラウンド ──
+async function nextRound() {
+  const answer = document.getElementById('drillAnswer').value.trim();
+  if (!answer) { alert('回答を入力してください。'); return; }
+
+  const nextBtn = document.getElementById('nextBtn');
+  nextBtn.disabled = true;
+  nextBtn.textContent = '送信中...';
+  nextBtn.onclick = nextRound;
+
+  conversation.push({ role: 'user', content: answer });
+  round++;
+
+  if (round >= MAX_ROUNDS) {
+    updateProgress(6);
+    await generateOutput();
+  } else {
+    updateProgress(round + 1);
+    await askNextQuestion();
+  }
+}
+
+// ── 前の質問に戻る ──
+function goBackToPrevQuestion() {
+  if (round <= 0) return;
+  conversation.pop();
+  round--;
+  document.getElementById('backBtn').style.display = round > 0 ? 'block' : 'none';
+  document.getElementById('errorMsg').style.display = 'none';
+  const lastAI = conversation.filter(m => m.role === 'assistant').slice(-1)[0];
+  document.getElementById('aiQuestion').textContent = lastAI ? lastAI.content : '';
+  document.getElementById('drillAnswer').value = '';
+  document.getElementById('answerArea').style.display = 'block';
+  const nextBtn = document.getElementById('nextBtn');
+  nextBtn.textContent = round < MAX_ROUNDS - 1 ? '次へ →' : '結果を見る →';
+  nextBtn.onclick = nextRound;
+  nextBtn.style.display = 'block';
+  document.getElementById('drillBadge').textContent = `STEP ${round + 2}`;
+  document.getElementById('drillTitle').textContent = `なんでそうなってるの？（${round + 1}回目）`;
+  document.getElementById('roundNum').textContent = round + 1;
+  updateMapPanel(round);
+  updateProgress(round + 1);
+  document.getElementById('drillAnswer').focus();
+}
+
+// ── JSONパース ──
+function tryParseFlat(raw) {
+  try {
+    let jsonStr = raw;
+    const blockMatch = raw.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+    if (blockMatch) jsonStr = blockMatch[1];
+    const objMatch = jsonStr.match(/\{[\s\S]*\}/);
+    if (!objMatch) return null;
+    const cleaned = objMatch[0].replace(/[\r\n\t]+/g, ' ');
+    const flat = JSON.parse(cleaned);
+    if (!flat.surface || !flat.root || !flat.action1) return null;
+    return flat;
+  } catch { return null; }
+}
+
+function parsePlainTextResult(raw) {
+  const get = (label) => {
+    const re = new RegExp('【' + label + '】\\s*([\\s\\S]*?)(?=【|$)');
+    const m = raw.match(re);
+    return m ? m[1].trim().replace(/\n+/g, ' ') : '（分析データなし）';
+  };
+  return {
+    iceberg: {
+      surface:      get('今見えていること'),
+      pattern:      get('繰り返しているくせ・傾向'),
+      structure:    get('組織の仕組みの問題'),
+      mental_model: get('思い込み・慣習'),
+      root:         get('本当の原因')
+    },
+    field_actions: [get('明日からやること①'), get('明日からやること②'), get('明日からやること③')],
+    planner: {
+      analysis: get('なぜこの組織で起きているか'),
+      proposals: [get('仕組み・ルールで変えること'), get('話し合い・情報共有の場を変えること'), get('半年〜1年の組織づくり')]
+    }
+  };
+}
+
+// ── 最終出力生成 ──
+async function generateOutput() {
+  showPhase('phase1');
+  document.getElementById('aiQuestion').innerHTML = '<span class="loading-dots">問題の根っこを分析中</span>';
+  document.getElementById('answerArea').style.display = 'none';
+  document.getElementById('nextBtn').style.display = 'none';
+  document.getElementById('summaryBox').style.display = 'none';
+
+  const summaryConv = [{ role: 'user', content: conversation.map(m => `[${m.role}] ${m.content}`).join('\n\n') }];
+
+  const jsonPrompt = `あなたは組織・現場の問題解決の専門家です。
+以下の会話から分析結果を生成してください。
+
+【絶対に守るルール】
+- 出力はJSONのみ。前後に文章・説明・コードブロック記号（\`\`\`）は一切書かない
+- 各値は1行で（改行・タブを入れない）
+- 値の中にダブルクォート（"）を使わない。使いたい場合は「」で代替する
+- 値の中にバックスラッシュ（\\）を使わない
+- コロン（:）は文末に使わない（「〜すること」「〜を行う」で締める）
+
+{"surface":"今見えていること（1〜2文）","pattern":"繰り返しているくせや傾向（1〜2文）","structure":"組織の仕組みの問題（1〜2文）","mental_model":"思い込みや慣習（1〜2文）","root":"本当の原因を1文で","action1":"明日の朝礼で伝えること","action2":"今週中に手を動かしてやること","action3":"関係者への関わり方で変えること","analysis":"なぜこの組織でこれが起きているか（3〜4文）","proposal1":"仕組みやルールで変えること","proposal2":"話し合いや情報共有の場を変えること","proposal3":"半年〜1年かけて取り組む組織づくり"}`;
+
+  const plainPrompt = `あなたは組織・現場の問題解決の専門家です。
+以下の会話から分析結果を生成してください。各セクションを【】の見出しのあとに改行して書いてください。
+
+【今見えていること】
+【繰り返しているくせ・傾向】
+【組織の仕組みの問題】
+【思い込み・慣習】
+【本当の原因】
+【明日からやること①】
+【明日からやること②】
+【明日からやること③】
+【なぜこの組織で起きているか】
+【仕組み・ルールで変えること】
+【話し合い・情報共有の場を変えること】
+【半年〜1年の組織づくり】`;
+
+  document.getElementById('aiQuestion').innerHTML = '<span class="loading-dots">分析中（1/3）</span>';
+  try {
+    const raw1 = await callWorker(summaryConv, jsonPrompt, 4096);
+    const flat1 = tryParseFlat(raw1);
+    if (flat1) { _renderAndShow(flat1); return; }
+  } catch (e) {
+    if (e.message.includes('デモ回数')) {
+      document.getElementById('errorMsg').textContent = e.message;
+      document.getElementById('errorMsg').style.display = 'block';
+      document.getElementById('aiQuestion').textContent = '';
+      return;
+    }
+  }
+
+  document.getElementById('aiQuestion').innerHTML = '<span class="loading-dots">再分析中（2/3）</span>';
+  try {
+    const raw2 = await callWorker(summaryConv, jsonPrompt, 4096);
+    const flat2 = tryParseFlat(raw2);
+    if (flat2) { _renderAndShow(flat2); return; }
+  } catch { /* fall through */ }
+
+  document.getElementById('aiQuestion').innerHTML = '<span class="loading-dots">別形式で分析中（3/3）</span>';
+  try {
+    const raw3 = await callWorker(summaryConv, plainPrompt, 4096);
+    const result3 = parsePlainTextResult(raw3);
+    renderOutput(result3);
+    saveToHistory(result3);
+    showPhase('phase2');
+    updateProgress(6);
+  } catch (e) {
+    document.getElementById('errorMsg').textContent = 'エラー: ' + e.message;
+    document.getElementById('errorMsg').style.display = 'block';
+    document.getElementById('aiQuestion').textContent = '出力の生成に失敗しました。';
+    const nextBtn = document.getElementById('nextBtn');
+    nextBtn.textContent = 'もう一度生成する';
+    nextBtn.style.display = 'block';
+    nextBtn.onclick = generateOutput;
+  }
+}
+
+function _renderAndShow(flat) {
+  const result = {
+    iceberg: { surface: flat.surface, pattern: flat.pattern, structure: flat.structure, mental_model: flat.mental_model, root: flat.root },
+    field_actions: [flat.action1, flat.action2, flat.action3],
+    planner: { analysis: flat.analysis, proposals: [flat.proposal1, flat.proposal2, flat.proposal3] }
+  };
+  renderOutput(result);
+  saveToHistory(result);
+  showPhase('phase2');
+  updateProgress(6);
+}
+
+function renderOutput(result) {
+  document.getElementById('outSurface').textContent = result.iceberg.surface;
+  document.getElementById('outPattern').textContent = result.iceberg.pattern;
+  document.getElementById('outStructure').textContent = result.iceberg.structure;
+  document.getElementById('outMental').textContent = result.iceberg.mental_model;
+  document.getElementById('outRoot').textContent = result.iceberg.root;
+
+  document.getElementById('fieldActions').innerHTML = result.field_actions.map((a, i) =>
+    `<div class="action-item"><div class="action-num">${i + 1}</div><div class="action-text">${a}</div></div>`
+  ).join('');
+
+  document.getElementById('plannerAnalysis').textContent = result.planner.analysis;
+  document.getElementById('plannerProposals').innerHTML = result.planner.proposals.map(p =>
+    `<div class="proposal-item"><div class="proposal-mark">▶</div><div class="proposal-text">${p}</div></div>`
+  ).join('');
+
+  const now = new Date();
+  document.getElementById('printDate').textContent =
+    `分析日：${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日　${orgName || ''}　${userRole || ''}`;
+}
+
+function switchTab(name) {
+  ['iceberg', 'field', 'planner'].forEach(t => {
+    document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1)).classList.toggle('active', t === name);
+    document.getElementById('panel' + t.charAt(0).toUpperCase() + t.slice(1)).classList.toggle('active', t === name);
+  });
+}
+
+function resetAll() {
+  round = 0; conversation = []; initialText = ''; orgName = ''; userRole = '';
+  document.getElementById('initialInput').value = '';
+  document.getElementById('orgName').value = '';
+  document.getElementById('role').value = '';
+  document.getElementById('startBtn').disabled = false;
+  document.getElementById('errorMsg').style.display = 'none';
+  document.getElementById('summaryBox').style.display = 'none';
+  document.getElementById('nextBtn').onclick = nextRound;
+  document.getElementById('backBtn').style.display = 'none';
+  switchTab('iceberg');
+  showPhase('phase0');
+  updateProgress(0);
+}
+
+// ── PDF保存 ──
+function downloadPdf() {
+  const el = document.getElementById('phase2');
+  const orgLabel = orgName ? orgName + '_' : '';
+  const now = new Date();
+  const stamp = now.getFullYear() + ('0'+(now.getMonth()+1)).slice(-2) + ('0'+now.getDate()).slice(-2);
+  html2pdf().set({
+    margin: [10, 10, 10, 10], filename: orgLabel + 'なぜなぜ分析_' + stamp + '.pdf',
+    image: { type: 'jpeg', quality: 0.95 },
+    html2canvas: { scale: 2, useCORS: true, backgroundColor: '#0f1923' },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  }).from(el).save();
+}
+
+// ── 履歴 ──
+const HISTORY_KEY = 'naze_naze_history';
+
+function loadHistory() {
+  try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); }
+  catch { return []; }
+}
+
+function saveToHistory(result) {
+  try {
+    const hist = loadHistory();
+    const d = new Date();
+    const ts = `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    hist.unshift({ id: d.getTime(), ts, org: orgName || '', role: userRole || '', result });
+    if (hist.length > 50) hist.length = 50;
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(hist));
+  } catch (e) { console.warn('履歴保存に失敗:', e); }
+}
+
+function escapeHtml(s) {
+  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function showHistory() {
+  const hist = loadHistory();
+  let html = '';
+  if (!hist.length) {
+    html = '<div class="hist-empty">まだ保存された分析がありません。</div>';
+  } else {
+    hist.forEach(h => {
+      const root = h.result?.iceberg?.root || '';
+      html += `<div class="hist-item" onclick="viewHistoryItem(${h.id})">
+        <div class="hist-main">
+          <div class="hist-date">${escapeHtml(h.ts)}</div>
+          <div class="hist-meta">${escapeHtml(h.org || '')}　${escapeHtml(h.role || '')}</div>
+          <div class="hist-root">🎯 ${escapeHtml(root)}</div>
+        </div>
+        <button class="hist-del" title="削除" onclick="event.stopPropagation();deleteHistoryItem(${h.id})">✕</button>
+      </div>`;
+    });
+  }
+  document.getElementById('historyList').innerHTML = html;
+  document.getElementById('historyModal').classList.add('active');
+}
+
+function closeHistory() {
+  document.getElementById('historyModal').classList.remove('active');
+}
+
+function viewHistoryItem(id) {
+  const item = loadHistory().find(h => h.id === id);
+  if (!item) return;
+  orgName = item.org || '';
+  userRole = item.role || '';
+  renderOutput(item.result);
+  switchTab('iceberg');
+  showPhase('phase2');
+  updateProgress(6);
+  closeHistory();
+  window.scrollTo(0, 0);
+}
+
+function deleteHistoryItem(id) {
+  if (!confirm('この履歴を削除しますか？')) return;
+  const hist = loadHistory().filter(h => h.id !== id);
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(hist));
+  showHistory();
+}
+</script>
+</body>
+</html>
