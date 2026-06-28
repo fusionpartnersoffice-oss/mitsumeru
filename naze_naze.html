@@ -300,6 +300,20 @@
   <div class="progress-label" id="progressLabel">STEP 1 / 7 ─ 状況入力</div>
 </div>
 
+<!-- APIキーバナー：全フェーズで表示 -->
+<div class="apikey-banner" id="apikeyBanner" style="max-width:720px;margin:0 auto;padding:16px 16px 0;">
+  <div style="background:rgba(206,147,216,0.08);border:1px solid rgba(206,147,216,0.35);border-radius:10px;padding:16px;">
+    <h3 style="font-size:0.9rem;color:var(--accent);margin-bottom:6px;">🔑 AnthropicAPIキーを登録する</h3>
+    <p style="font-size:0.78rem;color:var(--sub);margin-bottom:10px;line-height:1.5;">デモ回数（3回）を使い切りました。APIキーを入力すると制限なしでご利用いただけます。<br>キーはこのタブを閉じると自動的に消えます（サーバーには保存されません）。</p>
+    <div class="apikey-row">
+      <input class="apikey-input" id="apikeyInput" type="password" placeholder="sk-ant-...">
+      <button class="apikey-set-btn" onclick="applyApiKey()">登録して続ける</button>
+    </div>
+    <div class="apikey-active" id="apikeyActive">✅ APIキー登録済み ─ 制限なしで利用中</div>
+    <span class="apikey-clear" id="apikeyClear" onclick="removeApiKey()" style="display:none">キーを削除する</span>
+  </div>
+</div>
+
 <main>
 
   <!-- Phase 0: 入力 -->
@@ -308,18 +322,7 @@
     <div class="section-title">今、何が問題になっていますか？</div>
     <p class="section-desc">困っていること・気になっていることを、思ったまま書いてください。<br>「なんで？」を5回繰り返して、問題の根っこまで掘り下げます。</p>
 
-    <div class="demo-info" id="demoInfo">🔍 デモ版：3回まで無料でお試しいただけます。APIキーをお持ちの方は下のバナーから登録してください。</div>
-
-    <div class="apikey-banner" id="apikeyBanner">
-      <h3>🔑 AnthropicAPIキーを登録する</h3>
-      <p>デモ回数（3回）を使い切りました。APIキーを入力すると制限なしでご利用いただけます。<br>キーはこのタブを閉じると自動的に消えます（サーバーには保存されません）。</p>
-      <div class="apikey-row">
-        <input class="apikey-input" id="apikeyInput" type="password" placeholder="sk-ant-...">
-        <button class="apikey-set-btn" onclick="applyApiKey()">登録して続ける</button>
-      </div>
-      <div class="apikey-active" id="apikeyActive">✅ APIキー登録済み ─ 制限なしで利用中</div>
-      <span class="apikey-clear" id="apikeyClear" onclick="removeApiKey()" style="display:none">キーを削除する</span>
-    </div>
+    <div class="demo-info" id="demoInfo">🔍 デモ版：3回まで無料でお試しいただけます。3回使い切ったらAPIキーを登録してください。</div>
 
     <div class="info-form">
       <div class="form-group">
