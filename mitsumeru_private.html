@@ -579,6 +579,7 @@
   <button class="mode-tab" onclick="switchTab('evening')">夜</button>
   <button class="mode-tab" onclick="switchTab('output')">出力</button>
   <button class="mode-tab" onclick="switchTab('profile')">設定</button>
+  <button class="mode-tab" onclick="switchTab('tools')">ツール</button>
 </div>
 <div class="sync-bar">
   <span id="sync-status" class="sync-badge"></span>
@@ -1127,6 +1128,55 @@
     <div class="loading-text" id="monthly-loading">月次データを分析中...</div>
     <div class="output-box" id="monthly-summary"></div>
     <button id="copy-monthly-btn" class="btn-secondary" onclick="copySummaryBox('monthly-summary','copy-monthly-btn')" style="margin-top:8px;display:none;">月次サマリーをコピー</button>
+  </div>
+</div>
+
+<!-- ツールモード -->
+<div id="screen-tools" class="screen">
+  <div class="date-display">分析ツール — PRIVATE</div>
+
+  <!-- 切り替えボタン -->
+  <div style="display:flex;gap:8px;margin-bottom:16px;">
+    <button id="tool-btn-emergency" class="btn-primary" onclick="switchToolMode('emergency')" style="flex:1;font-size:13px;letter-spacing:1px;">⚡ 3minエマージェンシー</button>
+    <button id="tool-btn-whywhy" class="btn-secondary" onclick="switchToolMode('whywhy')" style="flex:1;font-size:13px;letter-spacing:1px;">🔍 なぜなぜ分析</button>
+  </div>
+
+  <!-- 3minエマージェンシー -->
+  <div id="tool-emergency">
+    <div class="section">
+      <div class="section-title">⚡ 3minエマージェンシー</div>
+      <p style="font-size:12px;color:var(--text2);line-height:1.8;margin-bottom:14px;">今ヤバいと感じていることを1〜3行で吐き出す。AIが緊急度と「今すぐやること」を30秒で返す。</p>
+      <div class="field">
+        <label>今、何がヤバいか</label>
+        <div style="display:flex;gap:8px;align-items:flex-start;">
+          <textarea id="emergency-input" placeholder="例：〇〇から連絡が来ない&#10;締め切りが今日なのに手が止まっている&#10;チームが空中分解しそう" style="flex:1;min-height:90px;"></textarea>
+          <button id="voice-btn-emergency" class="voice-btn" onclick="toggleVoiceInput('emergency-input','voice-btn-emergency')" title="音声入力">🎤</button>
+        </div>
+      </div>
+      <button class="btn-primary" onclick="runEmergency()">3分で整理する</button>
+      <div class="loading-text" id="emergency-loading">整理中...</div>
+      <div class="output-box" id="emergency-output"></div>
+      <button id="emergency-copy-btn" class="btn-secondary" style="display:none;margin-top:8px;" onclick="copyTool('emergency-input','emergency-output','3minエマージェンシー')">コピーする</button>
+    </div>
+  </div>
+
+  <!-- なぜなぜ分析 -->
+  <div id="tool-whywhy" style="display:none;">
+    <div class="section">
+      <div class="section-title">🔍 なぜなぜ分析</div>
+      <p style="font-size:12px;color:var(--text2);line-height:1.8;margin-bottom:14px;">問題を1行で入力する。AIが「なぜ①〜⑤」を展開し、根本原因と仕組みの改善方向を返す。</p>
+      <div class="field">
+        <label>問題を1行で</label>
+        <div style="display:flex;gap:8px;align-items:flex-start;">
+          <textarea id="whywhy-input" placeholder="例：スタッフが申し送りを書かない" style="flex:1;min-height:60px;"></textarea>
+          <button id="voice-btn-whywhy" class="voice-btn" onclick="toggleVoiceInput('whywhy-input','voice-btn-whywhy')" title="音声入力">🎤</button>
+        </div>
+      </div>
+      <button class="btn-primary" onclick="runWhyWhy()">根本原因を掘り下げる</button>
+      <div class="loading-text" id="whywhy-loading">掘り下げ中...</div>
+      <div class="output-box" id="whywhy-output"></div>
+      <button id="whywhy-copy-btn" class="btn-secondary" style="display:none;margin-top:8px;" onclick="copyTool('whywhy-input','whywhy-output','なぜなぜ分析')">コピーする</button>
+    </div>
   </div>
 </div>
 
@@ -1897,7 +1947,7 @@ MUST:${p.must} NEVER:${p.never}
 
 function switchTab(tab) {
   document.querySelectorAll('.mode-tab').forEach((t,i) => {
-    t.classList.toggle('active', ['morning','memo','evening','output','profile'][i] === tab);
+    t.classList.toggle('active', ['morning','memo','evening','output','profile','tools'][i] === tab);
   });
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-'+tab).classList.add('active');
@@ -3217,6 +3267,118 @@ function importScanResult() {
   }
   alert('スキャン結果をフィールドに反映しました。\n内容を確認して「保存する」ボタンを押してください。');
   closeScanImport();
+}
+
+// ===== ツールタブ =====
+function switchToolMode(mode) {
+  const isEmergency = mode === 'emergency';
+  document.getElementById('tool-emergency').style.display = isEmergency ? 'block' : 'none';
+  document.getElementById('tool-whywhy').style.display = isEmergency ? 'none' : 'block';
+  const eBtn = document.getElementById('tool-btn-emergency');
+  const wBtn = document.getElementById('tool-btn-whywhy');
+  if (eBtn) { eBtn.className = isEmergency ? 'btn-primary' : 'btn-secondary'; eBtn.style.flex='1'; eBtn.style.fontSize='13px'; eBtn.style.letterSpacing='1px'; }
+  if (wBtn) { wBtn.className = isEmergency ? 'btn-secondary' : 'btn-primary'; wBtn.style.flex='1'; wBtn.style.fontSize='13px'; wBtn.style.letterSpacing='1px'; }
+}
+
+function runEmergency() {
+  const input = document.getElementById('emergency-input').value.trim();
+  if (!input) return;
+  const loading = document.getElementById('emergency-loading');
+  const output = document.getElementById('emergency-output');
+  const copyBtn = document.getElementById('emergency-copy-btn');
+  loading.style.display = 'block';
+  output.classList.remove('visible');
+  if (copyBtn) copyBtn.style.display = 'none';
+
+  const prompt = `あなたはFusion Partners代表の「SuccessOS 統合経営参謀」です。
+
+【ユーザープロファイル】
+${getProfileText()}
+
+【3minエマージェンシー】
+今、以下の問題が発生しています：
+${input}
+
+以下の3点を出力してください。
+
+【緊急度判定】
+S（今すぐ停止）/ A（今日中）/ B（今週中）/ C（様子見）のどれか1つ。判定理由を1行で。
+
+【今すぐやること（最大3個）】
+物理的な次のアクション。「考える」「確認する」ではなく「〜に電話する」「〜のファイルを開く」のレベルで箇条書き。
+
+【今日は触らなくていいこと】
+今日保留でいい理由を1行。`;
+
+  callClaude(prompt,
+    text => {
+      loading.style.display = 'none';
+      output.textContent = text;
+      output.classList.add('visible');
+      if (copyBtn) copyBtn.style.display = 'block';
+    },
+    err => {
+      loading.style.display = 'none';
+      output.textContent = 'エラー：' + err;
+      output.classList.add('visible');
+    },
+    4000
+  );
+}
+
+function runWhyWhy() {
+  const input = document.getElementById('whywhy-input').value.trim();
+  if (!input) return;
+  const loading = document.getElementById('whywhy-loading');
+  const output = document.getElementById('whywhy-output');
+  const copyBtn = document.getElementById('whywhy-copy-btn');
+  loading.style.display = 'block';
+  output.classList.remove('visible');
+  if (copyBtn) copyBtn.style.display = 'none';
+
+  const prompt = `あなたはFusion Partners代表の「SuccessOS 統合経営参謀」です。
+
+【ユーザープロファイル】
+${getProfileText()}
+
+【なぜなぜ分析】
+以下の問題を根本原因まで掘り下げてください：
+「${input}」
+
+以下の形式で出力してください：
+
+なぜ①：〈問題が起きている直接の理由〉
+なぜ②：〈なぜ①が起きているか〉
+なぜ③：〈なぜ②が起きているか〉
+なぜ④：〈なぜ③が起きているか〉
+なぜ⑤：〈なぜ④が起きているか〉
+
+【根本原因】
+なぜ⑤から導かれる本質的な原因を1〜2行で。
+
+【対処の方向性】
+根本原因に対して取るべき具体的なアプローチを1〜2行で。精神論は禁止。仕組みで解決する視点で書くこと。`;
+
+  callClaude(prompt,
+    text => {
+      loading.style.display = 'none';
+      output.textContent = text;
+      output.classList.add('visible');
+      if (copyBtn) copyBtn.style.display = 'block';
+    },
+    err => {
+      loading.style.display = 'none';
+      output.textContent = 'エラー：' + err;
+      output.classList.add('visible');
+    },
+    4000
+  );
+}
+
+function copyTool(inputId, outputId, label) {
+  const input = document.getElementById(inputId).value.trim();
+  const text = document.getElementById(outputId).textContent;
+  navigator.clipboard.writeText(`【${label}】\n問題：${input}\n\n${text}`);
 }
 
 // ===== 音声入力 =====
