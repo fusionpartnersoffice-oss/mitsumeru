@@ -233,7 +233,7 @@ header h1{font-size:.92rem;font-weight:700;color:var(--accent);}
   <button class="hdr-btn cy" id="analyzeHdrBtn" style="display:none" onclick="generateAnalysis()">▶ 分析</button>
   <button class="hdr-btn grn" id="saveHdrBtn" style="display:none" onclick="saveAssessment()">💾 保存</button>
   <button class="hdr-btn" id="homeBtn" style="display:none" onclick="showPersonList()">🏠 一覧</button>
-  <button class="hdr-btn" id="apiKeyBtn" onclick="setApiKey()">🔑 APIキー</button>
+  <button class="hdr-btn" id="apiKeyBtn" onclick="setApiKey()">🔑 トークン入力</button>
 </header>
 
 <!-- Phase 0: 利用者一覧 -->
@@ -348,29 +348,41 @@ header h1{font-size:.92rem;font-weight:700;color:var(--accent);}
 <div id="toast"></div>
 
 <script>
-// ── デモモード設定 ──
-const DEMO_API_KEY = 'YOUR_DEMO_KEY_HERE';
+// ── Worker設定 ──
+const WORKER_URL = 'https://hibiki-worker.fusionpartnersoffice-oss.workers.dev';
 const DEMO_MAX = 3;
 const STORE_KEY = 'hibiki_shogai';
 
-function isDemoMode() { return DEMO_API_KEY !== 'YOUR_DEMO_KEY_HERE'; }
+// 端末固有デモID（localStorage管理）
+function getDemoId() {
+  let id = localStorage.getItem(STORE_KEY+'_demo_id');
+  if (!id) { id = 'fp_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,8); localStorage.setItem(STORE_KEY+'_demo_id', id); }
+  return id;
+}
+
+// Stripeトークン
+function getStripeToken() { return localStorage.getItem(STORE_KEY+'_stripe_token') || ''; }
+function isStripeUser() { return !!getStripeToken(); }
+
+// デモカウント（UI表示用・ローカル管理）
 function getDemoCount() { return parseInt(localStorage.getItem(STORE_KEY+'_demo_count') || '0'); }
 function incDemoCount() { localStorage.setItem(STORE_KEY+'_demo_count', String(getDemoCount()+1)); updateDemoBadge(); }
 function getDemoRemaining() { return Math.max(0, DEMO_MAX - getDemoCount()); }
-function getEffectiveKey() { return isDemoMode() ? DEMO_API_KEY : apiKey; }
 
 function updateDemoBadge() {
   const badge = document.getElementById('demoBadge');
   const keyBtn = document.getElementById('apiKeyBtn');
-  if (isDemoMode()) {
-    const rem = getDemoRemaining();
-    badge.textContent = `🎯 デモモード 残り${rem}回`;
-    badge.style.display = 'inline-block';
+  badge.style.display = 'inline-block';
+  if (isStripeUser()) {
+    badge.textContent = '✅ 正式版';
     keyBtn.style.display = 'none';
-    const dot = document.getElementById('apiDot');
-    const txt = document.getElementById('apiTxt');
-    dot.className = 'api-dot demo';
-    txt.textContent = 'デモモード';
+    document.getElementById('apiDot').className = 'api-dot ok';
+    document.getElementById('apiTxt').textContent = '正式版';
+  } else {
+    badge.textContent = `🎯 デモ 残り${getDemoRemaining()}回`;
+    keyBtn.style.display = 'inline-block';
+    document.getElementById('apiDot').className = 'api-dot demo';
+    document.getElementById('apiTxt').textContent = 'デモモード';
   }
 }
 
@@ -385,7 +397,6 @@ const ICF_DOMAINS = [
 ];
 
 // ── 状態 ──
-let apiKey = localStorage.getItem(STORE_KEY+'_api_key') || '';
 let currentPersonId = null;
 let currentPhase = '';
 let cells = {};
@@ -394,20 +405,15 @@ let currentPlan = null;
 let editCell = null;
 let editTri = 'none';
 
-// ── APIキー ──
-function updateApiStatus() {
-  if (isDemoMode()) return;
-  const dot = document.getElementById('apiDot'), txt = document.getElementById('apiTxt');
-  if (apiKey) { dot.className='api-dot ok'; txt.textContent='APIキー設定済'; }
-  else { dot.className='api-dot ng'; txt.textContent='APIキー未設定'; }
-}
+// ── トークン入力（正式版） ──
+function updateApiStatus() { /* Worker経由のため不要 */ }
 function setApiKey() {
-  const k = prompt('AnthropicのAPIキーを入力（sk-ant-...）\n現在：'+(apiKey?apiKey.substring(0,14)+'...':'未設定'));
-  if (k && k.trim().startsWith('sk-ant-')) {
-    apiKey = k.trim();
-    localStorage.setItem(STORE_KEY+'_api_key', apiKey);
-    updateApiStatus();
-  } else if (k !== null) { alert('形式が正しくありません（sk-ant-で始まるキーを入力）'); }
+  const t = prompt('正式版アクセストークンを入力してください\n（Fusion Partnersよりメールでお送りしたもの）');
+  if (t && t.trim().length > 10) {
+    localStorage.setItem(STORE_KEY+'_stripe_token', t.trim());
+    updateDemoBadge();
+    toast('✅ 正式版として認証しました');
+  } else if (t !== null) { alert('トークンが正しくありません。'); }
 }
 function promptOwnKey() { closeDemoEnd(); setApiKey(); }
 
@@ -419,7 +425,7 @@ function checkConsent() { if(!hasConsent()) document.getElementById('consentGate
 // ── デモ終了 ──
 function closeDemoEnd() { document.getElementById('demoEndOver').classList.remove('active'); }
 function checkDemoLimit() {
-  if (isDemoMode() && getDemoRemaining() <= 0) {
+  if (!isStripeUser() && getDemoRemaining() <= 0) {
     document.getElementById('demoEndOver').classList.add('active');
     return true;
   }
@@ -635,8 +641,6 @@ function resetAnalysis() {
 
 async function generateAnalysis() {
   if (checkDemoLimit()) return;
-  const key = getEffectiveKey();
-  if (!key || key==='YOUR_DEMO_KEY_HERE') { setApiKey(); return; }
   document.getElementById('icebergArea').innerHTML='';
   document.getElementById('planArea').style.display='none';
   document.getElementById('analysisLoading').style.display='block';
@@ -646,16 +650,19 @@ async function generateAnalysis() {
   let success=false;
   for(let i=0;i<3;i++){
     try{
-      const raw=await callClaude(msgs,buildSys(),4096,null,key);
+      const raw=await callWorker(msgs,buildSys(),4096);
       const d=parseData(raw);
       if(d){
         currentIceberg=d; currentPlan=d;
         renderIceberg(d); renderPlan(d);
         document.getElementById('analysisLoading').style.display='none';
-        if(isDemoMode()) incDemoCount();
+        if(!isStripeUser()) incDemoCount();
         success=true; break;
       }
-    }catch(e){ if(i===2) document.getElementById('analysisLoading').innerHTML=`<span style="color:var(--danger)">エラー: ${esc(e.message)}</span>`; }
+    }catch(e){
+      if(e.message && e.message.includes('デモ回数')) { document.getElementById('demoEndOver').classList.add('active'); break; }
+      if(i===2) document.getElementById('analysisLoading').innerHTML=`<span style="color:var(--danger)">エラー: ${esc(e.message)}</span>`;
+    }
   }
   document.getElementById('analyzeBtn').disabled=false;
   document.getElementById('analyzeHdrBtn').disabled=false;
@@ -720,12 +727,11 @@ async function showPdcaComparison(){
   });
   document.getElementById('cmpContent').innerHTML=html;
   document.getElementById('pdcaModal').classList.add('active');
-  const key=getEffectiveKey();
-  if(key&&key!=='YOUR_DEMO_KEY_HERE'&&prev.iceberg&&currentIceberg){
+  if(prev.iceberg&&currentIceberg){
     try{
-      const raw=await callClaude([{role:'user',content:
+      const raw=await callWorker([{role:'user',content:
         `前回の分析:\n${JSON.stringify(prev.iceberg)}\n\n今回の分析:\n${JSON.stringify(currentIceberg)}\n\n障がい福祉の視点で「何がどう変化したか」を2〜3文で。改善点と残課題の両方に触れてください。`
-      }],'あなたは障がい福祉のアセスメント専門家です。',400,null,key);
+      }],'あなたは障がい福祉のアセスメント専門家です。',400);
       document.getElementById('chgTxt').textContent=raw.trim();
       document.getElementById('chgSummary').style.display='block';
     }catch{}
@@ -745,29 +751,38 @@ function downloadPdf(){
   }).from(document.getElementById('phase1')).save();
 }
 
-// ── Claude API ──
-async function callClaude(messages,systemPrompt,maxTokens=1024,onChunk=null,keyOverride=null){
-  const key=keyOverride||apiKey; if(!key) throw new Error('APIキーが設定されていません');
-  const ctrl=new AbortController(); const timer=setTimeout(()=>ctrl.abort(),120000);
+// ── Worker API ──
+async function callWorker(messages, systemPrompt, maxTokens=1024) {
+  const body = {
+    mode: isStripeUser() ? 'stripe' : 'demo',
+    fingerprint: getDemoId(),
+    token: getStripeToken() || undefined,
+    messages, system: systemPrompt, maxTokens,
+  };
+  const ctrl = new AbortController(); const timer = setTimeout(()=>ctrl.abort(), 120000);
   let res;
-  try{
-    res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',signal:ctrl.signal,
-      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:maxTokens,stream:true,system:systemPrompt,messages})});
-  }catch(e){clearTimeout(timer);if(e.name==='AbortError')throw new Error('タイムアウト');throw new Error('通信エラー: '+e.message);}
-  if(!res.ok){clearTimeout(timer);const eb=await res.json().catch(()=>({}));throw new Error(`APIエラー(${res.status})${eb.error?.message?': '+eb.error.message:''}`);}
+  try {
+    res = await fetch(WORKER_URL+'/analyze', {method:'POST', signal:ctrl.signal,
+      headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+  } catch(e) { clearTimeout(timer); if(e.name==='AbortError') throw new Error('タイムアウト'); throw new Error('通信エラー: '+e.message); }
+  if(!res.ok) {
+    clearTimeout(timer);
+    const err = await res.json().catch(()=>({}));
+    if(err.demo_exceeded) { document.getElementById('demoEndOver').classList.add('active'); }
+    throw new Error(err.error || `エラー(${res.status})`);
+  }
   const reader=res.body.getReader(); const dec=new TextDecoder(); let full='',buf='';
-  try{
-    while(true){
+  try {
+    while(true) {
       const{done,value}=await reader.read(); if(done) break;
       await new Promise(r=>setTimeout(r,0));
       buf+=dec.decode(value,{stream:true}); const lines=buf.split('\n'); buf=lines.pop();
-      for(const line of lines){
-        if(!line.startsWith('data: '))continue; const pl=line.slice(6).trim(); if(!pl||pl==='[DONE]')continue;
-        try{const ev=JSON.parse(pl);if(ev.type==='content_block_delta'&&ev.delta?.type==='text_delta'){full+=ev.delta.text;if(onChunk)onChunk(full);}}catch{}
+      for(const line of lines) {
+        if(!line.startsWith('data: ')) continue; const pl=line.slice(6).trim(); if(!pl||pl==='[DONE]') continue;
+        try{const ev=JSON.parse(pl);if(ev.type==='content_block_delta'&&ev.delta?.type==='text_delta') full+=ev.delta.text;}catch{}
       }
     }
-  }finally{clearTimeout(timer);reader.releaseLock();}
+  } finally { clearTimeout(timer); reader.releaseLock(); }
   if(!full) throw new Error('AIから応答がありませんでした');
   return full;
 }
@@ -780,7 +795,6 @@ function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t
 // ── 初期化 ──
 checkConsent();
 updateDemoBadge();
-updateApiStatus();
 renderPersonList();
 </script>
 </body>
