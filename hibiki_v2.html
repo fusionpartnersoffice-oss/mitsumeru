@@ -128,6 +128,29 @@ select option{background:var(--card);}
 .save-msg{font-size:.74rem;color:var(--accent2);margin-left:10px;opacity:0;transition:opacity .3s;}
 .save-msg.show{opacity:1;}
 
+/* ── 氷山モデル ── */
+.iceberg-layer{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px;transition:border .15s;}
+.iceberg-layer:hover{border-color:var(--sub);}
+.iceberg-layer-hdr{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.iceberg-layer-no{font-size:.68rem;font-weight:700;background:rgba(206,147,216,.2);color:var(--accent);border-radius:20px;padding:2px 9px;}
+.iceberg-layer-label{font-size:.82rem;font-weight:700;}
+.iceberg-layer-hint{font-size:.7rem;color:var(--sub);margin-bottom:6px;line-height:1.5;}
+.ai-btn{background:rgba(206,147,216,.15);border:1px solid var(--accent);color:var(--accent);border-radius:6px;padding:7px 16px;font-size:.78rem;cursor:pointer;font-family:inherit;transition:all .15s;display:inline-flex;align-items:center;gap:5px;}
+.ai-btn:hover{background:rgba(206,147,216,.25);}
+.ai-btn:disabled{opacity:.45;cursor:not-allowed;}
+.ai-status{font-size:.72rem;color:var(--sub);margin-left:10px;}
+
+/* ── 課題・目標 ── */
+.goal-candidate{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px;cursor:pointer;transition:all .15s;}
+.goal-candidate:hover{border-color:var(--accent);}
+.goal-candidate.selected{background:rgba(206,147,216,.1);border-color:var(--accent);}
+.goal-candidate-title{font-size:.84rem;font-weight:700;margin-bottom:4px;}
+.goal-candidate-body{font-size:.76rem;color:var(--sub);line-height:1.6;}
+.goal-priority{font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:10px;margin-left:6px;}
+.pri-high{background:rgba(239,83,80,.2);color:#ef9a9a;}
+.pri-med{background:rgba(255,183,77,.2);color:var(--accent3);}
+.pri-low{background:rgba(129,199,132,.2);color:var(--accent2);}
+
 /* ── 出力タブ ── */
 .output-actions{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;}
 .output-preview{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;}
@@ -220,6 +243,8 @@ select option{background:var(--card);}
     <button class="tab-btn" onclick="showTab('emergency')" id="tabBtn-emergency">🚨 緊急連絡先</button>
     <button class="tab-btn" onclick="showTab('attributes')" id="tabBtn-attributes">📎 その他属性</button>
     <button class="tab-btn" onclick="showTab('icf')" id="tabBtn-icf">🧩 ICF</button>
+    <button class="tab-btn" onclick="showTab('iceberg')" id="tabBtn-iceberg">🏔 氷山</button>
+    <button class="tab-btn" onclick="showTab('goal')" id="tabBtn-goal">🎯 課題・目標</button>
     <button class="tab-btn" onclick="showTab('output')" id="tabBtn-output">📄 出力・印刷</button>
   </nav>
 
@@ -366,6 +391,56 @@ select option{background:var(--card);}
     </div>
   </div>
 
+  <!-- 氷山モデル -->
+  <div class="tab-panel" id="tab-iceberg">
+    <div class="module-title">🏔 氷山モデル</div>
+    <div class="module-desc">ICFの赤セル（リスク）をもとに、問題の構造を5層で掘り下げます。AIが下書きを生成→人が修正してください。</div>
+    <button class="ai-btn" id="icebergAiBtn" onclick="generateIceberg()">✨ AIで下書き生成（ICF赤セルから）</button>
+    <span class="ai-status" id="icebergStatus"></span>
+    <div style="margin-top:16px;" id="icebergLayers"></div>
+    <div style="display:flex;align-items:center;margin-top:8px;">
+      <button class="save-btn" onclick="saveIceberg()">保存する</button>
+      <span class="save-msg" id="save-msg-iceberg">✓ 保存しました</span>
+    </div>
+  </div>
+
+  <!-- 課題・目標 -->
+  <div class="tab-panel" id="tab-goal">
+    <div class="module-title">🎯 課題・目標設定</div>
+    <div class="module-desc">氷山・ICFの分析をもとに課題を抽出し、長期目標・短期目標を設定します。AIは候補を提案するだけです。最終判断はあなたが行ってください。</div>
+    <button class="ai-btn" id="goalAiBtn" onclick="generateGoals()">✨ AIで課題候補を生成</button>
+    <span class="ai-status" id="goalStatus"></span>
+    <div id="goalCandidates" style="margin-top:14px;"></div>
+    <div id="goalForm" style="display:none;margin-top:16px;">
+      <div class="attr-section">
+        <div class="attr-section-title">📌 選択した課題（編集可）</div>
+        <div class="form-group">
+          <label>優先課題</label>
+          <textarea id="g-issue" placeholder="課題を記入してください" style="min-height:80px;"></textarea>
+        </div>
+      </div>
+      <div class="attr-section">
+        <div class="attr-section-title">🏁 目標設定</div>
+        <div class="form-group">
+          <label>長期目標（6ヶ月〜1年）</label>
+          <textarea id="g-long" placeholder="例：自宅での生活を継続し、家族との時間を楽しめる状態を維持する"></textarea>
+        </div>
+        <div class="form-group">
+          <label>短期目標（1〜3ヶ月）</label>
+          <textarea id="g-short" placeholder="例：転倒リスクを下げるため、住環境整備と歩行訓練を週2回継続する"></textarea>
+        </div>
+        <div class="form-group">
+          <label>本人の意向・希望</label>
+          <textarea id="g-wish" placeholder="例：「もう少し外に出たい」「家族に迷惑をかけたくない」"></textarea>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;margin-top:8px;">
+      <button class="save-btn" onclick="saveGoal()">保存する</button>
+      <span class="save-msg" id="save-msg-goal">✓ 保存しました</span>
+    </div>
+  </div>
+
   <!-- 出力・印刷 -->
   <div class="tab-panel" id="tab-output">
     <div class="module-title">📄 出力・印刷</div>
@@ -497,6 +572,8 @@ function openPerson(id) {
   renderEmergency();
   renderAttributes();
   renderIcf();
+  renderIceberg();
+  renderGoal();
 }
 
 function goList() {
@@ -806,6 +883,223 @@ function getRedCells() {
 }
 
 // ═══════════════════════════════════════════════
+//  Worker AI呼び出し共通
+// ═══════════════════════════════════════════════
+const WORKER_URL = 'https://hibiki-worker.fusion-partners-office.workers.dev';
+
+function getDemoId() {
+  let id = localStorage.getItem('hibiki_v2_demo_id');
+  if (!id) {
+    id = 'fp_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8);
+    localStorage.setItem('hibiki_v2_demo_id', id);
+  }
+  return id;
+}
+
+async function callWorkerStream(system, userContent, onChunk) {
+  const res = await fetch(WORKER_URL + '/analyze', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      mode: 'demo',
+      fingerprint: getDemoId(),
+      system,
+      messages: [{ role: 'user', content: userContent }],
+      maxTokens: 1500,
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `エラー (${res.status})`);
+  }
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = '';
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += decoder.decode(value, { stream: true });
+    const lines = buf.split('\n');
+    buf = lines.pop();
+    for (const line of lines) {
+      if (!line.startsWith('data:')) continue;
+      const data = line.slice(5).trim();
+      if (data === '[DONE]') return;
+      try {
+        const j = JSON.parse(data);
+        const text = j?.delta?.text || j?.choices?.[0]?.delta?.content || '';
+        if (text) onChunk(text);
+      } catch {}
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════
+//  部品5：氷山モデル
+// ═══════════════════════════════════════════════
+const ICEBERG_LAYERS = [
+  { key: 'visible',   label: '① 今見えること',   hint: '表面に現れている問題・症状・行動。誰もが気づいていること。' },
+  { key: 'pattern',   label: '② くせ・傾向',     hint: 'くり返されるパターン。状況が悪化する前のサイン。' },
+  { key: 'structure', label: '③ 仕組み・構造',   hint: 'なぜそのパターンが起きるか。環境・制度・役割の問題。' },
+  { key: 'belief',    label: '④ 思い込み・価値観', hint: '本人・家族・支援者が持っている前提・信念・思い込み。' },
+  { key: 'root',      label: '⑤ 本当の原因',     hint: '深層にある根本的な原因。ここに働きかけると全体が変わる。' },
+];
+
+function renderIceberg() {
+  if (!currentData) return;
+  const ice = currentData.modules.iceberg || {};
+  const container = document.getElementById('icebergLayers');
+  container.innerHTML = ICEBERG_LAYERS.map(l => `
+    <div class="iceberg-layer">
+      <div class="iceberg-layer-hdr">
+        <span class="iceberg-layer-no">${l.label}</span>
+      </div>
+      <div class="iceberg-layer-hint">${l.hint}</div>
+      <textarea id="ice-${l.key}" placeholder="記入してください...">${esc(ice[l.key]||'')}</textarea>
+    </div>
+  `).join('');
+}
+
+async function generateIceberg() {
+  const reds = getRedCells();
+  if (!reds.length) {
+    alert('ICFタブで赤（リスク）セルを入力してから実行してください。');
+    return;
+  }
+  const btn = document.getElementById('icebergAiBtn');
+  const status = document.getElementById('icebergStatus');
+  btn.disabled = true;
+  status.textContent = '生成中...';
+
+  const redText = reds.map(r => `【${r.domain}・${r.cell}】${r.text}`).join('\n');
+  const b = currentData.modules.basic || {};
+
+  const system = `あなたは福祉・介護の専門家です。ICFアセスメントの結果をもとに、氷山モデルの5層分析の下書きを生成します。
+断定せず「〜と考えられます」「〜の可能性があります」の形で書いてください。
+必ず以下のJSON形式のみで返答してください：
+{"visible":"...","pattern":"...","structure":"...","belief":"...","root":"..."}`;
+
+  const userContent = `利用者：${b.alias||'不明'}（${b.age||'—'}歳・${b.gender||'—'}）
+ICFリスク項目：
+${redText}
+
+上記をもとに氷山モデル5層の下書きを生成してください。`;
+
+  let raw = '';
+  try {
+    await callWorkerStream(system, userContent, chunk => { raw += chunk; });
+    const json = JSON.parse(raw.match(/\{[\s\S]*\}/)?.[0] || '{}');
+    ICEBERG_LAYERS.forEach(l => {
+      const el = document.getElementById('ice-' + l.key);
+      if (el && json[l.key]) el.value = json[l.key];
+    });
+    status.textContent = '✓ 下書き生成完了。内容を確認・修正してから保存してください。';
+  } catch(e) {
+    status.textContent = 'エラー: ' + e.message;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function saveIceberg() {
+  if (!currentData) return;
+  const ice = {};
+  ICEBERG_LAYERS.forEach(l => {
+    ice[l.key] = document.getElementById('ice-' + l.key)?.value.trim() || '';
+  });
+  currentData.modules.iceberg = ice;
+  saveCurrentPerson();
+  flashSave('iceberg');
+}
+
+// ═══════════════════════════════════════════════
+//  部品6：課題・目標
+// ═══════════════════════════════════════════════
+function renderGoal() {
+  if (!currentData) return;
+  const g = currentData.modules.goal || {};
+  document.getElementById('g-issue').value = g.issue || '';
+  document.getElementById('g-long').value  = g.longTerm || '';
+  document.getElementById('g-short').value = g.shortTerm || '';
+  document.getElementById('g-wish').value  = g.wish || '';
+  if (g.issue) document.getElementById('goalForm').style.display = '';
+}
+
+async function generateGoals() {
+  const ice = currentData?.modules?.iceberg || {};
+  const reds = getRedCells();
+  const b = currentData?.modules?.basic || {};
+  if (!reds.length && !Object.values(ice).some(v=>v)) {
+    alert('ICFまたは氷山モデルを先に入力してください。');
+    return;
+  }
+  const btn = document.getElementById('goalAiBtn');
+  const status = document.getElementById('goalStatus');
+  btn.disabled = true;
+  status.textContent = '生成中...';
+
+  const iceText = ICEBERG_LAYERS.filter(l=>ice[l.key]).map(l=>`${l.label}：${ice[l.key]}`).join('\n');
+  const redText = reds.map(r=>`【${r.cell}】${r.text}`).join('\n');
+
+  const system = `あなたは福祉・介護の専門家です。アセスメント結果をもとに優先課題の候補を3〜5点提案します。
+「〜が課題と考えられます」の形で書き、断定しないでください。
+必ず以下のJSON形式のみで返答してください：
+{"candidates":[{"title":"課題タイトル","body":"詳細説明（2〜3文）","priority":"高/中/低"}]}`;
+
+  const userContent = `利用者：${b.alias||'不明'}（${b.age||'—'}歳）
+${iceText ? '氷山モデル分析：\n' + iceText : ''}
+${redText ? 'ICFリスク項目：\n' + redText : ''}
+
+優先課題を3〜5点提案してください。`;
+
+  let raw = '';
+  try {
+    await callWorkerStream(system, userContent, chunk => { raw += chunk; });
+    const json = JSON.parse(raw.match(/\{[\s\S]*\}/)?.[0] || '{}');
+    renderGoalCandidates(json.candidates || []);
+    document.getElementById('goalForm').style.display = '';
+    status.textContent = '✓ 候補生成完了。課題を選んで編集してください。';
+  } catch(e) {
+    status.textContent = 'エラー: ' + e.message;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function renderGoalCandidates(candidates) {
+  const container = document.getElementById('goalCandidates');
+  if (!candidates.length) { container.innerHTML = ''; return; }
+  container.innerHTML = '<div style="font-size:.76rem;color:var(--sub);margin-bottom:8px;">課題をクリックすると選択できます（複数選択可）</div>' +
+    candidates.map((c,i) => {
+      const priClass = c.priority==='高'?'pri-high':c.priority==='中'?'pri-med':'pri-low';
+      return `<div class="goal-candidate" onclick="selectCandidate(this,'${esc(c.title)}','${esc(c.body)}')">
+        <div class="goal-candidate-title">${esc(c.title)}<span class="goal-priority ${priClass}">${esc(c.priority||'')}</span></div>
+        <div class="goal-candidate-body">${esc(c.body)}</div>
+      </div>`;
+    }).join('');
+}
+
+function selectCandidate(el, title, body) {
+  el.classList.toggle('selected');
+  const selected = [...document.querySelectorAll('.goal-candidate.selected')]
+    .map(e => e.querySelector('.goal-candidate-title').childNodes[0].textContent.trim());
+  document.getElementById('g-issue').value = selected.join('\n');
+  document.getElementById('goalForm').style.display = '';
+}
+
+function saveGoal() {
+  if (!currentData) return;
+  currentData.modules.goal = {
+    issue:     document.getElementById('g-issue').value.trim(),
+    longTerm:  document.getElementById('g-long').value.trim(),
+    shortTerm: document.getElementById('g-short').value.trim(),
+    wish:      document.getElementById('g-wish').value.trim(),
+  };
+  saveCurrentPerson();
+  flashSave('goal');
+}
+
+// ═══════════════════════════════════════════════
 //  部品8：出力・一枚化
 // ═══════════════════════════════════════════════
 function renderOutput() {
@@ -907,15 +1201,31 @@ function buildOutputHtml(data) {
     html += `<div class="ps-section"><div class="ps-section-title">■ ICFアセスメント</div><div class="ps-placeholder">未入力（「ICF」タブから入力してください）</div></div>`;
   }
 
-  html += `
-    <div class="ps-section">
-      <div class="ps-section-title">■ 氷山モデル・課題分析</div>
-      <div class="ps-placeholder">📌 開発中（次フェーズでリリース）</div>
-    </div>
-    <div class="ps-section">
-      <div class="ps-section-title">■ 長期目標・短期目標</div>
-      <div class="ps-placeholder">📌 開発中（次フェーズでリリース）</div>
-    </div>
+  // 氷山モデル
+  const ice = data.modules.iceberg || {};
+  const hasIce = ICEBERG_LAYERS.some(l => ice[l.key]);
+  if (hasIce) {
+    html += `<div class="ps-section"><div class="ps-section-title">■ 氷山モデル分析</div><table class="ps-attr-table">`;
+    ICEBERG_LAYERS.forEach(l => {
+      if (ice[l.key]) html += `<tr><td>${esc(l.label)}</td><td>${esc(ice[l.key])}</td></tr>`;
+    });
+    html += `</table></div>`;
+  } else {
+    html += `<div class="ps-section"><div class="ps-section-title">■ 氷山モデル分析</div><div class="ps-placeholder">未入力（「氷山」タブから入力してください）</div></div>`;
+  }
+
+  // 課題・目標
+  const g = data.modules.goal || {};
+  if (g.issue || g.longTerm || g.shortTerm) {
+    html += `<div class="ps-section"><div class="ps-section-title">■ 課題・目標設定</div><table class="ps-attr-table">`;
+    if (g.issue)    html += `<tr><td>優先課題</td><td style="white-space:pre-wrap;">${esc(g.issue)}</td></tr>`;
+    if (g.longTerm) html += `<tr><td>長期目標</td><td>${esc(g.longTerm)}</td></tr>`;
+    if (g.shortTerm)html += `<tr><td>短期目標</td><td>${esc(g.shortTerm)}</td></tr>`;
+    if (g.wish)     html += `<tr><td>本人の意向</td><td>${esc(g.wish)}</td></tr>`;
+    html += `</table></div>`;
+  } else {
+    html += `<div class="ps-section"><div class="ps-section-title">■ 課題・目標設定</div><div class="ps-placeholder">未入力（「課題・目標」タブから入力してください）</div></div>`;
+  }
     <div class="ps-section">
       <div class="ps-section-title">■ 支援計画・フォロー</div>
       <div class="ps-placeholder">📌 開発中（次フェーズでリリース）</div>
@@ -966,6 +1276,19 @@ function loadSampleData() {
     prof: 'PT週2回・訪問看護週1回', height: '168', weight: '62',
     grade: '障がい支援区分4', like: '音楽鑑賞（演歌）・将棋', dislike: '人混み・急な予定変更',
     free: [{ label: '特記事項', value: '糖尿病管理中。食事制限あり。' }],
+  };
+  currentData.modules.iceberg = {
+    visible:   '夜間の転倒リスクが高く、歩行時に右足がもつれる場面が増えている。意欲の低下も見られる。',
+    pattern:   '疲労が蓄積する夕方以降に転倒リスクが高まる。「迷惑をかけたくない」という思いから助けを求めない傾向がある。',
+    structure: '住環境の段差・照明が不十分。PT訓練の頻度が減少しており、筋力低下が進行している。',
+    belief:    '「自分でできることはやるべき」「家族に頼ってはいけない」という強い価値観がある。',
+    root:      '脳梗塞後の身体機能低下に加え、「迷惑をかけたくない」という思いが適切なSOSを妨げている。住環境整備と心理的サポートが根本的な対策となる。',
+  };
+  currentData.modules.goal = {
+    issue:    '転倒リスクの高い住環境（段差・照明）の整備\n夕方以降の歩行時のサポート体制構築',
+    longTerm: '自宅での安全な生活を継続し、家族と過ごす時間を楽しめる状態を維持する（6ヶ月）',
+    shortTerm: '転倒ゼロを目標に住環境整備を実施し、PT訓練を週2回継続する（1ヶ月）',
+    wish:     '「もう少し外に出たい」「家族に迷惑をかけたくない」',
   };
   currentData.modules.icf = {
     health: { c0:{text:'脳梗塞後遺症。降圧剤・抗凝固剤内服中。',tri:'red'}, c1:{text:'',tri:'none'}, c2:{text:'',tri:'none'}, c3:{text:'右半身に軽度疼痛あり',tri:'red'} },
