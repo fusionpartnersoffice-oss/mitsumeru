@@ -2655,9 +2655,18 @@ HP: ${hp}→${endHP} ／ MP: ${mp}→${endMP}
     return `過去${results.length}日平均 HP:${avgHP} MP:${avgMP}`;
   })();
 
-  const prompt = `あなたはFusion Partners代表の「SuccessOS 統合経営参謀」です。
+  // プロファイルから夜用に直接展開
+  const _epSaved = localStorage.getItem('mitsumeru_profile');
+  const _ep = _epSaved ? JSON.parse(_epSaved) : {};
+  const _eMust = _ep.must || '未設定';
+  const _eNever = _ep.never || '未設定';
+  const _eEgo = _ep.ego ? `CP:${_ep.ego.cp} NP:${_ep.ego.np} A:${_ep.ego.a} FC:${_ep.ego.fc} AC:${_ep.ego.ac}` : '未設定';
+  const _eEnea1 = (_ep.enea && _ep.enea[0]) ? _ep.enea[0] : '未設定';
 
-【ユーザープロファイル】
+  const prompt = `あなたはFusion Partners代表・柴山靖章の専属「SuccessOS 統合経営参謀」です。
+柴山さんの今日1日を知る唯一の参謀として、事実を読み、的確な言葉と明日の設計を返してください。
+
+【柴山靖章 プロファイル】
 ${getProfileText()}
 
 以下のルールを厳守してください：
@@ -2666,7 +2675,9 @@ ${getProfileText()}
 - マークダウン装飾禁止（#・##・太字の多用禁止）
 - 該当事実がない場合は「特になし」と明記
 - 語尾は「です・ます」調
-- MUST・NEVER・エゴグラム・エニアグラムを踏まえた分析・提案をすること
+- 【4】明日の行動戦略のタスク優先順位はMUST「${_eMust}」に照らして判断すること
+- NEVER「${_eNever}」に反する提案は絶対にしないこと
+- エゴグラム（${_eEgo}）またはエニアグラム第1位（${_eEnea1}）を【3】気づきか【5】明日への一言で必ず1回具体的に言及すること
 
 ---
 指定日：${dateStr}
@@ -2712,13 +2723,12 @@ ${aiScheduleSuggestion ? '\n' + aiScheduleSuggestion : ''}
 以下の形式で必ず記載してください：
 HP：${endHP}/100　MP：${endMP}/100　LV：${formatLV(close.lvBase + close.todayPts)}（本日+${lv}pt、${counts.pomo}ポモ）
 根拠：デバッグ評価（役割/委譲/動機/資産/余白の〇△✕）・ポモ数・ノイズ件数など上記の具体的な数値を引用して、HP/MPがこの値になった要因を1〜2文で記載（例：ポモ12個でHP-24、デバッグ✕2件でHP-6/MP-16、など）
-明日への一言：3〜5文。以下のトーンで書くこと：
-・上から目線の励ましは禁止。同志として隣に立つ言葉を使う
-・今日のHP/MP数値・デバッグ結果・ポモ数・ノイズ内容を読んで、この人だけに向けた言葉にする
-・「明日も動こうかな」と思わせる熱さと具体性
-・ユーモアを1つ自然に入れる
-・比喩より事実ベースの言葉を使う
-・アウェアファイより熱く、上司より近い同志のトーン
+明日への一言：3〜5文。以下の順番で必ず書くこと：
+①今日のP（実施事項）かG（気づき）の中で最も印象的なものを最初の1文で具体的に拾う（HP/MP数値より今日起きた事実を優先）
+②エゴグラム（${_eEgo}）またはエニアグラム第1位（${_eEnea1}）を今日の実績・ノイズと結びつけて1文入れる
+③MUST「${_eMust}」の観点から明日の向き合い方を1文入れる
+④HP/MPへの言及は「だから明日はこう動く」という行動決断の1文のみ
+トーン厳守：同志として隣に立つ言葉（上から目線・励まし・慰め禁止）。ユーモアを1つ自然に。比喩より事実ベース。「この参謀、今日の俺を見てたな」と思わせる解像度で。
 
 ---
 【明日のVault管理Codeへの指示】
