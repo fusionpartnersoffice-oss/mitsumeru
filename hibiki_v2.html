@@ -151,6 +151,11 @@ select option{background:var(--card);}
 .pri-med{background:rgba(255,183,77,.2);color:var(--accent3);}
 .pri-low{background:rgba(129,199,132,.2);color:var(--accent2);}
 
+/* ── 支援計画 ── */
+.plan-action-row{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px;}
+.plan-action-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.plan-action-no{font-size:.72rem;color:var(--sub);}
+
 /* ── 出力タブ ── */
 .output-actions{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;}
 .output-preview{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;}
@@ -245,6 +250,7 @@ select option{background:var(--card);}
     <button class="tab-btn" onclick="showTab('icf')" id="tabBtn-icf">🧩 ICF</button>
     <button class="tab-btn" onclick="showTab('iceberg')" id="tabBtn-iceberg">🏔 氷山</button>
     <button class="tab-btn" onclick="showTab('goal')" id="tabBtn-goal">🎯 課題・目標</button>
+    <button class="tab-btn" onclick="showTab('plan')" id="tabBtn-plan">📋 支援計画</button>
     <button class="tab-btn" onclick="showTab('output')" id="tabBtn-output">📄 出力・印刷</button>
   </nav>
 
@@ -441,6 +447,61 @@ select option{background:var(--card);}
     </div>
   </div>
 
+  <!-- 支援計画・フォロー -->
+  <div class="tab-panel" id="tab-plan">
+    <div class="module-title">📋 支援計画・フォローアップ</div>
+    <div class="module-desc">課題・目標をもとに具体的な支援内容を記入します。AIが支援計画の下書きを生成します。</div>
+    <button class="ai-btn" id="planAiBtn" onclick="generatePlan()">✨ AIで支援計画の下書き生成</button>
+    <span class="ai-status" id="planStatus"></span>
+
+    <div style="margin-top:18px;">
+      <div class="attr-section">
+        <div class="attr-section-title">🛠 具体的支援内容</div>
+        <div id="planActions"></div>
+        <button class="add-row-btn" onclick="addPlanAction()">＋ 支援項目を追加する</button>
+      </div>
+
+      <div class="attr-section">
+        <div class="attr-section-title">💬 本人・家族の意向</div>
+        <div class="form-group">
+          <label>本人の意向</label>
+          <textarea id="pl-wish-self" placeholder="例：「自分でできることは自分でやりたい」"></textarea>
+        </div>
+        <div class="form-group">
+          <label>家族の意向</label>
+          <textarea id="pl-wish-family" placeholder="例：「転倒だけは防いでほしい」"></textarea>
+        </div>
+        <div class="form-group">
+          <label>満足度・モニタリング所見（更新時に記入）</label>
+          <textarea id="pl-monitor" placeholder="例：週1回訪問時に本人・家族から聞き取り。転倒0件継続中。"></textarea>
+        </div>
+      </div>
+
+      <div class="attr-section">
+        <div class="attr-section-title">🔄 評価・見直し</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>次回評価時期</label>
+            <input type="date" id="pl-next-date">
+          </div>
+          <div class="form-group">
+            <label>評価方法</label>
+            <input type="text" id="pl-eval-method" placeholder="例：担当者会議・訪問時聞き取り">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>見直しの視点・備考</label>
+          <textarea id="pl-review-note" placeholder="例：住環境整備完了後に歩行状態を再評価する"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;align-items:center;margin-top:8px;">
+      <button class="save-btn" onclick="savePlan()">保存する</button>
+      <span class="save-msg" id="save-msg-plan">✓ 保存しました</span>
+    </div>
+  </div>
+
   <!-- 出力・印刷 -->
   <div class="tab-panel" id="tab-output">
     <div class="module-title">📄 出力・印刷</div>
@@ -574,6 +635,7 @@ function openPerson(id) {
   renderIcf();
   renderIceberg();
   renderGoal();
+  renderPlan();
 }
 
 function goList() {
@@ -1226,7 +1288,34 @@ function buildOutputHtml(data) {
   } else {
     html += `<div class="ps-section"><div class="ps-section-title">■ 課題・目標設定</div><div class="ps-placeholder">未入力（「課題・目標」タブから入力してください）</div></div>`;
   }
-  html += `<div class="ps-section"><div class="ps-section-title">■ 支援計画・フォロー</div><div class="ps-placeholder">📌 開発中（次フェーズでリリース）</div></div>`;
+  const pl = data.modules.plan || {};
+  if (pl.actions?.length || pl.wishSelf || pl.nextDate) {
+    html += `<div class="ps-section"><div class="ps-section-title">■ 支援計画・フォローアップ</div>`;
+    if (pl.actions?.length) {
+      html += `<table class="ps-emerg-table" style="margin-bottom:8px;"><tr><th>支援内容</th><th>担当</th><th>頻度</th><th>期間</th></tr>`;
+      pl.actions.forEach(a => {
+        html += `<tr><td>${esc(a.content||'—')}</td><td>${esc(a.who||'—')}</td><td>${esc(a.freq||'—')}</td><td>${esc(a.period||'—')}</td></tr>`;
+      });
+      html += `</table>`;
+    }
+    if (pl.wishSelf || pl.wishFamily) {
+      html += `<table class="ps-attr-table" style="margin-bottom:8px;">`;
+      if (pl.wishSelf)   html += `<tr><td>本人の意向</td><td>${esc(pl.wishSelf)}</td></tr>`;
+      if (pl.wishFamily) html += `<tr><td>家族の意向</td><td>${esc(pl.wishFamily)}</td></tr>`;
+      if (pl.monitor)    html += `<tr><td>モニタリング</td><td>${esc(pl.monitor)}</td></tr>`;
+      html += `</table>`;
+    }
+    if (pl.nextDate || pl.evalMethod) {
+      html += `<table class="ps-attr-table">`;
+      if (pl.nextDate)    html += `<tr><td>次回評価</td><td>${esc(pl.nextDate)}</td></tr>`;
+      if (pl.evalMethod)  html += `<tr><td>評価方法</td><td>${esc(pl.evalMethod)}</td></tr>`;
+      if (pl.reviewNote)  html += `<tr><td>見直し備考</td><td>${esc(pl.reviewNote)}</td></tr>`;
+      html += `</table>`;
+    }
+    html += `</div>`;
+  } else {
+    html += `<div class="ps-section"><div class="ps-section-title">■ 支援計画・フォローアップ</div><div class="ps-placeholder">未入力（「支援計画」タブから入力してください）</div></div>`;
+  }
 
   html += `
     <div class="ps-footer">
@@ -1274,6 +1363,19 @@ function loadSampleData() {
     grade: '障がい支援区分4', like: '音楽鑑賞（演歌）・将棋', dislike: '人混み・急な予定変更',
     free: [{ label: '特記事項', value: '糖尿病管理中。食事制限あり。' }],
   };
+  currentData.modules.plan = {
+    actions: [
+      { content: '住環境整備（段差解消・夜間照明設置）', who: 'ヘルパー・家族', freq: '初回1回・確認月1回', period: '1ヶ月' },
+      { content: 'PT訓練（歩行・バランス強化）', who: 'PT', freq: '週2回', period: '3ヶ月' },
+      { content: '訪問看護による状態確認', who: '訪問看護師', freq: '週1回', period: '継続' },
+    ],
+    wishSelf:   '「自分でできることは自分でやりたい。でも外にも出たい。」',
+    wishFamily: '「転倒だけは防いでほしい。家で過ごしてほしい。」',
+    monitor:    '週1回訪問時に本人・家族から聞き取り。転倒件数・意欲の変化を記録。',
+    nextDate:   '2026-09-29',
+    evalMethod: '担当者会議・訪問時聞き取り',
+    reviewNote: '住環境整備完了後に歩行状態を再評価。外出頻度の増加を目標に調整予定。',
+  };
   currentData.modules.iceberg = {
     visible:   '夜間の転倒リスクが高く、歩行時に右足がもつれる場面が増えている。意欲の低下も見られる。',
     pattern:   '疲労が蓄積する夕方以降に転倒リスクが高まる。「迷惑をかけたくない」という思いから助けを求めない傾向がある。',
@@ -1306,6 +1408,115 @@ function fillSample() {
   // 全モジュールを自動保存
   saveBasic(); saveEmergency(); saveAttributes();
   alert('サンプルデータを読み込みました。各タブの内容を確認してください。');
+}
+
+// ═══════════════════════════════════════════════
+//  部品7：支援計画・フォロー
+// ═══════════════════════════════════════════════
+function renderPlan() {
+  if (!currentData) return;
+  const p = currentData.modules.plan || {};
+  document.getElementById('pl-wish-self').value    = p.wishSelf    || '';
+  document.getElementById('pl-wish-family').value  = p.wishFamily  || '';
+  document.getElementById('pl-monitor').value      = p.monitor     || '';
+  document.getElementById('pl-next-date').value    = p.nextDate    || '';
+  document.getElementById('pl-eval-method').value  = p.evalMethod  || '';
+  document.getElementById('pl-review-note').value  = p.reviewNote  || '';
+  renderPlanActions(p.actions || []);
+}
+
+function renderPlanActions(actions) {
+  const container = document.getElementById('planActions');
+  container.innerHTML = '';
+  (actions || []).forEach((a, i) => {
+    container.appendChild(buildPlanActionRow(a, i));
+  });
+}
+
+function buildPlanActionRow(a, i) {
+  const div = document.createElement('div');
+  div.className = 'plan-action-row';
+  div.innerHTML = `
+    <div class="plan-action-hdr">
+      <span class="plan-action-no">支援項目 ${i + 1}</span>
+      <button class="del-btn" onclick="this.closest('.plan-action-row').remove()">✕ 削除</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>支援内容</label><input type="text" class="pa-content" value="${esc(a.content||'')}" placeholder="例：住環境整備（段差解消・照明追加）"></div>
+      <div class="form-group" style="flex:0 0 120px"><label>担当者</label><input type="text" class="pa-who" value="${esc(a.who||'')}" placeholder="例：PT・ヘルパー"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>頻度・タイミング</label><input type="text" class="pa-freq" value="${esc(a.freq||'')}" placeholder="例：週2回・毎朝"></div>
+      <div class="form-group"><label>目安期間</label><input type="text" class="pa-period" value="${esc(a.period||'')}" placeholder="例：1ヶ月"></div>
+    </div>`;
+  return div;
+}
+
+function addPlanAction() {
+  const container = document.getElementById('planActions');
+  const i = container.children.length;
+  container.appendChild(buildPlanActionRow({}, i));
+}
+
+async function generatePlan() {
+  const g = currentData?.modules?.goal || {};
+  const ice = currentData?.modules?.iceberg || {};
+  if (!g.issue && !g.longTerm) {
+    alert('「課題・目標」タブで優先課題・目標を先に入力してください。');
+    return;
+  }
+  const btn = document.getElementById('planAiBtn');
+  const status = document.getElementById('planStatus');
+  btn.disabled = true;
+  status.textContent = '生成中...';
+
+  const system = `あなたは福祉・介護の専門家です。課題・目標をもとに具体的な支援計画（3〜5項目）の下書きを生成します。
+必ず以下のJSON形式のみで返答してください：
+{"actions":[{"content":"支援内容","who":"担当者","freq":"頻度","period":"期間"}]}`;
+
+  const userContent = `優先課題：${g.issue||'—'}
+長期目標：${g.longTerm||'—'}
+短期目標：${g.shortTerm||'—'}
+本人の意向：${g.wish||'—'}
+${ice.root ? '根本原因：' + ice.root : ''}
+
+具体的支援計画を3〜5項目提案してください。`;
+
+  let raw = '';
+  try {
+    await callWorkerStream(system, userContent, chunk => { raw += chunk; });
+    const json = JSON.parse(raw.match(/\{[\s\S]*\}/)?.[0] || '{}');
+    if (json.actions?.length) renderPlanActions(json.actions);
+    status.textContent = '✓ 下書き生成完了。内容を確認・修正してから保存してください。';
+  } catch(e) {
+    status.textContent = 'エラー: ' + e.message;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function savePlan() {
+  if (!currentData) return;
+  const actions = [];
+  document.querySelectorAll('#planActions .plan-action-row').forEach(row => {
+    actions.push({
+      content: row.querySelector('.pa-content').value.trim(),
+      who:     row.querySelector('.pa-who').value.trim(),
+      freq:    row.querySelector('.pa-freq').value.trim(),
+      period:  row.querySelector('.pa-period').value.trim(),
+    });
+  });
+  currentData.modules.plan = {
+    actions,
+    wishSelf:   document.getElementById('pl-wish-self').value.trim(),
+    wishFamily: document.getElementById('pl-wish-family').value.trim(),
+    monitor:    document.getElementById('pl-monitor').value.trim(),
+    nextDate:   document.getElementById('pl-next-date').value,
+    evalMethod: document.getElementById('pl-eval-method').value.trim(),
+    reviewNote: document.getElementById('pl-review-note').value.trim(),
+  };
+  saveCurrentPerson();
+  flashSave('plan');
 }
 
 // ═══════════════════════════════════════════════
