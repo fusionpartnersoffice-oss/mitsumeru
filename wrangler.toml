@@ -1,0 +1,7 @@
+name = "hibiki-worker"
+main = "hibiki_worker.js"
+compatibility_date = "2026-06-29"
+
+[[kv_namespaces]]
+binding = "HIBIKI_KV"
+id = "8ceb0b10ffa54533ad560ae05ca78a00"
