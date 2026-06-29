@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>響 v2 | アセスメント・目標・支援計画 | Fusion Partners</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23ce93d8'/><text x='16' y='24' font-size='20' text-anchor='middle'>🔔</text></svg>">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<style>
+:root {
+  --bg:#0f1923; --surface:#1a2634; --card:#223044;
+  --accent:#ce93d8; --accent2:#81c784; --accent3:#ffb74d;
+  --danger:#ef5350; --text:#e8eaf0; --sub:#8fa3b8;
+  --border:#2e4460; --radius:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Hiragino Kaku Gothic Pro','Meiryo',sans-serif;min-height:100vh;}
+
+/* ── 同意ゲート ── */
+.gate{position:fixed;inset:0;background:rgba(15,25,35,.97);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;}
+.gate.hidden{display:none;}
+.gate-box{max-width:500px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px 24px;}
+.gate-title{font-size:1.1rem;font-weight:700;color:var(--accent);margin-bottom:14px;}
+.gate-body{font-size:.83rem;color:var(--sub);line-height:1.8;margin-bottom:20px;}
+.gate-body strong{color:var(--text);}
+.gate-btn{width:100%;padding:12px;background:var(--accent);color:#1a0029;border:none;border-radius:var(--radius);font-size:.92rem;font-weight:700;cursor:pointer;font-family:inherit;}
+
+/* ── ヘッダー ── */
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:9px 14px;display:flex;align-items:center;gap:8px;position:sticky;top:0;z-index:100;flex-wrap:wrap;}
+.hdr-logo{font-size:.98rem;font-weight:700;color:var(--accent);}
+.person-badge{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:3px 11px;font-size:.76rem;color:var(--sub);}
+.hdr-spacer{flex:1;}
+.hdr-btn{background:var(--card);border:1px solid var(--border);color:var(--sub);border-radius:6px;padding:5px 11px;font-size:.74rem;cursor:pointer;font-family:inherit;transition:all .15s;}
+.hdr-btn:hover{color:var(--text);border-color:var(--sub);}
+.hdr-btn.accent{background:rgba(206,147,216,.15);border-color:var(--accent);color:var(--accent);}
+.hdr-btn.green{background:rgba(129,199,132,.15);border-color:var(--accent2);color:var(--accent2);}
+
+/* ── フェーズ切り替え ── */
+.phase{display:none;}.phase.active{display:block;}
+
+/* ── Phase 0: 利用者一覧 ── */
+#phaseList{padding:24px 16px;}
+.p0-wrap{max-width:860px;margin:0 auto;}
+.p0-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;}
+.p0-title{font-size:1.05rem;font-weight:700;}
+.p0-desc{font-size:.78rem;color:var(--sub);margin-top:3px;line-height:1.6;}
+.p0-actions{display:flex;gap:8px;}
+.person-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;}
+.person-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;cursor:pointer;transition:all .18s;}
+.person-card:hover{border-color:var(--accent);}
+.person-card.new-card{border-style:dashed;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:100px;color:var(--sub);}
+.person-card.new-card:hover{color:var(--accent);border-color:var(--accent);}
+.pc-alias{font-weight:700;font-size:.95rem;margin-bottom:4px;}
+.pc-org{font-size:.7rem;color:var(--sub);}
+.pc-phase{font-size:.68rem;color:var(--accent);margin-top:4px;}
+.pc-date{font-size:.65rem;color:var(--sub);margin-top:2px;}
+.empty-state{text-align:center;padding:40px 20px;color:var(--sub);font-size:.88rem;line-height:1.7;}
+
+/* ── タブナビ ── */
+.tab-nav{display:flex;background:var(--surface);border-bottom:1px solid var(--border);padding:0 14px;overflow-x:auto;gap:2px;}
+.tab-btn{background:none;border:none;border-bottom:3px solid transparent;color:var(--sub);padding:12px 16px;font-size:.82rem;font-family:inherit;cursor:pointer;white-space:nowrap;transition:all .15s;}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);}
+.tab-btn:hover{color:var(--text);}
+
+/* ── タブパネル ── */
+.tab-panel{display:none;padding:20px 16px;max-width:760px;margin:0 auto;}
+.tab-panel.active{display:block;}
+
+/* ── フォーム共通 ── */
+.module-title{font-size:.95rem;font-weight:700;margin-bottom:4px;}
+.module-desc{font-size:.76rem;color:var(--sub);line-height:1.6;margin-bottom:18px;}
+.form-group{margin-bottom:14px;}
+.form-group label{font-size:.76rem;color:var(--sub);display:block;margin-bottom:5px;}
+.form-row{display:flex;gap:10px;flex-wrap:wrap;}
+.form-row .form-group{flex:1;min-width:140px;}
+input[type="text"],input[type="date"],input[type="tel"],select,textarea{
+  width:100%;background:var(--card);border:1px solid var(--border);border-radius:8px;
+  color:var(--text);padding:9px 12px;font-size:.86rem;outline:none;font-family:inherit;transition:border .15s;}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);}
+textarea{resize:vertical;min-height:68px;}
+select option{background:var(--card);}
+
+/* ── ボタン選択（性別・連絡可否） ── */
+.btn-group{display:flex;gap:6px;flex-wrap:wrap;}
+.tog-btn{background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--sub);padding:6px 14px;font-size:.78rem;cursor:pointer;font-family:inherit;transition:all .15s;}
+.tog-btn.active{background:rgba(206,147,216,.2);border-color:var(--accent);color:var(--accent);}
+.tog-btn.ok.active{background:rgba(129,199,132,.2);border-color:var(--accent2);color:var(--accent2);}
+.tog-btn.ng.active{background:rgba(239,83,80,.2);border-color:var(--danger);color:var(--danger);}
+
+/* ── 緊急連絡先 ── */
+.emergency-list{display:flex;flex-direction:column;gap:10px;margin-bottom:12px;}
+.emerg-row{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:12px;}
+.emerg-row-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.emerg-no{font-size:.72rem;color:var(--sub);}
+.del-btn{background:none;border:none;color:var(--danger);cursor:pointer;font-size:.78rem;padding:2px 6px;}
+.del-btn:hover{opacity:.7;}
+
+/* ── その他属性（自由拡張） ── */
+.attr-section{margin-bottom:18px;}
+.attr-section-title{font-size:.8rem;font-weight:700;color:var(--accent3);margin-bottom:10px;padding-bottom:4px;border-bottom:1px solid var(--border);}
+.free-attr-list{display:flex;flex-direction:column;gap:6px;margin-bottom:8px;}
+.free-attr-row{display:flex;gap:8px;align-items:center;}
+.free-attr-row input.label-input{flex:0 0 120px;}
+.free-attr-row input.value-input{flex:1;}
+.add-row-btn{background:none;border:1px dashed var(--border);border-radius:6px;color:var(--sub);padding:6px 12px;font-size:.76rem;cursor:pointer;font-family:inherit;width:100%;margin-top:4px;}
+.add-row-btn:hover{border-color:var(--sub);color:var(--text);}
+
+/* ── 保存ボタン ── */
+.save-btn{background:var(--accent);color:#1a0029;border:none;border-radius:var(--radius);padding:11px 28px;font-size:.88rem;font-weight:700;cursor:pointer;font-family:inherit;margin-top:8px;}
+.save-btn:hover{opacity:.9;}
+.save-msg{font-size:.74rem;color:var(--accent2);margin-left:10px;opacity:0;transition:opacity .3s;}
+.save-msg.show{opacity:1;}
+
+/* ── 出力タブ ── */
+.output-actions{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;}
+.output-preview{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;}
+.output-empty{text-align:center;color:var(--sub);padding:30px;font-size:.85rem;}
+
+/* ── 印刷用シート（#printSheet） ── */
+#printSheet{display:none;background:#fff;color:#222;font-family:'Hiragino Kaku Gothic Pro','Meiryo',sans-serif;padding:20px;max-width:780px;}
+#printSheet.visible{display:block;}
+.ps-header{border-bottom:3px solid #7b1fa2;padding-bottom:8px;margin-bottom:16px;}
+.ps-title{font-size:1.2rem;font-weight:900;color:#7b1fa2;}
+.ps-subtitle{font-size:.8rem;color:#666;margin-top:2px;}
+.ps-meta{font-size:.75rem;color:#888;float:right;}
+.ps-section{margin-bottom:16px;page-break-inside:avoid;}
+.ps-section-title{background:#7b1fa2;color:#fff;font-size:.78rem;font-weight:700;padding:4px 10px;border-radius:4px;margin-bottom:8px;}
+.ps-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 20px;}
+.ps-grid.three{grid-template-columns:1fr 1fr 1fr;}
+.ps-field{margin-bottom:4px;}
+.ps-field label{font-size:.68rem;color:#888;display:block;}
+.ps-field span{font-size:.82rem;color:#222;font-weight:500;}
+.ps-emerg-table{width:100%;border-collapse:collapse;font-size:.78rem;}
+.ps-emerg-table th{background:#f3e5f5;padding:5px 8px;text-align:left;font-weight:700;border:1px solid #e0e0e0;}
+.ps-emerg-table td{padding:5px 8px;border:1px solid #e0e0e0;}
+.ps-ok{color:#2e7d32;font-weight:700;}
+.ps-ng{color:#c62828;font-weight:700;}
+.ps-attr-table{width:100%;border-collapse:collapse;font-size:.78rem;}
+.ps-attr-table td{padding:4px 8px;border:1px solid #e0e0e0;vertical-align:top;}
+.ps-attr-table td:first-child{width:120px;background:#f8f0ff;font-weight:600;color:#6a1b9a;}
+.ps-footer{margin-top:20px;padding-top:8px;border-top:1px solid #e0e0e0;font-size:.65rem;color:#999;text-align:center;}
+.ps-placeholder{background:#f9f0ff;border:1px dashed #ce93d8;border-radius:6px;padding:12px;font-size:.75rem;color:#888;text-align:center;margin-bottom:8px;}
+
+@media print{
+  body > *:not(#printSheet){display:none !important;}
+  #printSheet{display:block !important;padding:0;}
+}
+</style>
+</head>
+<body>
+
+<!-- 同意ゲート -->
+<div class="gate" id="gate">
+  <div class="gate-box">
+    <div class="gate-title">🔔 響 v2 ご利用前の確認</div>
+    <div class="gate-body">
+      本ツールでは、支援対象者のアセスメント情報を入力・管理します。<br><br>
+      <strong>入力したデータについて：</strong><br>
+      ・お使いの端末（ブラウザ）内にのみ保存されます<br>
+      ・外部サーバーには送信されません（AI機能を除く）<br>
+      ・タブを閉じてもデータは保持されます<br><br>
+      <strong>AI機能（氷山・課題目標生成）について：</strong><br>
+      ・入力内容の一部がClaudeのAPIに送信されます<br>
+      ・個人を特定できる情報は仮名・イニシャルでご入力ください<br><br>
+      上記をご確認のうえ、ご利用ください。
+    </div>
+    <button class="gate-btn" onclick="giveConsent()">確認しました・利用を開始する</button>
+  </div>
+</div>
+
+<!-- ヘッダー -->
+<header>
+  <span class="hdr-logo">🔔 響 v2</span>
+  <span class="person-badge" id="personBadge">利用者未選択</span>
+  <span class="hdr-spacer"></span>
+  <button class="hdr-btn accent" onclick="fillSample()" id="sampleBtn" style="display:none">📋 サンプルで試す</button>
+  <button class="hdr-btn" onclick="goList()">← 一覧</button>
+</header>
+
+<!-- Phase 0: 利用者一覧 -->
+<div class="phase active" id="phaseList">
+  <div style="padding:24px 16px;">
+    <div class="p0-wrap">
+      <div class="p0-header">
+        <div>
+          <div class="p0-title">利用者を選んでください</div>
+          <div class="p0-desc">アセスメントを始める利用者を選ぶか、新しく追加してください</div>
+        </div>
+        <div class="p0-actions">
+          <button class="hdr-btn accent" onclick="createPersonAndSample()">📋 サンプルで試す</button>
+          <button class="hdr-btn green" onclick="createPerson()">＋ 新しい利用者を追加</button>
+        </div>
+      </div>
+      <div class="person-grid" id="personGrid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Phase 1: モジュール編集 -->
+<div class="phase" id="phaseEdit">
+  <nav class="tab-nav" id="tabNav">
+    <button class="tab-btn active" onclick="showTab('basic')" id="tabBtn-basic">📋 基本情報</button>
+    <button class="tab-btn" onclick="showTab('emergency')" id="tabBtn-emergency">🚨 緊急連絡先</button>
+    <button class="tab-btn" onclick="showTab('attributes')" id="tabBtn-attributes">📎 その他属性</button>
+    <button class="tab-btn" onclick="showTab('output')" id="tabBtn-output">📄 出力・印刷</button>
+  </nav>
+
+  <!-- 基本情報 -->
+  <div class="tab-panel active" id="tab-basic">
+    <div class="module-title">📋 基本情報</div>
+    <div class="module-desc">利用者の基本情報を入力します。氏名は仮名・イニシャルで記入してください。</div>
+    <div class="form-row">
+      <div class="form-group" style="flex:0 0 200px">
+        <label>氏名（仮名・イニシャル）</label>
+        <input type="text" id="b-alias" placeholder="例：Aさん">
+      </div>
+      <div class="form-group" style="flex:0 0 160px">
+        <label>生年月日</label>
+        <input type="date" id="b-dob" onchange="calcAge()">
+      </div>
+      <div class="form-group" style="flex:0 0 60px">
+        <label>年齢</label>
+        <input type="text" id="b-age" readonly placeholder="自動">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>性別</label>
+      <div class="btn-group">
+        <button class="tog-btn" id="g-male" onclick="setGender('男性')">男性</button>
+        <button class="tog-btn" id="g-female" onclick="setGender('女性')">女性</button>
+        <button class="tog-btn" id="g-other" onclick="setGender('その他')">その他</button>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>住所（市区町村まで）</label>
+        <input type="text" id="b-address" placeholder="例：大阪府〇〇市">
+      </div>
+      <div class="form-group" style="flex:0 0 200px">
+        <label>家族構成</label>
+        <select id="b-family">
+          <option value="">選択してください</option>
+          <option value="独居">独居</option>
+          <option value="配偶者と同居">配偶者と同居</option>
+          <option value="子と同居">子と同居</option>
+          <option value="親と同居">親と同居</option>
+          <option value="施設入所中">施設入所中</option>
+          <option value="グループホーム">グループホーム</option>
+          <option value="その他">その他</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>備考・補足（任意）</label>
+      <textarea id="b-note" placeholder="家族の状況、生活歴など自由記述"></textarea>
+    </div>
+    <div style="display:flex;align-items:center;margin-top:8px;">
+      <button class="save-btn" onclick="saveBasic()">保存する</button>
+      <span class="save-msg" id="save-msg-basic">✓ 保存しました</span>
+    </div>
+  </div>
+
+  <!-- 緊急連絡先 -->
+  <div class="tab-panel" id="tab-emergency">
+    <div class="module-title">🚨 緊急連絡先</div>
+    <div class="module-desc">家族・主治医・相談支援員など、連絡先を追加できます。連絡可否は必ず確認してください。</div>
+    <div class="emergency-list" id="emergencyList"></div>
+    <button class="add-row-btn" onclick="addEmergencyRow()">＋ 連絡先を追加する</button>
+    <div style="display:flex;align-items:center;margin-top:14px;">
+      <button class="save-btn" onclick="saveEmergency()">保存する</button>
+      <span class="save-msg" id="save-msg-emergency">✓ 保存しました</span>
+    </div>
+  </div>
+
+  <!-- その他属性 -->
+  <div class="tab-panel" id="tab-attributes">
+    <div class="module-title">📎 その他属性</div>
+    <div class="module-desc">医療情報・身体情報・嗜好など。下部の「自由項目」で独自の項目を追加できます。</div>
+
+    <div class="attr-section">
+      <div class="attr-section-title">🏥 医療情報</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>主疾患名</label>
+          <input type="text" id="a-disease" placeholder="例：脳梗塞後遺症">
+        </div>
+        <div class="form-group">
+          <label>主治医・医療機関</label>
+          <input type="text" id="a-doctor" placeholder="例：〇〇クリニック 山田Dr">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>関わりのある専門職（PT/OT/ST等）</label>
+        <input type="text" id="a-prof" placeholder="例：PT週1回・訪問看護週2回">
+      </div>
+    </div>
+
+    <div class="attr-section">
+      <div class="attr-section-title">📏 身体情報</div>
+      <div class="form-row">
+        <div class="form-group" style="flex:0 0 100px">
+          <label>身長（cm）</label>
+          <input type="text" id="a-height" placeholder="例：163">
+        </div>
+        <div class="form-group" style="flex:0 0 100px">
+          <label>体重（kg）</label>
+          <input type="text" id="a-weight" placeholder="例：58">
+        </div>
+        <div class="form-group">
+          <label>障がい区分・介護度</label>
+          <input type="text" id="a-grade" placeholder="例：障がい支援区分4">
+        </div>
+      </div>
+    </div>
+
+    <div class="attr-section">
+      <div class="attr-section-title">💛 嗜好・生活歴</div>
+      <div class="form-group">
+        <label>好きなこと・趣味</label>
+        <input type="text" id="a-like" placeholder="例：音楽鑑賞、園芸">
+      </div>
+      <div class="form-group">
+        <label>苦手なこと・嫌いなこと</label>
+        <input type="text" id="a-dislike" placeholder="例：人混み、急な予定変更">
+      </div>
+    </div>
+
+    <div class="attr-section">
+      <div class="attr-section-title">➕ 自由項目（ラベル＋内容）</div>
+      <div class="free-attr-list" id="freeAttrList"></div>
+      <button class="add-row-btn" onclick="addFreeAttr()">＋ 項目を追加する</button>
+    </div>
+
+    <div style="display:flex;align-items:center;margin-top:14px;">
+      <button class="save-btn" onclick="saveAttributes()">保存する</button>
+      <span class="save-msg" id="save-msg-attributes">✓ 保存しました</span>
+    </div>
+  </div>
+
+  <!-- 出力・印刷 -->
+  <div class="tab-panel" id="tab-output">
+    <div class="module-title">📄 出力・印刷</div>
+    <div class="module-desc">入力済みのモジュールをアセスメントシート形式でまとめます。ICF・課題・支援計画は今後追加予定です。</div>
+    <div class="output-actions">
+      <button class="save-btn" onclick="renderOutput()">プレビューを更新</button>
+      <button class="hdr-btn green" onclick="downloadPdf()">📥 PDFダウンロード</button>
+      <button class="hdr-btn" onclick="window.print()">🖨️ 印刷</button>
+    </div>
+    <div class="output-preview" id="outputPreview">
+      <div class="output-empty">「プレビューを更新」ボタンを押してください</div>
+    </div>
+  </div>
+</div>
+
+<!-- 印刷専用シート（PDF出力ターゲット） -->
+<div id="printSheet"></div>
+
+<script>
+// ═══════════════════════════════════════════════
+//  部品0：土台・データ管理
+// ═══════════════════════════════════════════════
+const STORE_PREFIX = 'hibiki_v2_person_';
+const INDEX_KEY    = 'hibiki_v2_index';
+const CONSENT_KEY  = 'hibiki_v2_consent';
+
+let currentId   = null;
+let currentData = null;
+
+function giveConsent() {
+  localStorage.setItem(CONSENT_KEY, '1');
+  document.getElementById('gate').classList.add('hidden');
+}
+function checkConsent() {
+  if (localStorage.getItem(CONSENT_KEY) === '1') {
+    document.getElementById('gate').classList.add('hidden');
+  }
+}
+
+function newPersonData(alias) {
+  return {
+    id: 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+    meta: { alias: alias || '新しい利用者', createdAt: new Date().toISOString(), updatedAt: '', phase: '一次' },
+    modules: { basic: {}, emergency: [], attributes: {} }
+  };
+}
+
+function getIndex() {
+  return JSON.parse(localStorage.getItem(INDEX_KEY) || '[]');
+}
+function setIndex(arr) {
+  localStorage.setItem(INDEX_KEY, JSON.stringify(arr));
+}
+
+function loadPersonById(id) {
+  const raw = localStorage.getItem(STORE_PREFIX + id);
+  return raw ? JSON.parse(raw) : null;
+}
+function saveCurrentPerson() {
+  if (!currentData) return;
+  currentData.meta.updatedAt = new Date().toISOString();
+  localStorage.setItem(STORE_PREFIX + currentData.id, JSON.stringify(currentData));
+  // インデックス更新
+  let idx = getIndex();
+  const existing = idx.findIndex(x => x.id === currentData.id);
+  const entry = { id: currentData.id, alias: currentData.meta.alias, updatedAt: currentData.meta.updatedAt, phase: currentData.meta.phase };
+  if (existing >= 0) idx[existing] = entry; else idx.push(entry);
+  setIndex(idx);
+}
+
+function deletePerson(id, e) {
+  e.stopPropagation();
+  if (!confirm('この利用者を削除しますか？')) return;
+  localStorage.removeItem(STORE_PREFIX + id);
+  let idx = getIndex().filter(x => x.id !== id);
+  setIndex(idx);
+  renderPersonList();
+}
+
+// ═══════════════════════════════════════════════
+//  利用者一覧
+// ═══════════════════════════════════════════════
+function renderPersonList() {
+  const grid = document.getElementById('personGrid');
+  const idx = getIndex();
+  if (idx.length === 0) {
+    grid.innerHTML = '<div class="empty-state">利用者がまだいません。<br>「サンプルで試す」または「新しい利用者を追加」から始めてください。</div>';
+    return;
+  }
+  grid.innerHTML = idx.slice().reverse().map(p => `
+    <div class="person-card" onclick="openPerson('${p.id}')">
+      <div class="pc-alias">${esc(p.alias)}</div>
+      <div class="pc-phase">${esc(p.phase)}</div>
+      <div class="pc-date">${p.updatedAt ? '更新: ' + fmtDate(p.updatedAt) : '未保存'}</div>
+      <div style="margin-top:8px;">
+        <button style="font-size:.65rem;background:none;border:1px solid var(--danger);color:var(--danger);border-radius:4px;padding:2px 7px;cursor:pointer;" onclick="deletePerson('${p.id}',event)">削除</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function createPerson() {
+  const alias = prompt('氏名（仮名・イニシャル）を入力してください', '');
+  if (alias === null) return;
+  const data = newPersonData(alias || '名前未設定');
+  currentData = data;
+  saveCurrentPerson();
+  openPerson(data.id);
+}
+
+function createPersonAndSample() {
+  const data = newPersonData('Aさん（サンプル）');
+  currentData = data;
+  loadSampleData();
+  saveCurrentPerson();
+  openPerson(data.id);
+}
+
+function openPerson(id) {
+  const data = loadPersonById(id);
+  if (!data) { alert('データが見つかりません'); renderPersonList(); return; }
+  currentId   = id;
+  currentData = data;
+  document.getElementById('personBadge').textContent = data.meta.alias;
+  document.getElementById('sampleBtn').style.display = '';
+  showPhase('phaseEdit');
+  showTab('basic');
+  renderBasic();
+  renderEmergency();
+  renderAttributes();
+}
+
+function goList() {
+  currentId = null; currentData = null;
+  document.getElementById('personBadge').textContent = '利用者未選択';
+  document.getElementById('sampleBtn').style.display = 'none';
+  renderPersonList();
+  showPhase('phaseList');
+}
+
+function showPhase(id) {
+  document.querySelectorAll('.phase').forEach(el => el.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function showTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  document.getElementById('tabBtn-' + name).classList.add('active');
+  if (name === 'output') renderOutput();
+}
+
+// ═══════════════════════════════════════════════
+//  部品1：基本情報
+// ═══════════════════════════════════════════════
+function renderBasic() {
+  if (!currentData) return;
+  const b = currentData.modules.basic || {};
+  document.getElementById('b-alias').value   = b.alias   || '';
+  document.getElementById('b-dob').value     = b.dob     || '';
+  document.getElementById('b-age').value     = b.age     || '';
+  document.getElementById('b-address').value = b.address || '';
+  document.getElementById('b-family').value  = b.family  || '';
+  document.getElementById('b-note').value    = b.note    || '';
+  setGenderUI(b.gender || '');
+  if (b.dob) calcAge();
+}
+
+function setGender(g) {
+  currentData.modules.basic = currentData.modules.basic || {};
+  currentData.modules.basic.gender = g;
+  setGenderUI(g);
+}
+function setGenderUI(g) {
+  ['男性','女性','その他'].forEach(v => {
+    const el = document.getElementById('g-' + ({男性:'male',女性:'female',その他:'other'}[v]));
+    if (el) el.classList.toggle('active', v === g);
+  });
+}
+
+function calcAge() {
+  const dob = document.getElementById('b-dob').value;
+  if (!dob) return;
+  const birth = new Date(dob), now = new Date();
+  let age = now.getFullYear() - birth.getFullYear();
+  const m = now.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) age--;
+  document.getElementById('b-age').value = age;
+}
+
+function saveBasic() {
+  if (!currentData) return;
+  currentData.modules.basic = {
+    alias:   document.getElementById('b-alias').value.trim(),
+    dob:     document.getElementById('b-dob').value,
+    age:     document.getElementById('b-age').value,
+    gender:  currentData.modules.basic?.gender || '',
+    address: document.getElementById('b-address').value.trim(),
+    family:  document.getElementById('b-family').value,
+    note:    document.getElementById('b-note').value.trim(),
+  };
+  if (currentData.modules.basic.alias) {
+    currentData.meta.alias = currentData.modules.basic.alias;
+    document.getElementById('personBadge').textContent = currentData.meta.alias;
+  }
+  saveCurrentPerson();
+  flashSave('basic');
+}
+
+// ═══════════════════════════════════════════════
+//  部品2：緊急連絡先
+// ═══════════════════════════════════════════════
+function renderEmergency() {
+  if (!currentData) return;
+  const list = currentData.modules.emergency || [];
+  const container = document.getElementById('emergencyList');
+  container.innerHTML = '';
+  list.forEach((row, i) => {
+    container.appendChild(buildEmergRow(row, i));
+  });
+}
+
+function buildEmergRow(row, i) {
+  const div = document.createElement('div');
+  div.className = 'emerg-row';
+  div.dataset.idx = i;
+  div.innerHTML = `
+    <div class="emerg-row-hdr">
+      <span class="emerg-no">連絡先 ${i + 1}</span>
+      <button class="del-btn" onclick="delEmergRow(${i})">✕ 削除</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>氏名</label><input type="text" class="er-name" value="${esc(row.name||'')}"></div>
+      <div class="form-group" style="flex:0 0 140px">
+        <label>続柄</label>
+        <select class="er-rel">
+          ${['配偶者','子','親','兄弟姉妹','主治医','相談支援員','訪問看護師','ケアマネ','その他'].map(v =>
+            `<option ${row.relation===v?'selected':''}>${v}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group"><label>電話番号</label><input type="tel" class="er-tel" value="${esc(row.tel||'')}"></div>
+    </div>
+    <div class="form-group"><label>連絡可否</label>
+      <div class="btn-group">
+        <button class="tog-btn ok ${row.contact==='OK'?'active':''}" onclick="setContact(this,'OK')">✅ 連絡OK</button>
+        <button class="tog-btn ng ${row.contact==='NG'?'active':''}" onclick="setContact(this,'NG')">🚫 連絡NG</button>
+        <button class="tog-btn ${row.contact==='要確認'?'active':''}" onclick="setContact(this,'要確認')">⚠️ 要確認</button>
+      </div>
+    </div>
+  `;
+  return div;
+}
+
+function setContact(btn, val) {
+  const row = btn.closest('.emerg-row');
+  row.querySelectorAll('.tog-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function addEmergencyRow() {
+  if (!currentData) return;
+  currentData.modules.emergency = currentData.modules.emergency || [];
+  currentData.modules.emergency.push({ name:'', relation:'その他', tel:'', contact:'OK' });
+  renderEmergency();
+}
+function delEmergRow(i) {
+  currentData.modules.emergency.splice(i, 1);
+  renderEmergency();
+}
+
+function saveEmergency() {
+  if (!currentData) return;
+  const rows = [];
+  document.querySelectorAll('#emergencyList .emerg-row').forEach(row => {
+    const activeTog = row.querySelector('.tog-btn.active');
+    rows.push({
+      name:     row.querySelector('.er-name').value.trim(),
+      relation: row.querySelector('.er-rel').value,
+      tel:      row.querySelector('.er-tel').value.trim(),
+      contact:  activeTog ? activeTog.textContent.replace(/[✅🚫⚠️]\s*/g,'').trim() : '',
+    });
+  });
+  currentData.modules.emergency = rows;
+  saveCurrentPerson();
+  flashSave('emergency');
+}
+
+// ═══════════════════════════════════════════════
+//  部品3：その他属性
+// ═══════════════════════════════════════════════
+function renderAttributes() {
+  if (!currentData) return;
+  const a = currentData.modules.attributes || {};
+  document.getElementById('a-disease').value = a.disease || '';
+  document.getElementById('a-doctor').value  = a.doctor  || '';
+  document.getElementById('a-prof').value    = a.prof    || '';
+  document.getElementById('a-height').value  = a.height  || '';
+  document.getElementById('a-weight').value  = a.weight  || '';
+  document.getElementById('a-grade').value   = a.grade   || '';
+  document.getElementById('a-like').value    = a.like    || '';
+  document.getElementById('a-dislike').value = a.dislike || '';
+  renderFreeAttrs(a.free || []);
+}
+
+function renderFreeAttrs(list) {
+  const container = document.getElementById('freeAttrList');
+  container.innerHTML = '';
+  (list || []).forEach((item, i) => {
+    const row = document.createElement('div');
+    row.className = 'free-attr-row';
+    row.innerHTML = `
+      <input type="text" class="label-input" placeholder="ラベル" value="${esc(item.label||'')}">
+      <input type="text" class="value-input" placeholder="内容" value="${esc(item.value||'')}">
+      <button class="del-btn" onclick="this.closest('.free-attr-row').remove()">✕</button>
+    `;
+    container.appendChild(row);
+  });
+}
+function addFreeAttr() {
+  const row = document.createElement('div');
+  row.className = 'free-attr-row';
+  row.innerHTML = `
+    <input type="text" class="label-input" placeholder="ラベル">
+    <input type="text" class="value-input" placeholder="内容">
+    <button class="del-btn" onclick="this.closest('.free-attr-row').remove()">✕</button>
+  `;
+  document.getElementById('freeAttrList').appendChild(row);
+}
+
+function saveAttributes() {
+  if (!currentData) return;
+  const free = [];
+  document.querySelectorAll('#freeAttrList .free-attr-row').forEach(row => {
+    const label = row.querySelector('.label-input').value.trim();
+    const value = row.querySelector('.value-input').value.trim();
+    if (label || value) free.push({ label, value });
+  });
+  currentData.modules.attributes = {
+    disease: document.getElementById('a-disease').value.trim(),
+    doctor:  document.getElementById('a-doctor').value.trim(),
+    prof:    document.getElementById('a-prof').value.trim(),
+    height:  document.getElementById('a-height').value.trim(),
+    weight:  document.getElementById('a-weight').value.trim(),
+    grade:   document.getElementById('a-grade').value.trim(),
+    like:    document.getElementById('a-like').value.trim(),
+    dislike: document.getElementById('a-dislike').value.trim(),
+    free,
+  };
+  saveCurrentPerson();
+  flashSave('attributes');
+}
+
+// ═══════════════════════════════════════════════
+//  部品8：出力・一枚化
+// ═══════════════════════════════════════════════
+function renderOutput() {
+  if (!currentData) return;
+  const html = buildOutputHtml(currentData);
+  document.getElementById('outputPreview').innerHTML = html;
+  document.getElementById('printSheet').innerHTML = html;
+}
+
+function buildOutputHtml(data) {
+  const b = data.modules.basic || {};
+  const e = data.modules.emergency || [];
+  const a = data.modules.attributes || {};
+  const today = fmtDate(new Date().toISOString());
+
+  let html = `
+    <div id="ps-inner">
+    <div class="ps-header">
+      <span class="ps-meta">作成日：${today}</span>
+      <div class="ps-title">🔔 アセスメント・目標設定・支援計画シート</div>
+      <div class="ps-subtitle">Fusion Partners 響 v2 ／ 利用者：${esc(data.meta.alias)}</div>
+    </div>`;
+
+  // 基本情報
+  if (Object.keys(b).some(k => b[k])) {
+    html += `
+    <div class="ps-section">
+      <div class="ps-section-title">■ 基本情報</div>
+      <div class="ps-grid">
+        <div class="ps-field"><label>氏名（仮名）</label><span>${esc(b.alias||'—')}</span></div>
+        <div class="ps-field"><label>生年月日 / 年齢</label><span>${esc(b.dob||'—')} / ${esc(b.age||'—')}歳</span></div>
+        <div class="ps-field"><label>性別</label><span>${esc(b.gender||'—')}</span></div>
+        <div class="ps-field"><label>家族構成</label><span>${esc(b.family||'—')}</span></div>
+        <div class="ps-field" style="grid-column:1/-1"><label>住所</label><span>${esc(b.address||'—')}</span></div>
+        ${b.note?`<div class="ps-field" style="grid-column:1/-1"><label>備考</label><span>${esc(b.note)}</span></div>`:''}
+      </div>
+    </div>`;
+  } else {
+    html += `<div class="ps-section"><div class="ps-section-title">■ 基本情報</div><div class="ps-placeholder">未入力（「基本情報」タブから入力してください）</div></div>`;
+  }
+
+  // 緊急連絡先
+  if (e.length > 0) {
+    html += `
+    <div class="ps-section">
+      <div class="ps-section-title">■ 緊急連絡先</div>
+      <table class="ps-emerg-table">
+        <tr><th>続柄</th><th>氏名</th><th>電話番号</th><th>連絡可否</th></tr>
+        ${e.map(r => `<tr>
+          <td>${esc(r.relation||'—')}</td>
+          <td>${esc(r.name||'—')}</td>
+          <td>${esc(r.tel||'—')}</td>
+          <td class="${r.contact==='OK'?'ps-ok':r.contact==='NG'?'ps-ng':''}">${esc(r.contact||'—')}</td>
+        </tr>`).join('')}
+      </table>
+    </div>`;
+  } else {
+    html += `<div class="ps-section"><div class="ps-section-title">■ 緊急連絡先</div><div class="ps-placeholder">未入力（「緊急連絡先」タブから入力してください）</div></div>`;
+  }
+
+  // その他属性
+  const hasAttrs = Object.values(a).some(v => v && (typeof v !== 'object' || (Array.isArray(v) && v.length > 0)));
+  if (hasAttrs) {
+    const rows = [
+      ['主疾患名', a.disease], ['主治医・医療機関', a.doctor], ['関わる専門職', a.prof],
+      ['身長', a.height ? a.height + ' cm' : ''], ['体重', a.weight ? a.weight + ' kg' : ''],
+      ['障がい区分・介護度', a.grade], ['好きなこと', a.like], ['苦手なこと', a.dislike],
+      ...(a.free || []).map(f => [f.label, f.value]),
+    ].filter(([, v]) => v);
+    html += `
+    <div class="ps-section">
+      <div class="ps-section-title">■ その他属性</div>
+      <table class="ps-attr-table">
+        ${rows.map(([l,v]) => `<tr><td>${esc(l)}</td><td>${esc(v)}</td></tr>`).join('')}
+      </table>
+    </div>`;
+  } else {
+    html += `<div class="ps-section"><div class="ps-section-title">■ その他属性</div><div class="ps-placeholder">未入力（「その他属性」タブから入力してください）</div></div>`;
+  }
+
+  // ICF・氷山・課題・支援計画（将来モジュール）
+  html += `
+    <div class="ps-section">
+      <div class="ps-section-title">■ ICFアセスメント</div>
+      <div class="ps-placeholder">📌 開発中（次フェーズでリリース）</div>
+    </div>
+    <div class="ps-section">
+      <div class="ps-section-title">■ 氷山モデル・課題分析</div>
+      <div class="ps-placeholder">📌 開発中（次フェーズでリリース）</div>
+    </div>
+    <div class="ps-section">
+      <div class="ps-section-title">■ 長期目標・短期目標</div>
+      <div class="ps-placeholder">📌 開発中（次フェーズでリリース）</div>
+    </div>
+    <div class="ps-section">
+      <div class="ps-section-title">■ 支援計画・フォロー</div>
+      <div class="ps-placeholder">📌 開発中（次フェーズでリリース）</div>
+    </div>`;
+
+  html += `
+    <div class="ps-footer">
+      #傍楽 ／ Fusion Partners 響 v2 ／ https://fusionpartnersoffice-oss.github.io/mitsumeru/hibiki_v2.html
+    </div>
+    </div>`;
+
+  return html;
+}
+
+function downloadPdf() {
+  if (!currentData) return;
+  renderOutput();
+  const el = document.getElementById('printSheet');
+  el.classList.add('visible');
+  const opt = {
+    margin: [10,10,10,10],
+    filename: `アセスメントシート_${currentData.meta.alias}_${fmtDate(new Date().toISOString())}.pdf`,
+    image: { type:'jpeg', quality:0.95 },
+    html2canvas: { scale:2, useCORS:true },
+    jsPDF: { unit:'mm', format:'a4', orientation:'portrait' },
+  };
+  html2pdf().set(opt).from(el).save().then(() => {
+    el.classList.remove('visible');
+  });
+}
+
+// ═══════════════════════════════════════════════
+//  サンプルデータ（「まず試す」）
+// ═══════════════════════════════════════════════
+function loadSampleData() {
+  if (!currentData) return;
+  currentData.modules.basic = {
+    alias: 'Aさん', dob: '1952-03-15', age: '74', gender: '男性',
+    address: '大阪府〇〇市', family: '配偶者と同居', note: '長男家族が近隣在住。週1回訪問あり。',
+  };
+  currentData.modules.emergency = [
+    { name: 'B子さん', relation: '配偶者', tel: '090-XXXX-XXXX', contact: 'OK' },
+    { name: 'C夫さん', relation: '子', tel: '080-XXXX-XXXX', contact: 'OK' },
+    { name: '山田Dr', relation: '主治医', tel: '06-XXXX-XXXX', contact: '要確認' },
+  ];
+  currentData.modules.attributes = {
+    disease: '脳梗塞後遺症（右片麻痺）', doctor: '〇〇クリニック 山田Dr',
+    prof: 'PT週2回・訪問看護週1回', height: '168', weight: '62',
+    grade: '障がい支援区分4', like: '音楽鑑賞（演歌）・将棋', dislike: '人混み・急な予定変更',
+    free: [{ label: '特記事項', value: '糖尿病管理中。食事制限あり。' }],
+  };
+}
+
+function fillSample() {
+  if (!currentData) return;
+  loadSampleData();
+  renderBasic();
+  renderEmergency();
+  renderAttributes();
+  // 全モジュールを自動保存
+  saveBasic(); saveEmergency(); saveAttributes();
+  alert('サンプルデータを読み込みました。各タブの内容を確認してください。');
+}
+
+// ═══════════════════════════════════════════════
+//  ユーティリティ
+// ═══════════════════════════════════════════════
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function fmtDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
+}
+function flashSave(module) {
+  const el = document.getElementById('save-msg-' + module);
+  if (!el) return;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2000);
+}
+
+// ═══════════════════════════════════════════════
+//  起動
+// ═══════════════════════════════════════════════
+checkConsent();
+renderPersonList();
+</script>
+</body>
+</html>
