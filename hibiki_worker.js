@@ -29,7 +29,7 @@
  */
 
 const MODEL = 'claude-sonnet-4-6';
-const DEMO_MAX = 3;
+const DEMO_MAX = 20;
 const TOKEN_TTL_SEC = 60 * 60 * 24 * 30; // 30日
 const DEMO_TTL_SEC  = 60 * 60 * 24 * 90; // 90日
 
@@ -108,7 +108,7 @@ async function handleAnalyze(request, env) {
     const current = parseInt(await getKV(env).get(countKey) || '0');
     if (current >= DEMO_MAX) {
       return jsonRes({
-        error: 'デモ回数の上限（3回）に達しました。APIキーを入力するか、正式版をお申し込みください。',
+        error: 'お試しの上限（20回）に達しました。続きをご希望の方はご連絡ください。',
         demo_exceeded: true,
       }, 403);
     }

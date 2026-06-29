@@ -328,7 +328,7 @@
 <div class="apikey-banner" id="apikeyBanner" style="max-width:720px;margin:0 auto;padding:16px 16px 0;">
   <div style="background:rgba(206,147,216,0.08);border:1px solid rgba(206,147,216,0.35);border-radius:10px;padding:16px;">
     <h3 style="font-size:0.9rem;color:var(--accent);margin-bottom:6px;">🔑 AnthropicAPIキーを登録する</h3>
-    <p style="font-size:0.78rem;color:var(--sub);margin-bottom:10px;line-height:1.5;">デモ回数（3回）を使い切りました。APIキーを入力すると制限なしでご利用いただけます。<br>キーはこのタブを閉じると自動的に消えます（サーバーには保存されません）。</p>
+    <p style="font-size:0.78rem;color:var(--sub);margin-bottom:10px;line-height:1.5;">デモ回数（20回）を使い切りました。APIキーを入力すると制限なしでご利用いただけます。<br>キーはこのタブを閉じると自動的に消えます（サーバーには保存されません）。</p>
     <div class="apikey-row">
       <input class="apikey-input" id="apikeyInput" type="password" placeholder="sk-ant-...">
       <button class="apikey-set-btn" onclick="applyApiKey()">登録して続ける</button>
@@ -346,7 +346,7 @@
     <div class="section-title">今、何が問題になっていますか？</div>
     <p class="section-desc">困っていること・気になっていることを、思ったまま書いてください。<br>「なんで？」を5回繰り返して、問題の根っこまで掘り下げます。</p>
 
-    <div class="demo-info" id="demoInfo">🔍 デモ版：3回まで無料でお試しいただけます。3回使い切ったらAPIキーを登録してください。</div>
+    <div class="demo-info" id="demoInfo">🔍 デモ版：20回まで無料でお試しいただけます。</div>
 
     <div class="info-form">
       <div class="form-group">
@@ -485,7 +485,7 @@
 <script>
 // ── Worker設定 ──
 const WORKER_URL = 'https://hibiki-worker.fusion-partners-office.workers.dev';
-const DEMO_MAX = 3;
+const DEMO_MAX = 20;
 const STORE_KEY = 'naze_naze';
 
 // ── デモID管理 ──
@@ -583,7 +583,6 @@ async function callWorker(messages, systemPrompt, maxTokens = 1024, onChunk = nu
     clearTimeout(timer);
     const err = await res.json().catch(() => ({}));
     if (err.demo_exceeded) {
-      showApiKeyInput();
       throw new Error('__demo_exceeded__');
     }
     throw new Error(err.error || `APIエラー (${res.status})`);
@@ -774,7 +773,7 @@ async function askNextQuestion() {
   } catch (e) {
     clearInterval(loadTimer);
     if (e.message === '__demo_exceeded__') {
-      questionEl.textContent = 'デモ回数（3回）を使い切りました。上のバナーにAPIキーを入力してください。';
+      questionEl.textContent = 'お試しの上限（20回）に達しました。続きをご希望の方はご連絡ください。';
       nextBtn.style.display = 'none';
       return;
     }
@@ -955,7 +954,7 @@ async function generateOutput() {
   } catch (e) {
     if (e.message === '__demo_exceeded__') {
       _pendingOutput = true;
-      document.getElementById('aiQuestion').textContent = 'デモ回数（3回）を使い切りました。上のバナーにAPIキーを入力してください。';
+      document.getElementById('aiQuestion').textContent = 'お試しの上限（20回）に達しました。続きをご希望の方はご連絡ください。';
       return;
     }
     // それ以外のエラーはもう一度試す
