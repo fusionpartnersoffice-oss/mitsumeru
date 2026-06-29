@@ -2320,36 +2320,50 @@ function calcMorning() {
   saveMorning();
   cloudSaveFusionOSStatus({ hp: hpAdj, mp, mode_level: mode, mode: modeText });
 
-  // noises/noiseDetail/want/courseVal/course は上で宣言済み
+  // プロファイルからMUST/NEVER/エゴグラム/エニアグラムを直接取得
+  const _profileSaved = localStorage.getItem('mitsumeru_profile');
+  const _p = _profileSaved ? JSON.parse(_profileSaved) : {};
+  const _mustText = _p.must || '未設定';
+  const _neverText = _p.never || '未設定';
+  const _egoText = _p.ego
+    ? `CP:${_p.ego.cp} NP:${_p.ego.np} A:${_p.ego.a} FC:${_p.ego.fc} AC:${_p.ego.ac}`
+    : '未設定';
+  const _enea1 = (_p.enea && _p.enea[0]) ? _p.enea[0] : '未設定';
 
-  const prompt = `あなたはFusion Partners代表の「SuccessOS 統合経営参謀」です。
-【ユーザープロファイル】
+  const prompt = `あなたはFusion Partners代表・柴山靖章の専属「SuccessOS 統合経営参謀」です。
+柴山さんのことを深く知る唯一の参謀として、今朝の状態を読み、的確な言葉と決断を返してください。
+
+【柴山靖章 プロファイル】
 ${getProfileText()}
 
-今朝の状態確認データ：
+【今朝の状態】
 HP: ${hpAdj}/100、MP: ${mp}/100
-モード判定: ${modeText}
-本日のタスクコース: コース${courseVal}（${course.name}：${course.desc}）
+モード: ${modeText}
+タスクコース: コース${courseVal}（${course.name}：${course.desc}）
 ノイズ: ${noises.join('、') || 'なし'}
-具体的なノイズ: ${noiseDetail || 'なし'}
+ノイズの詳細: ${noiseDetail || 'なし'}
 今日の一言: ${want || 'なし'}
 
-上記データをもとに、以下の2つを出力してください。
+以下の2つを出力してください。
 
-【参謀からの一言】
-3〜5文。以下のトーンで書くこと：
-・上から目線の励ましは禁止。同志として隣に立つ言葉を使う
-・柴山さんの今日のHP/MP/コース/ノイズを読んで、その人だけに向けた言葉にする
-・「今日も動こうかな」と思わせる熱さと具体性
-・ユーモアを1つ自然に入れる
-・比喩より事実ベースの言葉を使う
-・アウェアファイより熱く、上司より近い同志のトーン
+【参謀からの一言】（3〜5文）
+以下の順番で必ず書くこと：
+①「今日の一言」に内容がある場合、それへの直接応答を最初の1文に入れる（スルー禁止）
+②エゴグラム（${_egoText}）またはエニアグラム第1位（${_enea1}）を今日のノイズ・状態と結びつけて1文入れる
+　例：「CPが高いあなたがこの状態で陥りやすいのは〇〇」「第1位の性質が今日の〇〇に反応している」
+③HP/MPへの言及は「だから今日はこう動く」という行動決断として最後の1文のみにする
+
+トーン厳守：
+・同志として隣に立つ言葉。上から目線・励まし・慰め禁止
+・ユーモアを1つ自然に入れる（無理に入れない）
+・比喩より事実ベース
+・「この参謀、俺のことわかってるな」と思わせる解像度で書く
 
 【今日のTop3タスク】
-私が優先順位を迷わないよう、あなたが代わりに判断して決めてください。
-HP・MPとタスクコースをもとに、今日「これだけはやる」タスクを3つ、優先順位順に箇条書きで出力してください。
-D-blockモードは「最小限の具体的行動」を、通常モード以上は「積極的に詰め込んで」ください。
-私の代わりに決断し、迷いなく動けるリストにしてください。`;
+MUST「${_mustText}」とNEVER「${_neverText}」を判断基準に、
+コース${courseVal}（${course.name}）の柴山さんが今日「これだけはやる」3つを決めてください。
+D-blockモードなら最小限の具体行動、通常モード以上なら積極的に。
+タスクは「〇〇する」で終わる物理的な動作レベルで書いてください。`;
 
   const loading = document.getElementById('morning-loading');
   const advice = document.getElementById('morning-advice');
