@@ -405,31 +405,89 @@
 <div id="screen-memo" class="screen">
   <div class="date-display" id="memo-date"></div>
 
-  <div class="section">
-    <div class="section-title">随時メモ</div>
-
-    <div class="field">
-      <label>時刻</label>
-      <div style="display:flex;gap:8px;align-items:center;">
-        <input type="time" id="memo-time" style="flex:1;">
-        <button onclick="setNowTime()" style="padding:9px 14px;background:var(--accent);color:var(--bg);border:none;border-radius:4px;font-size:12px;cursor:pointer;white-space:nowrap;">今の時刻</button>
-      </div>
-    </div>
-
-    <div class="field">
-      <label>内容</label>
-      <textarea id="memo-content" placeholder="気づいたこと、起きたこと、ボヤキをそのまま入力"></textarea>
-    </div>
-
-    <button class="btn-primary" onclick="addMemo()">追加する</button>
+  <!-- モード切り替え -->
+  <div style="display:flex;gap:8px;margin-bottom:16px;">
+    <button id="memo-mode-btn-memo" class="btn-primary" onclick="switchMemoMode('memo')" style="flex:1;font-size:13px;letter-spacing:1px;">📝 随時メモ</button>
+    <button id="memo-mode-btn-3min" class="btn-secondary" onclick="switchMemoMode('3min')" style="flex:1;font-size:13px;letter-spacing:1px;">⚡ 3min</button>
   </div>
 
-  <div class="section">
-    <div class="section-title">本日のメモ一覧</div>
-    <div id="memo-list" style="font-size:13px;color:var(--text2);line-height:2;">
-      <span style="color:var(--text3);font-size:12px;">まだメモがありません</span>
+  <!-- 随時メモモード -->
+  <div id="memo-mode-memo">
+    <div class="section">
+      <div class="section-title">随時メモ</div>
+      <div class="field">
+        <label>時刻</label>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input type="time" id="memo-time" style="flex:1;">
+          <button onclick="setNowTime()" style="padding:9px 14px;background:var(--accent);color:var(--bg);border:none;border-radius:4px;font-size:12px;cursor:pointer;white-space:nowrap;">今の時刻</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>内容</label>
+        <textarea id="memo-content" placeholder="気づいたこと、起きたこと、ボヤキをそのまま入力"></textarea>
+      </div>
+      <button class="btn-primary" onclick="addMemo()">追加する</button>
     </div>
-    <button class="btn-secondary" onclick="clearMemos()" style="margin-top:12px;color:var(--red);border-color:var(--red);">メモをリセット</button>
+    <div class="section">
+      <div class="section-title">本日のメモ一覧</div>
+      <div id="memo-list" style="font-size:13px;color:var(--text2);line-height:2;">
+        <span style="color:var(--text3);font-size:12px;">まだメモがありません</span>
+      </div>
+      <button class="btn-secondary" onclick="clearMemos()" style="margin-top:12px;color:var(--red);border-color:var(--red);">メモをリセット</button>
+    </div>
+  </div>
+
+  <!-- 3minエマージェンシーモード -->
+  <div id="memo-mode-3min" style="display:none;">
+
+    <!-- Step 1 -->
+    <div id="three-step-1" class="section">
+      <div class="section-title">Step 1 / 3 — 今、何が起きていますか？</div>
+      <div class="field">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+          <label style="margin:0;">20字以内で</label>
+          <span id="three-summary-count" style="font-size:11px;color:var(--text3);">0/20</span>
+        </div>
+        <textarea id="three-summary" maxlength="20" oninput="updateCharCount('three-summary','three-summary-count',20)" placeholder="例：上司に怒鳴られた" style="min-height:60px;resize:none;"></textarea>
+      </div>
+      <button class="btn-primary" onclick="goThreeStep(2)">次へ</button>
+    </div>
+
+    <!-- Step 2 -->
+    <div id="three-step-2" class="section" style="display:none;">
+      <div class="section-title">Step 2 / 3 — 今の感情を3つ選ぶ</div>
+      <div id="three-keywords" class="checkbox-group" style="margin-bottom:14px;"></div>
+      <div id="three-keyword-count" style="text-align:center;font-size:12px;color:var(--text3);margin-bottom:12px;">0 / 3 選択</div>
+      <button id="three-step2-next" class="btn-primary" onclick="goThreeStep(3)" disabled style="opacity:0.4;">次へ</button>
+    </div>
+
+    <!-- Step 3 -->
+    <div id="three-step-3" class="section" style="display:none;">
+      <div class="section-title">Step 3 / 3 — 今すぐできることを1つ</div>
+      <div class="field">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+          <label style="margin:0;">20字以内で</label>
+          <span id="three-action-count" style="font-size:11px;color:var(--text3);">0/20</span>
+        </div>
+        <textarea id="three-action" maxlength="20" oninput="updateCharCount('three-action','three-action-count',20)" placeholder="例：トイレで5分一人になる" style="min-height:60px;resize:none;"></textarea>
+      </div>
+      <button class="btn-secondary" onclick="setThreeAction('何もしない')" style="margin-bottom:8px;">何もしないと決める</button>
+      <button class="btn-primary" onclick="completeThreeMin()">完了</button>
+    </div>
+
+    <!-- Step 4（完了） -->
+    <div id="three-step-4" class="section" style="display:none;">
+      <div class="section-title">✓ 記録しました</div>
+      <div style="background:var(--bg2);border:0.5px solid var(--border);border-radius:6px;padding:14px;margin-bottom:16px;line-height:2;">
+        <p id="three-result-summary" style="font-size:14px;font-weight:500;color:var(--text);margin-bottom:4px;"></p>
+        <p id="three-result-keywords" style="font-size:12px;color:var(--text2);margin-bottom:4px;"></p>
+        <p id="three-result-action" style="font-size:12px;color:var(--green);"></p>
+      </div>
+      <button class="btn-primary" id="three-copy-btn" onclick="copyThreeToMemo()" style="margin-bottom:8px;">📋 随時メモ用にコピー</button>
+      <div id="three-copy-ok" style="display:none;text-align:center;color:var(--green);font-size:12px;margin-bottom:10px;">✓ コピーしました — 随時メモに貼り付けてください</div>
+      <button class="btn-secondary" onclick="resetThreeMin()">もう一度</button>
+    </div>
+
   </div>
 </div>
 
@@ -1025,6 +1083,117 @@ function checkConsent() {
   if (!hasConsent()) {
     document.getElementById('consent-overlay').classList.add('active');
   }
+}
+
+// ===== 3minエマージェンシー =====
+let _3minKeywords = [];
+const EMOTION_KEYWORDS = [
+  '自己嫌悪','罪悪感','空虚','無力',
+  '怒り','焦り','パニック','混乱',
+  '悲しみ','孤独','疲弊','麻痺',
+  '不安','戸惑い','怖い','もやもや',
+  '言葉にできない','複数混在','わからない','その他'
+];
+
+function switchMemoMode(mode) {
+  const isMemo = mode === 'memo';
+  document.getElementById('memo-mode-memo').style.display = isMemo ? 'block' : 'none';
+  document.getElementById('memo-mode-3min').style.display = isMemo ? 'none' : 'block';
+  const mBtn = document.getElementById('memo-mode-btn-memo');
+  const tBtn = document.getElementById('memo-mode-btn-3min');
+  if (mBtn) { mBtn.className = isMemo ? 'btn-primary' : 'btn-secondary'; mBtn.style.cssText += ';flex:1;font-size:13px;letter-spacing:1px;'; }
+  if (tBtn) { tBtn.className = isMemo ? 'btn-secondary' : 'btn-primary'; tBtn.style.cssText += ';flex:1;font-size:13px;letter-spacing:1px;'; }
+}
+
+function updateCharCount(inputId, countId, max) {
+  const el = document.getElementById(inputId);
+  const cnt = document.getElementById(countId);
+  if (el && cnt) cnt.textContent = el.value.length + '/' + max;
+}
+
+function goThreeStep(step) {
+  if (step === 2) {
+    const s = document.getElementById('three-summary').value.trim();
+    if (!s) return;
+  }
+  [1,2,3,4].forEach(i => {
+    const el = document.getElementById('three-step-' + i);
+    if (el) el.style.display = i === step ? 'block' : 'none';
+  });
+  if (step === 2) renderThreeKeywords();
+}
+
+function renderThreeKeywords() {
+  const container = document.getElementById('three-keywords');
+  if (!container) return;
+  container.innerHTML = EMOTION_KEYWORDS.map(k => `
+    <label class="checkbox-item${_3minKeywords.includes(k) ? ' checked' : ''}" onclick="toggleThreeKeyword('${k}',this)">
+      <input type="checkbox" style="display:none;">${k}
+    </label>`).join('');
+  updateThreeKeywordCount();
+}
+
+function toggleThreeKeyword(kw, el) {
+  const idx = _3minKeywords.indexOf(kw);
+  if (idx >= 0) {
+    _3minKeywords.splice(idx, 1);
+    el.classList.remove('checked');
+  } else if (_3minKeywords.length < 3) {
+    _3minKeywords.push(kw);
+    el.classList.add('checked');
+  }
+  updateThreeKeywordCount();
+}
+
+function updateThreeKeywordCount() {
+  const cnt = document.getElementById('three-keyword-count');
+  const btn = document.getElementById('three-step2-next');
+  if (cnt) cnt.textContent = _3minKeywords.length + ' / 3 選択';
+  if (btn) { const ok = _3minKeywords.length === 3; btn.disabled = !ok; btn.style.opacity = ok ? '1' : '0.4'; }
+}
+
+function setThreeAction(text) {
+  const el = document.getElementById('three-action');
+  if (el) { el.value = text; updateCharCount('three-action','three-action-count',20); }
+}
+
+function completeThreeMin() {
+  const summary = document.getElementById('three-summary').value.trim();
+  const action = (document.getElementById('three-action').value.trim()) || '（未入力）';
+  const rs = document.getElementById('three-result-summary');
+  const rk = document.getElementById('three-result-keywords');
+  const ra = document.getElementById('three-result-action');
+  if (rs) rs.textContent = summary;
+  if (rk) rk.textContent = '感情：' + (_3minKeywords.join('・') || 'なし');
+  if (ra) ra.textContent = 'アクション：' + action;
+  const record = { id: String(Date.now()), timestamp: new Date().toISOString(), summary, keywords: [..._3minKeywords], action };
+  const key = 'mitsumeru_lite_3min_records';
+  const existing = JSON.parse(localStorage.getItem(key) || '[]');
+  existing.push(record);
+  localStorage.setItem(key, JSON.stringify(existing));
+  const okEl = document.getElementById('three-copy-ok');
+  if (okEl) okEl.style.display = 'none';
+  goThreeStep(4);
+}
+
+function copyThreeToMemo() {
+  const summary = (document.getElementById('three-result-summary') || {}).textContent || '';
+  const kws = _3minKeywords.join('・');
+  const action = ((document.getElementById('three-result-action') || {}).textContent || '').replace('アクション：','');
+  const text = summary + ' #ノイズ\n感情：' + kws + '\nアクション：' + action;
+  navigator.clipboard.writeText(text).then(() => {
+    const okEl = document.getElementById('three-copy-ok');
+    if (okEl) okEl.style.display = 'block';
+  });
+}
+
+function resetThreeMin() {
+  _3minKeywords = [];
+  const s = document.getElementById('three-summary');
+  const a = document.getElementById('three-action');
+  if (s) { s.value = ''; updateCharCount('three-summary','three-summary-count',20); }
+  if (a) { a.value = ''; updateCharCount('three-action','three-action-count',20); }
+  goThreeStep(1);
 }
 </script>
 
