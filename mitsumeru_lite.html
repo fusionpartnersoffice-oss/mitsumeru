@@ -324,12 +324,72 @@
 </head>
 <body>
 
+<!-- プレミアムゲートモーダル -->
+<div class="consent-overlay" id="pro-gate-overlay">
+  <div class="demo-card" style="max-width:360px">
+    <div class="demo-badge" style="background:var(--gold);color:#fff;border-color:var(--gold)">お試し終了</div>
+    <h3 style="font-family:'Noto Serif JP',serif;font-weight:400;font-size:18px;margin:12px 0 8px;letter-spacing:2px;">5回のお試しが終わりました</h3>
+    <p style="font-size:13px;color:var(--text2);line-height:1.8;margin-bottom:20px;">
+      毎日3分、崩れる前の自分に気づき続けるために。<br>月額プランで続けませんか。
+    </p>
+    <a href="STRIPE_PAYMENT_LINK_PLACEHOLDER" target="_blank" rel="noopener"
+       style="display:block;padding:14px;background:var(--text);color:var(--bg);text-align:center;border-radius:8px;font-size:15px;font-weight:500;text-decoration:none;margin-bottom:6px;letter-spacing:1px;">
+      月額プランに申し込む →
+    </a>
+    <p style="font-size:11px;color:var(--text3);text-align:center;margin-bottom:20px;">
+      月額 ¥〇〇〇（税込）/ 月30回まで ·
+      <button onclick="showTokushoho()" style="background:none;border:none;color:var(--text3);font-size:11px;cursor:pointer;text-decoration:underline;padding:0;">特定商取引法</button>
+    </p>
+    <div style="border-top:1px solid var(--border);padding-top:16px;">
+      <p style="font-size:12px;color:var(--text2);margin-bottom:8px;">お申し込み後、確認メールのコードを入力：</p>
+      <input type="text" id="pro-code-input" placeholder="PRO_202607"
+             style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:14px;background:var(--bg);color:var(--text);margin-bottom:6px;text-transform:uppercase;">
+      <p id="pro-code-error" style="display:none;color:var(--red);font-size:11px;margin-bottom:8px;">コードが無効です。確認メールをご確認ください。</p>
+      <button onclick="activateProCode()"
+              style="width:100%;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:6px;font-size:14px;cursor:pointer;font-weight:500;">
+        コードを適用する
+      </button>
+    </div>
+    <button onclick="closeProGate()"
+            style="width:100%;padding:8px;margin-top:10px;background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer;">
+      後で考える
+    </button>
+  </div>
+</div>
+
+<!-- 特定商取引法モーダル -->
+<div class="consent-overlay" id="tokushoho-overlay">
+  <div class="demo-card" style="max-width:400px;max-height:80vh;overflow-y:auto;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <h3 style="font-size:14px;font-weight:500;letter-spacing:2px;">特定商取引法に基づく表記</h3>
+      <button onclick="closeTokushoho()" style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--text3);">✕</button>
+    </div>
+    <table style="width:100%;font-size:12px;border-collapse:collapse;line-height:1.8;">
+      <tr style="border-bottom:0.5px solid var(--border);"><th style="text-align:left;color:var(--text3);padding:6px 0;width:40%;font-weight:400;">事業者名</th><td style="padding:6px 0;">柴山靖章</td></tr>
+      <tr style="border-bottom:0.5px solid var(--border);"><th style="text-align:left;color:var(--text3);padding:6px 0;font-weight:400;">屋号</th><td style="padding:6px 0;">Fusion Partners</td></tr>
+      <tr style="border-bottom:0.5px solid var(--border);"><th style="text-align:left;color:var(--text3);padding:6px 0;font-weight:400;">所在地</th><td style="padding:6px 0;">岐阜県各務原市那加甥田町93-3</td></tr>
+      <tr style="border-bottom:0.5px solid var(--border);"><th style="text-align:left;color:var(--text3);padding:6px 0;font-weight:400;">電話番号</th><td style="padding:6px 0;">090-3562-3436</td></tr>
+      <tr style="border-bottom:0.5px solid var(--border);"><th style="text-align:left;color:var(--text3);padding:6px 0;font-weight:400;">メール</th><td style="padding:6px 0;">fusion.partners.office@gmail.com</td></tr>
+      <tr style="border-bottom:0.5px solid var(--border);"><th style="text-align:left;color:var(--text3);padding:6px 0;font-weight:400;">サービス名</th><td style="padding:6px 0;">ミツメルLite 月額プラン</td></tr>
+      <tr style="border-bottom:0.5px solid var(--border);"><th style="text-align:left;color:var(--text3);padding:6px 0;font-weight:400;">提供価格</th><td style="padding:6px 0;">月額 ¥〇〇〇（税込）</td></tr>
+      <tr style="border-bottom:0.5px solid var(--border);"><th style="text-align:left;color:var(--text3);padding:6px 0;font-weight:400;">支払い方法</th><td style="padding:6px 0;">クレジットカード（Stripe）</td></tr>
+      <tr style="border-bottom:0.5px solid var(--border);"><th style="text-align:left;color:var(--text3);padding:6px 0;font-weight:400;">支払い時期</th><td style="padding:6px 0;">毎月自動更新</td></tr>
+      <tr style="border-bottom:0.5px solid var(--border);"><th style="text-align:left;color:var(--text3);padding:6px 0;font-weight:400;">提供時期</th><td style="padding:6px 0;">決済完了後、コード発行次第即時</td></tr>
+      <tr style="border-bottom:0.5px solid var(--border);"><th style="text-align:left;color:var(--text3);padding:6px 0;font-weight:400;">解約方法</th><td style="padding:6px 0;">メールにてお申し出ください（fusion.partners.office@gmail.com）</td></tr>
+      <tr><th style="text-align:left;color:var(--text3);padding:6px 0;font-weight:400;">返金ポリシー</th><td style="padding:6px 0;">デジタルコンテンツの性質上、原則として返金はお受けできません</td></tr>
+    </table>
+    <button onclick="closeTokushoho()" style="width:100%;margin-top:16px;padding:10px;background:var(--text);color:var(--bg);border:none;border-radius:6px;font-size:13px;cursor:pointer;">
+      閉じる
+    </button>
+  </div>
+</div>
+
 <!-- 同意取得モーダル -->
 <div class="consent-overlay" id="consent-overlay">
   <div class="demo-card">
     <div class="demo-badge">初回確認</div>
     <h2>ミツメル Lite</h2>
-    <p style="background:#e8f5ee;border:0.5px solid #a8dfc4;border-radius:6px;padding:10px 14px;color:#1a7a52;font-weight:500;margin-bottom:16px;">無料でお使いいただけます</p>
+    <p style="background:#e8f5ee;border:0.5px solid #a8dfc4;border-radius:6px;padding:10px 14px;color:#1a7a52;font-weight:500;margin-bottom:16px;">AI機能を5回まで無料でお試しいただけます</p>
     <p>ご利用の前に以下をご確認ください。<br>「同意して始める」を押すことで同意したとみなします。</p>
     <p style="font-size:12px;margin-bottom:20px;">
       <a href="./mitsumeru_privacy.html" target="_blank" style="color:var(--accent);text-decoration:underline;">プライバシーポリシー</a>
@@ -1029,13 +1089,20 @@ function setApiKey() {
 
 function callClaude(prompt, onSuccess, onError) {
   if (!hasConsent()) { onError('利用規約・プライバシーポリシーへの同意が必要です。ページを再読み込みしてください。'); return; }
-  if (getRemainingAI() <= 0) {
-    onError('今月のAI利用上限（20回）に達しました。\n来月になるとリセットされます。');
-    return;
+  if (isPro()) {
+    if (getProMonthCount() >= 30) {
+      onError('今月のAI利用上限（30回）に達しました。\n来月になるとリセットされます。');
+      return;
+    }
+  } else {
+    if (getFreeUsedCount() >= 5) {
+      showProGate();
+      return;
+    }
   }
   const key = getApiKey();
   if (!key) { onError('APIキーが設定されていません。'); return; }
-  incrementAIUsage();
+  if (isPro()) { incrementProCount(); } else { incrementFreeCount(); }
   updateAICounter();
   fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -1052,21 +1119,68 @@ function callClaude(prompt, onSuccess, onError) {
   }).catch(e => onError(e.message));
 }
 
-// ===== AI使用回数管理（月20回制限） =====
-function _aiMonthKey() {
+// ===== AI使用回数管理 =====
+const FREE_LIMIT = 5;
+const PRO_MONTH_LIMIT = 30;
+
+// 無料トライアル（累計5回）
+function getFreeUsedCount() { return parseInt(localStorage.getItem('mitsumeru_lite_free_used') || '0'); }
+function incrementFreeCount() { localStorage.setItem('mitsumeru_lite_free_used', String(getFreeUsedCount() + 1)); }
+
+// 有料プラン（月次30回）
+function _proMonthKey() {
   const n = new Date();
-  return 'mitsumeru_lite_ai_count_' + n.getFullYear() + String(n.getMonth()+1).padStart(2,'0');
+  return 'mitsumeru_lite_pro_count_' + n.getFullYear() + String(n.getMonth()+1).padStart(2,'0');
 }
-function getAIUsageCount() { return parseInt(localStorage.getItem(_aiMonthKey()) || '0'); }
-function incrementAIUsage() { localStorage.setItem(_aiMonthKey(), String(getAIUsageCount()+1)); }
-function getRemainingAI() { return Math.max(0, 20 - getAIUsageCount()); }
+function getProMonthCount() { return parseInt(localStorage.getItem(_proMonthKey()) || '0'); }
+function incrementProCount() { localStorage.setItem(_proMonthKey(), String(getProMonthCount() + 1)); }
+
+// プラン判定（コード形式：PRO_YYYYMM）
+function isPro() {
+  const code = localStorage.getItem('mitsumeru_lite_pro_code');
+  if (!code) return false;
+  const n = new Date();
+  const valid = 'PRO_' + n.getFullYear() + String(n.getMonth()+1).padStart(2,'0');
+  return code === valid;
+}
+
+// カウンター表示
 function updateAICounter() {
   const el = document.getElementById('ai-counter');
   if (!el) return;
-  const rem = getRemainingAI();
-  el.textContent = `今月の残りAI回数：${rem}/20`;
-  el.style.color = rem <= 3 ? 'var(--red)' : rem <= 7 ? 'var(--gold)' : 'var(--text3)';
+  if (isPro()) {
+    const rem = PRO_MONTH_LIMIT - getProMonthCount();
+    el.textContent = '今月の残りAI回数：' + rem + '/' + PRO_MONTH_LIMIT;
+    el.style.color = rem <= 3 ? 'var(--red)' : rem <= 7 ? 'var(--gold)' : 'var(--text3)';
+  } else {
+    const rem = FREE_LIMIT - getFreeUsedCount();
+    el.textContent = rem > 0 ? 'お試し残り：' + rem + '/' + FREE_LIMIT + '回（無料）' : 'お試し終了 ― 月額プランへ';
+    el.style.color = rem <= 1 ? 'var(--red)' : rem <= 2 ? 'var(--gold)' : 'var(--text3)';
+  }
 }
+
+// プレミアムゲート 開閉
+function showProGate() { document.getElementById('pro-gate-overlay').classList.add('active'); }
+function closeProGate() { document.getElementById('pro-gate-overlay').classList.remove('active'); }
+
+// コード認証
+function activateProCode() {
+  const code = (document.getElementById('pro-code-input').value || '').trim().toUpperCase();
+  const n = new Date();
+  const valid = 'PRO_' + n.getFullYear() + String(n.getMonth()+1).padStart(2,'0');
+  if (code === valid) {
+    localStorage.setItem('mitsumeru_lite_pro_code', code);
+    closeProGate();
+    updateAICounter();
+    alert('プレミアムプランが有効になりました！今月も引き続きご利用ください。');
+  } else {
+    document.getElementById('pro-code-error').style.display = 'block';
+  }
+}
+
+// 特商法モーダル 開閉
+function showTokushoho() { document.getElementById('tokushoho-overlay').classList.add('active'); }
+function closeTokushoho() { document.getElementById('tokushoho-overlay').classList.remove('active'); }
 
 // ===== 同意取得 =====
 function hasConsent() {
@@ -1196,6 +1310,18 @@ function resetThreeMin() {
   goThreeStep(1);
 }
 </script>
+
+<!-- フッター -->
+<div style="text-align:center;padding:24px 0 40px;border-top:0.5px solid var(--border);margin-top:8px;">
+  <p style="font-size:11px;color:var(--text3);letter-spacing:0.5px;margin-bottom:8px;">ミツメルLite — Fusion Partners</p>
+  <button onclick="showTokushoho()" style="background:none;border:none;color:var(--text3);font-size:11px;cursor:pointer;text-decoration:underline;letter-spacing:0.5px;">
+    特定商取引法に基づく表記
+  </button>
+  <span style="color:var(--border);margin:0 8px;">|</span>
+  <a href="./mitsumeru_privacy.html" target="_blank" style="color:var(--text3);font-size:11px;text-decoration:underline;">プライバシーポリシー</a>
+  <span style="color:var(--border);margin:0 8px;">|</span>
+  <a href="./mitsumeru_terms.html" target="_blank" style="color:var(--text3);font-size:11px;text-decoration:underline;">利用規約</a>
+</div>
 
 </body>
 </html>
