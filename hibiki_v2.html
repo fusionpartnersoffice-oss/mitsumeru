@@ -190,6 +190,36 @@ select option{background:var(--card);}
   body > *:not(#printSheet){display:none !important;}
   #printSheet{display:block !important;padding:0;}
 }
+
+/* ── ざわつき診断 ── */
+.zw-step{display:none;}.zw-step.active{display:block;}
+.zw-hero{text-align:center;padding:28px 16px 16px;}
+.zw-hero-q{font-size:1.08rem;font-weight:700;color:var(--accent);line-height:1.6;margin-bottom:8px;}
+.zw-hero-hint{font-size:.78rem;color:var(--sub);line-height:1.6;}
+.zw-textarea{width:100%;background:var(--card);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:14px;font-size:.9rem;outline:none;font-family:inherit;transition:border .15s;resize:vertical;min-height:110px;margin-top:12px;}
+.zw-textarea:focus{border-color:var(--accent);}
+.zw-action-row{display:flex;justify-content:flex-end;margin-top:10px;gap:10px;align-items:center;}
+.zw-go-btn{background:var(--accent);color:#1a0029;border:none;border-radius:8px;padding:11px 26px;font-size:.9rem;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity .15s;}
+.zw-go-btn:hover{opacity:.88;}
+.zw-go-btn:disabled{opacity:.4;cursor:not-allowed;}
+.zw-echo{background:var(--card);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:12px 14px;font-size:.84rem;line-height:1.7;color:var(--sub);margin-bottom:14px;}
+.zw-echo strong{color:var(--text);}
+.zw-ai-box{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;min-height:80px;font-size:.86rem;line-height:1.8;white-space:pre-wrap;position:relative;}
+.zw-ai-box .cursor{display:inline-block;width:2px;height:1em;background:var(--accent);animation:blink .8s infinite;vertical-align:text-bottom;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.zw-section-label{font-size:.72rem;font-weight:700;color:var(--accent);letter-spacing:.05em;margin-bottom:6px;margin-top:16px;}
+.zw-badge{display:inline-block;background:rgba(206,147,216,.18);color:var(--accent);border-radius:20px;padding:2px 10px;font-size:.68rem;font-weight:700;margin-bottom:8px;}
+.zw-result-card{background:linear-gradient(135deg,rgba(206,147,216,.08),rgba(129,199,132,.06));border:1px solid rgba(206,147,216,.3);border-radius:12px;padding:18px 16px;margin-top:12px;}
+.zw-confirm{font-size:.8rem;color:var(--sub);margin-top:14px;padding-top:12px;border-top:1px solid var(--border);line-height:1.7;}
+.zw-save-row{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;}
+.zw-saved-tag{font-size:.75rem;color:var(--accent2);padding:3px 10px;background:rgba(129,199,132,.15);border-radius:6px;align-self:center;}
+.zw-again-btn{background:none;border:1px solid var(--border);border-radius:6px;color:var(--sub);padding:7px 14px;font-size:.78rem;cursor:pointer;font-family:inherit;}
+.zw-again-btn:hover{border-color:var(--sub);color:var(--text);}
+.zw-thinking{color:var(--sub);font-size:.78rem;display:flex;align-items:center;gap:6px;}
+.zw-dot{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--accent);animation:dotPulse 1.2s ease-in-out infinite;}
+.zw-dot:nth-child(2){animation-delay:.2s;}
+.zw-dot:nth-child(3){animation-delay:.4s;}
+@keyframes dotPulse{0%,80%,100%{opacity:.3}40%{opacity:1}}
 </style>
 </head>
 <body>
@@ -245,6 +275,7 @@ select option{background:var(--card);}
 <div class="phase" id="phaseEdit">
   <nav class="tab-nav" id="tabNav">
     <button class="tab-btn active" onclick="showTab('basic')" id="tabBtn-basic">📋 基本情報</button>
+    <button class="tab-btn" onclick="showTab('zawatsuki')" id="tabBtn-zawatsuki" style="font-weight:700;color:var(--accent)">🔍 ざわつき診断</button>
     <button class="tab-btn" onclick="showTab('emergency')" id="tabBtn-emergency">🚨 緊急連絡先</button>
     <button class="tab-btn" onclick="showTab('attributes')" id="tabBtn-attributes">📎 その他属性</button>
     <button class="tab-btn" onclick="showTab('icf')" id="tabBtn-icf">🧩 ICF</button>
@@ -306,6 +337,59 @@ select option{background:var(--card);}
     <div style="display:flex;align-items:center;margin-top:8px;">
       <button class="save-btn" onclick="saveBasic()">保存する</button>
       <span class="save-msg" id="save-msg-basic">✓ 保存しました</span>
+    </div>
+  </div>
+
+  <!-- ざわつき診断 -->
+  <div class="tab-panel" id="tab-zawatsuki">
+    <div class="module-title">🔍 ざわつき診断</div>
+    <div class="module-desc">現場で「なんかおかしい」と感じた瞬間を入力してください。AIが違和感を言語化し、根っこにあるものを一緒に掘り下げます。</div>
+
+    <!-- Step 1: ざわつきを入力 -->
+    <div class="zw-step active" id="zwStep1">
+      <div class="zw-hero">
+        <div class="zw-hero-q">今、現場で一番ざわついた・引っかかった場面は？</div>
+        <div class="zw-hero-hint">うまく言えなくて大丈夫。見えたまま書いてください。</div>
+      </div>
+      <textarea class="zw-textarea" id="zwInput1" placeholder="例：先週まで積極的に参加していたAさんが、突然来なくなった。理由を聞いても「なんとなく」と言うだけで…"></textarea>
+      <div class="zw-action-row">
+        <span class="zw-thinking" id="zwThinking1" style="display:none">
+          <span class="zw-dot"></span><span class="zw-dot"></span><span class="zw-dot"></span>
+          <span style="margin-left:4px">AIが掘り下げています…</span>
+        </span>
+        <button class="zw-go-btn" id="zwBtn1" onclick="goZawatsukiStep2()">違和感を言葉にする →</button>
+      </div>
+    </div>
+
+    <!-- Step 2: What化 + 根を掘る -->
+    <div class="zw-step" id="zwStep2">
+      <div class="zw-section-label">▌ 入力された場面</div>
+      <div class="zw-echo" id="zwEcho2"></div>
+
+      <div class="zw-section-label">▌ AIによる分析（違和感のWhat化 → 根 → 1手）</div>
+      <div class="zw-badge">柴山靖章アセスメントメソッド移植版</div>
+      <div class="zw-ai-box" id="zwAiBox2">
+        <span class="zw-thinking" id="zwThinking2">
+          <span class="zw-dot"></span><span class="zw-dot"></span><span class="zw-dot"></span>
+          <span style="margin-left:4px">分析中…</span>
+        </span>
+      </div>
+
+      <div class="zw-confirm">
+        ※ AIの分析はあくまで「仮説」です。「合っていますか？」は支援者ご自身が確かめてください。
+      </div>
+
+      <div class="zw-save-row">
+        <button class="zw-go-btn" id="zwSaveBtn" disabled>📌 この診断を保存する</button>
+        <button class="zw-again-btn" onclick="resetZawatsuki()">← 書き直す</button>
+        <span class="zw-saved-tag" id="zwSavedTag" style="display:none">✓ 保存しました</span>
+      </div>
+    </div>
+
+    <!-- 保存済み診断の表示 -->
+    <div id="zwSavedResult" style="margin-top:20px;display:none">
+      <div class="zw-section-label">▌ 保存済み診断</div>
+      <div class="zw-result-card" id="zwSavedContent"></div>
     </div>
   </div>
 
@@ -545,7 +629,7 @@ function newPersonData(alias) {
   return {
     id: 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2,6),
     meta: { alias: alias || '新しい利用者', createdAt: new Date().toISOString(), updatedAt: '', phase: '一次' },
-    modules: { basic: {}, emergency: [], attributes: {} }
+    modules: { basic: {}, emergency: [], attributes: {}, zawatsuki: null }
   };
 }
 
@@ -630,6 +714,7 @@ function openPerson(id) {
   showPhase('phaseEdit');
   showTab('basic');
   renderBasic();
+  renderZawatsuki();
   renderEmergency();
   renderAttributes();
   renderIcf();
@@ -1535,6 +1620,112 @@ function flashSave(module) {
   if (!el) return;
   el.classList.add('show');
   setTimeout(() => el.classList.remove('show'), 2000);
+}
+
+// ═══════════════════════════════════════════════
+//  ざわつき診断
+// ═══════════════════════════════════════════════
+const ZW_SYSTEM = `あなたは25年の医療福祉現場経験を持つアセッサー（柴山靖章）の視点を移植したAIです。
+
+支援者が「現場でざわついた・引っかかった」場面を教えてくれます。
+
+あなたの役割：
+1.【違和感のWhat化】入力された場面から「整合しない点・例外・矛盾」を探し、具体的な問い（What）として言語化する。「○○のときはできるのに、なぜ△△では？」のように。「やる気がない」「性格の問題」で流さない。
+2.【この奥にあるもの（仮説）】複数の違和感が水面下でどんな根に収束するかを仮説で示す。「この奥に、○○があるのでは？」と問い形式で返す（断定しない）。
+3.【1手のレバレッジ】その根に効く1つの具体的な対応を示す。1手で複数の困りごとが動く急所。
+
+出力形式（必ずこの形式で）：
+
+## 見えていること（違和感のWhat化）
+（支援者が言葉にできなかった「何がおかしいか」を、具体的な問いとして2〜3点）
+
+## この奥にあるもの（仮説）
+（「この奥に、〇〇があるのでは？」と仮説で。断定しない。2〜3文）
+
+## 1手のレバレッジ
+（その根に効く、たった1つの具体的な対応。なぜそれが効くかを1文で添える）
+
+## これ、合っていますか？
+（支援者への問い返し。「もし合っていたら、〇〇が次の一手になります」と添える）
+
+語りかけるように書く。専門用語より現場の言葉を優先する。`;
+
+function renderZawatsuki() {
+  if (!currentData) return;
+  const zw = currentData.modules.zawatsuki;
+  const savedDiv = document.getElementById('zwSavedResult');
+  const savedContent = document.getElementById('zwSavedContent');
+  if (zw && zw.input && zw.result) {
+    savedDiv.style.display = 'block';
+    savedContent.innerHTML =
+      '<div style="font-size:.72rem;color:var(--sub);margin-bottom:8px">入力：' + esc(zw.input.slice(0,80)) + (zw.input.length>80?'…':'') + '</div>' +
+      '<div style="white-space:pre-wrap;font-size:.84rem;line-height:1.8">' + esc(zw.result) + '</div>' +
+      '<div style="font-size:.68rem;color:var(--sub);margin-top:8px">' + (zw.savedAt ? '保存日時：' + fmtDate(zw.savedAt) : '') + '</div>';
+  } else {
+    savedDiv.style.display = 'none';
+  }
+  resetZawatsuki();
+}
+
+function resetZawatsuki() {
+  document.getElementById('zwStep1').classList.add('active');
+  document.getElementById('zwStep2').classList.remove('active');
+  const inp = document.getElementById('zwInput1');
+  if (inp) inp.value = '';
+  document.getElementById('zwThinking1').style.display = 'none';
+  document.getElementById('zwBtn1').disabled = false;
+}
+
+async function goZawatsukiStep2() {
+  const input = document.getElementById('zwInput1').value.trim();
+  if (!input) { alert('場面を入力してください'); return; }
+
+  document.getElementById('zwBtn1').disabled = true;
+  document.getElementById('zwThinking1').style.display = 'flex';
+
+  // Step 2に切り替え
+  document.getElementById('zwStep1').classList.remove('active');
+  document.getElementById('zwStep2').classList.add('active');
+  document.getElementById('zwEcho2').innerHTML = '<strong>「' + esc(input) + '」</strong>';
+  document.getElementById('zwAiBox2').innerHTML =
+    '<span class="zw-thinking"><span class="zw-dot"></span><span class="zw-dot"></span><span class="zw-dot"></span><span style="margin-left:4px">分析中…</span></span>';
+  document.getElementById('zwSaveBtn').disabled = true;
+  document.getElementById('zwSavedTag').style.display = 'none';
+
+  let result = '';
+  try {
+    await callWorkerStream(
+      ZW_SYSTEM,
+      '以下の場面について、違和感のWhat化・仮説・1手のレバレッジを分析してください。\n\n【場面】\n' + input,
+      (chunk) => {
+        result += chunk;
+        document.getElementById('zwAiBox2').textContent = result;
+        document.getElementById('zwAiBox2').innerHTML += '<span class="cursor"></span>';
+      }
+    );
+    document.getElementById('zwAiBox2').textContent = result;
+    document.getElementById('zwSaveBtn').disabled = false;
+    document.getElementById('zwSaveBtn').onclick = () => saveZawatsukiResult(input, result);
+  } catch (e) {
+    document.getElementById('zwAiBox2').textContent = '⚠️ エラー：' + e.message;
+  }
+  document.getElementById('zwThinking1').style.display = 'none';
+}
+
+function saveZawatsukiResult(input, result) {
+  if (!currentData) return;
+  currentData.modules.zawatsuki = {
+    input: input,
+    result: result,
+    savedAt: new Date().toISOString()
+  };
+  saveCurrentPerson();
+  document.getElementById('zwSavedTag').style.display = '';
+  renderZawatsuki();
+  // 保存後も診断結果は表示したまま
+  document.getElementById('zwStep2').classList.add('active');
+  document.getElementById('zwEcho2').innerHTML = '<strong>「' + esc(input) + '」</strong>';
+  document.getElementById('zwAiBox2').textContent = result;
 }
 
 // ═══════════════════════════════════════════════
