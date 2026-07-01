@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ミツメル Lite — 崩れる前に、気づく。</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="favicon.png">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+
+:root{
+  --bg:     #F0EDE8;
+  --bg2:    #FAF8F4;
+  --navy:   #0b1929;
+  --navy2:  #1c3248;
+  --gold:   #7d6428;
+  --gold2:  #9e7f34;
+  --gold3:  #c9a850;
+  --text:   #1a2535;
+  --dim:    #536070;
+  --dim2:   #8a98a8;
+  --border: #d8d2c8;
+  --shadow: 0 2px 16px rgba(0,0,0,.06);
+}
+
+html,body{
+  background:var(--bg);
+  font-family:'Hiragino Mincho ProN','Yu Mincho','Georgia',serif;
+  color:var(--text);
+  -webkit-font-smoothing:antialiased;
+  min-height:100%;
+}
+
+.wrap{
+  max-width:920px;
+  margin:0 auto;
+  padding:56px 32px 80px;
+  position:relative;
+}
+.wrap::before{
+  content:'';
+  position:fixed;
+  top:0;left:0;right:0;
+  height:3px;
+  background:linear-gradient(90deg,transparent,var(--navy2) 25%,var(--navy2) 75%,transparent);
+  opacity:.18;
+  z-index:50;
+}
+.wrap::after{
+  content:'';
+  position:fixed;
+  top:0;left:0;
+  width:4px;height:100%;
+  background:linear-gradient(180deg,var(--gold3),transparent 70%);
+  opacity:.6;
+  z-index:50;
+}
+
+.eyebrow{
+  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
+  font-size:11px;
+  letter-spacing:4px;
+  text-transform:uppercase;
+  color:var(--gold2);
+  font-weight:500;
+}
+
+/* ── HERO ── */
+.hero{
+  text-align:center;
+  margin-bottom:64px;
+}
+.hero img{
+  height:clamp(96px,12vw,132px);width:auto;display:block;margin:0 auto 22px;
+}
+.hero .eyebrow{margin-bottom:16px;}
+.hero-h1{
+  font-size:clamp(38px,6vw,66px);
+  font-weight:200;
+  letter-spacing:-.5px;
+  line-height:1.2;
+  color:var(--navy);
+}
+.hero-h1 em{
+  font-style:normal;
+  color:var(--gold2);
+}
+.rule{
+  width:36px;height:2px;
+  background:var(--gold3);
+  margin:22px auto;
+}
+.hero-sub{
+  font-size:clamp(16px,2.2vw,22px);
+  font-weight:300;
+  color:var(--navy);
+  line-height:1.7;
+  letter-spacing:.5px;
+}
+.hero-lead{
+  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
+  font-size:clamp(13px,1.5vw,15px);
+  color:var(--dim);
+  line-height:2;
+  letter-spacing:.5px;
+  margin-top:18px;
+  max-width:600px;
+  margin-left:auto;margin-right:auto;
+}
+
+/* ── SECTION COMMON ── */
+.section{margin-bottom:60px;}
+.section-head{text-align:center;margin-bottom:30px;}
+.section-eyebrow{
+  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
+  font-size:11px;letter-spacing:4px;text-transform:uppercase;
+  color:var(--gold2);margin-bottom:12px;
+}
+.section-title{
+  font-size:clamp(24px,3.4vw,36px);
+  font-weight:200;color:var(--navy);letter-spacing:-.5px;line-height:1.3;
+}
+.section-lead{
+  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
+  font-size:clamp(12px,1.4vw,14px);color:var(--dim);line-height:1.9;margin-top:12px;
+}
+
+/* ── ② PAINS ── */
+.pain-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:16px;
+}
+.pain{
+  padding:28px 24px;border:1px solid var(--border);border-radius:6px;
+  background:var(--bg2);box-shadow:var(--shadow);border-top:3px solid var(--gold3);
+  text-align:center;
+}
+.pain-quote{
+  font-size:clamp(16px,2vw,20px);font-weight:300;color:var(--navy);
+  line-height:1.6;letter-spacing:.3px;
+}
+.pain-note{
+  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
+  font-size:12px;color:var(--dim);line-height:1.8;margin-top:12px;
+}
+.pain-after{
+  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
+  text-align:center;font-size:clamp(13px,1.5vw,15px);color:var(--navy);
+  line-height:2;margin-top:26px;letter-spacing:.5px;
+}
+.pain-after b{color:var(--gold2);font-weight:600;}
+
+/* ── ③ STEPS ── */
+.step-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+.step{
+  padding:28px 24px;border:1px solid var(--border);border-radius:6px;
+  background:var(--bg2);box-shadow:var(--shadow);border-left:3px solid var(--gold3);
+}
+.step-num{
+  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
+  font-size:11px;letter-spacing:3px;color:var(--gold2);margin-bottom:12px;
+}
+.step-title{
+  font-size:clamp(17px,2.1vw,21px);font-weight:300;color:var(--navy);
+  line-height:1.4;margin-bottom:10px;
+}
+.step-body{
+  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
+  font-size:13px;color:var(--dim);line-height:1.95;
+}
+.step-note{
+  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
+  text-align:center;font-size:13px;color:var(--navy);line-height:1.9;
+  margin-top:24px;padding:16px 20px;background:var(--bg2);
+  border:1px solid var(--border);border-radius:6px;letter-spacing:.3px;
+}
+.step-note b{color:var(--gold2);}
+
+/* ── CTA（④⑤ 準備中） ── */
+.cta{
+  text-align:center;padding:40px 28px;border:1px solid var(--border);
+  border-radius:8px;background:#fff;box-shadow:var(--shadow);
+  border-top:3px solid var(--navy);
+}
+.cta-title{
+  font-size:clamp(20px,2.8vw,28px);font-weight:200;color:var(--navy);
+  letter-spacing:-.3px;line-height:1.4;
+}
+.cta-lead{
+  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
+  font-size:clamp(12px,1.4vw,14px);color:var(--dim);line-height:1.9;margin-top:12px;
+}
+.cta-btn{
+  display:inline-block;margin-top:22px;text-decoration:none;
+  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
+  font-size:14px;letter-spacing:2px;color:var(--bg2);
+  padding:14px 34px;border:1.5px solid var(--navy);border-radius:4px;
+  background:var(--navy);cursor:pointer;
+}
+.cta-btn:hover{background:var(--navy2);}
+.cta-soon{
+  display:inline-block;margin-left:10px;font-size:10px;letter-spacing:1px;
+  color:var(--gold2);vertical-align:middle;
+}
+.cta-note{
+  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
+  font-size:11px;color:var(--dim2);margin-top:16px;line-height:1.8;letter-spacing:.3px;
+}
+
+/* ── FOOTER ── */
+.foot{
+  margin-top:60px;text-align:center;border-top:1px solid var(--border);padding-top:30px;
+}
+.foot-mission{
+  font-size:clamp(14px,1.7vw,18px);font-weight:300;color:var(--navy);
+  letter-spacing:.5px;line-height:1.9;
+}
+.foot-links{
+  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
+  font-size:12px;margin-top:16px;letter-spacing:.5px;
+}
+.foot-links a{color:var(--gold2);text-decoration:none;}
+.foot-links a:hover{text-decoration:underline;}
+.foot-contact{
+  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
+  font-size:11px;color:var(--dim);margin-top:12px;line-height:1.9;letter-spacing:.5px;
+}
+
+@media(max-width:760px){
+  .wrap{padding:44px 20px 64px;}
+  .pain-grid,.step-grid{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ① HERO -->
+  <header class="hero">
+    <img src="logo.png" alt="Fusion Partners">
+    <div class="eyebrow">ミツメル Lite — Self Care</div>
+    <h1 class="hero-h1">崩れる前に、<em>気づく。</em></h1>
+    <div class="rule"></div>
+    <div class="hero-sub">
+      毎日3分。眠り・気分・すり減ったことを書くだけで、<br>
+      自分の"いま"が見える。
+    </div>
+    <div class="hero-lead">
+      記録するためのアプリではありません。あなたの状態を可視化して、
+      AIが今日の一歩を一緒に決める——がんばりすぎる人のための、個人のセルフケアです。
+    </div>
+  </header>
+
+  <!-- ② こんなこと、ありませんか -->
+  <section class="section">
+    <div class="section-head">
+      <div class="section-eyebrow">Why — こんなこと、ありませんか</div>
+      <div class="section-title">気づいたら、もう限界だった。</div>
+      <div class="section-lead">人を支える現場の人ほど、自分のことは後回しになりがちです。</div>
+    </div>
+    <div class="pain-grid">
+      <div class="pain">
+        <div class="pain-quote">「大丈夫」が<br>口ぐせになっている</div>
+        <div class="pain-note">本当は疲れているのに、言葉にする前に一日が終わっていく。</div>
+      </div>
+      <div class="pain">
+        <div class="pain-quote">自分のことは<br>いつも後回し</div>
+        <div class="pain-note">利用者・家族・スタッフ。自分の消耗にだけ、気づけない。</div>
+      </div>
+      <div class="pain">
+        <div class="pain-quote">ある日ぷつんと<br>切れてしまう</div>
+        <div class="pain-note">限界のサインは、いつも"気づけた時にはもう遅い"。</div>
+      </div>
+    </div>
+    <div class="pain-after">
+      ミツメルLiteは、その<b>「限界のサイン」を、崩れる前に見えるようにする</b>ツールです。
+    </div>
+  </section>
+
+  <!-- ③ 3ステップ -->
+  <section class="section">
+    <div class="section-head">
+      <div class="section-eyebrow">How — ミツメルLiteがすること</div>
+      <div class="section-title">3分で、自分の状態に気づく。</div>
+    </div>
+    <div class="step-grid">
+      <div class="step">
+        <div class="step-num">STEP 01</div>
+        <div class="step-title">3分で入力</div>
+        <div class="step-body">眠り・気分・今日すり減ったこと（ノイズ）を、その日のうちにさっと入力します。</div>
+      </div>
+      <div class="step">
+        <div class="step-num">STEP 02</div>
+        <div class="step-title">状態を可視化</div>
+        <div class="step-body">あなたの <b>HP（体力）</b> と <b>MP（気力）</b> が数字で見える。今日の自分が、ひと目で分かります。</div>
+      </div>
+      <div class="step">
+        <div class="step-num">STEP 03</div>
+        <div class="step-title">AIの一言＋今日やる3つ</div>
+        <div class="step-body">あなただけに向けた一言と、「これだけはやる」タスクを3つ。抱え込みすぎないための、今日の一歩。</div>
+      </div>
+    </div>
+    <div class="step-note">
+      ※ これは<b>記録ツールではありません</b>。溜めるのではなく、崩れる前に"気づく"ためのセルフケアです。
+    </div>
+  </section>
+
+  <!-- ④⑤ 申込・料金（準備中） -->
+  <section class="section">
+    <div class="cta">
+      <div class="cta-title">まずは無料で、5回。</div>
+      <div class="cta-lead">
+        気に入ったら、月30回まで 月額¥980で続けられます（個人向け）。
+      </div>
+      <a class="cta-btn" href="https://fusionpartnersoffice-oss.github.io/mitsumeru/mitsumeru_lite.html" target="_blank" rel="noopener">無料で試す</a>
+      <div class="cta-note">
+        ※ 料金：無料お試し5回のあと、月額¥980（税込・月30回まで）。5回終了後、アプリ内で月額プランへのお申し込みをご案内します。
+      </div>
+    </div>
+  </section>
+
+  <!-- ⑥ フッター -->
+  <footer class="foot">
+    <div class="foot-mission">「背丈の低い人の生活を、その背丈のまま守る。」</div>
+    <div class="foot-links">
+      <a href="index_fusionos.html">← FusionOS 5つのシステムへ</a>
+    </div>
+    <div class="foot-contact">
+      Fusion Partners　｜　fusion.partners.office@gmail.com　｜　note.com/fusion_os
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>

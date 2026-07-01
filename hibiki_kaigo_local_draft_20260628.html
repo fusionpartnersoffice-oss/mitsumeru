@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>響（Hibiki）高齢福祉版 | Fusion Partners</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%2381c784'/><text x='16' y='24' font-size='20' text-anchor='middle'>🔔</text></svg>">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<style>
+:root {
+  --bg:#0d1c15; --surface:#152619; --card:#1c3524;
+  --accent:#81c784; --accent2:#4fc3f7; --accent3:#ffb74d;
+  --danger:#ef5350; --text:#e8eaf0; --sub:#8fa3b8; --border:#2a5035; --radius:10px;
+  --red-cell:rgba(239,83,80,.13); --red-border:rgba(239,83,80,.5);
+  --blue-cell:rgba(129,199,132,.13); --blue-border:rgba(129,199,132,.5);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Hiragino Kaku Gothic Pro','Meiryo',sans-serif;min-height:100vh;}
+
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:8px 14px;display:flex;align-items:center;gap:8px;position:sticky;top:0;z-index:100;flex-wrap:wrap;}
+header h1{font-size:.92rem;font-weight:700;color:var(--accent);}
+.ver-badge{background:rgba(129,199,132,.18);border:1px solid var(--accent);border-radius:12px;padding:2px 10px;font-size:.68rem;color:var(--accent);font-weight:700;}
+.person-badge{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:3px 11px;font-size:.76rem;}
+.phase-badge{background:rgba(129,199,132,.12);border:1px solid var(--accent);border-radius:20px;padding:3px 10px;font-size:.7rem;color:var(--accent);}
+.demo-badge{background:rgba(255,183,77,.18);border:1px solid var(--accent3);border-radius:20px;padding:3px 12px;font-size:.7rem;color:var(--accent3);font-weight:700;}
+.hdr-spacer{flex:1;}
+.hdr-btn{background:var(--card);border:1px solid var(--border);color:var(--sub);border-radius:6px;padding:5px 11px;font-size:.74rem;cursor:pointer;font-family:inherit;transition:all .15s;}
+.hdr-btn:hover{color:var(--text);border-color:var(--sub);}
+.hdr-btn.grn{background:rgba(129,199,132,.2);border-color:var(--accent);color:var(--accent);}
+.api-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px;}
+.api-dot.ok{background:var(--accent);}
+.api-dot.ng{background:var(--danger);}
+.api-dot.demo{background:var(--accent3);}
+
+.phase{display:none;}.phase.active{display:block;}
+
+#phase0{padding:22px 16px;}
+.p0-wrap{max-width:800px;margin:0 auto;}
+.p0-title{font-size:1.05rem;font-weight:700;margin-bottom:4px;}
+.p0-desc{font-size:.8rem;color:var(--sub);margin-bottom:18px;line-height:1.7;}
+.person-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;}
+.person-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;cursor:pointer;transition:all .18s;}
+.person-card:hover{border-color:var(--accent);}
+.person-card.new-card{border-style:dashed;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-height:90px;color:var(--sub);}
+.person-card.new-card:hover{color:var(--accent);border-color:var(--accent);}
+.pc-alias{font-weight:700;font-size:.95rem;margin-bottom:3px;}
+.pc-org{font-size:.7rem;color:var(--sub);margin-bottom:6px;}
+.pc-count{font-size:.68rem;color:var(--accent2);}
+.pc-date{font-size:.65rem;color:var(--sub);margin-top:2px;}
+
+#phase0b{padding:22px 16px;}
+.p0b-wrap{max-width:500px;margin:0 auto;}
+.form-title{font-size:.98rem;font-weight:700;margin-bottom:14px;}
+.form-group{margin-bottom:12px;}
+.form-group label{font-size:.78rem;color:var(--sub);display:block;margin-bottom:4px;}
+.form-group input{width:100%;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:9px 13px;font-size:.88rem;outline:none;font-family:inherit;}
+.form-group input:focus{border-color:var(--accent);}
+.phase-options{display:flex;flex-direction:column;gap:7px;}
+.phase-option{display:flex;align-items:flex-start;gap:9px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:11px 13px;cursor:pointer;transition:all .18s;}
+.phase-option:hover{border-color:var(--sub);}
+.phase-option.selected{background:rgba(129,199,132,.1);border-color:var(--accent);}
+.phase-option input[type="radio"]{margin-top:2px;accent-color:var(--accent);}
+.po-label{font-size:.86rem;font-weight:700;margin-bottom:1px;}
+.po-desc{font-size:.7rem;color:var(--sub);}
+.start-btn{width:100%;padding:12px;background:var(--accent);color:#0d1c15;border:none;border-radius:var(--radius);font-size:.92rem;font-weight:700;cursor:pointer;margin-top:8px;font-family:inherit;}
+.start-btn:hover{opacity:.9;}
+.back-link{font-size:.76rem;color:var(--sub);text-align:center;margin-top:10px;cursor:pointer;}
+.back-link:hover{color:var(--text);}
+
+#phase1.active{display:flex;flex-direction:column;}
+.split-layout{display:flex;align-items:flex-start;min-height:calc(100vh - 56px);}
+.matrix-panel{width:56%;border-right:1px solid var(--border);padding:14px;overflow-y:auto;max-height:calc(100vh - 56px);position:sticky;top:56px;}
+.panel-title{font-size:.72rem;font-weight:700;color:var(--sub);margin-bottom:10px;letter-spacing:.04em;}
+.domain-section{margin-bottom:12px;}
+.domain-header{display:flex;align-items:center;gap:7px;padding:6px 9px;border-radius:8px;background:var(--surface);border:1px solid var(--border);margin-bottom:5px;}
+.domain-icon{font-size:.92rem;}
+.domain-label{font-size:.76rem;font-weight:700;flex:1;}
+.d-badges{display:flex;gap:3px;}
+.d-badge{font-size:.6rem;font-weight:700;padding:1px 5px;border-radius:9px;}
+.d-badge.r{background:rgba(239,83,80,.2);color:#ef5350;}
+.d-badge.b{background:rgba(129,199,132,.2);color:#81c784;}
+.domain-cells{display:grid;grid-template-columns:1fr 1fr;gap:4px;}
+.icf-cell{background:var(--card);border:1px solid var(--border);border-radius:7px;padding:7px 9px;cursor:pointer;transition:all .18s;min-height:56px;position:relative;}
+.icf-cell:hover{border-color:var(--sub);}
+.icf-cell.cr{background:var(--red-cell);border-color:var(--red-border);}
+.icf-cell.cb{background:var(--blue-cell);border-color:var(--blue-border);}
+.cell-label{font-size:.6rem;color:var(--sub);margin-bottom:3px;}
+.cell-text{font-size:.75rem;line-height:1.5;}
+.cell-tri{position:absolute;top:4px;right:6px;font-size:.66rem;}
+.cell-empty{font-size:.66rem;color:var(--border);font-style:italic;}
+
+.analysis-panel{flex:1;padding:14px;overflow-y:auto;max-height:calc(100vh - 56px);}
+.analyze-btn{width:100%;padding:11px;background:var(--accent);color:#0d1c15;border:none;border-radius:var(--radius);font-size:.88rem;font-weight:700;cursor:pointer;margin-bottom:12px;font-family:inherit;}
+.analyze-btn:hover{opacity:.9;}
+.analyze-btn:disabled{opacity:.4;cursor:not-allowed;}
+
+.ice-card{border-radius:var(--radius);padding:9px 12px;margin-bottom:7px;border:1px solid transparent;}
+.ice-s{background:rgba(255,183,77,.07);border-color:rgba(255,183,77,.3);}
+.ice-p{background:rgba(186,104,200,.07);border-color:rgba(186,104,200,.3);}
+.ice-st{background:rgba(149,117,205,.07);border-color:rgba(149,117,205,.3);}
+.ice-m{background:rgba(121,134,203,.07);border-color:rgba(121,134,203,.3);}
+.ice-r{background:rgba(129,199,132,.1);border-color:var(--accent);}
+.ice-lbl{font-size:.66rem;font-weight:700;color:var(--sub);margin-bottom:4px;}
+.ice-txt{font-size:.82rem;line-height:1.65;}
+.ice-ph{font-size:.78rem;color:var(--border);font-style:italic;text-align:center;padding:18px;}
+
+.plan-sec{margin-top:12px;border-top:1px solid var(--border);padding-top:12px;}
+.plan-lbl{font-size:.66rem;font-weight:700;color:var(--accent2);margin-bottom:5px;}
+.plan-txt{font-size:.82rem;line-height:1.65;margin-bottom:8px;}
+.act-list{display:flex;flex-direction:column;gap:5px;margin-bottom:8px;}
+.act-item{display:flex;gap:7px;align-items:flex-start;}
+.act-num{background:var(--accent);color:#0d1c15;font-size:.64rem;font-weight:700;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;}
+.act-txt{font-size:.82rem;line-height:1.55;}
+.action-bar{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);}
+.act-btn{flex:1;min-width:88px;padding:9px;border-radius:var(--radius);font-size:.78rem;font-weight:700;cursor:pointer;font-family:inherit;border:1px solid var(--border);background:var(--card);color:var(--text);transition:all .18s;}
+.act-btn:hover{border-color:var(--sub);}
+.act-btn.save{background:rgba(79,195,247,.12);border-color:var(--accent2);color:var(--accent2);}
+.act-btn.pdca{background:rgba(129,199,132,.1);border-color:var(--accent);color:var(--accent);}
+
+.loading{text-align:center;padding:18px;color:var(--sub);font-size:.82rem;}
+.dots::after{content:'';animation:dd 1.2s infinite;}
+@keyframes dd{0%{content:''}33%{content:'.'}66%{content:'..'}100%{content:'...'}}
+
+.over{position:fixed;inset:0;z-index:500;background:rgba(8,12,18,.82);display:none;align-items:center;justify-content:center;padding:16px;}
+.over.active{display:flex;}
+.cell-modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;max-width:390px;width:100%;}
+.cm-dom{font-size:.64rem;color:var(--sub);margin-bottom:1px;}
+.cm-lbl{font-size:.92rem;font-weight:700;margin-bottom:10px;}
+.cm-ta{width:100%;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:9px 11px;font-size:.85rem;outline:none;resize:vertical;min-height:76px;font-family:inherit;line-height:1.6;margin-bottom:9px;}
+.cm-ta:focus{border-color:var(--accent);}
+.tri-row{display:flex;gap:5px;margin-bottom:10px;}
+.tri-btn{flex:1;padding:7px;border-radius:7px;font-size:.76rem;font-weight:700;cursor:pointer;font-family:inherit;border:1px solid transparent;transition:all .15s;}
+.tri-btn.tr{background:var(--red-cell);border-color:var(--red-border);color:#ef5350;}
+.tri-btn.tb{background:var(--blue-cell);border-color:var(--blue-border);color:#81c784;}
+.tri-btn.tn{background:var(--card);border-color:var(--border);color:var(--sub);}
+.tri-btn.on{box-shadow:0 0 0 2px currentColor;}
+.cm-btns{display:flex;gap:7px;}
+.cm-save{flex:1;padding:9px;background:var(--accent);color:#0d1c15;border:none;border-radius:7px;font-weight:700;cursor:pointer;font-family:inherit;}
+.cm-cancel{padding:9px 15px;background:var(--card);border:1px solid var(--border);color:var(--sub);border-radius:7px;cursor:pointer;font-family:inherit;}
+
+.modal-over{position:fixed;inset:0;z-index:400;background:rgba(8,12,18,.88);display:none;align-items:flex-start;justify-content:center;padding:16px;overflow-y:auto;}
+.modal-over.active{display:flex;}
+.modal-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);max-width:880px;width:100%;padding:20px;margin:auto;}
+.modal-box h2{font-size:.95rem;color:var(--accent);margin-bottom:4px;}
+.modal-sub{font-size:.74rem;color:var(--sub);margin-bottom:14px;}
+.chg-card{background:rgba(129,199,132,.08);border:1px solid var(--accent);border-radius:var(--radius);padding:11px 13px;margin-bottom:12px;}
+.chg-lbl{font-size:.66rem;color:var(--accent);font-weight:700;margin-bottom:3px;}
+.chg-txt{font-size:.82rem;line-height:1.65;}
+.cmp-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.cmp-dtitle{font-size:.74rem;font-weight:700;color:var(--sub);margin-bottom:6px;}
+.cmp-cell{padding:5px 8px;border-radius:6px;border:1px solid var(--border);margin-bottom:3px;}
+.cmp-cell.changed{border-color:var(--accent3);background:rgba(255,183,77,.07);}
+.cmp-cell-lbl{font-size:.58rem;color:var(--sub);}
+.cmp-cell-txt{font-size:.74rem;line-height:1.5;}
+.chg-badge{font-size:.55rem;background:var(--accent3);color:#1a0029;border-radius:3px;padding:1px 4px;margin-left:3px;}
+.modal-close{background:var(--card);border:1px solid var(--border);color:var(--sub);border-radius:7px;padding:8px 18px;cursor:pointer;font-family:inherit;margin-top:14px;}
+.modal-close:hover{border-color:var(--sub);color:var(--text);}
+
+.demo-end-over{position:fixed;inset:0;z-index:600;background:rgba(8,12,18,.92);display:none;align-items:center;justify-content:center;padding:18px;}
+.demo-end-over.active{display:flex;}
+.demo-end-card{background:var(--surface);border:1px solid var(--accent3);border-radius:var(--radius);max-width:420px;width:100%;padding:26px 22px;text-align:center;}
+.demo-end-card h2{font-size:1.1rem;color:var(--accent3);margin-bottom:10px;}
+.demo-end-card p{font-size:.84rem;color:var(--sub);line-height:1.75;margin-bottom:18px;}
+.demo-end-btn{width:100%;padding:11px;border-radius:var(--radius);font-size:.9rem;font-weight:700;cursor:pointer;font-family:inherit;border:none;margin-bottom:8px;}
+.demo-end-btn.pri{background:var(--accent);color:#0d1c15;}
+.demo-end-btn.sec{background:var(--card);color:var(--sub);border:1px solid var(--border);}
+
+.gate{position:fixed;inset:0;z-index:600;background:rgba(8,12,18,.95);display:none;align-items:center;justify-content:center;padding:18px;}
+.gate.active{display:flex;}
+.gate-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);max-width:410px;width:100%;padding:24px 20px;text-align:center;}
+.gate-card h2{font-size:1.05rem;color:var(--accent);margin-bottom:10px;}
+.gate-card p{font-size:.82rem;color:var(--sub);line-height:1.75;margin-bottom:14px;}
+.gate-note{font-size:.7rem;color:var(--sub);line-height:1.7;text-align:left;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:16px;}
+.gate-btn{width:100%;padding:11px;border-radius:var(--radius);font-size:.92rem;font-weight:700;cursor:pointer;font-family:inherit;background:var(--accent);color:#0d1c15;border:none;}
+.gate-btn:hover{opacity:.9;}
+
+#toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--accent2);color:#0f1923;padding:9px 20px;border-radius:20px;font-weight:700;font-size:.82rem;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;}
+
+@media(max-width:660px){
+  .split-layout{flex-direction:column;}
+  .matrix-panel{width:100%;max-height:none;position:static;border-right:none;border-bottom:1px solid var(--border);}
+  .analysis-panel{max-height:none;}
+  .cmp-grid{grid-template-columns:1fr;}
+}
+@media print{
+  header,.analyze-btn,.action-bar,.hdr-btn,.hdr-spacer{display:none!important;}
+  .split-layout{flex-direction:column;}
+  .matrix-panel,.analysis-panel{max-height:none;overflow:visible;width:100%;}
+  body{background:#fff;color:#000;}
+  .over,.modal-over,.gate,.demo-end-over{display:none!important;}
+}
+</style>
+</head>
+<body>
+
+<!-- 同意ゲート -->
+<div class="gate active" id="consentGate">
+  <div class="gate-card">
+    <h2>🔔 響 高齢福祉版</h2>
+    <p>ご利用の前に、データの取り扱いをご確認ください。</p>
+    <div class="gate-note">
+      ・入力内容はAI分析のためAnthropicへ送信されます。<br>
+      ・氏名など個人を特定できる情報の入力はお控えください。<br>
+      ・データはお使いの端末（localStorage）にのみ保存されます。<br>
+      ・本ツールはアセスメントの補助用途です。結果の利用は自己責任です。
+    </div>
+    <button class="gate-btn" onclick="giveConsent()">同意して始める</button>
+  </div>
+</div>
+
+<!-- デモ終了モーダル -->
+<div class="demo-end-over" id="demoEndOver">
+  <div class="demo-end-card">
+    <h2>🎯 デモ終了</h2>
+    <p>3回の無料分析が完了しました。<br>ご興味をお持ちいただけましたか？<br><br>正式版では利用回数の制限なくお使いいただけます。</p>
+    <button class="demo-end-btn pri" onclick="promptOwnKey()">自分のAPIキーで続ける</button>
+    <button class="demo-end-btn sec" onclick="closeDemoEnd()">閉じる</button>
+  </div>
+</div>
+
+<!-- ヘッダー -->
+<header>
+  <span style="font-size:1.2rem">🔔</span>
+  <h1>響（Hibiki）</h1>
+  <span class="ver-badge">高齢福祉版</span>
+  <span id="personBadge" class="person-badge" style="display:none"></span>
+  <span id="phaseBadge" class="phase-badge" style="display:none"></span>
+  <div class="hdr-spacer"></div>
+  <span id="demoBadge" class="demo-badge" style="display:none"></span>
+  <span id="apiInd"><span class="api-dot ng" id="apiDot"></span><span id="apiTxt" style="font-size:.7rem;color:var(--sub)">APIキー未設定</span></span>
+  <button class="hdr-btn grn" id="analyzeHdrBtn" style="display:none" onclick="generateAnalysis()">▶ 分析</button>
+  <button class="hdr-btn grn" id="saveHdrBtn" style="display:none" onclick="saveAssessment()">💾 保存</button>
+  <button class="hdr-btn" id="homeBtn" style="display:none" onclick="showPersonList()">🏠 一覧</button>
+  <button class="hdr-btn" id="apiKeyBtn" onclick="setApiKey()">🔑 トークン入力</button>
+</header>
+
+<!-- Phase 0: 利用者一覧 -->
+<div class="phase active" id="phase0">
+  <div class="p0-wrap">
+    <div class="p0-title">🔔 響 高齢福祉版</div>
+    <div class="p0-desc">介護支援専門員・施設管理職向けICFアセスメントツールです。<br>利用者を選ぶか、新規作成してください。</div>
+    <div class="person-grid" id="personGrid"></div>
+  </div>
+</div>
+
+<!-- Phase 0b: 新規 / フェーズ選択 -->
+<div class="phase" id="phase0b">
+  <div class="p0b-wrap">
+    <div class="form-title" id="p0bTitle">新しい利用者を追加</div>
+    <div class="form-group" id="aliasGrp">
+      <label>対象者の呼び方（仮名・イニシャル等）</label>
+      <input type="text" id="aliasInput" placeholder="例：Aさん、田中様（仮名）">
+    </div>
+    <div class="form-group" id="orgGrp">
+      <label>施設名・事業所名（任意）</label>
+      <input type="text" id="orgInput" placeholder="例：〇〇介護老人保健施設">
+    </div>
+    <div class="form-group">
+      <label>アセスメントのフェーズ</label>
+      <div class="phase-options">
+        <label class="phase-option selected" id="pOpt1">
+          <input type="radio" name="ph" value="一次アセスメント" checked>
+          <div><div class="po-label">📋 一次アセスメント</div><div class="po-desc">初回・記録や観察をもとに仮説を立てる</div></div>
+        </label>
+        <label class="phase-option" id="pOpt2">
+          <input type="radio" name="ph" value="二次アセスメント">
+          <div><div class="po-label">🔍 二次アセスメント</div><div class="po-desc">面談後・仮説を検証し深掘りする</div></div>
+        </label>
+        <label class="phase-option" id="pOpt3">
+          <input type="radio" name="ph" value="PDCA更新">
+          <div><div class="po-label">🔄 PDCA更新</div><div class="po-desc">前回との比較・変化を記録する</div></div>
+        </label>
+      </div>
+    </div>
+    <button class="start-btn" onclick="startAssessment()">アセスメントを始める →</button>
+    <div class="back-link" onclick="showPersonList()">← 利用者一覧に戻る</div>
+  </div>
+</div>
+
+<!-- Phase 1: メインアセスメント -->
+<div class="phase" id="phase1">
+  <div class="split-layout">
+    <div class="matrix-panel">
+      <div class="panel-title">📊 ICFマトリクス（高齢福祉版）— タップしてコメント入力・トリアージ</div>
+      <div id="matrixContent"></div>
+    </div>
+    <div class="analysis-panel">
+      <div class="panel-title">🏔 氷山モデル + ケアプラン</div>
+      <button class="analyze-btn" id="analyzeBtn" onclick="generateAnalysis()">▶ マトリクスを分析する</button>
+      <div id="analysisLoading" style="display:none" class="loading"><span class="dots">ICFデータを分析中</span></div>
+      <div id="icebergArea"><div class="ice-ph">左のマトリクスを入力して「分析する」を押してください。</div></div>
+      <div class="plan-sec" id="planArea" style="display:none">
+        <div class="plan-lbl">支援方針</div>
+        <div class="plan-txt" id="planPolicy"></div>
+        <div class="plan-lbl">本人の強み・生きがい（青セルより）</div>
+        <div class="plan-txt" id="planDreams"></div>
+        <div class="plan-lbl">推進項目</div>
+        <div class="act-list" id="planActions"></div>
+        <div class="plan-lbl">評価・見直し</div>
+        <div class="plan-txt" id="planEval"></div>
+      </div>
+      <div class="action-bar">
+        <button class="act-btn save" onclick="saveAssessment()">💾 保存</button>
+        <button class="act-btn pdca" id="pdcaBtn" style="display:none" onclick="showPdcaComparison()">🔄 前回と比較</button>
+        <button class="act-btn" onclick="downloadPdf()">📄 PDF</button>
+        <button class="act-btn" onclick="window.print()">🖨 印刷</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- セル編集モーダル -->
+<div class="over" id="cellOver">
+  <div class="cell-modal">
+    <div class="cm-dom" id="cmDom"></div>
+    <div class="cm-lbl" id="cmLbl"></div>
+    <textarea class="cm-ta" id="cmTa" placeholder="観察・記録・気になること（任意）"></textarea>
+    <div class="tri-row">
+      <button class="tri-btn tr" id="triR" onclick="setTri('red')">🔴 リスク</button>
+      <button class="tri-btn tb" id="triB" onclick="setTri('blue')">🔵 強み</button>
+      <button class="tri-btn tn" id="triN" onclick="setTri('none')">⬜ 未分類</button>
+    </div>
+    <div class="cm-btns">
+      <button class="cm-save" onclick="saveCellEdit()">保存</button>
+      <button class="cm-cancel" onclick="closeCellEdit()">キャンセル</button>
+    </div>
+  </div>
+</div>
+
+<!-- PDCA比較モーダル -->
+<div class="modal-over" id="pdcaModal">
+  <div class="modal-box">
+    <h2>🔄 PDCA比較</h2>
+    <div class="modal-sub" id="pdcaSub"></div>
+    <div id="chgSummary" style="display:none">
+      <div class="chg-card">
+        <div class="chg-lbl">✨ 変化サマリー（AI）</div>
+        <div class="chg-txt" id="chgTxt"></div>
+      </div>
+    </div>
+    <div class="cmp-grid" id="cmpContent"></div>
+    <button class="modal-close" onclick="closePdcaModal()">閉じる</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ── Worker設定 ──
+const WORKER_URL = 'https://hibiki-worker.fusionpartnersoffice-oss.workers.dev';
+const DEMO_MAX = 3;
+const STORE_KEY = 'hibiki_kaigo';
+
+// 端末固有デモID（localStorage管理）
+function getDemoId() {
+  let id = localStorage.getItem(STORE_KEY+'_demo_id');
+  if (!id) { id = 'fp_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,8); localStorage.setItem(STORE_KEY+'_demo_id', id); }
+  return id;
+}
+
+// Stripeトークン
+function getStripeToken() { return localStorage.getItem(STORE_KEY+'_stripe_token') || ''; }
+function isStripeUser() { return !!getStripeToken(); }
+
+// デモカウント（UI表示用・ローカル管理）
+function getDemoCount() { return parseInt(localStorage.getItem(STORE_KEY+'_demo_count') || '0'); }
+function incDemoCount() { localStorage.setItem(STORE_KEY+'_demo_count', String(getDemoCount()+1)); updateDemoBadge(); }
+function getDemoRemaining() { return Math.max(0, DEMO_MAX - getDemoCount()); }
+
+function updateDemoBadge() {
+  const badge = document.getElementById('demoBadge');
+  const keyBtn = document.getElementById('apiKeyBtn');
+  badge.style.display = 'inline-block';
+  if (isStripeUser()) {
+    badge.textContent = '✅ 正式版';
+    keyBtn.style.display = 'none';
+    document.getElementById('apiDot').className = 'api-dot ok';
+    document.getElementById('apiTxt').textContent = '正式版';
+  } else {
+    badge.textContent = `🎯 デモ 残り${getDemoRemaining()}回`;
+    keyBtn.style.display = 'inline-block';
+    document.getElementById('apiDot').className = 'api-dot demo';
+    document.getElementById('apiTxt').textContent = 'デモモード';
+  }
+}
+
+// ── ICF定義（高齢福祉版）──
+const ICF_DOMAINS = [
+  {id:'health',label:'① 健康状態・医療',icon:'🏥',cells:['現疾患・内服管理','医療的ケア（酸素・胃ろう等）','疼痛・浮腫・倦怠感','感染リスク・皮膚状態']},
+  {id:'body',label:'② 心身機能',icon:'🧠',cells:['ADL（移乗・移動・歩行）','排泄（自立度・失禁状況）','食事（嚥下・食形態・栄養）','認知機能・記憶・見当識']},
+  {id:'behavior',label:'③ 精神・行動',icon:'💤',cells:['意欲・気分・抑うつ傾向','睡眠状態','BPSD（徘徊・暴言・妄想等）','転倒リスク・安全管理']},
+  {id:'activity',label:'④ 活動・セルフケア',icon:'⚡',cells:['入浴・整容・更衣','服薬管理','家事・IADL（可能範囲）','外出・移動手段']},
+  {id:'participation',label:'⑤ 参加・生きがい',icon:'🌐',cells:['家族・地域との交流','趣味・余暇活動','役割・生きがい','本人の意思・希望']},
+  {id:'environment',label:'⑥ 環境・サポート',icon:'🏘',cells:['家族サポート状況','経済状況・保険種別','住環境・バリアフリー','サービス体制・施設方針']},
+];
+
+// ── 状態 ──
+let currentPersonId = null;
+let currentPhase = '';
+let cells = {};
+let currentIceberg = null;
+let currentPlan = null;
+let editCell = null;
+let editTri = 'none';
+
+// ── トークン入力（正式版） ──
+function updateApiStatus() { /* Worker経由のため不要 */ }
+function setApiKey() {
+  const t = prompt('正式版アクセストークンを入力してください\n（Fusion Partnersよりメールでお送りしたもの）');
+  if (t && t.trim().length > 10) {
+    localStorage.setItem(STORE_KEY+'_stripe_token', t.trim());
+    updateDemoBadge();
+    toast('✅ 正式版として認証しました');
+  } else if (t !== null) { alert('トークンが正しくありません。'); }
+}
+function promptOwnKey() { closeDemoEnd(); setApiKey(); }
+
+// ── 同意 ──
+function hasConsent() { return !!localStorage.getItem(STORE_KEY+'_consent'); }
+function giveConsent() { localStorage.setItem(STORE_KEY+'_consent','1'); document.getElementById('consentGate').classList.remove('active'); }
+function checkConsent() { if(!hasConsent()) document.getElementById('consentGate').classList.add('active'); }
+
+// ── デモ終了 ──
+function closeDemoEnd() { document.getElementById('demoEndOver').classList.remove('active'); }
+function checkDemoLimit() {
+  if (!isStripeUser() && getDemoRemaining() <= 0) {
+    document.getElementById('demoEndOver').classList.add('active'); return true;
+  }
+  return false;
+}
+
+// ── persons ──
+function loadPersons() { return JSON.parse(localStorage.getItem(STORE_KEY+'_persons') || '[]'); }
+function savePersons(p) { localStorage.setItem(STORE_KEY+'_persons', JSON.stringify(p)); }
+function getPerson(id) { return loadPersons().find(p => p.id === id); }
+
+// ── フェーズ切替 ──
+function showPhase(id) {
+  ['phase0','phase0b','phase1'].forEach(p => {
+    document.getElementById(p).className = 'phase'+(p===id?' active':'');
+  });
+  const inA = id==='phase1';
+  document.getElementById('homeBtn').style.display = inA?'inline-block':'none';
+  document.getElementById('saveHdrBtn').style.display = inA?'inline-block':'none';
+  document.getElementById('analyzeHdrBtn').style.display = inA?'inline-block':'none';
+}
+
+function showPersonList() {
+  currentPersonId=null;
+  document.getElementById('personBadge').style.display='none';
+  document.getElementById('phaseBadge').style.display='none';
+  renderPersonList(); showPhase('phase0');
+}
+
+function renderPersonList() {
+  const persons=loadPersons(); let html='';
+  persons.forEach(p=>{
+    const cnt=p.assessments?p.assessments.length:0;
+    const lat=cnt>0?p.assessments[cnt-1]:null;
+    html+=`<div class="person-card" onclick="selectPerson('${p.id}')">
+      <div class="pc-alias">${esc(p.alias)}</div>
+      <div class="pc-org">${esc(p.orgName||'施設名なし')}</div>
+      <div class="pc-count">📋 ${cnt}件</div>
+      ${lat?`<div class="pc-date">最終：${lat.date}</div>`:''}
+    </div>`;
+  });
+  html+=`<div class="person-card new-card" onclick="showNewPersonForm()">
+    <span style="font-size:1.7rem">＋</span><span style="font-size:.78rem">新しい利用者</span>
+  </div>`;
+  document.getElementById('personGrid').innerHTML=html;
+}
+
+function selectPerson(id) {
+  currentPersonId=id; const p=getPerson(id); if(!p) return;
+  document.getElementById('p0bTitle').textContent=`${esc(p.alias)}の新規アセスメント`;
+  document.getElementById('aliasGrp').style.display='none';
+  document.getElementById('orgGrp').style.display='none';
+  const cnt=p.assessments?p.assessments.length:0;
+  if(cnt>0){document.querySelectorAll('input[name="ph"]').forEach((r,i)=>{r.checked=i===2;});syncPhaseOpts();}
+  showPhase('phase0b');
+}
+
+function showNewPersonForm() {
+  currentPersonId=null;
+  document.getElementById('p0bTitle').textContent='新しい利用者を追加';
+  document.getElementById('aliasGrp').style.display='block';
+  document.getElementById('orgGrp').style.display='block';
+  document.getElementById('aliasInput').value='';
+  document.getElementById('orgInput').value='';
+  document.querySelectorAll('input[name="ph"]').forEach((r,i)=>{r.checked=i===0;});
+  syncPhaseOpts(); showPhase('phase0b');
+}
+
+function syncPhaseOpts(){
+  document.querySelectorAll('input[name="ph"]').forEach((r,i)=>{
+    document.getElementById('pOpt'+(i+1)).classList.toggle('selected',r.checked);
+  });
+}
+document.querySelectorAll('input[name="ph"]').forEach(r=>r.addEventListener('change',syncPhaseOpts));
+
+function startAssessment(){
+  const phaseVal=document.querySelector('input[name="ph"]:checked')?.value||'一次アセスメント';
+  let persons=loadPersons(); let person;
+  if(!currentPersonId){
+    const alias=document.getElementById('aliasInput').value.trim();
+    const orgName=document.getElementById('orgInput').value.trim();
+    if(!alias){alert('対象者の呼び方を入力してください。');return;}
+    person={id:'p_'+Date.now(),alias,orgName,createdAt:fmtDate(),assessments:[]};
+    persons.push(person); currentPersonId=person.id;
+  }else{person=persons.find(p=>p.id===currentPersonId);if(!person)return;}
+  cells={};
+  if(phaseVal==='PDCA更新'&&person.assessments&&person.assessments.length>0){
+    const prev=person.assessments[person.assessments.length-1];
+    if(prev.cells) cells=JSON.parse(JSON.stringify(prev.cells));
+  }
+  savePersons(persons); currentPhase=phaseVal; currentIceberg=null; currentPlan=null;
+  const pb=document.getElementById('personBadge'); pb.textContent=person.alias; pb.style.display='inline-block';
+  const phb=document.getElementById('phaseBadge'); phb.textContent=phaseVal; phb.style.display='inline-block';
+  const hasPrev=person.assessments&&person.assessments.length>0;
+  document.getElementById('pdcaBtn').style.display=hasPrev?'inline-flex':'none';
+  renderMatrix(); resetAnalysis(); showPhase('phase1');
+}
+
+// ── ICFマトリクス ──
+function renderMatrix(){
+  let html='';
+  ICF_DOMAINS.forEach((dom,di)=>{
+    const reds=dom.cells.filter((_,ci)=>cells[ck(di,ci)]&&cells[ck(di,ci)].color==='red').length;
+    const blues=dom.cells.filter((_,ci)=>cells[ck(di,ci)]&&cells[ck(di,ci)].color==='blue').length;
+    html+=`<div class="domain-section">
+      <div class="domain-header">
+        <span class="domain-icon">${dom.icon}</span>
+        <span class="domain-label">${dom.label}</span>
+        <div class="d-badges">
+          ${reds>0?`<span class="d-badge r">🔴${reds}</span>`:''}
+          ${blues>0?`<span class="d-badge b">🔵${blues}</span>`:''}
+        </div>
+      </div>
+      <div class="domain-cells">`;
+    dom.cells.forEach((lbl,ci)=>{
+      const key=ck(di,ci); const c=cells[key]||{text:'',color:'none'};
+      const cc=c.color!=='none'?`c${c.color.charAt(0)}`:'';
+      const tri=c.color==='red'?'🔴':c.color==='blue'?'🔵':'';
+      html+=`<div class="icf-cell ${cc}" onclick="openCellEdit(${di},${ci})">
+        <div class="cell-label">${lbl}</div>
+        ${tri?`<div class="cell-tri">${tri}</div>`:''}
+        ${c.text?`<div class="cell-text">${esc(c.text)}</div>`:`<div class="cell-empty">タップして入力</div>`}
+      </div>`;
+    });
+    html+='</div></div>';
+  });
+  document.getElementById('matrixContent').innerHTML=html;
+}
+function ck(di,ci){return`r${di}c${ci}`;}
+
+// ── セル編集 ──
+function openCellEdit(di,ci){
+  editCell={di,ci}; const dom=ICF_DOMAINS[di]; const c=cells[ck(di,ci)]||{text:'',color:'none'};
+  editTri=c.color||'none';
+  document.getElementById('cmDom').textContent=dom.label;
+  document.getElementById('cmLbl').textContent=dom.cells[ci];
+  document.getElementById('cmTa').value=c.text||'';
+  syncTriBtns(); document.getElementById('cellOver').classList.add('active');
+  document.getElementById('cmTa').focus();
+}
+function setTri(t){editTri=t;syncTriBtns();}
+function syncTriBtns(){
+  document.getElementById('triR').classList.toggle('on',editTri==='red');
+  document.getElementById('triB').classList.toggle('on',editTri==='blue');
+  document.getElementById('triN').classList.toggle('on',editTri==='none');
+}
+function saveCellEdit(){
+  if(!editCell)return; const{di,ci}=editCell;
+  const text=document.getElementById('cmTa').value.trim(); const key=ck(di,ci);
+  if(text||editTri!=='none') cells[key]={text,color:editTri}; else delete cells[key];
+  closeCellEdit(); renderMatrix();
+}
+function closeCellEdit(){editCell=null;document.getElementById('cellOver').classList.remove('active');}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeCellEdit();closePdcaModal();}});
+document.getElementById('cellOver').addEventListener('click',e=>{if(e.target===document.getElementById('cellOver'))closeCellEdit();});
+
+// ── 分析（高齢福祉版専用プロンプト）──
+function buildSys(){
+  const p=getPerson(currentPersonId); const alias=p?p.alias:'対象者';
+  return `あなたは高齢福祉のICF（国際生活機能分類）専門家「響（Hibiki）高齢福祉版」です。
+対象者：${alias}　フェーズ：${currentPhase}
+
+介護支援専門員・施設管理職向けに、ICFアセスメントマトリクスを分析し、氷山モデルとケアプランをJSONで出力してください。
+
+【分析の核心（必ず守る）】
+・疾患・ADLの低下が参加制限にどう連鎖しているかを読む
+・家族の介護負担と本人のQOLの両立を軸に分析する
+・医療・介護・生活の三角形のバランスを整理する
+・BPSDや転倒リスクは「環境との相互作用」として捉える
+・「その人らしさ」「生きがい」「残存能力」を中心に据えた計画を立案する
+・🔴赤セル（リスク・課題）→ 氷山の各層に当てはめる
+・🔵青セル（強み・資源）→ ケアプランの核にする
+
+【出力ルール】JSONのみ・コードブロック不要・値は1行・ダブルクォート禁止`;
+}
+
+function buildMsg(){
+  const lines=[];
+  ICF_DOMAINS.forEach((dom,di)=>{
+    dom.cells.forEach((lbl,ci)=>{
+      const c=cells[ck(di,ci)];
+      if(c&&c.text){
+        const f=c.color==='red'?'🔴リスク':c.color==='blue'?'🔵強み':'⬜';
+        lines.push(`[${dom.label}] ${lbl}（${f}）：${c.text}`);
+      }
+    });
+  });
+  const data=lines.length>0?lines.join('\n'):'（まだ入力なし。空の状態から高齢福祉の視点で仮説的に分析してください）';
+  return `以下のICFアセスメント内容を分析し、氷山モデル+ケアプランをJSONで出力してください。
+
+=== アセスメントデータ ===
+${data}
+
+=== 出力フォーマット（JSONのみ） ===
+{"surface":"今見えていること・生活の困りごと（1〜2文）","pattern":"繰り返している状態・低下のパターン（1〜2文）","structure":"環境・サービス体制の問題（1〜2文）","mental_model":"介護者側の思い込み・慣習（1〜2文）","root":"本当の原因・本人が求めていること（1文）","policy":"支援方針（本人のQOLと残存能力を活かした方針・1〜2文）","dreams":"本人の強み・生きがい・希望（青セルから）","action1":"推進項目①（医療・身体面への対応）","action2":"推進項目②（環境整備・サービス調整）","action3":"推進項目③（参加・生きがいの回復）","evaluation":"評価・見直し時期と確認方法（1文）"}`;
+}
+
+function parseData(raw){
+  try{
+    let s=raw; const bm=raw.match(/```(?:json)?\s*([\s\S]*?)\s*```/); if(bm) s=bm[1];
+    const om=s.match(/\{[\s\S]*\}/); if(!om) return null;
+    const d=JSON.parse(om[0].replace(/[\r\n\t]+/g,' ')); if(!d.surface||!d.root) return null; return d;
+  }catch{return null;}
+}
+
+function resetAnalysis(){
+  document.getElementById('icebergArea').innerHTML='<div class="ice-ph">左のマトリクスを入力して「分析する」を押してください。</div>';
+  document.getElementById('planArea').style.display='none';
+  document.getElementById('analysisLoading').style.display='none';
+}
+
+async function generateAnalysis(){
+  if(checkDemoLimit()) return;
+  document.getElementById('icebergArea').innerHTML='';
+  document.getElementById('planArea').style.display='none';
+  document.getElementById('analysisLoading').style.display='block';
+  document.getElementById('analyzeBtn').disabled=true;
+  document.getElementById('analyzeHdrBtn').disabled=true;
+  const msgs=[{role:'user',content:buildMsg()}];
+  let success=false;
+  for(let i=0;i<3;i++){
+    try{
+      const raw=await callWorker(msgs,buildSys(),4096);
+      const d=parseData(raw);
+      if(d){
+        currentIceberg=d; currentPlan=d;
+        renderIceberg(d); renderPlan(d);
+        document.getElementById('analysisLoading').style.display='none';
+        if(!isStripeUser()) incDemoCount();
+        success=true; break;
+      }
+    }catch(e){
+      if(e.message&&e.message.includes('デモ回数')){ document.getElementById('demoEndOver').classList.add('active'); break; }
+      if(i===2) document.getElementById('analysisLoading').innerHTML=`<span style="color:var(--danger)">エラー: ${esc(e.message)}</span>`;
+    }
+  }
+  document.getElementById('analyzeBtn').disabled=false;
+  document.getElementById('analyzeHdrBtn').disabled=false;
+  if(!success&&document.getElementById('analysisLoading').querySelector('.dots'))
+    document.getElementById('analysisLoading').innerHTML='<span style="color:var(--danger)">分析に失敗しました。もう一度お試しください。</span>';
+}
+
+const LAYERS=[
+  {k:'surface',i:'🌊',l:'今、見えていること・生活の困りごと',c:'ice-s'},
+  {k:'pattern',i:'🔄',l:'繰り返している状態・低下のパターン',c:'ice-p'},
+  {k:'structure',i:'🏗',l:'環境・サービス体制の問題',c:'ice-st'},
+  {k:'mental_model',i:'💭',l:'介護者側の思い込み・慣習',c:'ice-m'},
+  {k:'root',i:'🎯',l:'本当の原因・本人が求めていること',c:'ice-r'},
+];
+function renderIceberg(d){
+  document.getElementById('icebergArea').innerHTML=LAYERS.map(l=>
+    `<div class="ice-card ${l.c}"><div class="ice-lbl">${l.i} ${l.l}</div><div class="ice-txt">${esc(d[l.k]||'─')}</div></div>`
+  ).join('');
+}
+function renderPlan(d){
+  document.getElementById('planPolicy').textContent=d.policy||'─';
+  document.getElementById('planDreams').textContent=d.dreams||'─';
+  document.getElementById('planActions').innerHTML=['action1','action2','action3'].map((k,i)=>
+    `<div class="act-item"><span class="act-num">${i+1}</span><span class="act-txt">${esc(d[k]||'─')}</span></div>`
+  ).join('');
+  document.getElementById('planEval').textContent=d.evaluation||'─';
+  document.getElementById('planArea').style.display='block';
+}
+
+// ── 保存 ──
+function saveAssessment(){
+  if(!currentPersonId){alert('利用者が選択されていません。');return;}
+  const persons=loadPersons(); const person=persons.find(p=>p.id===currentPersonId); if(!person) return;
+  if(!person.assessments) person.assessments=[];
+  person.assessments.push({id:Date.now(),date:fmtDate(),phase:currentPhase,
+    cells:JSON.parse(JSON.stringify(cells)),
+    iceberg:currentIceberg?JSON.parse(JSON.stringify(currentIceberg)):null,
+    plan:currentPlan?JSON.parse(JSON.stringify(currentPlan)):null});
+  savePersons(persons); toast('✅ 保存しました');
+  document.getElementById('pdcaBtn').style.display='inline-flex';
+}
+
+// ── PDCA比較 ──
+async function showPdcaComparison(){
+  const persons=loadPersons(); const person=persons.find(p=>p.id===currentPersonId);
+  if(!person||!person.assessments||person.assessments.length===0) return;
+  const prev=person.assessments[person.assessments.length-1]; const prevCells=prev.cells||{};
+  document.getElementById('pdcaSub').textContent=`前回：${prev.date}（${prev.phase}）　vs　今回`;
+  document.getElementById('chgSummary').style.display='none';
+  let html='';
+  ICF_DOMAINS.forEach((dom,di)=>{
+    html+=`<div><div class="cmp-dtitle">${dom.icon} ${dom.label}</div>`;
+    dom.cells.forEach((lbl,ci)=>{
+      const key=ck(di,ci); const pc=prevCells[key]||{text:'',color:'none'}; const cc=cells[key]||{text:'',color:'none'};
+      const chg=pc.text!==cc.text||pc.color!==cc.color;
+      html+=`<div class="cmp-cell${chg?' changed':''}">
+        <div class="cmp-cell-lbl">${lbl}${chg?'<span class="chg-badge">変化</span>':''}</div>
+        <div class="cmp-cell-txt"><span style="opacity:.5">前：${pc.text?esc(pc.text):'（なし）'}</span><br><span>今：${cc.text?esc(cc.text):'（なし）'}</span></div>
+      </div>`;
+    });
+    html+='</div>';
+  });
+  document.getElementById('cmpContent').innerHTML=html;
+  document.getElementById('pdcaModal').classList.add('active');
+  if(prev.iceberg&&currentIceberg){
+    try{
+      const raw=await callWorker([{role:'user',content:
+        `前回の分析:\n${JSON.stringify(prev.iceberg)}\n\n今回の分析:\n${JSON.stringify(currentIceberg)}\n\n高齢福祉の視点で「何がどう変化したか」を2〜3文で。改善点と残課題（ADL・QOL・家族負担）の両方に触れてください。`
+      }],'あなたは高齢福祉のアセスメント専門家です。',400);
+      document.getElementById('chgTxt').textContent=raw.trim();
+      document.getElementById('chgSummary').style.display='block';
+    }catch{}
+  }
+}
+function closePdcaModal(){document.getElementById('pdcaModal').classList.remove('active');}
+document.getElementById('pdcaModal').addEventListener('click',e=>{if(e.target===document.getElementById('pdcaModal'))closePdcaModal();});
+
+// ── PDF ──
+function downloadPdf(){
+  const p=getPerson(currentPersonId); const alias=p?p.alias:'アセスメント';
+  const now=new Date(); const stamp=now.getFullYear()+('0'+(now.getMonth()+1)).slice(-2)+('0'+now.getDate()).slice(-2);
+  html2pdf().set({margin:[8,8,8,8],filename:alias+'_高齢福祉版_'+stamp+'.pdf',
+    image:{type:'jpeg',quality:.92},
+    html2canvas:{scale:2,useCORS:true,backgroundColor:'#0d1c15'},
+    jsPDF:{unit:'mm',format:'a4',orientation:'landscape'}
+  }).from(document.getElementById('phase1')).save();
+}
+
+// ── Worker API ──
+async function callWorker(messages, systemPrompt, maxTokens=1024) {
+  const body = {
+    mode: isStripeUser() ? 'stripe' : 'demo',
+    fingerprint: getDemoId(),
+    token: getStripeToken() || undefined,
+    messages, system: systemPrompt, maxTokens,
+  };
+  const ctrl = new AbortController(); const timer = setTimeout(()=>ctrl.abort(), 120000);
+  let res;
+  try {
+    res = await fetch(WORKER_URL+'/analyze', {method:'POST', signal:ctrl.signal,
+      headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+  } catch(e) { clearTimeout(timer); if(e.name==='AbortError') throw new Error('タイムアウト'); throw new Error('通信エラー: '+e.message); }
+  if(!res.ok) {
+    clearTimeout(timer);
+    const err = await res.json().catch(()=>({}));
+    if(err.demo_exceeded) { document.getElementById('demoEndOver').classList.add('active'); }
+    throw new Error(err.error || `エラー(${res.status})`);
+  }
+  const reader=res.body.getReader(); const dec=new TextDecoder(); let full='',buf='';
+  try {
+    while(true) {
+      const{done,value}=await reader.read(); if(done) break;
+      await new Promise(r=>setTimeout(r,0));
+      buf+=dec.decode(value,{stream:true}); const lines=buf.split('\n'); buf=lines.pop();
+      for(const line of lines) {
+        if(!line.startsWith('data: ')) continue; const pl=line.slice(6).trim(); if(!pl||pl==='[DONE]') continue;
+        try{const ev=JSON.parse(pl);if(ev.type==='content_block_delta'&&ev.delta?.type==='text_delta') full+=ev.delta.text;}catch{}
+      }
+    }
+  } finally { clearTimeout(timer); reader.releaseLock(); }
+  if(!full) throw new Error('AIから応答がありませんでした');
+  return full;
+}
+
+// ── ユーティリティ ──
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function fmtDate(){const n=new Date();return n.getFullYear()+'/'+('0'+(n.getMonth()+1)).slice(-2)+'/'+('0'+n.getDate()).slice(-2)+' '+('0'+n.getHours()).slice(-2)+':'+('0'+n.getMinutes()).slice(-2);}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.style.opacity='1';setTimeout(()=>{t.style.opacity='0';},2200);}
+
+// ── 初期化 ──
+checkConsent();
+updateDemoBadge();
+renderPersonList();
+</script>
+</body>
+</html>
