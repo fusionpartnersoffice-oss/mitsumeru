@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>凪 軸A：資金 | Fusion Partners</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%2381c784'/><text x='16' y='24' font-size='18' text-anchor='middle'>💰</text></svg>">
+<style>
+:root {
+  --bg:#0f1923; --surface:#1a2634; --card:#223044;
+  --accent:#4fc3f7; --accent2:#81c784; --accent3:#ffb74d; --accent4:#f06292;
+  --danger:#ef5350; --warn:#ffa726; --text:#e8eaf0; --sub:#8fa3b8;
+  --border:#2e4460; --radius:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Hiragino Kaku Gothic Pro','Meiryo',sans-serif;min-height:100vh;font-size:14px;}
+
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.logo{width:30px;height:30px;background:linear-gradient(135deg,#81c784,#2e7d32);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
+header h1{font-size:1rem;font-weight:700;color:var(--accent2);flex:1;}
+header h1 span{font-size:0.68rem;font-weight:400;color:var(--sub);}
+
+.selector-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:8px 20px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.selector-bar select{background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 10px;font-size:0.8rem;outline:none;}
+.selector-bar select:focus{border-color:var(--accent);}
+.selector-bar label{font-size:0.78rem;color:var(--sub);}
+
+main{max-width:1000px;margin:0 auto;padding:20px 16px 80px;}
+
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+@media(max-width:760px){.grid-2,.grid-3,.grid-4{grid-template-columns:1fr;}}
+
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;}
+.card-title{font-size:0.75rem;color:var(--sub);margin-bottom:6px;}
+.card-value{font-size:1.5rem;font-weight:700;}
+.card-sub{font-size:0.72rem;color:var(--sub);margin-top:3px;}
+.empty{text-align:center;color:var(--sub);padding:40px 20px;font-size:0.82rem;}
+
+.section{margin-bottom:22px;}
+.section-title{font-size:0.85rem;color:var(--accent2);margin-bottom:12px;border-left:3px solid var(--accent2);padding-left:8px;}
+
+.btn{padding:8px 18px;border-radius:7px;border:none;font-size:0.82rem;font-weight:600;cursor:pointer;transition:all 0.15s;}
+.btn-primary{background:var(--accent2);color:#000;}
+.btn-primary:hover{background:#66bb6a;}
+.btn-secondary{background:var(--card);color:var(--sub);border:1px solid var(--border);}
+.btn-secondary:hover{color:var(--text);}
+.btn-sm{padding:5px 12px;font-size:0.74rem;}
+
+.tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:0.68rem;font-weight:600;}
+.tag-safe{background:rgba(129,199,132,0.2);color:var(--accent2);}
+.tag-warn{background:rgba(255,167,38,0.2);color:var(--warn);}
+.tag-danger{background:rgba(239,83,80,0.2);color:var(--danger);}
+.tag-sub{background:rgba(143,163,184,0.2);color:var(--sub);}
+
+.form-group{margin-bottom:12px;}
+.form-group label{font-size:0.78rem;color:var(--sub);display:block;margin-bottom:3px;}
+.form-group input,.form-group select{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:0.85rem;outline:none;}
+.form-group input:focus,.form-group select:focus{border-color:var(--accent2);}
+.form-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+@media(max-width:600px){.form-row3{grid-template-columns:1fr;}}
+
+.sens-row{display:flex;align-items:center;gap:8px;margin-bottom:7px;}
+.sens-lbl{width:70px;font-size:0.75rem;color:var(--sub);flex-shrink:0;}
+.sens-val{width:52px;text-align:right;font-size:0.75rem;font-weight:600;}
+
+.fmt-S{color:#00e5ff;} .fmt-A{color:var(--accent2);} .fmt-B{color:#aed581;}
+.fmt-C{color:var(--warn);} .fmt-D{color:var(--danger);} .fmt-E{color:#e040fb;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">💰</div>
+  <h1>凪 軸A：資金 <span>MQ会計・定員充足率・処遇改善加算 | Fusion Partners</span></h1>
+  <a href="./nagi_system.html" class="btn btn-secondary btn-sm" style="text-decoration:none;">🧭 ハブ（羅針盤）へ戻る</a>
+</header>
+
+<div class="selector-bar">
+  <label>法人</label>
+  <select id="sel-corp" onchange="onCorpChange()"><option value="">── 選択 ──</option></select>
+  <label>事業所</label>
+  <select id="sel-office" onchange="onOfficeChange()"><option value="">── 選択 ──</option></select>
+  <span style="font-size:0.7rem;color:var(--sub);margin-left:auto;">法人・事業所の新規登録は<a href="./nagi_system.html" style="color:var(--accent);">ハブ</a>の⚙データ管理から行ってください</span>
+</div>
+
+<main>
+
+<div class="section" id="empty-state">
+  <div class="card empty">事業所を選択してください（未登録の場合は<a href="./nagi_system.html" style="color:var(--accent);">ハブ</a>の⚙データ管理→事業所で登録）</div>
+</div>
+
+<div id="mq-body" style="display:none;">
+
+  <div class="section">
+    <div class="section-title">📥 財務データ入力（<span id="office-label">-</span>）</div>
+    <div class="card">
+      <div class="form-row3">
+        <div class="form-group"><label>売上PQ（円）</label><input id="fin-pq" type="number" placeholder="3100000"></div>
+        <div class="form-group"><label>延べ人数Q</label><input id="fin-q" type="number" placeholder="310"></div>
+        <div class="form-group"><label>変動費VQ（円）</label><input id="fin-vq" type="number" placeholder="620000"></div>
+      </div>
+      <div class="form-row3">
+        <div class="form-group"><label>粗利MQ（円）</label><input id="fin-mq" type="number" placeholder="2480000"></div>
+        <div class="form-group"><label>固定費F（円）</label><input id="fin-f" type="number" placeholder="2000000"></div>
+        <div class="form-group"><label>利益G（円）</label><input id="fin-g" type="number" placeholder="480000"></div>
+      </div>
+      <div style="border-top:1px solid var(--border);margin:14px 0 10px;padding-top:10px;">
+        <div style="font-size:0.72rem;font-weight:700;color:var(--sub);margin-bottom:8px;">📊 定員充足率・加算取得状況</div>
+        <div class="form-row3">
+          <div class="form-group">
+            <label>定員数（人）</label>
+            <input id="fin-capacity" type="number" placeholder="40" oninput="calcOccRate()">
+          </div>
+          <div class="form-group">
+            <label>実績人数（人）</label>
+            <input id="fin-occupancy" type="number" placeholder="35" oninput="calcOccRate()">
+          </div>
+          <div class="form-group">
+            <label>充足率（自動計算）</label>
+            <div id="fin-occ-rate" style="padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:0.85rem;min-height:36px;background:var(--surface);color:var(--text);">─</div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>処遇改善加算の取得状況</label>
+          <select id="fin-kazan">
+            <option value="">─ 選択してください</option>
+            <option value="Ⅰ">処遇改善加算Ⅰ（最高位）</option>
+            <option value="Ⅱ">処遇改善加算Ⅱ</option>
+            <option value="Ⅲ">処遇改善加算Ⅲ</option>
+            <option value="未取得">未取得</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="saveFin()">💾 保存</button>
+      <span id="save-msg" style="margin-left:10px;font-size:0.78rem;color:var(--accent2);"></span>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">🧭 現在の状態（<span id="office-label2">-</span>）</div>
+    <div class="grid-2">
+      <div class="card" id="mq-signal-card"></div>
+      <div class="card" id="mq-sens-card"></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="section">
+  <div class="section-title">📊 法人全体合計（選択中の法人）</div>
+  <div class="grid-4" id="corp-fin-kpis"></div>
+</div>
+
+</main>
+
+<script>
+// ════════════════════════════════════════════════════
+//  共通ヘルパー（nagi_system.html と同一実装・localStorageスキーマ互換）
+// ════════════════════════════════════════════════════
+function load(k){ try{ return JSON.parse(localStorage.getItem(k)||'[]'); }catch{ return []; } }
+function save(k,v){ localStorage.setItem(k,JSON.stringify(v)); }
+function n(v){ return Number(v)||0; }
+function yen(v){ return '¥'+Number(v).toLocaleString(); }
+function getFin(oid){ return (load('nagi_fin').find(f=>f.officeId===oid))||null; }
+
+function getSurvivalRating(fm){
+  const r=fm*100;
+  if(r<60) return {label:'S',cls:'fmt-S'};
+  if(r<70) return {label:'A',cls:'fmt-A'};
+  if(r<80) return {label:'B',cls:'fmt-B'};
+  if(r<90) return {label:'C',cls:'fmt-C'};
+  if(r<100)return {label:'D',cls:'fmt-D'};
+  return {label:'E',cls:'fmt-E'};
+}
+
+// 西式速算法：Pk=G/PQ, Qk=G/MQ, Vk=G/VQ, Fk=G/F（0%に近いほど感度高＝★最優先改善対象）
+function calcSensitivity(pq,mq,vq,f,g){
+  if(!g||!pq||!mq||!vq||!f) return null;
+  return {P:g/pq, Q:g/mq, V:g/vq, F:g/f};
+}
+
+function renderSensBars(vals){
+  const keys=['P','Q','V','F'];
+  const cols={P:'#4fc3f7',Q:'#81c784',V:'#f06292',F:'#ffb74d'};
+  const lbls={P:'Pk↑',Q:'Qk↑',V:'Vk↓',F:'Fk↓'};
+  const pvs=keys.map(k=>vals[k]);
+  const maxAbs=Math.max(...pvs.map(v=>Math.abs(v)));
+  const minAbs=Math.min(...pvs.map(v=>Math.abs(v)));
+  const allNeg=pvs.every(v=>v<0);
+  const note=allNeg
+    ?'⚠️ 赤字状態 — 0%に近いほど黒字転換インパクト大・★最優先'
+    :'利益感度 k値（西式）— 0%に近いほど感度高・★最優先改善対象';
+  let h=`<div style="font-size:0.72rem;color:var(--sub);margin-bottom:6px;">${note}</div>`;
+  keys.forEach(k=>{
+    const pv=vals[k];
+    const absV=Math.abs(pv);
+    const isBest=absV===minAbs;
+    const col=isBest?'var(--danger)':cols[k];
+    const pct=maxAbs?Math.max(2,absV/maxAbs*50):2;
+    const isNeg=pv<0;
+    const star=isBest?'<span style="margin-left:3px;color:var(--danger);">★</span>':'';
+    const negBar=isNeg?`<div style="width:${pct}%;height:100%;background:${col};margin-left:auto;border-radius:3px 0 0 3px;"></div>`:'';
+    const posBar=!isNeg?`<div style="width:${pct}%;height:100%;background:${col};border-radius:0 3px 3px 0;"></div>`:'';
+    h+=`<div class="sens-row">
+      <div class="sens-lbl">${lbls[k]}</div>
+      <div style="flex:1;display:flex;height:10px;border-radius:3px;overflow:hidden;background:rgba(255,255,255,0.05);">
+        <div style="width:50%;display:flex;justify-content:flex-end;">${negBar}</div>
+        <div style="width:1px;background:rgba(255,255,255,0.25);flex-shrink:0;"></div>
+        <div style="width:50%;display:flex;">${posBar}</div>
+      </div>
+      <div class="sens-val" style="color:${col};">${(pv*100).toFixed(1)}%${star}</div>
+    </div>`;
+  });
+  return h;
+}
+
+function renderFmGauge(fm, sr){
+  const pct=Math.min(fm*100,200);
+  const fillPct=(pct/200*100).toFixed(1);
+  const col=pct<60?'#4fc3f7':pct<80?'#81c784':pct<100?'#ffb74d':'var(--danger)';
+  return `<div>
+    <div style="display:flex;align-items:center;gap:6px;">
+      <span style="font-size:0.68rem;color:var(--sub);white-space:nowrap;min-width:48px;">f/m比率</span>
+      <div style="flex:1;height:13px;background:rgba(255,255,255,0.07);border-radius:7px;overflow:hidden;position:relative;">
+        <div style="width:${fillPct}%;height:100%;background:${col};border-radius:7px;"></div>
+        <div style="position:absolute;left:50%;top:0;width:1px;height:100%;background:rgba(255,255,255,0.3);"></div>
+      </div>
+      <span style="font-size:0.75rem;color:var(--sub);white-space:nowrap;">${pct.toFixed(1)}%</span>
+      <span class="${sr.cls}" style="font-size:1.15rem;font-weight:800;min-width:1.6rem;text-align:right;">${sr.label}</span>
+    </div>
+  </div>`;
+}
+
+// ════════════════════════════════════════════════════
+//  シグナル判定（羅針盤タブと同一しきい値：充足率85%未満/加算未取得＝赤）
+// ════════════════════════════════════════════════════
+function renderSignalCard(f){
+  if(!f) return '<div class="card-title">シグナル判定</div><div class="empty" style="padding:12px;">財務データ未入力</div>';
+  const fm = n(f.mq)? n(f.f)/n(f.mq) : 0;
+  const sr = getSurvivalRating(fm);
+  const fmPct = fm*100;
+  const fmTag = fmPct>130?['tag-danger','🔴 f/m 130%超']:fmPct>100?['tag-warn','🟡 f/m 100%超']:['tag-safe','🟢 f/m 良好'];
+  const occRate = f.capacity? f.occupancy/f.capacity*100 : null;
+  const occTag = occRate===null?['tag-sub','⚫ 未入力']:occRate<85?['tag-danger','🔴 充足率85%未満']:occRate<95?['tag-warn','🟡 充足率95%未満']:['tag-safe','🟢 充足良好'];
+  const kazTag = !f.kazan?['tag-sub','⚫ 未入力']:f.kazan==='未取得'?['tag-danger','🔴 加算未取得']:['tag-safe','🟢 加算'+f.kazan+'取得'];
+  const occLoss = (f.capacity && f.capacity>n(f.occupancy)) ? (f.capacity-n(f.occupancy))*60000 : 0;
+  const kazLoss = f.kazan==='未取得' ? 180000 : 0;
+  return `
+    <div class="card-title">シグナル判定</div>
+    <div style="margin-top:8px;">${renderFmGauge(fm,sr)}</div>
+    <div style="display:flex;flex-direction:column;gap:6px;margin-top:10px;">
+      <div><span class="tag ${fmTag[0]}">${fmTag[1]}</span></div>
+      <div><span class="tag ${occTag[0]}">${occTag[1]}</span> ${occRate!==null?occRate.toFixed(1)+'%':''}</div>
+      <div><span class="tag ${kazTag[0]}">${kazTag[1]}</span></div>
+    </div>
+    ${(occLoss||kazLoss)?`<div style="border-top:1px solid var(--border);margin-top:10px;padding-top:8px;font-size:0.74rem;color:var(--sub);">💸 月次損失試算${occLoss?`　定員未充足 -${(occLoss/10000).toFixed(0)}万円`:''}${kazLoss?`　加算未取得 -${(kazLoss/10000).toFixed(0)}万円`:''}</div>`:''}
+  `;
+}
+
+function renderSensCard(f){
+  if(!f) return '<div class="card-title">利益感度 k値</div><div class="empty" style="padding:12px;">財務データ未入力</div>';
+  const sens=calcSensitivity(n(f.pq),n(f.mq),n(f.vq),n(f.f),n(f.g));
+  let h='<div class="card-title">利益感度 k値（西式）</div>';
+  h+= sens ? `<div style="margin-top:8px;">${renderSensBars(sens)}</div>` : '<div class="empty" style="padding:12px;">全項目（PQ/MQ/VQ/F/G）を入力すると算出します</div>';
+  h+=`<div class="grid-3" style="margin-top:10px;">
+    <div><div style="font-size:0.68rem;color:var(--sub);">PQ</div><div style="font-weight:700;font-size:0.85rem;">${yen(n(f.pq))}</div></div>
+    <div><div style="font-size:0.68rem;color:var(--sub);">MQ</div><div style="font-weight:700;font-size:0.85rem;color:var(--accent2);">${yen(n(f.mq))}</div></div>
+    <div><div style="font-size:0.68rem;color:var(--sub);">G</div><div style="font-weight:700;font-size:0.85rem;color:var(--accent3);">${yen(n(f.g))}</div></div>
+  </div>`;
+  return h;
+}
+
+// ════════════════════════════════════════════════════
+//  法人全体合計（選択中の法人の全事業所を集計）
+// ════════════════════════════════════════════════════
+function renderCorpTotals(){
+  const corpId=document.getElementById('sel-corp').value;
+  const el=document.getElementById('corp-fin-kpis');
+  if(!corpId){ el.innerHTML='<div class="card empty">法人を選択してください</div>'; return; }
+  const offices=load('nagi_offices').filter(o=>o.corpId===corpId);
+  let tPQ=0,tQ=0,tMQ=0,tF=0,tG=0;
+  offices.forEach(o=>{ const f=getFin(o.id); if(f){ tPQ+=n(f.pq);tQ+=n(f.q);tMQ+=n(f.mq);tF+=n(f.f);tG+=n(f.g);} });
+  const fm=tMQ?tF/tMQ:0; const sr=getSurvivalRating(fm);
+  el.innerHTML=`
+    <div class="card"><div class="card-title">売上 PQ</div><div class="card-value" style="font-size:1.2rem;">${yen(tPQ)}</div><div class="card-sub">延べ人数 ${tQ.toLocaleString()}</div></div>
+    <div class="card"><div class="card-title">粗利 MQ</div><div class="card-value" style="font-size:1.2rem;color:var(--accent2);">${yen(tMQ)}</div></div>
+    <div class="card"><div class="card-title">利益 G</div><div class="card-value" style="font-size:1.2rem;color:var(--accent3);">${yen(tG)}</div></div>
+    <div class="card"><div class="card-title">f/m比率 ／ 生存格付</div><div style="margin-top:8px;">${renderFmGauge(fm,sr)}</div><div class="card-sub" style="margin-top:4px;">F:${yen(tF)}</div></div>
+  `;
+}
+
+// ════════════════════════════════════════════════════
+//  入力フォーム CRUD（nagi_system.html の saveFin/loadFinForm/calcOccRate と
+//  同一スキーマで nagi_fin に書き込み。羅針盤タブは同一originのlocalStorageを
+//  読むだけなので、ここでの保存が即座にハブの信号判定に反映される。
+// ════════════════════════════════════════════════════
+function calcOccRate(){
+  const cap=n(document.getElementById('fin-capacity').value);
+  const occ=n(document.getElementById('fin-occupancy').value);
+  const el=document.getElementById('fin-occ-rate');
+  if(!cap||!occ){ el.textContent='─'; el.style.color='var(--sub)'; return; }
+  const rate=(occ/cap*100).toFixed(1);
+  const loss=Math.max(0,cap-occ)*60000;
+  const col=rate<85?'var(--danger)':rate<95?'var(--warn)':'var(--accent2)';
+  el.innerHTML=`<span style="font-weight:700;color:${col};">${rate}%</span>`
+    +(loss>0?` <span style="font-size:0.72rem;color:var(--danger);">（月次損失試算 -${(loss/10000).toFixed(0)}万円）</span>`:'');
+}
+
+function loadFinForm(){
+  const oid=document.getElementById('sel-office').value;
+  const f=getFin(oid);
+  ['pq','q','vq','mq','f','g'].forEach(k=>{ document.getElementById('fin-'+k).value = f ? (f[k]||'') : ''; });
+  document.getElementById('fin-capacity').value = f?.capacity || '';
+  document.getElementById('fin-occupancy').value = f?.occupancy || '';
+  document.getElementById('fin-kazan').value = f?.kazan || '';
+  calcOccRate();
+  document.getElementById('mq-signal-card').innerHTML = renderSignalCard(f);
+  document.getElementById('mq-sens-card').innerHTML = renderSensCard(f);
+}
+
+function saveFin(){
+  const oid=document.getElementById('sel-office').value;
+  if(!oid){ alert('事業所を選択してください'); return; }
+  const data=load('nagi_fin').filter(f=>f.officeId!==oid);
+  const cap=n(document.getElementById('fin-capacity').value);
+  const occ=n(document.getElementById('fin-occupancy').value);
+  data.push({
+    officeId:oid,
+    pq:n(document.getElementById('fin-pq').value),
+    q:n(document.getElementById('fin-q').value),
+    vq:n(document.getElementById('fin-vq').value),
+    mq:n(document.getElementById('fin-mq').value),
+    f:n(document.getElementById('fin-f').value),
+    g:n(document.getElementById('fin-g').value),
+    capacity:cap,
+    occupancy:occ,
+    occRate:cap?occ/cap:null,
+    kazan:document.getElementById('fin-kazan').value||'',
+  });
+  save('nagi_fin',data);
+  const msg=document.getElementById('save-msg');
+  msg.textContent='✅ 保存しました（ハブの🧭羅針盤に即時反映されます）';
+  setTimeout(()=>{ msg.textContent=''; },4000);
+  loadFinForm();
+  renderCorpTotals();
+}
+
+// ════════════════════════════════════════════════════
+//  法人・事業所セレクタ（新規登録はハブ側で行う・ここは選択のみ）
+// ════════════════════════════════════════════════════
+function refreshCorpSelect(){
+  const sel=document.getElementById('sel-corp');
+  const cur=sel.value;
+  sel.innerHTML='<option value="">── 選択 ──</option>'+load('nagi_corps').map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+  if(cur) sel.value=cur;
+}
+
+function onCorpChange(){
+  const corpId=document.getElementById('sel-corp').value;
+  const officeSel=document.getElementById('sel-office');
+  const corps=load('nagi_corps');
+  officeSel.innerHTML='<option value="">── 選択 ──</option>'+load('nagi_offices').filter(o=>o.corpId===corpId).map(o=>{
+    const c=corps.find(cc=>cc.id===o.corpId);
+    return `<option value="${o.id}">${c?.name||''} / ${o.name}</option>`;
+  }).join('');
+  renderCorpTotals();
+  onOfficeChange();
+}
+
+function onOfficeChange(){
+  const oid=document.getElementById('sel-office').value;
+  const body=document.getElementById('mq-body');
+  const empty=document.getElementById('empty-state');
+  if(!oid){ body.style.display='none'; empty.style.display='block'; return; }
+  body.style.display='block'; empty.style.display='none';
+  const off=load('nagi_offices').find(o=>o.id===oid);
+  document.getElementById('office-label').textContent=off?.name||'';
+  document.getElementById('office-label2').textContent=off?.name||'';
+  loadFinForm();
+}
+
+// ════════════════════════════════════════════════════
+//  init
+// ════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', ()=>{
+  refreshCorpSelect();
+  onCorpChange();
+});
+</script>
+</body>
+</html>

@@ -221,6 +221,7 @@ tr:hover td{background:rgba(79,195,247,0.03);}
     <a href="./mitsumeru_tekisei_check.html" target="_blank" class="btn btn-secondary btn-sm" style="text-decoration:none;">📋 採用スキャン</a>
     <a href="./ta_scan.html" target="_blank" class="btn btn-secondary btn-sm" style="text-decoration:none;">🧭 TAスキャン</a>
     <a href="./pm_scan.html" target="_blank" class="btn btn-secondary btn-sm" style="text-decoration:none;">🎯 PMスキャン</a>
+    <a href="./nagi_mq.html" target="_blank" class="btn btn-secondary btn-sm" style="text-decoration:none;">💰 資金データ入力</a>
     <span style="width:1px;height:18px;background:var(--border);margin:0 4px;"></span>
     <button class="btn btn-success btn-sm" onclick="autoSyncAll()" style="background:var(--accent2);border-color:var(--accent2);">🔄 診断データを同期</button>
     <button class="btn btn-secondary btn-sm" onclick="openModal('modal-bulk-import')">📥 手動インポート</button>
@@ -555,49 +556,11 @@ tr:hover td{background:rgba(79,195,247,0.03);}
 
     <!-- 財務データ -->
     <div id="data-fin" style="display:none;">
-      <p style="font-size:0.78rem;color:var(--sub);margin-bottom:10px;">事業所を選択して財務数値を入力してください（月次または年次）。</p>
-      <div class="form-group">
-        <label>事業所</label>
-        <select id="fin-office-sel" onchange="loadFinForm()" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:0.82rem;outline:none;width:100%;"></select>
-      </div>
-      <div class="form-row3">
-        <div class="form-group"><label>売上PQ（円）</label><input id="fin-pq" type="number" placeholder="3100000"></div>
-        <div class="form-group"><label>延べ人数Q</label><input id="fin-q" type="number" placeholder="310"></div>
-        <div class="form-group"><label>変動費VQ（円）</label><input id="fin-vq" type="number" placeholder="620000"></div>
-      </div>
-      <div class="form-row3">
-        <div class="form-group"><label>粗利MQ（円）</label><input id="fin-mq" type="number" placeholder="2480000"></div>
-        <div class="form-group"><label>固定費F（円）</label><input id="fin-f" type="number" placeholder="2000000"></div>
-        <div class="form-group"><label>利益G（円）</label><input id="fin-g" type="number" placeholder="480000"></div>
-      </div>
-      <div style="border-top:1px solid var(--border);margin:14px 0 10px;padding-top:10px;">
-        <div style="font-size:0.72rem;font-weight:700;color:var(--sub);margin-bottom:8px;">📊 定員充足率・加算取得状況</div>
-        <div class="form-row3">
-          <div class="form-group">
-            <label>定員数（人）</label>
-            <input id="fin-capacity" type="number" placeholder="40" oninput="calcOccRate()">
-          </div>
-          <div class="form-group">
-            <label>実績人数（人）</label>
-            <input id="fin-occupancy" type="number" placeholder="35" oninput="calcOccRate()">
-          </div>
-          <div class="form-group">
-            <label>充足率（自動計算）</label>
-            <div id="fin-occ-rate" style="padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:0.85rem;min-height:36px;background:var(--surface);color:var(--text);">─</div>
-          </div>
-        </div>
-        <div class="form-group">
-          <label>処遇改善加算の取得状況</label>
-          <select id="fin-kazan" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:0.82rem;outline:none;width:100%;">
-            <option value="">─ 選択してください</option>
-            <option value="Ⅰ">処遇改善加算Ⅰ（最高位）</option>
-            <option value="Ⅱ">処遇改善加算Ⅱ</option>
-            <option value="Ⅲ">処遇改善加算Ⅲ</option>
-            <option value="未取得">未取得</option>
-          </select>
-        </div>
-      </div>
-      <button class="btn btn-primary" onclick="saveFin()">💾 保存</button>
+      <p style="font-size:0.82rem;color:var(--sub);margin-bottom:14px;line-height:1.6;">
+        財務データ（PQ/MQ/G・定員充足率・処遇改善加算）の入力は<b style="color:var(--text);">軸A資金モジュール「nagi_mq.html」</b>に移行しました。
+        保存すると同じlocalStorageを共有しているため、この羅針盤・法人全体・事業所別タブに即時反映されます。
+      </p>
+      <a href="./nagi_mq.html" target="_blank" class="btn btn-primary" style="text-decoration:none;display:inline-block;">💰 nagi_mq.html を開いて入力する</a>
     </div>
 
     <!-- パイプライン -->
@@ -1359,7 +1322,7 @@ function renderCorpDashboard(){
   if(sens){
     const vals={P:sens.P,Q:sens.Q,V:sens.V,F:sens.F};
     sensHTML+=renderSensBars(vals,false);
-  } else { sensHTML+='<div class="empty" style="padding:12px;">財務データを入力してください</div>'; }
+  } else { sensHTML+='<div class="empty" style="padding:12px;">財務データを入力してください（<a href="./nagi_mq.html" target="_blank" style="color:var(--accent);">💰 nagi_mq.html</a>）</div>'; }
   sensHTML+='</div>';
   document.getElementById('corp-fin-detail').innerHTML=sensHTML;
 
@@ -1445,7 +1408,7 @@ function renderOfficeDashboard(){
       finHTML+=renderSensBars({P:sens.P,Q:sens.Q,V:sens.V,F:sens.F},true);
     }
   } else {
-    finHTML+='<div class="empty" style="padding:12px;">財務データを入力してください（⚙ データ管理 → 財務データ）</div>';
+    finHTML+='<div class="empty" style="padding:12px;">財務データを入力してください（<a href="./nagi_mq.html" target="_blank" style="color:var(--accent);">💰 nagi_mq.html</a>）</div>';
   }
   finHTML+='</div>';
   document.getElementById('off-fin').innerHTML=finHTML;
@@ -1913,7 +1876,7 @@ function renderCorpsList(){
 
 function refreshOfficeSelectors(){
   const corps=getCorps();
-  ['new-office-corp','fin-office-sel','pipe-office-sel'].forEach(id=>{
+  ['new-office-corp','pipe-office-sel'].forEach(id=>{
     const el=document.getElementById(id);
     if(!el) return;
     const cur=el.value;
@@ -1975,59 +1938,8 @@ function renderOfficesList(){
 //  CRUD: 財務・パイプライン
 // ════════════════════════════════════════════════════
 
-function loadFinForm(){
-  const oid=document.getElementById('fin-office-sel').value;
-  if(!oid) return;
-  const f=getFin(oid);
-  if(f){
-    ['pq','q','vq','mq','f','g'].forEach(k=>{ const el=document.getElementById('fin-'+k); if(el) el.value=f[k]||''; });
-    const cap=document.getElementById('fin-capacity'); if(cap) cap.value=f.capacity||'';
-    const occ=document.getElementById('fin-occupancy'); if(occ) occ.value=f.occupancy||'';
-    const kaz=document.getElementById('fin-kazan'); if(kaz) kaz.value=f.kazan||'';
-  } else {
-    ['pq','q','vq','mq','f','g'].forEach(k=>{ const el=document.getElementById('fin-'+k); if(el) el.value=''; });
-    ['fin-capacity','fin-occupancy'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
-    const kaz=document.getElementById('fin-kazan'); if(kaz) kaz.value='';
-  }
-  calcOccRate();
-}
-
-function calcOccRate(){
-  const cap=n(document.getElementById('fin-capacity')?.value);
-  const occ=n(document.getElementById('fin-occupancy')?.value);
-  const el=document.getElementById('fin-occ-rate');
-  if(!el) return;
-  if(!cap||!occ){ el.textContent='─'; el.style.color='var(--sub)'; return; }
-  const rate=(occ/cap*100).toFixed(1);
-  const loss=Math.max(0,cap-occ)*60000;
-  const col=rate<85?'var(--danger)':rate<95?'var(--warn)':'var(--accent2)';
-  el.innerHTML=`<span style="font-weight:700;color:${col};">${rate}%</span>`
-    +(loss>0?` <span style="font-size:0.72rem;color:var(--danger);">（月次損失試算 -${(loss/10000).toFixed(0)}万円）</span>`:'');
-}
-
-function saveFin(){
-  const oid=document.getElementById('fin-office-sel').value;
-  if(!oid){ alert('事業所を選択してください'); return; }
-  const data=load('nagi_fin').filter(f=>f.officeId!==oid);
-  const cap=n(document.getElementById('fin-capacity').value);
-  const occ=n(document.getElementById('fin-occupancy').value);
-  data.push({
-    officeId:oid,
-    pq:n(document.getElementById('fin-pq').value),
-    q:n(document.getElementById('fin-q').value),
-    vq:n(document.getElementById('fin-vq').value),
-    mq:n(document.getElementById('fin-mq').value),
-    f:n(document.getElementById('fin-f').value),
-    g:n(document.getElementById('fin-g').value),
-    capacity:cap,
-    occupancy:occ,
-    occRate:cap?occ/cap:null,
-    kazan:document.getElementById('fin-kazan').value||'',
-  });
-  save('nagi_fin',data);
-  alert('財務データを保存しました。');
-  renderCurrentTab();
-}
+// 財務データの入力・編集は nagi_mq.html（軸A資金モジュール）に移行済み。
+// nagi_fin は同一originのlocalStorageを共有しているため、このハブは読み取り専用で参照する。
 
 function loadPipeForm(){
   const oid=document.getElementById('pipe-office-sel').value;
@@ -3383,7 +3295,7 @@ function switchDataTab(tab){
   });
   if(tab==='corps') renderCorpsList();
   else if(tab==='offices') renderOfficesList();
-  else if(tab==='fin'||tab==='pipe') refreshOfficeSelectors();
+  else if(tab==='pipe') refreshOfficeSelectors();
 }
 
 // ════════════════════════════════════════════════════
