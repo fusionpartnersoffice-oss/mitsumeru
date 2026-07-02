@@ -277,6 +277,27 @@
   .pomo-btn:hover { background: var(--bg2); }
   .pomo-count { font-size: 22px; font-weight: 500; min-width: 40px; text-align: center; }
 
+  .voice-btn {
+    padding: 9px 12px;
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    border-radius: 4px;
+    font-size: 17px;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.2s;
+    line-height: 1;
+  }
+  .voice-btn.recording {
+    background: var(--red);
+    animation: voicePulse 1s ease-in-out infinite;
+  }
+  @keyframes voicePulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.55; }
+  }
+
   .btn-primary {
     width: 100%;
     padding: 14px;
@@ -644,7 +665,10 @@
 
     <div class="field">
       <label>内容</label>
-      <textarea id="memo-content" placeholder="気づいたこと、起きたこと、ボヤキをそのまま入力"></textarea>
+      <div style="display:flex;gap:8px;align-items:flex-start;">
+        <textarea id="memo-content" placeholder="気づいたこと、起きたこと、ボヤキをそのまま入力" style="flex:1;"></textarea>
+        <button id="voice-btn-memo" class="voice-btn" onclick="toggleVoiceInput('memo-content','voice-btn-memo')" title="音声入力（タップで開始／停止）">🎤</button>
+      </div>
     </div>
 
     <div class="field">
@@ -2018,6 +2042,48 @@ function clearMemoImage() {
   document.getElementById('memo-image-url').value = '';
   document.getElementById('memo-image-thumb').src = '';
   document.getElementById('memo-image-preview').style.display = 'none';
+}
+
+// ===== 音声入力（Web Speech API・音声データは保存せずその場でテキスト化のみ・全プラン共通） =====
+let _voiceRecognizer = null;
+function toggleVoiceInput(targetId, btnId) {
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    alert('このブラウザは音声入力に対応していません。\nChrome または Edge をお使いください。');
+    return;
+  }
+  const btn = document.getElementById(btnId);
+  if (_voiceRecognizer) {
+    _voiceRecognizer.stop();
+    return;
+  }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  _voiceRecognizer = new SR();
+  _voiceRecognizer.lang = 'ja-JP';
+  _voiceRecognizer.interimResults = false;
+  _voiceRecognizer.continuous = true;
+  if (btn) { btn.textContent = '⏹'; btn.classList.add('recording'); }
+  _voiceRecognizer.onresult = function(e) {
+    const target = document.getElementById(targetId);
+    if (!target) return;
+    let transcript = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) transcript += e.results[i][0].transcript;
+    }
+    if (transcript) {
+      target.value = (target.value ? target.value + '\n' : '') + transcript;
+      target.dispatchEvent(new Event('input'));
+    }
+  };
+  _voiceRecognizer.onerror = function(e) {
+    if (btn) { btn.textContent = '🎤'; btn.classList.remove('recording'); }
+    _voiceRecognizer = null;
+    if (e.error !== 'aborted' && e.error !== 'no-speech') alert('音声入力エラー：' + e.error);
+  };
+  _voiceRecognizer.onend = function() {
+    if (btn) { btn.textContent = '🎤'; btn.classList.remove('recording'); }
+    _voiceRecognizer = null;
+  };
+  _voiceRecognizer.start();
 }
 
 function addMemo() {
