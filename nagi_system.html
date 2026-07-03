@@ -428,7 +428,7 @@ tr:hover td{background:rgba(79,195,247,0.03);}
   </div>
 
   <div class="section" style="margin-top:28px;">
-    <div class="section-title">🧠 LSRP異常者（要警戒以上：★★☆ スコア11〜 / ★★★ スコア16〜）</div>
+    <div class="section-title">🧠 LSRP要観察以上（★★☆ スコア11〜 / ★★★ スコア16〜）</div>
     <div class="table-wrap" id="lsrp-anomaly-wrap">
       <table>
         <thead>
@@ -976,14 +976,16 @@ function getPipe(oid){ return (load('nagi_pipe').find(p=>p.officeId===oid))||nul
 //  計算ロジック
 // ════════════════════════════════════════════════════
 
+// 既存スタッフ向け表示は「中止・除外・危険・不適格」等の除外的文言を避け、支援的な表現に統一する
+// （柴山さん承認：LSRPと同じ考え方をRC判定にも適用。判定ロジックの閾値自体は変更しない）
 function getRCStatus(ego){
   if(!ego) return {label:'─',cls:'',reason:''};
   const cp=n(ego.CP),np=n(ego.NP),fc=n(ego.FC),ac=n(ego.AC);
   const I=cp+fc, U=np+ac;
-  // mitsumeru_tekisei_check と同じ基準（U<5 が危険ライン）
-  if(I>9 && U<5) return {label:'危険★',cls:'rc-danger',reason:'冷徹OS（I+U-）：正論で周囲を裁き、組織の凪を破壊するリスク。即時介入が必要。'};
-  if(I>7 && U<5) return {label:'危険★',cls:'rc-danger',reason:'冷徹傾向OS（I高U低）：感情より論理優先で人間関係に摩擦が生じやすい。注意観察が必要。'};
-  if(I<5 && U<5) return {label:'注意',cls:'rc-warn',reason:'停滞OS（I-U-）：孤立・無気力・離職リスクが高い。継続的な1on1が必要。'};
+  // mitsumeru_tekisei_check と同じ基準（U<5 が要フォローライン）
+  if(I>9 && U<5) return {label:'要フォロー★',cls:'rc-danger',reason:'冷徹OS（I+U-）：正論で周囲を裁きやすい傾向。本人との対話機会を設けることをおすすめします。'};
+  if(I>7 && U<5) return {label:'要フォロー★',cls:'rc-danger',reason:'冷徹傾向OS（I高U低）：感情より論理優先で人間関係に摩擦が生じやすい傾向。継続的な面談・フォローをおすすめします。'};
+  if(I<5 && U<5) return {label:'要観察',cls:'rc-warn',reason:'停滞OS（I-U-）：孤立・無気力の傾向。本人との対話機会（1on1等）を設けることをおすすめします。'};
   return {label:'安全',cls:'rc-safe',reason:'健全な自他肯定OS。凪を支える人材。'};
 }
 
@@ -1229,8 +1231,8 @@ function renderCorpDashboard(){
   const mgrsRC=[];
   staff.forEach(s=>{
     const rc=getRCStatus(s.ego);
-    if(rc.label==='危険★') rcCounts.danger++;
-    else if(rc.label==='注意') rcCounts.caution++;
+    if(rc.label==='要フォロー★') rcCounts.danger++;
+    else if(rc.label==='要観察') rcCounts.caution++;
     else if(rc.label==='依存') rcCounts.dep++;
     else rcCounts.safe++;
     const lt=n(s.lsrp?.total);
@@ -1243,8 +1245,8 @@ function renderCorpDashboard(){
   document.getElementById('corp-rc-summary').innerHTML=`
     <div class="card">
       <div class="grid-4" style="margin-bottom:12px;">
-        <div><div class="card-title">RC 危険★</div><div class="card-value" style="color:var(--danger);">${rcCounts.danger}<span style="font-size:0.75rem;">名</span></div></div>
-        <div><div class="card-title">RC 注意</div><div class="card-value" style="color:var(--warn);">${rcCounts.caution}<span style="font-size:0.75rem;">名</span></div></div>
+        <div><div class="card-title">RC 要フォロー★</div><div class="card-value" style="color:var(--danger);">${rcCounts.danger}<span style="font-size:0.75rem;">名</span></div></div>
+        <div><div class="card-title">RC 要観察</div><div class="card-value" style="color:var(--warn);">${rcCounts.caution}<span style="font-size:0.75rem;">名</span></div></div>
         <div><div class="card-title">LSRP ★★★</div><div class="card-value" style="color:var(--danger);">${lsrpCounts.danger}<span style="font-size:0.75rem;">名</span></div></div>
         <div><div class="card-title">LSRP ★★☆</div><div class="card-value" style="color:var(--warn);">${lsrpCounts.warn}<span style="font-size:0.75rem;">名</span></div></div>
       </div>
@@ -1648,7 +1650,7 @@ function renderRCList(){
   if(!lsrpAnomalies.length){
     lsrpTbody.innerHTML='';
     lsrpEmpty.style.display='block';
-    lsrpEmpty.innerHTML='LSRP要警戒以上の人物は検出されていません ✅';
+    lsrpEmpty.innerHTML='LSRP要観察以上の人物は検出されていません ✅';
   } else {
     lsrpEmpty.style.display='none';
     lsrpTbody.innerHTML=lsrpAnomalies.map(s=>{
@@ -1662,8 +1664,8 @@ function renderRCList(){
       const total=n(s.lsrp?.total);
       const isDanger=total>=16;
       const riskStr=isDanger?
-        '★★★ 高リスク：目標達成のために他者を犠牲にする傾向あり。衝動制御困難。採用・登用を慎重に検討。':
-        '★★☆ 要警戒：一部の冷徹・衝動的傾向が確認。モニタリングとフォロー体制を構築。';
+        '★★★ 要フォロー：一部、衝動制御が難しい傾向が確認。本人との対話機会を設けることをおすすめします。':
+        '★★☆ 要観察：一部の冷徹・衝動的傾向が確認。継続的な面談・フォロー体制をおすすめします。';
       return `<tr>
         <td>${off?.name||'─'}</td>
         <td style="font-weight:600;white-space:nowrap;">${s.name}</td>
@@ -3241,7 +3243,7 @@ function loadSample(){
      ego:{CP:3,NP:6,A:4,FC:7,AC:9},
      enn:[{type:'T6',name:'堅実家'},{type:'T9',name:'調停者'},{type:'T2',name:'献身家'}],
      lsrp:{total:5,levelShort:'安全'}},
-    // 問題スタッフ：RC危険・LSRP危険。クレームが多い
+    // サンプル：RC要フォロー・LSRP要フォロー該当。クレームが多い
     {id:s5,corpId:c1,officeId:o1,name:'三浦 圭介',role:'一般職',task:30,social:12,p:24,m:10,ksa:48,
      ego:{CP:10,NP:3,A:5,FC:4,AC:2},
      enn:[{type:'T8',name:'統率者'},{type:'T1',name:'完璧主義'},{type:'T4',name:'芸術家'}],
@@ -3265,7 +3267,7 @@ function loadSample(){
      lsrp:{total:3,levelShort:'安全'}},
 
     // ━━ 訪問介護ステーション ━━
-    // サービス提供責任者：LSRP警戒・RC注意。部下との摩擦が多い
+    // サービス提供責任者：LSRP要観察・RC要観察。部下との摩擦が多い
     {id:s9,corpId:c1,officeId:o3,name:'吉田 浩二',role:'管理者クラス',task:38,social:24,p:16,m:12,ksa:58,
      ego:{CP:9,NP:5,A:6,FC:3,AC:3},
      enn:[{type:'T8',name:'統率者'},{type:'T1',name:'完璧主義'},{type:'T3',name:'達成者'}],
@@ -3307,7 +3309,7 @@ function loadSample(){
   if(offSel.options.length>1) offSel.selectedIndex=1;
   onOfficeChange();
   renderCurrentTab();
-  alert('✅ サンプルデータを読み込みました！\n\n【社会福祉法人 やまびこ会】\n・デイサービス やまびこ（5名）\n・グループホーム こもれび（3名）\n・訪問介護ステーション（3名）\n\n【Fusion Partners】\n・FusionOS Labo（3名）\n\n⚠️ 見どころ：\n・三浦圭介（デイ）→ LSRP危険・RC危険\n・訪問介護 → 赤字・稼働不足\n・吉田浩二（訪問）→ LSRP警戒\n\n🤖 「AI経営アドバイス」ボタンでClaudeの分析を試してください！');
+  alert('✅ サンプルデータを読み込みました！\n\n【社会福祉法人 やまびこ会】\n・デイサービス やまびこ（5名）\n・グループホーム こもれび（3名）\n・訪問介護ステーション（3名）\n\n【Fusion Partners】\n・FusionOS Labo（3名）\n\n⚠️ 見どころ：\n・三浦圭介（デイ）→ LSRP要フォロー・RC要フォロー\n・訪問介護 → 赤字・稼働不足\n・吉田浩二（訪問）→ LSRP要観察\n\n🤖 「AI経営アドバイス」ボタンでClaudeの分析を試してください！');
 }
 
 // ════════════════════════════════════════════════════
@@ -3768,9 +3770,9 @@ function loadNagiSummary(){
     let tPQ=0,tMQ=0,tF=0,tG=0;
     offices.forEach(o=>{ const f=getFin(o.id); if(f){tPQ+=n(f.pq);tMQ+=n(f.mq);tF+=n(f.f);tG+=n(f.g);} });
     if(tPQ) lines.push(`財務：売上 ${yen(tPQ)} / 粗利 ${yen(tMQ)} / 固定費 ${yen(tF)} / 利益 ${yen(tG)} / f/m比率 ${tMQ?(tF/tMQ*100).toFixed(1):'-'}%`);
-    const rcD = allStaff.filter(s=>getRCStatus(s.ego).label==='危険★').length;
+    const rcD = allStaff.filter(s=>getRCStatus(s.ego).label==='要フォロー★').length;
     const lsrpD = allStaff.filter(s=>n(s.lsrp?.total)>=16).length;
-    lines.push(`スタッフ計：${allStaff.length}名 / RC危険 ${rcD}名 / LSRP危険 ${lsrpD}名`);
+    lines.push(`スタッフ計：${allStaff.length}名 / RC要フォロー ${rcD}名 / LSRP要フォロー ${lsrpD}名`);
   } else if(corpId && !officeId){
     const corp = corps.find(c=>c.id===corpId);
     lines.push(`【集計範囲】${corp?.name||''} 全事業所`);
@@ -3784,9 +3786,9 @@ function loadNagiSummary(){
       lines.push(row);
     });
     const st=getStaffByCorp(corpId);
-    const rcD=st.filter(s=>getRCStatus(s.ego).label==='危険★').length;
+    const rcD=st.filter(s=>getRCStatus(s.ego).label==='要フォロー★').length;
     const lsrpD=st.filter(s=>n(s.lsrp?.total)>=16).length;
-    lines.push(`リスク：RC危険 ${rcD}名 / LSRP危険 ${lsrpD}名`);
+    lines.push(`リスク：RC要フォロー ${rcD}名 / LSRP要フォロー ${lsrpD}名`);
   } else if(officeId){
     const off = offices.find(o=>o.id===officeId);
     const corp = corps.find(c=>c.id===off?.corpId);
@@ -3804,11 +3806,11 @@ function loadNagiSummary(){
       const avgS=taS.reduce((a,s)=>a+n(s.social),0)/taS.length;
       lines.push(`チームTA：Task平均${avgT.toFixed(1)} / Social平均${avgS.toFixed(1)} / チームSL段階 ${getSLStage(avgT,avgS)}`);
     }
-    const rcD=st.filter(s=>getRCStatus(s.ego).label==='危険★').length;
-    const rcW=st.filter(s=>getRCStatus(s.ego).label==='注意').length;
+    const rcD=st.filter(s=>getRCStatus(s.ego).label==='要フォロー★').length;
+    const rcW=st.filter(s=>getRCStatus(s.ego).label==='要観察').length;
     const lsrpD=st.filter(s=>n(s.lsrp?.total)>=16).length;
     const lsrpW=st.filter(s=>n(s.lsrp?.total)>=11&&n(s.lsrp?.total)<16).length;
-    lines.push(`リスク：スタッフ${st.length}名 / RC危険 ${rcD}名 / RC注意 ${rcW}名 / LSRP危険 ${lsrpD}名 / LSRP警戒 ${lsrpW}名`);
+    lines.push(`リスク：スタッフ${st.length}名 / RC要フォロー ${rcD}名 / RC要観察 ${rcW}名 / LSRP要フォロー ${lsrpD}名 / LSRP要観察 ${lsrpW}名`);
   }
 
   const el = document.getElementById('nagi-advice-summary');
@@ -3848,12 +3850,12 @@ function generateNagiAdvice(){
         const avgS=taS.reduce((a,x)=>a+n(x.social),0)/taS.length;
         s += `\n  チーム：${st.length}名 TA実施${taS.length}名 Task平均${avgT.toFixed(1)} Social平均${avgS.toFixed(1)} チームSL=${getSLStage(avgT,avgS)}`;
       }
-      const rcD=st.filter(x=>getRCStatus(x.ego).label==='危険★');
+      const rcD=st.filter(x=>getRCStatus(x.ego).label==='要フォロー★');
       const lsrpD=st.filter(x=>n(x.lsrp?.total)>=16);
       const lsrpW=st.filter(x=>n(x.lsrp?.total)>=11&&n(x.lsrp?.total)<16);
-      if(rcD.length) s += `\n  RC危険者：${rcD.map(x=>x.name).join('、')}`;
-      if(lsrpD.length) s += `\n  LSRP危険者：${lsrpD.map(x=>x.name).join('、')}`;
-      if(lsrpW.length) s += `\n  LSRP警戒者：${lsrpW.map(x=>x.name).join('、')}`;
+      if(rcD.length) s += `\n  RC要フォロー者：${rcD.map(x=>x.name).join('、')}`;
+      if(lsrpD.length) s += `\n  LSRP要フォロー者：${lsrpD.map(x=>x.name).join('、')}`;
+      if(lsrpW.length) s += `\n  LSRP要観察者：${lsrpW.map(x=>x.name).join('、')}`;
     }
     return s;
   };
@@ -3983,8 +3985,8 @@ function nagiAiAnalysis(){
   });
 
   // 軸C：チーム
-  const rcDanger  = allStaff.filter(s=>getRCStatus(s.ego).label==='危険★').map(s=>s.name);
-  const rcCaution = allStaff.filter(s=>getRCStatus(s.ego).label==='注意').map(s=>s.name);
+  const rcDanger  = allStaff.filter(s=>getRCStatus(s.ego).label==='要フォロー★').map(s=>s.name);
+  const rcCaution = allStaff.filter(s=>getRCStatus(s.ego).label==='要観察').map(s=>s.name);
   const lsrpD = allStaff.filter(s=>n(s.lsrp?.total)>=16).map(s=>s.name);
   const lsrpW = allStaff.filter(s=>n(s.lsrp?.total)>=11&&n(s.lsrp?.total)<16).map(s=>s.name);
 
@@ -4005,10 +4007,10 @@ ${pipeLines.length ? pipeLines.join('\n') : '  データなし'}
 
 ## 軸C：👥 チーム
 - スタッフ総数：${allStaff.length}名
-- RC危険★：${rcDanger.length}名${rcDanger.length?'（'+rcDanger.join('、')+'）':''}
-- RC注意：${rcCaution.length}名${rcCaution.length?'（'+rcCaution.join('、')+'）':''}
-- LSRP危険（★★★）：${lsrpD.length}名${lsrpD.length?'（'+lsrpD.join('、')+'）':''}
-- LSRP警戒（★★☆）：${lsrpW.length}名${lsrpW.length?'（'+lsrpW.join('、')+'）':''}
+- RC要フォロー★：${rcDanger.length}名${rcDanger.length?'（'+rcDanger.join('、')+'）':''}
+- RC要観察：${rcCaution.length}名${rcCaution.length?'（'+rcCaution.join('、')+'）':''}
+- LSRP要フォロー（★★★）：${lsrpD.length}名${lsrpD.length?'（'+lsrpD.join('、')+'）':''}
+- LSRP要観察（★★☆）：${lsrpW.length}名${lsrpW.length?'（'+lsrpW.join('、')+'）':''}
 
 ## 軸D：🧬 スタッフ性質
 - LSRP安全率：${safeRate}%（スキャン済み${lsrpScanned.length}名 / 総数${allStaff.length}名）
