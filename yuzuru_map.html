@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>弦システム 商圏マップ【デモ・東海3県】— Fusion Partners</title>
+  <title>弦システム 商圏マップ【東海3県・実データ】— Fusion Partners</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
@@ -11,7 +11,7 @@
     body{font-family:"Hiragino Kaku Gothic Pro",Meiryo,sans-serif;background:#0d1117;display:flex;flex-direction:column;height:100vh;overflow:hidden;}
     #header{background:linear-gradient(135deg,#1a237e,#283593);color:#fff;padding:10px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;border-bottom:2px solid #3949ab;flex-shrink:0;}
     #header h1{font-size:16px;letter-spacing:.5px;white-space:nowrap;}
-    .demo-badge{background:#ff6f00;color:#fff;font-size:10px;font-weight:bold;padding:2px 7px;border-radius:4px;letter-spacing:1px;}
+    .demo-badge{background:#ff6f00;color:#fff;font-size:10px;font-weight:bold;padding:2px 7px;border-radius:4px;letter-spacing:.5px;white-space:nowrap;}
     .stat{font-size:12px;background:rgba(255,255,255,.12);padding:3px 10px;border-radius:20px;white-space:nowrap;}
     .stat span{font-weight:bold;font-size:15px;margin-right:2px;}
     #controls{background:#161b22;padding:6px 16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;border-bottom:1px solid #30363d;flex-shrink:0;}
@@ -60,11 +60,11 @@
 <body>
 <div id="header">
   <h1>弦システム 商圏マップ（東海3県パイロット）</h1>
-  <span class="demo-badge">DEMO</span>
+  <span class="demo-badge" title="定員規模のみによる暫定ランク。処遇改善加算・開設年数・待機者数のデータは未取得">実データ・定員ベース暫定ランク</span>
   <div class="stat">全 <span id="total-count">8</span> 件</div>
-  <div class="stat" style="background:rgba(229,57,53,.25)">A <span style="color:#ff8a80" id="a-count">5</span></div>
-  <div class="stat" style="background:rgba(251,140,0,.25)">B <span style="color:#ffcc80" id="b-count">1</span></div>
-  <div class="stat" style="background:rgba(30,136,229,.25)">C <span style="color:#82b1ff" id="c-count">2</span></div>
+  <div class="stat" style="background:rgba(229,57,53,.25)">大 <span style="color:#ff8a80" id="a-count">5</span></div>
+  <div class="stat" style="background:rgba(251,140,0,.25)">中 <span style="color:#ffcc80" id="b-count">1</span></div>
+  <div class="stat" style="background:rgba(30,136,229,.25)">小 <span style="color:#82b1ff" id="c-count">2</span></div>
   <div class="stat" style="background:rgba(255,255,255,.1)">紹介元 <span id="ref-count">0</span> 件</div>
   <div style="margin-left:auto;font-size:11px;color:rgba(255,255,255,.5)">Fusion Partners © 2026</div>
 </div>
@@ -75,21 +75,19 @@
     <option value="愛知県">愛知県</option>
     <option value="三重県">三重県</option>
   </select></label>
-  <label>ランク：<select id="rankFilter">
+  <label>定員規模：<select id="rankFilter">
     <option value="ALL">すべて</option>
-    <option value="A">A（即アプローチ）</option>
-    <option value="AB">A + B</option>
-    <option value="B">B のみ</option>
-    <option value="C">C のみ</option>
+    <option value="A">大（上位）</option>
+    <option value="AB">大 + 中</option>
+    <option value="B">中 のみ</option>
+    <option value="C">小 のみ</option>
   </select></label>
   <label>種別：<select id="typeFilter">
     <option value="ALL">すべて</option>
     <option value="特別養護老人ホーム">特養</option>
     <option value="通所介護">通所介護</option>
     <option value="訪問介護">訪問介護</option>
-    <option value="グループホーム">グループホーム</option>
-    <option value="就労継続支援B型">就労継続支援B型</option>
-    <option value="就労移行支援">就労移行支援</option>
+    <option value="認知症対応型共同生活介護">認知症対応型GH</option>
   </select></label>
   <label>状況：<select id="statusFilter">
     <option value="ALL">すべて</option>
@@ -107,7 +105,7 @@
 <div id="body">
   <div id="sidebar">
     <div id="sidebar-header">
-      <span>営業先リスト（スコア順）</span>
+      <span>営業先リスト（定員規模順）</span>
       <span id="sidebar-count">0件</span>
     </div>
     <div id="facility-list"></div>
@@ -118,155 +116,1820 @@
 </div>
 
 <script>
-// ※東海3県パイロット：施設名・法人名はすべて架空のデモデータ（WAM NET実データ未投入。実データ投入は別タスク）
+// 東海3県パイロット：厚労省「介護サービス情報公表システム」オープンデータ（jigyosho_510/150/110/320.csv）から
+// 実際に取得した実名・実住所データ（サービス種別×県ごとに定員上位12件を抽出）。
+// 処遇改善加算・開設年月日・待機者数はこのオープンデータに含まれないため未取得（kaizen/waitlist/yearsは「未確認」扱い）。
+// ランクA/B/Cは「定員規模」のみに基づく暫定順位（同一サービス種別36件内の上位/中位/下位3等分）。
 const RAW_DATA = {
   "type": "FeatureCollection",
   "features": [
     {
       "type": "Feature",
       "id": 0,
-      "geometry": { "type": "Point", "coordinates": [136.760, 35.423] },
+      "geometry": { "type": "Point", "coordinates": [136.57554779999998, 35.4440335] },
       "properties": {
-        "name": "岐阜さくらデイサービス", "corp": "社会福祉法人岐阜さくら会", "type": "通所介護",
-        "pref": "岐阜県", "addr": "岐阜県岐阜市司町1-1", "phone": "058-111-2233",
-        "capacity": 40, "waitlist": 14, "kaizen": "未取得", "years": 1.8,
-        "lat": 35.423, "lon": 136.760, "score": 75, "rank": "A",
-        "reason": "処遇改善加算未取得(+30) / 開設1.8年(+20) / 定員40名(+15) / 待機14名(+10)",
-        "color": "#e53935", "status": "未接触"
+        "name": "特別養護老人ホーム　サンビレッジ新生苑", "corp": "社会福祉法人新生会", "type": "特別養護老人ホーム",
+        "pref": "岐阜県", "addr": "岐阜県揖斐郡池田町本郷１５０１", "phone": "0585-45-5545",
+        "capacity": 138, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.4440335, "lon": 136.57554779999998, "score": null, "rank": "A",
+        "reason": "定員138名（特別養護老人ホームの候補内での定員規模：上位）", "color": "#e53935", "status": "未接触"
       }
     },
     {
       "type": "Feature",
       "id": 1,
-      "geometry": { "type": "Point", "coordinates": [136.614, 35.362] },
+      "geometry": { "type": "Point", "coordinates": [137.06620040000007, 35.4772158] },
       "properties": {
-        "name": "大垣みずほグループホーム", "corp": "社会福祉法人みずほ福祉会", "type": "グループホーム",
-        "pref": "岐阜県", "addr": "岐阜県大垣市郭町2-2", "phone": "0584-22-3344",
-        "capacity": 18, "waitlist": 0, "kaizen": "未取得", "years": 6.5,
-        "lat": 35.362, "lon": 136.614, "score": 30, "rank": "B",
-        "reason": "処遇改善加算未取得(+30)",
-        "color": "#fb8c00", "status": "未接触"
+        "name": "特別養護老人ホーム　さわやかナーシングビラ", "corp": "社会福祉法人慈恵会", "type": "特別養護老人ホーム",
+        "pref": "岐阜県", "addr": "岐阜県美濃加茂市下米田町東栃井81番地の2", "phone": "0574-25-9790",
+        "capacity": 130, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.4772158, "lon": 137.06620040000007, "score": null, "rank": "A",
+        "reason": "定員130名（特別養護老人ホームの候補内での定員規模：上位）", "color": "#e53935", "status": "未接触"
       }
     },
     {
       "type": "Feature",
       "id": 2,
-      "geometry": { "type": "Point", "coordinates": [136.878, 35.397] },
+      "geometry": { "type": "Point", "coordinates": [137.22297930000002, 35.329157] },
       "properties": {
-        "name": "各務原ひかり訪問介護", "corp": "医療法人ひかり会", "type": "訪問介護",
-        "pref": "岐阜県", "addr": "岐阜県各務原市那加桜町3-3", "phone": "058-333-4455",
-        "capacity": 30, "waitlist": 0, "kaizen": "取得済", "years": 12.0,
-        "lat": 35.397, "lon": 136.878, "score": -10, "rank": "C",
-        "reason": "過去加算取得歴あり(-10)",
-        "color": "#1e88e5", "status": "未接触"
+        "name": "特別養護老人ホームとき陶生苑", "corp": "社会福祉法人美濃陶生苑", "type": "特別養護老人ホーム",
+        "pref": "岐阜県", "addr": "岐阜県土岐市駄知町1858番地の2", "phone": "0572-59-8678",
+        "capacity": 120, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.329157, "lon": 137.22297930000002, "score": null, "rank": "A",
+        "reason": "定員120名（特別養護老人ホームの候補内での定員規模：上位）", "color": "#e53935", "status": "未接触"
       }
     },
     {
       "type": "Feature",
       "id": 3,
-      "geometry": { "type": "Point", "coordinates": [136.906, 35.181] },
+      "geometry": { "type": "Point", "coordinates": [137.19956163589768, 36.22508059848141] },
       "properties": {
-        "name": "名古屋わかば就労支援センター", "corp": "NPO法人わかば", "type": "就労継続支援B型",
-        "pref": "愛知県", "addr": "愛知県名古屋市中村区名駅4-4", "phone": "052-111-2233",
-        "capacity": 30, "waitlist": 9, "kaizen": "未取得", "years": 1.1,
-        "lat": 35.181, "lon": 136.906, "score": 75, "rank": "A",
-        "reason": "処遇改善加算未取得(+30) / 開設1.1年(+20) / 定員30名(+15) / 待機9名(+10・目安)",
-        "color": "#e53935", "status": "未接触"
+        "name": "岐阜県立飛騨寿楽苑", "corp": "社会福祉法人岐阜県福祉事業団", "type": "特別養護老人ホーム",
+        "pref": "岐阜県", "addr": "岐阜県飛騨市古川町是重102", "phone": "0577ー73ー3804",
+        "capacity": 120, "waitlist": null, "kaizen": "未確認",
+        "lat": 36.22508059848141, "lon": 137.19956163589768, "score": null, "rank": "A",
+        "reason": "定員120名（特別養護老人ホームの候補内での定員規模：上位）", "color": "#e53935", "status": "未接触"
       }
     },
     {
       "type": "Feature",
       "id": 4,
-      "geometry": { "type": "Point", "coordinates": [136.803, 35.304] },
+      "geometry": { "type": "Point", "coordinates": [136.5948929, 35.3236653] },
       "properties": {
-        "name": "一宮なでしこ特別養護老人ホーム", "corp": "社会福祉法人なでしこ福祉会", "type": "特別養護老人ホーム",
-        "pref": "愛知県", "addr": "愛知県一宮市栄1-1", "phone": "0586-11-2233",
-        "capacity": 60, "waitlist": 20, "kaizen": "未取得", "years": 4.5,
-        "lat": 35.304, "lon": 136.803, "score": 85, "rank": "A",
-        "reason": "処遇改善加算未取得(+30) / 開設4.5年(+20) / 定員60名(+15) / 待機20名(+10)",
-        "color": "#e53935", "status": "未接触"
+        "name": "大垣市くすのき苑", "corp": "社会福祉法人大垣市社会福祉事業団", "type": "特別養護老人ホーム",
+        "pref": "岐阜県", "addr": "岐阜県大垣市多芸島4丁目64番地1", "phone": "0584-89-8100",
+        "capacity": 110, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.3236653, "lon": 136.5948929, "score": null, "rank": "B",
+        "reason": "定員110名（特別養護老人ホームの候補内での定員規模：中位）", "color": "#fb8c00", "status": "未接触"
       }
     },
     {
       "type": "Feature",
       "id": 5,
-      "geometry": { "type": "Point", "coordinates": [137.156, 35.082] },
+      "geometry": { "type": "Point", "coordinates": [137.07750950000002, 35.4238828] },
       "properties": {
-        "name": "豊田つばさ通所介護", "corp": "医療法人つばさ会", "type": "通所介護",
-        "pref": "愛知県", "addr": "愛知県豊田市喜多町5-5", "phone": "0565-11-2233",
-        "capacity": 45, "waitlist": 0, "kaizen": "取得済", "years": 15.0,
-        "lat": 35.082, "lon": 137.156, "score": -10, "rank": "C",
-        "reason": "過去加算取得歴あり(-10)",
-        "color": "#1e88e5", "status": "未接触"
+        "name": "特別養護老人ホーム　瀬田の杜", "corp": "社会福祉法人明耀会", "type": "特別養護老人ホーム",
+        "pref": "岐阜県", "addr": "岐阜県可児市瀬田８８番地", "phone": "0574-60-0025",
+        "capacity": 110, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.4238828, "lon": 137.07750950000002, "score": null, "rank": "B",
+        "reason": "定員110名（特別養護老人ホームの候補内での定員規模：中位）", "color": "#fb8c00", "status": "未接触"
       }
     },
     {
       "type": "Feature",
       "id": 6,
-      "geometry": { "type": "Point", "coordinates": [136.506, 34.719] },
+      "geometry": { "type": "Point", "coordinates": [136.67617055092614, 35.33889365199642] },
       "properties": {
-        "name": "津あすなろ特別養護老人ホーム", "corp": "社会福祉法人あすなろ福祉会", "type": "特別養護老人ホーム",
-        "pref": "三重県", "addr": "三重県津市栄町1-1", "phone": "059-111-2233",
-        "capacity": 50, "waitlist": 16, "kaizen": "未取得", "years": 2.9,
-        "lat": 34.719, "lon": 136.506, "score": 75, "rank": "A",
-        "reason": "処遇改善加算未取得(+30) / 開設2.9年(+20) / 定員50名(+15) / 待機16名(+10)",
-        "color": "#e53935", "status": "未接触"
+        "name": "特別養護老人ホーム　サンライズ長良", "corp": "社会福祉法人在心会", "type": "特別養護老人ホーム",
+        "pref": "岐阜県", "addr": "岐阜県安八郡安八町森部1875-1", "phone": "0584-64-2328",
+        "capacity": 110, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.33889365199642, "lon": 136.67617055092614, "score": null, "rank": "B",
+        "reason": "定員110名（特別養護老人ホームの候補内での定員規模：中位）", "color": "#fb8c00", "status": "未接触"
       }
     },
     {
       "type": "Feature",
       "id": 7,
-      "geometry": { "type": "Point", "coordinates": [136.625, 34.965] },
+      "geometry": { "type": "Point", "coordinates": [136.69788819999997, 35.4088354] },
       "properties": {
-        "name": "四日市みらい就労移行支援", "corp": "NPO法人みらい", "type": "就労移行支援",
-        "pref": "三重県", "addr": "三重県四日市市諏訪町2-2", "phone": "059-222-3344",
-        "capacity": 22, "waitlist": 2, "kaizen": "未取得", "years": 0.8,
-        "lat": 34.965, "lon": 136.625, "score": 50, "rank": "A",
-        "reason": "処遇改善加算未取得(+30) / 開設0.8年(+20)",
-        "color": "#e53935", "status": "未接触"
+        "name": "特別養護老人ホーム喜久寿苑", "corp": "社会福祉法人千代田会", "type": "特別養護老人ホーム",
+        "pref": "岐阜県", "addr": "岐阜県岐阜市河渡２丁目４５番地", "phone": "058-251-5561",
+        "capacity": 100, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.4088354, "lon": 136.69788819999997, "score": null, "rank": "B",
+        "reason": "定員100名（特別養護老人ホームの候補内での定員規模：中位）", "color": "#fb8c00", "status": "未接触"
       }
     },
     {
       "type": "Feature",
       "id": 8,
-      "geometry": { "type": "Point", "coordinates": [136.526, 34.577] },
+      "geometry": { "type": "Point", "coordinates": [136.87493179073797, 35.45999335971013] },
       "properties": {
-        "name": "松阪ほほえみグループホーム", "corp": "社会福祉法人ほほえみ会", "type": "グループホーム",
-        "pref": "三重県", "addr": "三重県松阪市京町3-3", "phone": "0598-11-2233",
-        "capacity": 18, "waitlist": 0, "kaizen": "未取得", "years": 7.2,
-        "lat": 34.577, "lon": 136.526, "score": 30, "rank": "B",
-        "reason": "処遇改善加算未取得(+30)",
-        "color": "#fb8c00", "status": "未接触"
+        "name": "特別養護老人ホーム大洞岐協苑", "corp": "社会福祉法人岐協福祉会", "type": "特別養護老人ホーム",
+        "pref": "岐阜県", "addr": "岐阜県岐阜市大洞3丁目3番1号", "phone": "058-241-7676",
+        "capacity": 100, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.45999335971013, "lon": 136.87493179073797, "score": null, "rank": "B",
+        "reason": "定員100名（特別養護老人ホームの候補内での定員規模：中位）", "color": "#fb8c00", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 9,
+      "geometry": { "type": "Point", "coordinates": [136.75941149999994, 35.4101011] },
+      "properties": {
+        "name": "介護老人福祉施設ジョイフル岐阜駅", "corp": "社会福祉法人サン・ビジョン", "type": "特別養護老人ホーム",
+        "pref": "岐阜県", "addr": "岐阜県岐阜市高砂町一丁目１７番地岐阜イーストライジング24", "phone": "058-264-2811",
+        "capacity": 100, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.4101011, "lon": 136.75941149999994, "score": null, "rank": "B",
+        "reason": "定員100名（特別養護老人ホームの候補内での定員規模：中位）", "color": "#fb8c00", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 10,
+      "geometry": { "type": "Point", "coordinates": [136.7006986, 35.4192647] },
+      "properties": {
+        "name": "ナーシングケア寺田", "corp": "社会福祉法人和光会", "type": "特別養護老人ホーム",
+        "pref": "岐阜県", "addr": "岐阜県岐阜市寺田７丁目８５番地", "phone": "058-255-5550",
+        "capacity": 100, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.4192647, "lon": 136.7006986, "score": null, "rank": "C",
+        "reason": "定員100名（特別養護老人ホームの候補内での定員規模：下位）", "color": "#1e88e5", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 11,
+      "geometry": { "type": "Point", "coordinates": [137.20927740000002, 36.1351856] },
+      "properties": {
+        "name": "特別養護老人ホーム新宮園", "corp": "社会福祉法人清徳会", "type": "特別養護老人ホーム",
+        "pref": "岐阜県", "addr": "岐阜県高山市新宮町1322番地1", "phone": "0577-36-5565",
+        "capacity": 100, "waitlist": null, "kaizen": "未確認",
+        "lat": 36.1351856, "lon": 137.20927740000002, "score": null, "rank": "C",
+        "reason": "定員100名（特別養護老人ホームの候補内での定員規模：下位）", "color": "#1e88e5", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 12,
+      "geometry": { "type": "Point", "coordinates": [137.0239408, 35.1550509] },
+      "properties": {
+        "name": "特別養護老人ホーム　極楽苑", "corp": "社会福祉法人　高針福祉会", "type": "特別養護老人ホーム",
+        "pref": "愛知県", "addr": "名古屋市名東区大針一丁目265番地", "phone": "052-701-0707",
+        "capacity": 150, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.1550509, "lon": 137.0239408, "score": null, "rank": "A",
+        "reason": "定員150名（特別養護老人ホームの候補内での定員規模：上位）", "color": "#e53935", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 13,
+      "geometry": { "type": "Point", "coordinates": [136.9876011, 35.1080033] },
+      "properties": {
+        "name": "特別養護老人ホーム高坂苑", "corp": "社会福祉法人　高坂福祉会", "type": "特別養護老人ホーム",
+        "pref": "愛知県", "addr": "愛知県名古屋市天白区高坂町１９７番地の１", "phone": "052-805-0100",
+        "capacity": 143, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.1080033, "lon": 136.9876011, "score": null, "rank": "A",
+        "reason": "定員143名（特別養護老人ホームの候補内での定員規模：上位）", "color": "#e53935", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 14,
+      "geometry": { "type": "Point", "coordinates": [136.98137959999997, 35.2199186] },
+      "properties": {
+        "name": "社会福祉法人愛知玉葉会　第二尾張荘", "corp": "社会福祉法人愛知玉葉会", "type": "特別養護老人ホーム",
+        "pref": "愛知県", "addr": "愛知県名古屋市守山区川東山３３２１", "phone": "052-794-1611",
+        "capacity": 140, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.2199186, "lon": 136.98137959999997, "score": null, "rank": "A",
+        "reason": "定員140名（特別養護老人ホームの候補内での定員規模：上位）", "color": "#e53935", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 15,
+      "geometry": { "type": "Point", "coordinates": [136.904948, 35.18948690000001] },
+      "properties": {
+        "name": "特別養護老人ホーム　オーネスト名城", "corp": "社会福祉法人紫水会", "type": "特別養護老人ホーム",
+        "pref": "愛知県", "addr": "名古屋市北区名城三丁目2番12号", "phone": "052-915-3330",
+        "capacity": 120, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.18948690000001, "lon": 136.904948, "score": null, "rank": "A",
+        "reason": "定員120名（特別養護老人ホームの候補内での定員規模：上位）", "color": "#e53935", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 16,
+      "geometry": { "type": "Point", "coordinates": [136.9075848, 35.239759] },
+      "properties": {
+        "name": "特別養護老人ホーム楠清里苑", "corp": "社会福祉法人　清里", "type": "特別養護老人ホーム",
+        "pref": "愛知県", "addr": "名古屋市北区会所町73番地の1", "phone": "052-902-7581",
+        "capacity": 120, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.239759, "lon": 136.9075848, "score": null, "rank": "A",
+        "reason": "定員120名（特別養護老人ホームの候補内での定員規模：上位）", "color": "#e53935", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 17,
+      "geometry": { "type": "Point", "coordinates": [136.8650243650818, 35.15930198585553] },
+      "properties": {
+        "name": "特別養護老人ホームアメニティ城西", "corp": "社会福祉法人旭会", "type": "特別養護老人ホーム",
+        "pref": "愛知県", "addr": "愛知県名古屋市中村区牛田通１丁目１番５", "phone": "052-471-2220",
+        "capacity": 120, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.15930198585553, "lon": 136.8650243650818, "score": null, "rank": "A",
+        "reason": "定員120名（特別養護老人ホームの候補内での定員規模：上位）", "color": "#e53935", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 18,
+      "geometry": { "type": "Point", "coordinates": [136.94348360000004, 35.2588253] },
+      "properties": {
+        "name": "特別養護老人ホーム春日井樹の里", "corp": "社会福祉法人樹の里", "type": "特別養護老人ホーム",
+        "pref": "愛知県", "addr": "愛知県春日井市四ツ家町字四ツ家２２１番地１", "phone": "0568-33-3222",
+        "capacity": 120, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.2588253, "lon": 136.94348360000004, "score": null, "rank": "A",
+        "reason": "定員120名（特別養護老人ホームの候補内での定員規模：上位）", "color": "#e53935", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 19,
+      "geometry": { "type": "Point", "coordinates": [137.1073313, 34.9934175] },
+      "properties": {
+        "name": "特別養護老人ホーム　鎌倉街道東山", "corp": "社会福祉法人ゆめネット", "type": "特別養護老人ホーム",
+        "pref": "愛知県", "addr": "愛知県安城市里町壱斗山249番地", "phone": "0566985515",
+        "capacity": 120, "waitlist": null, "kaizen": "未確認",
+        "lat": 34.9934175, "lon": 137.1073313, "score": null, "rank": "A",
+        "reason": "定員120名（特別養護老人ホームの候補内での定員規模：上位）", "color": "#e53935", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 20,
+      "geometry": { "type": "Point", "coordinates": [137.07670069999995, 34.8786624] },
+      "properties": {
+        "name": "愛厚ホーム西尾苑", "corp": "社会福祉法人　愛知県厚生事業団", "type": "特別養護老人ホーム",
+        "pref": "愛知県", "addr": "西尾市八ツ面町蔵屋敷１２０番地", "phone": "0563-56-7350",
+        "capacity": 120, "waitlist": null, "kaizen": "未確認",
+        "lat": 34.8786624, "lon": 137.07670069999995, "score": null, "rank": "B",
+        "reason": "定員120名（特別養護老人ホームの候補内での定員規模：中位）", "color": "#fb8c00", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 21,
+      "geometry": { "type": "Point", "coordinates": [136.98184620000006, 34.9409695] },
+      "properties": {
+        "name": "特別養護老人ホーム高浜安立荘", "corp": "社会福祉法人昭徳会", "type": "特別養護老人ホーム",
+        "pref": "愛知県", "addr": "愛知県高浜市芳川町1丁目2番地73", "phone": "0566-52-5050",
+        "capacity": 120, "waitlist": null, "kaizen": "未確認",
+        "lat": 34.9409695, "lon": 136.98184620000006, "score": null, "rank": "B",
+        "reason": "定員120名（特別養護老人ホームの候補内での定員規模：中位）", "color": "#fb8c00", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 22,
+      "geometry": { "type": "Point", "coordinates": [136.9550584006638, 34.98166397559886] },
+      "properties": {
+        "name": "特別養護老人ホーム　メドック東浦", "corp": "社会福祉法人　成仁会", "type": "特別養護老人ホーム",
+        "pref": "愛知県", "addr": "愛知県知多郡東浦町大字緒川字猪伏釜１１０番地", "phone": "0562-82-2226",
+        "capacity": 120, "waitlist": null, "kaizen": "未確認",
+        "lat": 34.98166397559886, "lon": 136.9550584006638, "score": null, "rank": "B",
+        "reason": "定員120名（特別養護老人ホームの候補内での定員規模：中位）", "color": "#fb8c00", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 23,
+      "geometry": { "type": "Point", "coordinates": [136.89674960000002, 34.866087500000006] },
+      "properties": {
+        "name": "特別養護老人ホームくすのきの里", "corp": "社会福祉法人福寿園", "type": "特別養護老人ホーム",
+        "pref": "愛知県", "addr": "愛知県知多郡武豊町字梨子ノ木475番特別養護老人ホーム　くすのきの里", "phone": "0569-74-1688",
+        "capacity": 120, "waitlist": null, "kaizen": "未確認",
+        "lat": 34.866087500000006, "lon": 136.89674960000002, "score": null, "rank": "B",
+        "reason": "定員120名（特別養護老人ホームの候補内での定員規模：中位）", "color": "#fb8c00", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 24,
+      "geometry": { "type": "Point", "coordinates": [136.42567889999998, 34.7272064] },
+      "properties": {
+        "name": "特別養護老人ホーム慈宗院", "corp": "敬愛会", "type": "特別養護老人ホーム",
+        "pref": "三重県", "addr": "三重県津市片田長谷町167-1", "phone": "059-237-0069",
+        "capacity": 110, "waitlist": null, "kaizen": "未確認",
+        "lat": 34.7272064, "lon": 136.42567889999998, "score": null, "rank": "B",
+        "reason": "定員110名（特別養護老人ホームの候補内での定員規模：中位）", "color": "#fb8c00", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 25,
+      "geometry": { "type": "Point", "coordinates": [136.48599880000006, 34.7500239] },
+      "properties": {
+        "name": "特別養護老人ホーム　報徳園", "corp": "社会福祉法人　高田真善会", "type": "特別養護老人ホーム",
+        "pref": "三重県", "addr": "三重県津市河辺町1317番地1", "phone": "059-228-1951",
+        "capacity": 110, "waitlist": null, "kaizen": "未確認",
+        "lat": 34.7500239, "lon": 136.48599880000006, "score": null, "rank": "B",
+        "reason": "定員110名（特別養護老人ホームの候補内での定員規模：中位）", "color": "#fb8c00", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 26,
+      "geometry": { "type": "Point", "coordinates": [136.4816897988113, 34.78423085248021] },
+      "properties": {
+        "name": "特別養護老人ホーム高田光寿園", "corp": "社会福祉法人高田福祉事業協会", "type": "特別養護老人ホーム",
+        "pref": "三重県", "addr": "三重県津市大里野田町1124-1", "phone": "059-230-7811",
+        "capacity": 100, "waitlist": null, "kaizen": "未確認",
+        "lat": 34.78423085248021, "lon": 136.4816897988113, "score": null, "rank": "C",
+        "reason": "定員100名（特別養護老人ホームの候補内での定員規模：下位）", "color": "#1e88e5", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 27,
+      "geometry": { "type": "Point", "coordinates": [136.62765539999998, 35.0053741] },
+      "properties": {
+        "name": "介護老人福祉施設　ヴィラ四日市ユニット", "corp": "社会福祉法人　平成福祉会", "type": "特別養護老人ホーム",
+        "pref": "三重県", "addr": "四日市市垂坂町8番地の2", "phone": "059-363-2121",
+        "capacity": 100, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.0053741, "lon": 136.62765539999998, "score": null, "rank": "C",
+        "reason": "定員100名（特別養護老人ホームの候補内での定員規模：下位）", "color": "#1e88e5", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 28,
+      "geometry": { "type": "Point", "coordinates": [136.7831222861831, 34.496616903691326] },
+      "properties": {
+        "name": "特別養護老人ホーム　ふたみ苑", "corp": "社会福祉法人恒心福祉会", "type": "特別養護老人ホーム",
+        "pref": "三重県", "addr": "三重県伊勢市二見町三津字南浦1201番地68特別養護老人ホーム　ふたみ苑", "phone": "0596-44-0700",
+        "capacity": 100, "waitlist": null, "kaizen": "未確認",
+        "lat": 34.496616903691326, "lon": 136.7831222861831, "score": null, "rank": "C",
+        "reason": "定員100名（特別養護老人ホームの候補内での定員規模：下位）", "color": "#1e88e5", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 29,
+      "geometry": { "type": "Point", "coordinates": [136.66650044942094, 35.031823574267335] },
+      "properties": {
+        "name": "特別養護老人ホーム往還", "corp": "社会福祉法人三重健寿会", "type": "特別養護老人ホーム",
+        "pref": "三重県", "addr": "三重県三重郡朝日町大字柿字熊之田564番地", "phone": "059-377-6011",
+        "capacity": 100, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.031823574267335, "lon": 136.66650044942094, "score": null, "rank": "C",
+        "reason": "定員100名（特別養護老人ホームの候補内での定員規模：下位）", "color": "#1e88e5", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 30,
+      "geometry": { "type": "Point", "coordinates": [136.85052769999993, 34.3215192] },
+      "properties": {
+        "name": "志摩特別養護老人ホーム才庭寮", "corp": "志摩広域行政組合", "type": "特別養護老人ホーム",
+        "pref": "三重県", "addr": "志摩市阿児町神明1537番地１", "phone": "0599-43-2112",
+        "capacity": 86, "waitlist": null, "kaizen": "未確認",
+        "lat": 34.3215192, "lon": 136.85052769999993, "score": null, "rank": "C",
+        "reason": "定員86名（特別養護老人ホームの候補内での定員規模：下位）", "color": "#1e88e5", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 31,
+      "geometry": { "type": "Point", "coordinates": [136.51207772324824, 34.751964896278] },
+      "properties": {
+        "name": "特別養護老人ホーム津の街", "corp": "敬峰会", "type": "特別養護老人ホーム",
+        "pref": "三重県", "addr": "三重県津市一身田平野726番地6", "phone": "059-271-6186",
+        "capacity": 80, "waitlist": null, "kaizen": "未確認",
+        "lat": 34.751964896278, "lon": 136.51207772324824, "score": null, "rank": "C",
+        "reason": "定員80名（特別養護老人ホームの候補内での定員規模：下位）", "color": "#1e88e5", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 32,
+      "geometry": { "type": "Point", "coordinates": [136.64269379999996, 34.9898678] },
+      "properties": {
+        "name": "特別養護老人ホーム　かすみの里", "corp": "永甲会", "type": "特別養護老人ホーム",
+        "pref": "三重県", "addr": "白須賀１丁目１２番８号", "phone": "059-334-1171",
+        "capacity": 80, "waitlist": null, "kaizen": "未確認",
+        "lat": 34.9898678, "lon": 136.64269379999996, "score": null, "rank": "C",
+        "reason": "定員80名（特別養護老人ホームの候補内での定員規模：下位）", "color": "#1e88e5", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 33,
+      "geometry": { "type": "Point", "coordinates": [136.586632, 35.0074542] },
+      "properties": {
+        "name": "特別養護老人ホーム陽光苑", "corp": "社会福祉法人三重福祉会", "type": "特別養護老人ホーム",
+        "pref": "三重県", "addr": "三重県四日市市西坂部町1127番地", "phone": "059-331-5183",
+        "capacity": 80, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.0074542, "lon": 136.586632, "score": null, "rank": "C",
+        "reason": "定員80名（特別養護老人ホームの候補内での定員規模：下位）", "color": "#1e88e5", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 34,
+      "geometry": { "type": "Point", "coordinates": [136.5059255, 34.935340600000025] },
+      "properties": {
+        "name": "特別養護老人ホーム鈴鹿グリーンホーム", "corp": "社会福祉法人鈴鹿福祉会", "type": "特別養護老人ホーム",
+        "pref": "三重県", "addr": "三重県鈴鹿市深溝町字北林2956番地", "phone": "059-374-4600",
+        "capacity": 80, "waitlist": null, "kaizen": "未確認",
+        "lat": 34.935340600000025, "lon": 136.5059255, "score": null, "rank": "C",
+        "reason": "定員80名（特別養護老人ホームの候補内での定員規模：下位）", "color": "#1e88e5", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 35,
+      "geometry": { "type": "Point", "coordinates": [136.56198289999998, 34.8664498] },
+      "properties": {
+        "name": "介護老人福祉施設　かなしょうず園", "corp": "社会福祉法人　天年会", "type": "特別養護老人ホーム",
+        "pref": "三重県", "addr": "鈴鹿市地子町字金生水８１４番地の３０", "phone": "059-383-0955",
+        "capacity": 80, "waitlist": null, "kaizen": "未確認",
+        "lat": 34.8664498, "lon": 136.56198289999998, "score": null, "rank": "C",
+        "reason": "定員80名（特別養護老人ホームの候補内での定員規模：下位）", "color": "#1e88e5", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 36,
+      "geometry": { "type": "Point", "coordinates": [136.898909942189, 35.39973762081424] },
+      "properties": {
+        "name": "デイサービスセンター　レスペートうぬま西", "corp": "社会福祉法人清洞会", "type": "通所介護",
+        "pref": "岐阜県", "addr": "岐阜県各務原市鵜沼各務原町二丁目136番", "phone": "058-322-5560",
+        "capacity": 750, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.39973762081424, "lon": 136.898909942189, "score": null, "rank": "A",
+        "reason": "定員750名（通所介護の候補内での定員規模：上位）", "color": "#e53935", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 37,
+      "geometry": { "type": "Point", "coordinates": [137.2613005091232, 36.15830630422849] },
+      "properties": {
+        "name": "リハビリデイサービスひまわり", "corp": "株式会社ひまわり", "type": "通所介護",
+        "pref": "岐阜県", "addr": "岐阜県高山市三福寺町810番地62", "phone": "0577-77-9530",
+        "capacity": 280, "waitlist": null, "kaizen": "未確認",
+        "lat": 36.15830630422849, "lon": 137.2613005091232, "score": null, "rank": "A",
+        "reason": "定員280名（通所介護の候補内での定員規模：上位）", "color": "#e53935", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 38,
+      "geometry": { "type": "Point", "coordinates": [136.83146449999998, 35.437040900000014] },
+      "properties": {
+        "name": "あったか岩田東デイサービスリハビリセンター", "corp": "合同会社あした", "type": "通所介護",
+        "pref": "岐阜県", "addr": "岐阜県岐阜市岩田東１丁目１７２番地", "phone": "058-241-6830",
+        "capacity": 265, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.437040900000014, "lon": 136.83146449999998, "score": null, "rank": "A",
+        "reason": "定員265名（通所介護の候補内での定員規模：上位）", "color": "#e53935", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 39,
+      "geometry": { "type": "Point", "coordinates": [136.6551712269836, 35.2993500404924] },
+      "properties": {
+        "name": "デイサービス　リハスル", "corp": "合同会社REBODY", "type": "通所介護",
+        "pref": "岐阜県", "addr": "岐阜県安八郡輪之内町楡俣666番地2", "phone": "0584-69-5688",
+        "capacity": 120, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.2993500404924, "lon": 136.6551712269836, "score": null, "rank": "B",
+        "reason": "定員120名（通所介護の候補内での定員規模：中位）", "color": "#fb8c00", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 40,
+      "geometry": { "type": "Point", "coordinates": [137.1972418681229, 35.37211379947269] },
+      "properties": {
+        "name": "デイサービスアストレウォーク", "corp": "有限会社ワカオセラミック", "type": "通所介護",
+        "pref": "岐阜県", "addr": "岐阜県土岐市泉町定林寺西洞594番地1デイサービスアストレウォーク", "phone": "0572-55-8310",
+        "capacity": 100, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.37211379947269, "lon": 137.1972418681229, "score": null, "rank": "B",
+        "reason": "定員100名（通所介護の候補内での定員規模：中位）", "color": "#fb8c00", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 41,
+      "geometry": { "type": "Point", "coordinates": [137.19833089999997, 35.35976369999999] },
+      "properties": {
+        "name": "デイサービス　アストレ　梅ノ木", "corp": "有限会社ワカオセラミック", "type": "通所介護",
+        "pref": "岐阜県", "addr": "岐阜県土岐市肥田浅野梅ノ木町2-37-1", "phone": "0572-44-7852",
+        "capacity": 100, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.35976369999999, "lon": 137.19833089999997, "score": null, "rank": "B",
+        "reason": "定員100名（通所介護の候補内での定員規模：中位）", "color": "#fb8c00", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 42,
+      "geometry": { "type": "Point", "coordinates": [136.67983979999997, 35.429527] },
+      "properties": {
+        "name": "デイサービス温咲南ぎふ", "corp": "株式会社ハッピーエンドギフト", "type": "通所介護",
+        "pref": "岐阜県", "addr": "岐阜県本巣市小柿851番地1", "phone": "058-325-8000",
+        "capacity": 100, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.429527, "lon": 136.67983979999997, "score": null, "rank": "B",
+        "reason": "定員100名（通所介護の候補内での定員規模：中位）", "color": "#fb8c00", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 43,
+      "geometry": { "type": "Point", "coordinates": [137.25996910426446, 35.36266579268144] },
+      "properties": {
+        "name": "アイランドジー・アイますみリハビリデイ", "corp": "株式会社アイランドジー・アイ", "type": "通所介護",
+        "pref": "岐阜県", "addr": "岐阜県瑞浪市益見町二丁目130番地", "phone": "0572-66-1866",
+        "capacity": 70, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.36266579268144, "lon": 137.25996910426446, "score": null, "rank": "C",
+        "reason": "定員70名（通所介護の候補内での定員規模：下位）", "color": "#1e88e5", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 44,
+      "geometry": { "type": "Point", "coordinates": [137.0063275, 35.3982496] },
+      "properties": {
+        "name": "さわやかナーシング可児デイサービスセンター", "corp": "社会福祉法人慈恵会", "type": "通所介護",
+        "pref": "岐阜県", "addr": "岐阜県可児市菅刈1389番地1総合福祉施設　　さわやかナーシング可児", "phone": "0574-69-1331",
+        "capacity": 70, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.3982496, "lon": 137.0063275, "score": null, "rank": "C",
+        "reason": "定員70名（通所介護の候補内での定員規模：下位）", "color": "#1e88e5", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 45,
+      "geometry": { "type": "Point", "coordinates": [136.54921995705567, 35.468510383369605] },
+      "properties": {
+        "name": "デイサービスくつい", "corp": "医療法人ＯＲＡＬＩＳＳ", "type": "通所介護",
+        "pref": "岐阜県", "addr": "岐阜県揖斐郡池田町沓井25-1", "phone": "0585-35-7000",
+        "capacity": 66, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.468510383369605, "lon": 136.54921995705567, "score": null, "rank": "C",
+        "reason": "定員66名（通所介護の候補内での定員規模：下位）", "color": "#1e88e5", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 46,
+      "geometry": { "type": "Point", "coordinates": [136.77503709999996, 35.4711583] },
+      "properties": {
+        "name": "シンシア岐阜北デイサービス", "corp": "株式会社グローバル総合研究所", "type": "通所介護",
+        "pref": "岐阜県", "addr": "岐阜県岐阜市岩崎467-1", "phone": "058-236-0121",
+        "capacity": 63, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.4711583, "lon": 136.77503709999996, "score": null, "rank": "C",
+        "reason": "定員63名（通所介護の候補内での定員規模：下位）", "color": "#1e88e5", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 47,
+      "geometry": { "type": "Point", "coordinates": [136.7085727, 35.4494435] },
+      "properties": {
+        "name": "岐阜県岐阜市西改田字若宮72番地1", "corp": "ゴールドエイジ株式会社", "type": "通所介護",
+        "pref": "岐阜県", "addr": "岐阜県岐阜市西改田字若宮73番地1", "phone": "058-201-4400",
+        "capacity": 62, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.4494435, "lon": 136.7085727, "score": null, "rank": "C",
+        "reason": "定員62名（通所介護の候補内での定員規模：下位）", "color": "#1e88e5", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 48,
+      "geometry": { "type": "Point", "coordinates": [137.060825, 35.2146121] },
+      "properties": {
+        "name": "デイサービスはなのき　三郷", "corp": "ＫＴＣおおぞら株式会社", "type": "通所介護",
+        "pref": "愛知県", "addr": "愛知県瀬戸市川西町二丁目147番地", "phone": "0561-89-5750",
+        "capacity": 280, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.2146121, "lon": 137.060825, "score": null, "rank": "A",
+        "reason": "定員280名（通所介護の候補内での定員規模：上位）", "color": "#e53935", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 49,
+      "geometry": { "type": "Point", "coordinates": [136.78388199999995, 35.3106555] },
+      "properties": {
+        "name": "たんぽぽ温泉デイサービス一宮", "corp": "ステラリンク株式会社", "type": "通所介護",
+        "pref": "愛知県", "addr": "一宮市西出町５１番地", "phone": "0586-44-6111",
+        "capacity": 275, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.3106555, "lon": 136.78388199999995, "score": null, "rank": "A",
+        "reason": "定員275名（通所介護の候補内での定員規模：上位）", "color": "#e53935", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 50,
+      "geometry": { "type": "Point", "coordinates": [137.0544004, 35.1492217] },
+      "properties": {
+        "name": "デイサービスはなのき　日進", "corp": "ＫＴＣおおぞら株式会社", "type": "通所介護",
+        "pref": "愛知県", "addr": "愛知県日進市北新町八幡西1192番地1", "phone": "0561-73-6800",
+        "capacity": 270, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.1492217, "lon": 137.0544004, "score": null, "rank": "A",
+        "reason": "定員270名（通所介護の候補内での定員規模：上位）", "color": "#e53935", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 51,
+      "geometry": { "type": "Point", "coordinates": [137.0538736, 35.1099707] },
+      "properties": {
+        "name": "デイサービスはなのき　東郷", "corp": "ＫＴＣおおぞら株式会社", "type": "通所介護",
+        "pref": "愛知県", "addr": "愛知県愛知郡東郷町白鳥二丁目2番地3", "phone": "0561-39-5487",
+        "capacity": 270, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.1099707, "lon": 137.0538736, "score": null, "rank": "A",
+        "reason": "定員270名（通所介護の候補内での定員規模：上位）", "color": "#e53935", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 52,
+      "geometry": { "type": "Point", "coordinates": [137.0809059, 34.955978] },
+      "properties": {
+        "name": "デイサービスはなのき　安城", "corp": "ＫＴＣおおぞら株式会社", "type": "通所介護",
+        "pref": "愛知県", "addr": "愛知県安城市小堤町5-22", "phone": "0566-71-0073",
+        "capacity": 250, "waitlist": null, "kaizen": "未確認",
+        "lat": 34.955978, "lon": 137.0809059, "score": null, "rank": "A",
+        "reason": "定員250名（通所介護の候補内での定員規模：上位）", "color": "#e53935", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 53,
+      "geometry": { "type": "Point", "coordinates": [136.91167380000002, 35.2270523] },
+      "properties": {
+        "name": "愛生苑デイサービスセンター", "corp": "社会福祉法人　愛生福祉会", "type": "通所介護",
+        "pref": "愛知県", "addr": "名古屋市北区五反田町１０８番地２", "phone": "052-901-7621",
+        "capacity": 210, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.2270523, "lon": 136.91167380000002, "score": null, "rank": "A",
+        "reason": "定員210名（通所介護の候補内での定員規模：上位）", "color": "#e53935", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 54,
+      "geometry": { "type": "Point", "coordinates": [136.86455580000006, 35.149052] },
+      "properties": {
+        "name": "グリーナリーデイサービスセンター", "corp": "医療法人バームリンデン", "type": "通所介護",
+        "pref": "愛知県", "addr": "名古屋市中川区松葉町5-14", "phone": "052-365-2666",
+        "capacity": 210, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.149052, "lon": 136.86455580000006, "score": null, "rank": "B",
+        "reason": "定員210名（通所介護の候補内での定員規模：中位）", "color": "#fb8c00", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 55,
+      "geometry": { "type": "Point", "coordinates": [137.01440149999996, 35.1889156] },
+      "properties": {
+        "name": "きたえるーむ名古屋藤里", "corp": "ホーム建材株式会社", "type": "通所介護",
+        "pref": "愛知県", "addr": "愛知県名古屋市名東区藤里町507レジデンス藤里1F", "phone": "052-777-4170",
+        "capacity": 200, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.1889156, "lon": 137.01440149999996, "score": null, "rank": "B",
+        "reason": "定員200名（通所介護の候補内での定員規模：中位）", "color": "#fb8c00", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 56,
+      "geometry": { "type": "Point", "coordinates": [136.8221243, 35.2904171] },
+      "properties": {
+        "name": "デイサービスはなのき　一宮南", "corp": "ＫＴＣおおぞら株式会社", "type": "通所介護",
+        "pref": "愛知県", "addr": "愛知県一宮市馬見塚字長畑25番地1", "phone": "0586-75-1127",
+        "capacity": 200, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.2904171, "lon": 136.8221243, "score": null, "rank": "B",
+        "reason": "定員200名（通所介護の候補内での定員規模：中位）", "color": "#fb8c00", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 57,
+      "geometry": { "type": "Point", "coordinates": [137.0416132, 35.2649819] },
+      "properties": {
+        "name": "デイサービスはなのき　高蔵寺", "corp": "ＫＴＣおおぞら株式会社", "type": "通所介護",
+        "pref": "愛知県", "addr": "愛知県春日井市高蔵寺町北三丁目1番地8", "phone": "0568-53-1330",
+        "capacity": 200, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.2649819, "lon": 137.0416132, "score": null, "rank": "B",
+        "reason": "定員200名（通所介護の候補内での定員規模：中位）", "color": "#fb8c00", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 58,
+      "geometry": { "type": "Point", "coordinates": [137.1446195, 35.0931637] },
+      "properties": {
+        "name": "デイサービスはなのき　豊田朝日", "corp": "ＫＴＣおおぞら株式会社", "type": "通所介護",
+        "pref": "愛知県", "addr": "愛知県豊田市朝日町3-55-4", "phone": "0565-36-0039",
+        "capacity": 200, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.0931637, "lon": 137.1446195, "score": null, "rank": "B",
+        "reason": "定員200名（通所介護の候補内での定員規模：中位）", "color": "#fb8c00", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 59,
+      "geometry": { "type": "Point", "coordinates": [136.915781, 35.279709] },
+      "properties": {
+        "name": "デイサービスはなのき　小牧南", "corp": "ＫＴＣおおぞら株式会社", "type": "通所介護",
+        "pref": "愛知県", "addr": "愛知県小牧市常普請3丁目115", "phone": "0568-74-7016",
+        "capacity": 200, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.279709, "lon": 136.915781, "score": null, "rank": "B",
+        "reason": "定員200名（通所介護の候補内での定員規模：中位）", "color": "#fb8c00", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 60,
+      "geometry": { "type": "Point", "coordinates": [136.52193809999994, 34.5630083] },
+      "properties": {
+        "name": "ジョイリハ松阪大黒田", "corp": "伊勢湾マリン開発株式会社", "type": "通所介護",
+        "pref": "三重県", "addr": "三重県松阪市大黒田町594-2", "phone": "0598-31-2771",
+        "capacity": 420, "waitlist": null, "kaizen": "未確認",
+        "lat": 34.5630083, "lon": 136.52193809999994, "score": null, "rank": "A",
+        "reason": "定員420名（通所介護の候補内での定員規模：上位）", "color": "#e53935", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 61,
+      "geometry": { "type": "Point", "coordinates": [136.51415759999998, 34.7154939] },
+      "properties": {
+        "name": "ジョイリハ津東丸之内", "corp": "伊勢湾マリン開発株式会社", "type": "通所介護",
+        "pref": "三重県", "addr": "三重県津市東丸之内14-32", "phone": "059-213-6800",
+        "capacity": 250, "waitlist": null, "kaizen": "未確認",
+        "lat": 34.7154939, "lon": 136.51415759999998, "score": null, "rank": "A",
+        "reason": "定員250名（通所介護の候補内での定員規模：上位）", "color": "#e53935", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 62,
+      "geometry": { "type": "Point", "coordinates": [136.54132190000004, 34.95794670000002] },
+      "properties": {
+        "name": "ケアヒルズよごうデイサービスセンター", "corp": "株式会社ノースアップ", "type": "通所介護",
+        "pref": "三重県", "addr": "三重県四日市市小林町3018-108", "phone": "059-336-5666",
+        "capacity": 245, "waitlist": null, "kaizen": "未確認",
+        "lat": 34.95794670000002, "lon": 136.54132190000004, "score": null, "rank": "A",
+        "reason": "定員245名（通所介護の候補内での定員規模：上位）", "color": "#e53935", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 63,
+      "geometry": { "type": "Point", "coordinates": [136.86174828260343, 34.47625082533145] },
+      "properties": {
+        "name": "デイサービスセンター　あらしま", "corp": "医療法人豊和会", "type": "通所介護",
+        "pref": "三重県", "addr": "三重県鳥羽市安楽島町字高山1075-29", "phone": "0599-26-6677",
+        "capacity": 210, "waitlist": null, "kaizen": "未確認",
+        "lat": 34.47625082533145, "lon": 136.86174828260343, "score": null, "rank": "B",
+        "reason": "定員210名（通所介護の候補内での定員規模：中位）", "color": "#fb8c00", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 64,
+      "geometry": { "type": "Point", "coordinates": [136.5936994598022, 34.89623529418392] },
+      "properties": {
+        "name": "デイサービス　「はなやか」", "corp": "有限会社　テクトサービス", "type": "通所介護",
+        "pref": "三重県", "addr": "高岡町2687", "phone": "059-381-0087",
+        "capacity": 192, "waitlist": null, "kaizen": "未確認",
+        "lat": 34.89623529418392, "lon": 136.5936994598022, "score": null, "rank": "B",
+        "reason": "定員192名（通所介護の候補内での定員規模：中位）", "color": "#fb8c00", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 65,
+      "geometry": { "type": "Point", "coordinates": [136.56516669999996, 35.0294315] },
+      "properties": {
+        "name": "デイサービス菜の花", "corp": "株式会社　菜の花", "type": "通所介護",
+        "pref": "三重県", "addr": "四日市市上海老町1918-1", "phone": "059-326-7787",
+        "capacity": 75, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.0294315, "lon": 136.56516669999996, "score": null, "rank": "C",
+        "reason": "定員75名（通所介護の候補内での定員規模：下位）", "color": "#1e88e5", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 66,
+      "geometry": { "type": "Point", "coordinates": [136.578032, 35.0346835] },
+      "properties": {
+        "name": "レッツ倶楽部山城", "corp": "株式会社三重平安閣", "type": "通所介護",
+        "pref": "三重県", "addr": "三重県四日市市あさけが丘2丁目1-42", "phone": "059-336-2133",
+        "capacity": 70, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.0346835, "lon": 136.578032, "score": null, "rank": "C",
+        "reason": "定員70名（通所介護の候補内での定員規模：下位）", "color": "#1e88e5", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 67,
+      "geometry": { "type": "Point", "coordinates": [136.5059255, 34.935340600000025] },
+      "properties": {
+        "name": "デイサービスセンター鈴鹿グリーンホーム", "corp": "社会福祉法人鈴鹿福祉会", "type": "通所介護",
+        "pref": "三重県", "addr": "三重県鈴鹿市深溝町字北林2956番地", "phone": "059-374-4600",
+        "capacity": 70, "waitlist": null, "kaizen": "未確認",
+        "lat": 34.935340600000025, "lon": 136.5059255, "score": null, "rank": "C",
+        "reason": "定員70名（通所介護の候補内での定員規模：下位）", "color": "#1e88e5", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 68,
+      "geometry": { "type": "Point", "coordinates": [136.65693599999997, 35.0477527] },
+      "properties": {
+        "name": "デイサービスセンター　木もれび", "corp": "有限会社ネオケア", "type": "通所介護",
+        "pref": "三重県", "addr": "三重県桑名市桑部2533-3", "phone": "0594-27-1212",
+        "capacity": 68, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.0477527, "lon": 136.65693599999997, "score": null, "rank": "C",
+        "reason": "定員68名（通所介護の候補内での定員規模：下位）", "color": "#1e88e5", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 69,
+      "geometry": { "type": "Point", "coordinates": [136.50425789999997, 34.74191709999999] },
+      "properties": {
+        "name": "津橋北デイサービスセンター「サポート」", "corp": "ウェルケア", "type": "通所介護",
+        "pref": "三重県", "addr": "津市上浜町６丁目２７７－１", "phone": "059-221-0555",
+        "capacity": 65, "waitlist": null, "kaizen": "未確認",
+        "lat": 34.74191709999999, "lon": 136.50425789999997, "score": null, "rank": "C",
+        "reason": "定員65名（通所介護の候補内での定員規模：下位）", "color": "#1e88e5", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 70,
+      "geometry": { "type": "Point", "coordinates": [136.4807634, 34.6252346] },
+      "properties": {
+        "name": "シンシア嬉野デイサービス", "corp": "株式会社グローバル総合研究所", "type": "通所介護",
+        "pref": "三重県", "addr": "三重県松阪市嬉野町1475-8", "phone": "0598-48-0968",
+        "capacity": 62, "waitlist": null, "kaizen": "未確認",
+        "lat": 34.6252346, "lon": 136.4807634, "score": null, "rank": "C",
+        "reason": "定員62名（通所介護の候補内での定員規模：下位）", "color": "#1e88e5", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 71,
+      "geometry": { "type": "Point", "coordinates": [136.465285, 34.6820998] },
+      "properties": {
+        "name": "ケアパートナー久居", "corp": "ケアパートナー株式会社", "type": "通所介護",
+        "pref": "三重県", "addr": "三重県津市久居明神町2722番地", "phone": "059-254-6123",
+        "capacity": 61, "waitlist": null, "kaizen": "未確認",
+        "lat": 34.6820998, "lon": 136.465285, "score": null, "rank": "C",
+        "reason": "定員61名（通所介護の候補内での定員規模：下位）", "color": "#1e88e5", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 72,
+      "geometry": { "type": "Point", "coordinates": [136.76137159610903, 35.44739491710811] },
+      "properties": {
+        "name": "合同会社　にこにこ介護", "corp": "合同会社にこにこ介護", "type": "訪問介護",
+        "pref": "岐阜県", "addr": "岐阜県岐阜市南蝉２丁目１３８番地長屋ビル1Ｆ", "phone": "０５８－２１４－８０６２",
+        "capacity": 180, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.44739491710811, "lon": 136.76137159610903, "score": null, "rank": "A",
+        "reason": "定員180名（訪問介護の候補内での定員規模：上位）", "color": "#e53935", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 73,
+      "geometry": { "type": "Point", "coordinates": [136.77266111051102, 35.46150770563235] },
+      "properties": {
+        "name": "訪問介護ゆうゆう", "corp": "株式会社ゆうゆう介護聖", "type": "訪問介護",
+        "pref": "岐阜県", "addr": "岐阜県岐阜市八代3丁目13番13号", "phone": "058-215-1234",
+        "capacity": 160, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.46150770563235, "lon": 136.77266111051102, "score": null, "rank": "B",
+        "reason": "定員160名（訪問介護の候補内での定員規模：中位）", "color": "#fb8c00", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 74,
+      "geometry": { "type": "Point", "coordinates": [136.91397000000006, 35.4967988] },
+      "properties": {
+        "name": "ＪＡめぐみの介護サービス中濃営業所", "corp": "めぐみの農業協同組合", "type": "訪問介護",
+        "pref": "岐阜県", "addr": "岐阜県関市若草通１丁目１番地", "phone": "0575-25-2944",
+        "capacity": 160, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.4967988, "lon": 136.91397000000006, "score": null, "rank": "B",
+        "reason": "定員160名（訪問介護の候補内での定員規模：中位）", "color": "#fb8c00", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 75,
+      "geometry": { "type": "Point", "coordinates": [136.76995310000007, 35.413427300000016] },
+      "properties": {
+        "name": "公益社団法人　岐阜市シルバー人材センター", "corp": "公益社団法人岐阜市シルバー人材センター", "type": "訪問介護",
+        "pref": "岐阜県", "addr": "岐阜県岐阜市鶴田町３丁目７番地４", "phone": "058-240-1306",
+        "capacity": 150, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.413427300000016, "lon": 136.76995310000007, "score": null, "rank": "B",
+        "reason": "定員150名（訪問介護の候補内での定員規模：中位）", "color": "#fb8c00", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 76,
+      "geometry": { "type": "Point", "coordinates": [137.12819458936312, 35.32524326409872] },
+      "properties": {
+        "name": "ヘルパーステーション　クラレ", "corp": "株式会社クラレ", "type": "訪問介護",
+        "pref": "岐阜県", "addr": "岐阜県多治見市京町2-181ハート・京町", "phone": "0572-25-6300",
+        "capacity": 127, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.32524326409872, "lon": 137.12819458936312, "score": null, "rank": "B",
+        "reason": "定員127名（訪問介護の候補内での定員規模：中位）", "color": "#fb8c00", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 77,
+      "geometry": { "type": "Point", "coordinates": [136.7545957, 35.417628499999985] },
+      "properties": {
+        "name": "ケアサポート岐阜25", "corp": "医療法人和光会", "type": "訪問介護",
+        "pref": "岐阜県", "addr": "岐阜県岐阜市徹明通4丁目4番地", "phone": "058-265-6662",
+        "capacity": 120, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.417628499999985, "lon": 136.7545957, "score": null, "rank": "B",
+        "reason": "定員120名（訪問介護の候補内での定員規模：中位）", "color": "#fb8c00", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 78,
+      "geometry": { "type": "Point", "coordinates": [137.1754103398812, 35.34682192670683] },
+      "properties": {
+        "name": "株式会社福祉の里　土岐営業所", "corp": "株式会社福祉の里", "type": "訪問介護",
+        "pref": "岐阜県", "addr": "岐阜県土岐市土岐口中町３丁目９６番地", "phone": "0572-53-0380",
+        "capacity": 120, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.34682192670683, "lon": 137.1754103398812, "score": null, "rank": "B",
+        "reason": "定員120名（訪問介護の候補内での定員規模：中位）", "color": "#fb8c00", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 79,
+      "geometry": { "type": "Point", "coordinates": [136.67444782158702, 35.40094842291128] },
+      "properties": {
+        "name": "株式会社新生メディカル瑞穂営業所", "corp": "株式会社新生メディカル", "type": "訪問介護",
+        "pref": "岐阜県", "addr": "岐阜県瑞穂市只越219番地2", "phone": "058-329-5115",
+        "capacity": 120, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.40094842291128, "lon": 136.67444782158702, "score": null, "rank": "C",
+        "reason": "定員120名（訪問介護の候補内での定員規模：下位）", "color": "#1e88e5", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 80,
+      "geometry": { "type": "Point", "coordinates": [136.60334189295452, 35.365499547541496] },
+      "properties": {
+        "name": "つくしケアサービス　さつき", "corp": "株式会社アドニスライフ", "type": "訪問介護",
+        "pref": "岐阜県", "addr": "岐阜県大垣市木戸町493-3", "phone": "0584-71-6294",
+        "capacity": 110, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.365499547541496, "lon": 136.60334189295452, "score": null, "rank": "C",
+        "reason": "定員110名（訪問介護の候補内での定員規模：下位）", "color": "#1e88e5", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 81,
+      "geometry": { "type": "Point", "coordinates": [136.85232300000007, 35.4575896] },
+      "properties": {
+        "name": "ヘルパーステーションささゆり", "corp": "社会福祉法人みどり福祉会", "type": "訪問介護",
+        "pref": "岐阜県", "addr": "岐阜県岐阜市北山1丁目15番25号", "phone": "058-244-1220",
+        "capacity": 100, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.4575896, "lon": 136.85232300000007, "score": null, "rank": "C",
+        "reason": "定員100名（訪問介護の候補内での定員規模：下位）", "color": "#1e88e5", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 82,
+      "geometry": { "type": "Point", "coordinates": [137.25479009702838, 35.36837460406888] },
+      "properties": {
+        "name": "ナガヤ　ヘルパーステーション", "corp": "有限会社ナガヤ", "type": "訪問介護",
+        "pref": "岐阜県", "addr": "岐阜県瑞浪市土岐町5番17号", "phone": "0572-26-9003",
+        "capacity": 100, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.36837460406888, "lon": 137.25479009702838, "score": null, "rank": "C",
+        "reason": "定員100名（訪問介護の候補内での定員規模：下位）", "color": "#1e88e5", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 83,
+      "geometry": { "type": "Point", "coordinates": [137.1667824252738, 35.31746781020224] },
+      "properties": {
+        "name": "株式会社YUKAIGO　訪問介護ステーション住ま居る", "corp": "株式会社ＹＵＫＡＩＧＯ", "type": "訪問介護",
+        "pref": "岐阜県", "addr": "岐阜県多治見市笠原町2455-41", "phone": "0572-45-2122",
+        "capacity": 89, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.31746781020224, "lon": 137.1667824252738, "score": null, "rank": "C",
+        "reason": "定員89名（訪問介護の候補内での定員規模：下位）", "color": "#1e88e5", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 84,
+      "geometry": { "type": "Point", "coordinates": [136.88551140000007, 35.104589499999996] },
+      "properties": {
+        "name": "港区介護保険事業所", "corp": "社会福祉法人名古屋市社会福祉協議会", "type": "訪問介護",
+        "pref": "愛知県", "addr": "名古屋市港区港楽二丁目6-32港区在宅サービスセンター内", "phone": "052-651-0704",
+        "capacity": 350, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.104589499999996, "lon": 136.88551140000007, "score": null, "rank": "A",
+        "reason": "定員350名（訪問介護の候補内での定員規模：上位）", "color": "#e53935", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 85,
+      "geometry": { "type": "Point", "coordinates": [136.94119181472342, 35.24255131923535] },
+      "properties": {
+        "name": "アスモ", "corp": "株式会社ＡＳＵＭＯ", "type": "訪問介護",
+        "pref": "愛知県", "addr": "愛知県春日井市美濃町2丁目119番地", "phone": "0568-37-1517",
+        "capacity": 320, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.24255131923535, "lon": 136.94119181472342, "score": null, "rank": "A",
+        "reason": "定員320名（訪問介護の候補内での定員規模：上位）", "color": "#e53935", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 86,
+      "geometry": { "type": "Point", "coordinates": [136.99378402209015, 35.004254867821835] },
+      "properties": {
+        "name": "ヘルパーステーションこころ", "corp": "さくらえん合同会社", "type": "訪問介護",
+        "pref": "愛知県", "addr": "愛知県刈谷市中手町二丁目６０３番地", "phone": "0566-93-3463",
+        "capacity": 240, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.004254867821835, "lon": 136.99378402209015, "score": null, "rank": "A",
+        "reason": "定員240名（訪問介護の候補内での定員規模：上位）", "color": "#e53935", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 87,
+      "geometry": { "type": "Point", "coordinates": [136.84693, 35.105974] },
+      "properties": {
+        "name": "ツクイ名古屋南", "corp": "株式会社ツクイ", "type": "訪問介護",
+        "pref": "愛知県", "addr": "愛知県名古屋市港区甚兵衛通1-15-1", "phone": "052-389-7131",
+        "capacity": 220, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.105974, "lon": 136.84693, "score": null, "rank": "A",
+        "reason": "定員220名（訪問介護の候補内での定員規模：上位）", "color": "#e53935", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 88,
+      "geometry": { "type": "Point", "coordinates": [136.8155260724677, 35.137778097505674] },
+      "properties": {
+        "name": "アスミルウェルケア", "corp": "ＡＳＭＩＬ株式会社", "type": "訪問介護",
+        "pref": "愛知県", "addr": "愛知県名古屋市中川区東春田三丁目153番地2F", "phone": "052-655-5516",
+        "capacity": 200, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.137778097505674, "lon": 136.8155260724677, "score": null, "rank": "A",
+        "reason": "定員200名（訪問介護の候補内での定員規模：上位）", "color": "#e53935", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 89,
+      "geometry": { "type": "Point", "coordinates": [136.99562017388536, 35.20530738577389] },
+      "properties": {
+        "name": "訪問ケアあんしん生活", "corp": "トップケアジャパン株式会社", "type": "訪問介護",
+        "pref": "愛知県", "addr": "名古屋市守山区大森1丁目3303番地モードビル1階東", "phone": "052-768－4400",
+        "capacity": 200, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.20530738577389, "lon": 136.99562017388536, "score": null, "rank": "A",
+        "reason": "定員200名（訪問介護の候補内での定員規模：上位）", "color": "#e53935", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 90,
+      "geometry": { "type": "Point", "coordinates": [137.39773779999996, 34.767] },
+      "properties": {
+        "name": "豊橋市社会福祉協議会　ホームヘルパー中部", "corp": "社会福祉法人豊橋市社会福祉協議会", "type": "訪問介護",
+        "pref": "愛知県", "addr": "愛知県豊橋市八町通五丁目９番地", "phone": "0532-54-3004",
+        "capacity": 200, "waitlist": null, "kaizen": "未確認",
+        "lat": 34.767, "lon": 137.39773779999996, "score": null, "rank": "A",
+        "reason": "定員200名（訪問介護の候補内での定員規模：上位）", "color": "#e53935", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 91,
+      "geometry": { "type": "Point", "coordinates": [136.7963599515899, 35.297731272235765] },
+      "properties": {
+        "name": "アバンセ介護センター", "corp": "株式会社　アバンセライフサポート", "type": "訪問介護",
+        "pref": "愛知県", "addr": "愛知県一宮市新生3丁目10番21号サンリット一番館101号", "phone": "0586-47-7870",
+        "capacity": 200, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.297731272235765, "lon": 136.7963599515899, "score": null, "rank": "A",
+        "reason": "定員200名（訪問介護の候補内での定員規模：上位）", "color": "#e53935", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 92,
+      "geometry": { "type": "Point", "coordinates": [136.872428, 35.3405714] },
+      "properties": {
+        "name": "訪問介護センターさふらん江南", "corp": "株式会社　安心生活．ｃｏｍ", "type": "訪問介護",
+        "pref": "愛知県", "addr": "江南市古知野町千丸１０６番地森第三ビル2階", "phone": "0587-81-5760",
+        "capacity": 200, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.3405714, "lon": 136.872428, "score": null, "rank": "A",
+        "reason": "定員200名（訪問介護の候補内での定員規模：上位）", "color": "#e53935", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 93,
+      "geometry": { "type": "Point", "coordinates": [136.95598559999996, 35.1640289] },
+      "properties": {
+        "name": "エム・ケア介護センター", "corp": "株式会社エム・ケア介護センター", "type": "訪問介護",
+        "pref": "愛知県", "addr": "愛知県名古屋市千種区田代本通1-18", "phone": "052-751-6655",
+        "capacity": 180, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.1640289, "lon": 136.95598559999996, "score": null, "rank": "B",
+        "reason": "定員180名（訪問介護の候補内での定員規模：中位）", "color": "#fb8c00", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 94,
+      "geometry": { "type": "Point", "coordinates": [136.85408140000004, 35.2535225] },
+      "properties": {
+        "name": "株式会社福祉の里尾張営業所", "corp": "株式会社福祉の里", "type": "訪問介護",
+        "pref": "愛知県", "addr": "愛知県北名古屋市北野天神１３番地", "phone": "0568-23-6605",
+        "capacity": 180, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.2535225, "lon": 136.85408140000004, "score": null, "rank": "B",
+        "reason": "定員180名（訪問介護の候補内での定員規模：中位）", "color": "#fb8c00", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 95,
+      "geometry": { "type": "Point", "coordinates": [136.94866539999998, 35.1177119] },
+      "properties": {
+        "name": "ヘルパーステーションすけっとファミリー", "corp": "特定非営利活動法人すけっとファミリー", "type": "訪問介護",
+        "pref": "愛知県", "addr": "愛知県名古屋市瑞穂区弥富通三丁目45番地", "phone": "052-861-6047",
+        "capacity": 160, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.1177119, "lon": 136.94866539999998, "score": null, "rank": "B",
+        "reason": "定員160名（訪問介護の候補内での定員規模：中位）", "color": "#fb8c00", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 96,
+      "geometry": { "type": "Point", "coordinates": [136.50661749999995, 34.70382070000001] },
+      "properties": {
+        "name": "実践　津", "corp": "社会福祉法人実践", "type": "訪問介護",
+        "pref": "三重県", "addr": "三重県津市大倉10番21号", "phone": "059-225-4320",
+        "capacity": 250, "waitlist": null, "kaizen": "未確認",
+        "lat": 34.70382070000001, "lon": 136.50661749999995, "score": null, "rank": "A",
+        "reason": "定員250名（訪問介護の候補内での定員規模：上位）", "color": "#e53935", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 97,
+      "geometry": { "type": "Point", "coordinates": [136.64806550000003, 34.5626696] },
+      "properties": {
+        "name": "訪問介護はまなす指定訪問介護事業所", "corp": "アイリス南郊株式会社", "type": "訪問介護",
+        "pref": "三重県", "addr": "三重県多気郡明和町大淀2231-1", "phone": "0596-55-8266",
+        "capacity": 200, "waitlist": null, "kaizen": "未確認",
+        "lat": 34.5626696, "lon": 136.64806550000003, "score": null, "rank": "A",
+        "reason": "定員200名（訪問介護の候補内での定員規模：上位）", "color": "#e53935", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 98,
+      "geometry": { "type": "Point", "coordinates": [136.52925796913084, 34.58838440770391] },
+      "properties": {
+        "name": "ヘルパーステーションおあしす", "corp": "合同会社大黒屋藤兵衛", "type": "訪問介護",
+        "pref": "三重県", "addr": "三重県松阪市大塚町２７番５", "phone": "0598-68-7800",
+        "capacity": 160, "waitlist": null, "kaizen": "未確認",
+        "lat": 34.58838440770391, "lon": 136.52925796913084, "score": null, "rank": "B",
+        "reason": "定員160名（訪問介護の候補内での定員規模：中位）", "color": "#fb8c00", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 99,
+      "geometry": { "type": "Point", "coordinates": [136.1603946595245, 34.739979975424134] },
+      "properties": {
+        "name": "介護サービスふれんど", "corp": "有限会社エイチ・エムコーポレーション", "type": "訪問介護",
+        "pref": "三重県", "addr": "伊賀市ゆめが丘2丁目1番地4クレマチス102", "phone": "0595-24-0556",
+        "capacity": 160, "waitlist": null, "kaizen": "未確認",
+        "lat": 34.739979975424134, "lon": 136.1603946595245, "score": null, "rank": "B",
+        "reason": "定員160名（訪問介護の候補内での定員規模：中位）", "color": "#fb8c00", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 100,
+      "geometry": { "type": "Point", "coordinates": [136.81876753631514, 34.48128999196491] },
+      "properties": {
+        "name": "訪問介護事業所はだし", "corp": "一般社団法人はだし", "type": "訪問介護",
+        "pref": "三重県", "addr": "三重県鳥羽市堅神町字東新田882番地1", "phone": "0599-24-0101",
+        "capacity": 150, "waitlist": null, "kaizen": "未確認",
+        "lat": 34.48128999196491, "lon": 136.81876753631514, "score": null, "rank": "B",
+        "reason": "定員150名（訪問介護の候補内での定員規模：中位）", "color": "#fb8c00", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 101,
+      "geometry": { "type": "Point", "coordinates": [136.50532480000004, 34.6782539] },
+      "properties": {
+        "name": "訪問介護事業所　まこと", "corp": "平和株式会社", "type": "訪問介護",
+        "pref": "三重県", "addr": "三重県津市城山2丁目21番4号", "phone": "059-238-6018",
+        "capacity": 120, "waitlist": null, "kaizen": "未確認",
+        "lat": 34.6782539, "lon": 136.50532480000004, "score": null, "rank": "C",
+        "reason": "定員120名（訪問介護の候補内での定員規模：下位）", "color": "#1e88e5", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 102,
+      "geometry": { "type": "Point", "coordinates": [136.53153638909316, 34.5646398249703] },
+      "properties": {
+        "name": "三重県健康福祉生活協同組合", "corp": "三重県健康福祉生活協同組合", "type": "訪問介護",
+        "pref": "三重県", "addr": "三重県松阪市春日町2丁目88-2", "phone": "0598-31-1211",
+        "capacity": 120, "waitlist": null, "kaizen": "未確認",
+        "lat": 34.5646398249703, "lon": 136.53153638909316, "score": null, "rank": "C",
+        "reason": "定員120名（訪問介護の候補内での定員規模：下位）", "color": "#1e88e5", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 103,
+      "geometry": { "type": "Point", "coordinates": [136.71646580000007, 34.485859399999995] },
+      "properties": {
+        "name": "あいはーと訪問介護事業所", "corp": "あいはーと有限会社", "type": "訪問介護",
+        "pref": "三重県", "addr": "三重県伊勢市尾上町１番２１号エステートヤマキ　101", "phone": "0596-20-1810",
+        "capacity": 110, "waitlist": null, "kaizen": "未確認",
+        "lat": 34.485859399999995, "lon": 136.71646580000007, "score": null, "rank": "C",
+        "reason": "定員110名（訪問介護の候補内での定員規模：下位）", "color": "#1e88e5", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 104,
+      "geometry": { "type": "Point", "coordinates": [136.68105590000005, 35.073937099999974] },
+      "properties": {
+        "name": "介護「まほうの杖」", "corp": "有限会社セルフサポート", "type": "訪問介護",
+        "pref": "三重県", "addr": "三重県桑名市東方556番地", "phone": "0594-21-6580",
+        "capacity": 90, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.073937099999974, "lon": 136.68105590000005, "score": null, "rank": "C",
+        "reason": "定員90名（訪問介護の候補内での定員規模：下位）", "color": "#1e88e5", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 105,
+      "geometry": { "type": "Point", "coordinates": [136.62457949999998, 34.9576493] },
+      "properties": {
+        "name": "公益社団法人四日市市シルバー人材センター", "corp": "公益社団法人四日市市シルバー人材センター", "type": "訪問介護",
+        "pref": "三重県", "addr": "三重県四日市市十七軒町９番１０号", "phone": "059-354-3670",
+        "capacity": 80, "waitlist": null, "kaizen": "未確認",
+        "lat": 34.9576493, "lon": 136.62457949999998, "score": null, "rank": "C",
+        "reason": "定員80名（訪問介護の候補内での定員規模：下位）", "color": "#1e88e5", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 106,
+      "geometry": { "type": "Point", "coordinates": [136.53782928297528, 34.583658691282665] },
+      "properties": {
+        "name": "笑顔の街　訪問介護ステーション", "corp": "医王寺会", "type": "訪問介護",
+        "pref": "三重県", "addr": "三重県松阪市鎌田町403番地9松相ハイツ102号室", "phone": "0598-31-3486",
+        "capacity": 80, "waitlist": null, "kaizen": "未確認",
+        "lat": 34.583658691282665, "lon": 136.53782928297528, "score": null, "rank": "C",
+        "reason": "定員80名（訪問介護の候補内での定員規模：下位）", "color": "#1e88e5", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 107,
+      "geometry": { "type": "Point", "coordinates": [136.64067368531948, 34.54510909474332] },
+      "properties": {
+        "name": "訪問介護かりん明和", "corp": "株式会社吉清会", "type": "訪問介護",
+        "pref": "三重県", "addr": "三重県多気郡明和町平尾499-15", "phone": "0596-53-1500",
+        "capacity": 74, "waitlist": null, "kaizen": "未確認",
+        "lat": 34.54510909474332, "lon": 136.64067368531948, "score": null, "rank": "C",
+        "reason": "定員74名（訪問介護の候補内での定員規模：下位）", "color": "#1e88e5", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 108,
+      "geometry": { "type": "Point", "coordinates": [136.77139899999997, 35.4561994] },
+      "properties": {
+        "name": "福光グリーンホーム", "corp": "医療法人社団友愛会", "type": "認知症対応型共同生活介護",
+        "pref": "岐阜県", "addr": "岐阜県岐阜市福光東３－１０－８", "phone": "058-210-2011",
+        "capacity": 27, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.4561994, "lon": 136.77139899999997, "score": null, "rank": "A",
+        "reason": "定員27名（認知症対応型共同生活介護の候補内での定員規模：上位）", "color": "#e53935", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 109,
+      "geometry": { "type": "Point", "coordinates": [136.83596880000005, 35.4850721] },
+      "properties": {
+        "name": "グル－プホ－ム樫の実", "corp": "社会福祉法人　三輪会", "type": "認知症対応型共同生活介護",
+        "pref": "岐阜県", "addr": "岐阜県岐阜市世保北３３番地", "phone": "058-229-5535",
+        "capacity": 27, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.4850721, "lon": 136.83596880000005, "score": null, "rank": "A",
+        "reason": "定員27名（認知症対応型共同生活介護の候補内での定員規模：上位）", "color": "#e53935", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 110,
+      "geometry": { "type": "Point", "coordinates": [136.7585329, 35.43902530000001] },
+      "properties": {
+        "name": "グループホーム　こころ岐阜", "corp": "株式会社アバンセライフサポート", "type": "認知症対応型共同生活介護",
+        "pref": "岐阜県", "addr": "岐阜県岐阜市栄新町3-100", "phone": "058-296-0680",
+        "capacity": 27, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.43902530000001, "lon": 136.7585329, "score": null, "rank": "A",
+        "reason": "定員27名（認知症対応型共同生活介護の候補内での定員規模：上位）", "color": "#e53935", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 111,
+      "geometry": { "type": "Point", "coordinates": [137.0981848, 35.3667588] },
+      "properties": {
+        "name": "愛の家グループホーム多治見", "corp": "メディカル・ケア・サービス東海株式会社", "type": "認知症対応型共同生活介護",
+        "pref": "岐阜県", "addr": "岐阜県多治見市旭ヶ丘７丁目９－１２", "phone": "0572-20-2185",
+        "capacity": 27, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.3667588, "lon": 137.0981848, "score": null, "rank": "A",
+        "reason": "定員27名（認知症対応型共同生活介護の候補内での定員規模：上位）", "color": "#e53935", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 112,
+      "geometry": { "type": "Point", "coordinates": [136.87758180000003, 35.483252] },
+      "properties": {
+        "name": "グループホームうららびより関", "corp": "株式会社アートジャパンナガヤ設計", "type": "認知症対応型共同生活介護",
+        "pref": "岐阜県", "addr": "岐阜県関市倉知1726", "phone": "0575-27-0077",
+        "capacity": 27, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.483252, "lon": 136.87758180000003, "score": null, "rank": "A",
+        "reason": "定員27名（認知症対応型共同生活介護の候補内での定員規模：上位）", "color": "#e53935", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 113,
+      "geometry": { "type": "Point", "coordinates": [136.851807, 35.532617] },
+      "properties": {
+        "name": "グループホーム　むげがわの憩", "corp": "株式会社フロンティアの介護", "type": "認知症対応型共同生活介護",
+        "pref": "岐阜県", "addr": "岐阜県関市武芸川町八幡419-1", "phone": "0575-45-0150",
+        "capacity": 27, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.532617, "lon": 136.851807, "score": null, "rank": "A",
+        "reason": "定員27名（認知症対応型共同生活介護の候補内での定員規模：上位）", "color": "#e53935", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 114,
+      "geometry": { "type": "Point", "coordinates": [137.00618266071322, 35.39826709112284] },
+      "properties": {
+        "name": "さわやかグループホーム可児", "corp": "社会福祉法人慈恵会", "type": "認知症対応型共同生活介護",
+        "pref": "岐阜県", "addr": "岐阜県可児市菅刈1389番地1", "phone": "0574-69-1340",
+        "capacity": 27, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.39826709112284, "lon": 137.00618266071322, "score": null, "rank": "A",
+        "reason": "定員27名（認知症対応型共同生活介護の候補内での定員規模：上位）", "color": "#e53935", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 115,
+      "geometry": { "type": "Point", "coordinates": [136.58885639999994, 35.4828358] },
+      "properties": {
+        "name": "グループホーム　揖斐川げんき村", "corp": "株式会社ｉコーポレーション", "type": "認知症対応型共同生活介護",
+        "pref": "岐阜県", "addr": "岐阜県揖斐郡揖斐川町志津山378", "phone": "0585-21-3511",
+        "capacity": 27, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.4828358, "lon": 136.58885639999994, "score": null, "rank": "A",
+        "reason": "定員27名（認知症対応型共同生活介護の候補内での定員規模：上位）", "color": "#e53935", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 116,
+      "geometry": { "type": "Point", "coordinates": [136.69358550000004, 35.4277163] },
+      "properties": {
+        "name": "ファミリーケア北方", "corp": "社会福祉法人和光会", "type": "認知症対応型共同生活介護",
+        "pref": "岐阜県", "addr": "岐阜県本巣郡北方町柱本3丁目88番地", "phone": "058-324-0324",
+        "capacity": 27, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.4277163, "lon": 136.69358550000004, "score": null, "rank": "A",
+        "reason": "定員27名（認知症対応型共同生活介護の候補内での定員規模：上位）", "color": "#e53935", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 117,
+      "geometry": { "type": "Point", "coordinates": [136.79507030000002, 35.4084587] },
+      "properties": {
+        "name": "長森いきいき倶楽部", "corp": "社会福祉法人高佳会", "type": "認知症対応型共同生活介護",
+        "pref": "岐阜県", "addr": "岐阜県岐阜市前一色西町4-6長森いきいき倶楽部", "phone": "058-259-3193",
+        "capacity": 26, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.4084587, "lon": 136.79507030000002, "score": null, "rank": "B",
+        "reason": "定員26名（認知症対応型共同生活介護の候補内での定員規模：中位）", "color": "#fb8c00", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 118,
+      "geometry": { "type": "Point", "coordinates": [136.8064743, 35.4144972] },
+      "properties": {
+        "name": "みのりの家", "corp": "株式会社　ライフ敷島", "type": "認知症対応型共同生活介護",
+        "pref": "岐阜県", "addr": "岐阜県岐阜市野一色６丁目１０番２６号", "phone": "058-240-3928",
+        "capacity": 18, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.4144972, "lon": 136.8064743, "score": null, "rank": "B",
+        "reason": "定員18名（認知症対応型共同生活介護の候補内での定員規模：中位）", "color": "#fb8c00", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 119,
+      "geometry": { "type": "Point", "coordinates": [136.70075139999994, 35.4168289] },
+      "properties": {
+        "name": "グループホーム　さくら", "corp": "有限会社　アヴェニール", "type": "認知症対応型共同生活介護",
+        "pref": "岐阜県", "addr": "岐阜県岐阜市河渡５丁目６０番地", "phone": "058-253-1228",
+        "capacity": 18, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.4168289, "lon": 136.70075139999994, "score": null, "rank": "C",
+        "reason": "定員18名（認知症対応型共同生活介護の候補内での定員規模：下位）", "color": "#1e88e5", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 120,
+      "geometry": { "type": "Point", "coordinates": [136.79808290000005, 35.2044128] },
+      "properties": {
+        "name": "グループホーム第二あま恵寿荘", "corp": "社会福祉法人　嘉祥福祉会", "type": "認知症対応型共同生活介護",
+        "pref": "愛知県", "addr": "愛知県あま市二ツ寺三本松８２番地", "phone": "052-445-0220",
+        "capacity": 85, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.2044128, "lon": 136.79808290000005, "score": null, "rank": "A",
+        "reason": "定員85名（認知症対応型共同生活介護の候補内での定員規模：上位）", "color": "#e53935", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 121,
+      "geometry": { "type": "Point", "coordinates": [136.9851201, 35.1891554] },
+      "properties": {
+        "name": "グループホームすないの家千種", "corp": "社会福祉法人　かなえ福祉会", "type": "認知症対応型共同生活介護",
+        "pref": "愛知県", "addr": "愛知県名古屋市千種区新西二丁目６番２７号", "phone": "052-773-7957",
+        "capacity": 27, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.1891554, "lon": 136.9851201, "score": null, "rank": "A",
+        "reason": "定員27名（認知症対応型共同生活介護の候補内での定員規模：上位）", "color": "#e53935", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 122,
+      "geometry": { "type": "Point", "coordinates": [136.90865280000003, 35.2063905] },
+      "properties": {
+        "name": "グループホーム水草", "corp": "有限会社名古屋シルバーサポート", "type": "認知症対応型共同生活介護",
+        "pref": "愛知県", "addr": "名古屋市北区水草町１丁目４６番地の１", "phone": "052-917-5115",
+        "capacity": 27, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.2063905, "lon": 136.90865280000003, "score": null, "rank": "A",
+        "reason": "定員27名（認知症対応型共同生活介護の候補内での定員規模：上位）", "color": "#e53935", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 123,
+      "geometry": { "type": "Point", "coordinates": [136.9072902, 35.2172584] },
+      "properties": {
+        "name": "グループホーム　オアシス大河", "corp": "株式会社　医療給食", "type": "認知症対応型共同生活介護",
+        "pref": "愛知県", "addr": "名古屋市北区中切町6丁目13番地", "phone": "052-910-5001",
+        "capacity": 27, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.2172584, "lon": 136.9072902, "score": null, "rank": "B",
+        "reason": "定員27名（認知症対応型共同生活介護の候補内での定員規模：中位）", "color": "#fb8c00", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 124,
+      "geometry": { "type": "Point", "coordinates": [136.9331525, 35.1996673] },
+      "properties": {
+        "name": "グループホームめいほく", "corp": "社会福祉法人名北福祉会", "type": "認知症対応型共同生活介護",
+        "pref": "愛知県", "addr": "愛知県名古屋市北区上飯田南５－５３", "phone": "052-508-7150",
+        "capacity": 27, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.1996673, "lon": 136.9331525, "score": null, "rank": "B",
+        "reason": "定員27名（認知症対応型共同生活介護の候補内での定員規模：中位）", "color": "#fb8c00", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 125,
+      "geometry": { "type": "Point", "coordinates": [136.89488370000004, 35.2286654] },
+      "properties": {
+        "name": "グループホーム　清里", "corp": "株式会社エイム", "type": "認知症対応型共同生活介護",
+        "pref": "愛知県", "addr": "愛知県名古屋市西区砂原町４１８番地", "phone": "052-503-6131",
+        "capacity": 27, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.2286654, "lon": 136.89488370000004, "score": null, "rank": "B",
+        "reason": "定員27名（認知症対応型共同生活介護の候補内での定員規模：中位）", "color": "#fb8c00", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 126,
+      "geometry": { "type": "Point", "coordinates": [136.86545520000004, 35.1585981] },
+      "properties": {
+        "name": "認知症高齢者グループホームじょうさい", "corp": "医療法人　偕行会", "type": "認知症対応型共同生活介護",
+        "pref": "愛知県", "addr": "愛知県名古屋市中村区北畑町四丁目１番地", "phone": "052-471-3737",
+        "capacity": 27, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.1585981, "lon": 136.86545520000004, "score": null, "rank": "B",
+        "reason": "定員27名（認知症対応型共同生活介護の候補内での定員規模：中位）", "color": "#fb8c00", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 127,
+      "geometry": { "type": "Point", "coordinates": [136.91996140000003, 35.1519732] },
+      "properties": {
+        "name": "えくせれんと鶴舞", "corp": "株式会社　光華の杜", "type": "認知症対応型共同生活介護",
+        "pref": "愛知県", "addr": "鶴舞3丁目8番10", "phone": "052－745－6510",
+        "capacity": 27, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.1519732, "lon": 136.91996140000003, "score": null, "rank": "B",
+        "reason": "定員27名（認知症対応型共同生活介護の候補内での定員規模：中位）", "color": "#fb8c00", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 128,
+      "geometry": { "type": "Point", "coordinates": [136.94605720000004, 35.1216169] },
+      "properties": {
+        "name": "グループホームさんさらな", "corp": "株式会社ストーン", "type": "認知症対応型共同生活介護",
+        "pref": "愛知県", "addr": "愛知県名古屋市瑞穂区山下通5丁目29番地の2グループホームさんさらな", "phone": "052-835-8808",
+        "capacity": 27, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.1216169, "lon": 136.94605720000004, "score": null, "rank": "B",
+        "reason": "定員27名（認知症対応型共同生活介護の候補内での定員規模：中位）", "color": "#fb8c00", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 129,
+      "geometry": { "type": "Point", "coordinates": [136.8933452, 35.1227835] },
+      "properties": {
+        "name": "エクセレント熱田", "corp": "株式会社光華の杜", "type": "認知症対応型共同生活介護",
+        "pref": "愛知県", "addr": "二番二丁目11番2号-１エクセレント熱田", "phone": "052-398-6611",
+        "capacity": 27, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.1227835, "lon": 136.8933452, "score": null, "rank": "B",
+        "reason": "定員27名（認知症対応型共同生活介護の候補内での定員規模：中位）", "color": "#fb8c00", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 130,
+      "geometry": { "type": "Point", "coordinates": [136.84123539999996, 35.1181252] },
+      "properties": {
+        "name": "東海橋苑グループホーム東起3号館", "corp": "株式会社安里", "type": "認知症対応型共同生活介護",
+        "pref": "愛知県", "addr": "東起町5-40-1", "phone": "052-389-3560",
+        "capacity": 27, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.1181252, "lon": 136.84123539999996, "score": null, "rank": "B",
+        "reason": "定員27名（認知症対応型共同生活介護の候補内での定員規模：中位）", "color": "#fb8c00", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 131,
+      "geometry": { "type": "Point", "coordinates": [136.85838122936093, 35.10561178758387] },
+      "properties": {
+        "name": "グループホーム　敬親庵", "corp": "社会福祉法人昌明福祉会", "type": "認知症対応型共同生活介護",
+        "pref": "愛知県", "addr": "名古屋市港区寛政町　7丁目18番地グループホーム敬親庵", "phone": "052-304-9810",
+        "capacity": 27, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.10561178758387, "lon": 136.85838122936093, "score": null, "rank": "B",
+        "reason": "定員27名（認知症対応型共同生活介護の候補内での定員規模：中位）", "color": "#fb8c00", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 132,
+      "geometry": { "type": "Point", "coordinates": [136.65678030000004, 35.0732865] },
+      "properties": {
+        "name": "社会福祉法人　自立共生会　ひかりの里", "corp": "自立共生会", "type": "認知症対応型共同生活介護",
+        "pref": "三重県", "addr": "桑名市新西方三丁目187番地", "phone": "0594-23-9292",
+        "capacity": 27, "waitlist": null, "kaizen": "未確認",
+        "lat": 35.0732865, "lon": 136.65678030000004, "score": null, "rank": "B",
+        "reason": "定員27名（認知症対応型共同生活介護の候補内での定員規模：中位）", "color": "#fb8c00", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 133,
+      "geometry": { "type": "Point", "coordinates": [136.4899726, 34.7702926] },
+      "properties": {
+        "name": "グループホームコロナ", "corp": "有限会社二神", "type": "認知症対応型共同生活介護",
+        "pref": "三重県", "addr": "津市大里窪田町1706-26", "phone": "059-230-2221",
+        "capacity": 18, "waitlist": null, "kaizen": "未確認",
+        "lat": 34.7702926, "lon": 136.4899726, "score": null, "rank": "C",
+        "reason": "定員18名（認知症対応型共同生活介護の候補内での定員規模：下位）", "color": "#1e88e5", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 134,
+      "geometry": { "type": "Point", "coordinates": [136.5195771, 34.6966551] },
+      "properties": {
+        "name": "グループホーム　たんぽぽ", "corp": "株式会社ウェルフェア三重", "type": "認知症対応型共同生活介護",
+        "pref": "三重県", "addr": "津市津興140-6", "phone": "059-223-6677",
+        "capacity": 18, "waitlist": null, "kaizen": "未確認",
+        "lat": 34.6966551, "lon": 136.5195771, "score": null, "rank": "C",
+        "reason": "定員18名（認知症対応型共同生活介護の候補内での定員規模：下位）", "color": "#1e88e5", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 135,
+      "geometry": { "type": "Point", "coordinates": [136.3953421, 34.6438561] },
+      "properties": {
+        "name": "愛の家グループホーム一志", "corp": "メディカル・ケア・サービス三重株式会社", "type": "認知症対応型共同生活介護",
+        "pref": "三重県", "addr": "三重県津市一志町井生220-1愛の家グループホーム一志", "phone": "059-293-0005",
+        "capacity": 18, "waitlist": null, "kaizen": "未確認",
+        "lat": 34.6438561, "lon": 136.3953421, "score": null, "rank": "C",
+        "reason": "定員18名（認知症対応型共同生活介護の候補内での定員規模：下位）", "color": "#1e88e5", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 136,
+      "geometry": { "type": "Point", "coordinates": [136.46260815301184, 34.709399680925735] },
+      "properties": {
+        "name": "しおりの里グループホーム", "corp": "医療法人碧会", "type": "認知症対応型共同生活介護",
+        "pref": "三重県", "addr": "三重県津市野田2033番地1", "phone": "059-239-1318",
+        "capacity": 18, "waitlist": null, "kaizen": "未確認",
+        "lat": 34.709399680925735, "lon": 136.46260815301184, "score": null, "rank": "C",
+        "reason": "定員18名（認知症対応型共同生活介護の候補内での定員規模：下位）", "color": "#1e88e5", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 137,
+      "geometry": { "type": "Point", "coordinates": [136.47125059999996, 34.6912211] },
+      "properties": {
+        "name": "シルバータウン久居　寿梨庵", "corp": "社会福祉法人　あけあい会", "type": "認知症対応型共同生活介護",
+        "pref": "三重県", "addr": "三重県津市久居明神町１５５３－１０", "phone": "059-254-0111",
+        "capacity": 18, "waitlist": null, "kaizen": "未確認",
+        "lat": 34.6912211, "lon": 136.47125059999996, "score": null, "rank": "C",
+        "reason": "定員18名（認知症対応型共同生活介護の候補内での定員規模：下位）", "color": "#1e88e5", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 138,
+      "geometry": { "type": "Point", "coordinates": [136.4628642, 34.7234525] },
+      "properties": {
+        "name": "グループホームとのむら", "corp": "地域ケア株式会社", "type": "認知症対応型共同生活介護",
+        "pref": "三重県", "addr": "三重県津市殿村１５５３番地グループホームとのむら", "phone": "059-237-3450",
+        "capacity": 18, "waitlist": null, "kaizen": "未確認",
+        "lat": 34.7234525, "lon": 136.4628642, "score": null, "rank": "C",
+        "reason": "定員18名（認知症対応型共同生活介護の候補内での定員規模：下位）", "color": "#1e88e5", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 139,
+      "geometry": { "type": "Point", "coordinates": [136.63926432011223, 34.914678268415294] },
+      "properties": {
+        "name": "けあビジョンホーム四日市", "corp": "株式会社ビジュアルビジョン", "type": "認知症対応型共同生活介護",
+        "pref": "三重県", "addr": "三重県四日市市楠町北五味塚９１４－３", "phone": "０５９－３９８－０５８８",
+        "capacity": 18, "waitlist": null, "kaizen": "未確認",
+        "lat": 34.914678268415294, "lon": 136.63926432011223, "score": null, "rank": "C",
+        "reason": "定員18名（認知症対応型共同生活介護の候補内での定員規模：下位）", "color": "#1e88e5", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 140,
+      "geometry": { "type": "Point", "coordinates": [136.5392554, 34.9419353] },
+      "properties": {
+        "name": "小山田グループホーム", "corp": "社会福祉法人青山里会", "type": "認知症対応型共同生活介護",
+        "pref": "三重県", "addr": "四日市市山田町5516-1", "phone": "059-328-8027",
+        "capacity": 18, "waitlist": null, "kaizen": "未確認",
+        "lat": 34.9419353, "lon": 136.5392554, "score": null, "rank": "C",
+        "reason": "定員18名（認知症対応型共同生活介護の候補内での定員規模：下位）", "color": "#1e88e5", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 141,
+      "geometry": { "type": "Point", "coordinates": [136.60825539999996, 34.9822313] },
+      "properties": {
+        "name": "グループホーム花びよりかいぞう", "corp": "株式会社福村屋", "type": "認知症対応型共同生活介護",
+        "pref": "三重県", "addr": "三重県四日市市野田2丁目6-12", "phone": "059-340-0888",
+        "capacity": 18, "waitlist": null, "kaizen": "未確認",
+        "lat": 34.9822313, "lon": 136.60825539999996, "score": null, "rank": "C",
+        "reason": "定員18名（認知症対応型共同生活介護の候補内での定員規模：下位）", "color": "#1e88e5", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 142,
+      "geometry": { "type": "Point", "coordinates": [136.6191311830811, 34.9272952270109] },
+      "properties": {
+        "name": "うぃるグループホーム塩浜", "corp": "株式会社Ｗ", "type": "認知症対応型共同生活介護",
+        "pref": "三重県", "addr": "三重県四日市市大字塩浜4147-1", "phone": "059-348-6500",
+        "capacity": 18, "waitlist": null, "kaizen": "未確認",
+        "lat": 34.9272952270109, "lon": 136.6191311830811, "score": null, "rank": "C",
+        "reason": "定員18名（認知症対応型共同生活介護の候補内での定員規模：下位）", "color": "#1e88e5", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 143,
+      "geometry": { "type": "Point", "coordinates": [136.71766277130277, 34.49580232341545] },
+      "properties": {
+        "name": "グループホーム　伊勢かわさき", "corp": "株式会社みえ親孝行", "type": "認知症対応型共同生活介護",
+        "pref": "三重県", "addr": "三重県伊勢市河崎3丁目9-14", "phone": "0596-21-3465",
+        "capacity": 18, "waitlist": null, "kaizen": "未確認",
+        "lat": 34.49580232341545, "lon": 136.71766277130277, "score": null, "rank": "C",
+        "reason": "定員18名（認知症対応型共同生活介護の候補内での定員規模：下位）", "color": "#1e88e5", "status": "未接触"
       }
     }
   ]
 };
 
-// ※紹介元レイヤー：WAM NET・医療機能情報提供制度・自治体公開情報を投入する想定のデモデータ（実データ未投入）
-// field: 障がい福祉／介護保険　priority: true=★最優先カテゴリ（相談支援・精神科病院・ケアマネ・病院地域連携室）
+// 紹介元レイヤー：ケアマネ事業所（居宅介護支援・厚労省オープンデータ）と地域包括支援センター（岐阜/愛知/三重 各県公式一覧）は実データ投入済み。
+// 相談支援事業所・精神科病院・病院(地域連携室)・特別支援学校はまとめてダウンロードできる公開データソースを確認できず、実データ未収集（available:false・準備中）。
 const REFERRAL_CATEGORIES = {
-  "相談支援事業所":       { color:"#43a047", field:"障がい福祉", priority:true  },
-  "精神科病院":           { color:"#8e24aa", field:"障がい福祉", priority:true  },
-  "ケアマネ事業所":       { color:"#00897b", field:"介護保険",   priority:true  },
-  "病院(地域連携室・MSW)": { color:"#3949ab", field:"介護保険",   priority:true  },
-  "地域包括支援センター": { color:"#7cb342", field:"介護保険",   priority:false },
-  "行政窓口":             { color:"#757575", field:"共通",       priority:false },
-  "特別支援学校":         { color:"#f57f17", field:"障がい福祉", priority:false },
+  "ケアマネ事業所":       { color:"#00897b", field:"介護保険",   priority:true,  available:true  },
+  "地域包括支援センター": { color:"#7cb342", field:"介護保険",   priority:false, available:true  },
+  "相談支援事業所":       { color:"#43a047", field:"障がい福祉", priority:true,  available:false },
+  "精神科病院":           { color:"#8e24aa", field:"障がい福祉", priority:true,  available:false },
+  "病院(地域連携室・MSW)": { color:"#3949ab", field:"介護保険",   priority:true,  available:false },
+  "地域の他事業所":       { color:"#795548", field:"共通",       priority:false, available:false },
+  "特別支援学校":         { color:"#f57f17", field:"障がい福祉", priority:false, available:false },
 };
 
 const REFERRAL_DATA = [
-  { id:'r0', name:"岐阜市相談支援センター",       category:"相談支援事業所",        pref:"岐阜県", addr:"岐阜県岐阜市神田町1-1",   phone:"058-211-1000", lat:35.423, lon:136.7605 },
-  { id:'r1', name:"岐阜こころのクリニック",       category:"精神科病院",            pref:"岐阜県", addr:"岐阜県岐阜市金町2-2",     phone:"058-212-2000", lat:35.427, lon:136.755  },
-  { id:'r2', name:"大垣居宅介護支援センター",     category:"ケアマネ事業所",        pref:"岐阜県", addr:"岐阜県大垣市高屋町3-3",   phone:"0584-23-1000", lat:35.360, lon:136.618  },
-  { id:'r3', name:"各務原市地域包括支援センター", category:"地域包括支援センター", pref:"岐阜県", addr:"岐阜県各務原市那加不動丘4-4", phone:"058-383-1000", lat:35.399, lon:136.881  },
-  { id:'r4', name:"名古屋障害者相談支援センター", category:"相談支援事業所",        pref:"愛知県", addr:"愛知県名古屋市中区栄5-5", phone:"052-961-1000", lat:35.170, lon:136.908  },
-  { id:'r5', name:"名古屋中央病院 地域連携室",   category:"病院(地域連携室・MSW)", pref:"愛知県", addr:"愛知県名古屋市中区三の丸6-6", phone:"052-961-2000", lat:35.183, lon:136.900  },
-  { id:'r6', name:"一宮居宅介護支援事業所",       category:"ケアマネ事業所",        pref:"愛知県", addr:"愛知県一宮市本町7-7",     phone:"0586-73-1000", lat:35.306, lon:136.799  },
-  { id:'r7', name:"豊田市障害福祉課",             category:"行政窓口",              pref:"愛知県", addr:"愛知県豊田市西町8-8",     phone:"0565-34-1000", lat:35.083, lon:137.153  },
-  { id:'r8', name:"津こころのクリニック",         category:"精神科病院",            pref:"三重県", addr:"三重県津市桜橋9-9",       phone:"059-224-1000", lat:34.721, lon:136.510  },
-  { id:'r9', name:"津居宅介護支援センター",       category:"ケアマネ事業所",        pref:"三重県", addr:"三重県津市丸之内10-10",   phone:"059-224-2000", lat:34.717, lon:136.503  },
-  { id:'r10', name:"四日市特別支援学校",           category:"特別支援学校",          pref:"三重県", addr:"三重県四日市市日永11-11", phone:"059-345-1000", lat:34.960, lon:136.628  },
-  { id:'r11', name:"松阪市地域包括支援センター", category:"地域包括支援センター", pref:"三重県", addr:"三重県松阪市殿町12-12",   phone:"0598-53-1000", lat:34.575, lon:136.530  },
+  { id:"cm1", name:"ケアサポート静春", category:"ケアマネ事業所", pref:"岐阜県", addr:"岐阜県岐阜市西島町２ー６", phone:"058-233-6555", lat:35.4260864, lon:136.73180200000002 },
+  { id:"cm2", name:"大垣在宅介護支援相談所", category:"ケアマネ事業所", pref:"岐阜県", addr:"岐阜県大垣市西崎町2丁目70番地", phone:"0584-78-9047", lat:35.36092570000002, lon:136.60791640000002 },
+  { id:"cm3", name:"山ぼうし居宅介護支援事業所", category:"ケアマネ事業所", pref:"岐阜県", addr:"岐阜県高山市下切町431番地", phone:"0577-34-0564", lat:36.1832605, lon:137.24578659999997 },
+  { id:"cm4", name:"介護相談処“お陽さま”", category:"ケアマネ事業所", pref:"岐阜県", addr:"岐阜県多治見市大日町２１番地大日ビル４号室", phone:"070-1184-4288", lat:35.33587719011745, lon:137.12491570202178 },
+  { id:"cm5", name:"介護保険相談センターこがねだ", category:"ケアマネ事業所", pref:"岐阜県", addr:"岐阜県関市上白金511", phone:"0575-28-6510", lat:35.4825541, lon:136.86254959999997 },
+  { id:"cm6", name:"居宅介護支援事業所　花の里", category:"ケアマネ事業所", pref:"岐阜県", addr:"岐阜県中津川市中津川2988-1", phone:"0573-65-0552", lat:35.4866927, lon:137.5041116 },
+  { id:"cm7", name:"株式会社福祉の里美濃営業所", category:"ケアマネ事業所", pref:"岐阜県", addr:"岐阜県美濃市松森595番地マツモリビル", phone:"0575-31-2928", lat:35.5305799, lon:136.9085675 },
+  { id:"cm8", name:"Ｎ－プランニング", category:"ケアマネ事業所", pref:"岐阜県", addr:"岐阜県瑞浪市寺河戸町１００２－５", phone:"0572-68-9432", lat:35.364815997862564, lon:137.25252509325412 },
+  { id:"cm9", name:"介護まめ家　介護何でも相談所", category:"ケアマネ事業所", pref:"岐阜県", addr:"岐阜県羽島市竹鼻町神楽４8", phone:"058-322-8005", lat:35.33055889999999, lon:136.70481010000003 },
+  { id:"cm10", name:"ケアプランセンターもみじ", category:"ケアマネ事業所", pref:"岐阜県", addr:"岐阜県恵那市武並町竹折603番地2", phone:"0573-28-5001", lat:35.43745780329988, lon:137.36024003500972 },
+  { id:"cm11", name:"ケアプランセンターつむぎ", category:"ケアマネ事業所", pref:"岐阜県", addr:"岐阜県美濃加茂市加茂野町加茂野字南野820番地7", phone:"0574-42-7799", lat:35.4546955, lon:136.9817249 },
+  { id:"cm12", name:"ケアプランセンターけあらーず", category:"ケアマネ事業所", pref:"岐阜県", addr:"岐阜県土岐市泉東窯町３丁目３０番", phone:"（0572）26-9818", lat:35.3694172921488, lon:137.19096263743435 },
+  { id:"cm13", name:"ひのとり居宅介護支援事業所千種", category:"ケアマネ事業所", pref:"愛知県", addr:"愛知県名古屋市千種区仲田2-19-18Manoirnakata201号", phone:"052-734-3720", lat:35.168395, lon:136.9409987 },
+  { id:"cm14", name:"けあぷらん　あさひ", category:"ケアマネ事業所", pref:"愛知県", addr:"愛知県名古屋市東区徳川二丁目20番11号", phone:"052-982-9333", lat:35.1870967, lon:136.929994 },
+  { id:"cm15", name:"居宅介護支援事業所オアシス", category:"ケアマネ事業所", pref:"愛知県", addr:"愛知県名古屋市北区中切町五丁目１７番地", phone:"052-910-5560", lat:35.2175144, lon:136.90991329999997 },
+  { id:"cm16", name:"オーネスト名西指定居宅介護支援事業所", category:"ケアマネ事業所", pref:"愛知県", addr:"愛知県名古屋市西区名西二丁目38番52号オーネスト名西", phone:"052-523-3353", lat:35.18949786818524, lon:136.88047172460634 },
+  { id:"cm17", name:"ケアプランあいわ", category:"ケアマネ事業所", pref:"愛知県", addr:"愛知県名古屋市中村区鳥居通2丁目41番地4ウチフジビル3F", phone:"052-481-5659", lat:35.17716571526129, lon:136.86610015092617 },
+  { id:"cm18", name:"介護支援丸の内薬局", category:"ケアマネ事業所", pref:"愛知県", addr:"愛知県名古屋市中区丸の内三丁目五番六号", phone:"052-951-3414", lat:35.1779747, lon:136.9066064 },
+  { id:"cm19", name:"G.K居宅介護支援事業所", category:"ケアマネ事業所", pref:"愛知県", addr:"愛知県名古屋市昭和区広見町4丁目49-1ジャルダン広見3A", phone:"052-715-8079", lat:35.1404614, lon:136.92919140000004 },
+  { id:"cm20", name:"オアシスセンター", category:"ケアマネ事業所", pref:"愛知県", addr:"愛知県名古屋市瑞穂区豆田町3丁目11-2", phone:"052-884-8605", lat:35.1304258, lon:136.9234198 },
+  { id:"cm21", name:"sounseul", category:"ケアマネ事業所", pref:"愛知県", addr:"愛知県名古屋市熱田区四番１丁目１番１７号マリンビュー２０６", phone:"052-683-4017", lat:35.1265092, lon:136.89095 },
+  { id:"cm22", name:"ラ・ファミリア指定居宅介護支援事業所元気", category:"ケアマネ事業所", pref:"愛知県", addr:"名古屋市中川区昭和橋通9丁目78番地", phone:"052-384-5411", lat:35.123755, lon:136.84122939999997 },
+  { id:"cm23", name:"ケアマネージメント薬局アルファ", category:"ケアマネ事業所", pref:"愛知県", addr:"愛知県名古屋市港区明正1-116-2", phone:"052-383-1193", lat:35.1172475, lon:136.84234360000005 },
+  { id:"cm24", name:"ケアプランアンダンテ星南", category:"ケアマネ事業所", pref:"愛知県", addr:"愛知県名古屋市南区丹後通３丁目4番地の２テラスレジデンス名古屋星崎３０５", phone:"052-602-7275", lat:35.0773245, lon:136.9228727 },
+  { id:"cm25", name:"居宅介護支援事業所　福祉のひなた", category:"ケアマネ事業所", pref:"三重県", addr:"三重県津市津興４７リュミエール３０３号室", phone:"059－269－6875", lat:34.6928589, lon:136.5197322 },
+  { id:"cm26", name:"マーベラス居宅介護支援事業所", category:"ケアマネ事業所", pref:"三重県", addr:"三重県四日市市室山町225番地1", phone:"059-323-0081", lat:34.95384121949587, lon:136.58021375277863 },
+  { id:"cm27", name:"ケアプラン　なごやか", category:"ケアマネ事業所", pref:"三重県", addr:"三重県伊勢市小木町１２８番地１", phone:"0596-31-1330", lat:34.5034575, lon:136.72801759999993 },
+  { id:"cm28", name:"居宅介護支援事業所「ローマリンダ」", category:"ケアマネ事業所", pref:"三重県", addr:"三重県松阪市山室町690-2", phone:"0598-60-0525", lat:34.5299505, lon:136.50229650000006 },
+  { id:"cm29", name:"桑名の杜　居宅介護支援事業所", category:"ケアマネ事業所", pref:"三重県", addr:"大字桑部1464-1", phone:"0594-28-8418", lat:35.050849345945224, lon:136.6434986938599 },
+  { id:"cm30", name:"居宅介護支援事業所オレンジ", category:"ケアマネ事業所", pref:"三重県", addr:"鈴鹿市江島台二丁目1-8　2F", phone:"059-373-7164", lat:34.843021953094464, lon:136.58899358115082 },
+  { id:"cm31", name:"居宅介護サービス　ひろこの家", category:"ケアマネ事業所", pref:"三重県", addr:"滝之原1587－4", phone:"0595－68－7010", lat:34.62921534462489, lon:136.16625037133986 },
+  { id:"cm32", name:"居宅介護支援事業所　　長寿園", category:"ケアマネ事業所", pref:"三重県", addr:"三重県尾鷲市大字南浦4599-3", phone:"0597-22-1113", lat:34.08199752495045, lon:136.20942638166022 },
+  { id:"cm33", name:"居宅支援花しょうぶ苑", category:"ケアマネ事業所", pref:"三重県", addr:"三重県亀山市本町1丁目2番12号", phone:"0595-84-2215", lat:34.8526421, lon:136.45964960000003 },
+  { id:"cm34", name:"鳥羽市社会福祉協議会　指定居宅介護支援事業所", category:"ケアマネ事業所", pref:"三重県", addr:"三重県鳥羽大明東町2-5鳥羽市保健福祉センターひだまり", phone:"0599-25-1188", lat:34.47056031703819, lon:136.85137545359567 },
+  { id:"cm35", name:"特定非営利活動法人たんぽぽ", category:"ケアマネ事業所", pref:"三重県", addr:"熊野市有馬町字山崎前4520-345", phone:"0597-89-3181", lat:33.8741324, lon:136.08662419999996 },
+  { id:"cm36", name:"株式会社フル・オブ・ライフ", category:"ケアマネ事業所", pref:"三重県", addr:"三重県いなべ市北勢町別名７０９番地1", phone:"0594-37-2084", lat:35.13850204480389, lon:136.50688867831533 },
+  { id:"hk1", name:"岐阜市地域包括支援センター中央北", category:"地域包括支援センター", pref:"岐阜県", addr:"岐阜市京町２－１２", phone:"058-213-0128", lat:35.423, lon:136.7605, approxLocation:true },
+  { id:"hk2", name:"大垣市地域包括支援センター", category:"地域包括支援センター", pref:"岐阜県", addr:"大垣市丸の内２－２９", phone:"0584-82-1166", lat:35.3623, lon:136.6142, approxLocation:true },
+  { id:"hk3", name:"各務原市地域包括支援センター（社会福祉協議会）", category:"地域包括支援センター", pref:"岐阜県", addr:"各務原市那加桜町２－１６３", phone:"058-383-7624", lat:35.3974, lon:136.8778, approxLocation:true },
+  { id:"hk4", name:"高山市地域包括支援センター", category:"地域包括支援センター", pref:"岐阜県", addr:"高山市花岡町２－１８", phone:"0577-35-2940", lat:36.1461, lon:137.2521, approxLocation:true },
+  { id:"hk5", name:"太平地域包括支援センター（多治見市）", category:"地域包括支援センター", pref:"岐阜県", addr:"多治見市太平町２－３９－１", phone:"0572-25-1135", lat:35.3327, lon:137.1327, approxLocation:true },
+  { id:"hk6", name:"関市中央第１地域包括支援センター", category:"地域包括支援センター", pref:"岐阜県", addr:"関市若草通２丁目１", phone:"0575-23-0660", lat:35.4956, lon:136.9174, approxLocation:true },
+  { id:"hk7", name:"中津川市地域包括支援センター", category:"地域包括支援センター", pref:"岐阜県", addr:"中津川市かやの木町２－５", phone:"0573-66-1111", lat:35.4886, lon:137.5006, approxLocation:true },
+  { id:"hk8", name:"羽島市地域包括支援センター", category:"地域包括支援センター", pref:"岐阜県", addr:"羽島市福寿町浅平３－２５", phone:"058-394-2521", lat:35.3312, lon:136.7009, approxLocation:true },
+  { id:"hk9", name:"可児市地域包括支援センター", category:"地域包括支援センター", pref:"岐阜県", addr:"可児市広見１－１", phone:"0574-62-1111", lat:35.4224, lon:137.0553, approxLocation:true },
+  { id:"hk10", name:"名古屋市千種区東部いきいき支援センター", category:"地域包括支援センター", pref:"愛知県", addr:"名古屋市千種区桜が丘11-1", phone:"052-781-8343", lat:35.1815, lon:136.9066, approxLocation:true },
+  { id:"hk11", name:"豊橋市東部地域包括支援センター", category:"地域包括支援センター", pref:"愛知県", addr:"豊橋市佐藤5-22-16", phone:"0532-64-6666", lat:34.7692, lon:137.3915, approxLocation:true },
+  { id:"hk12", name:"高年者センター岡崎地域包括支援センター", category:"地域包括支援センター", pref:"愛知県", addr:"岡崎市美合町字下長根2-1", phone:"0564-55-8399", lat:34.955, lon:137.174, approxLocation:true },
+  { id:"hk13", name:"一宮市地域包括支援センターやすらぎ", category:"地域包括支援センター", pref:"愛知県", addr:"一宮市奥町字下口西72-1", phone:"0586-61-3350", lat:35.3041, lon:136.8028, approxLocation:true },
+  { id:"hk14", name:"やすらぎ地域包括支援センター（瀬戸市）", category:"地域包括支援センター", pref:"愛知県", addr:"瀬戸市川端町1-31", phone:"0561-84-2287", lat:35.2241, lon:137.0629, approxLocation:true },
+  { id:"hk15", name:"春日井市地域包括支援センター坂下", category:"地域包括支援センター", pref:"愛知県", addr:"春日井市神屋町1306-1", phone:"0568-93-1314", lat:35.2477, lon:136.9724, approxLocation:true },
+  { id:"hk16", name:"社協包括支援センター（豊田市）", category:"地域包括支援センター", pref:"愛知県", addr:"豊田市錦町1-1-1", phone:"0565-32-4342", lat:35.0826, lon:137.156, approxLocation:true },
+  { id:"hk17", name:"安城市地域包括支援センターさとまち", category:"地域包括支援センター", pref:"愛知県", addr:"安城市里町畑下62", phone:"0566-96-3512", lat:34.9601, lon:137.0812, approxLocation:true },
+  { id:"hk18", name:"南部地域包括支援センターケアタウン小牧", category:"地域包括支援センター", pref:"愛知県", addr:"小牧市大字北外山字掛割8-1", phone:"0568-71-2100", lat:35.2977, lon:136.9111, approxLocation:true },
+  { id:"hk19", name:"桑名市介護予防支援室", category:"地域包括支援センター", pref:"三重県", addr:"桑名市中央町二丁目３７　桑名市役所内", phone:"0594-24-5104", lat:35.0668, lon:136.6944, approxLocation:true },
+  { id:"hk20", name:"四日市市北地域包括支援センター", category:"地域包括支援センター", pref:"三重県", addr:"四日市市富田浜町26-14", phone:"059-365-6215", lat:34.9651, lon:136.6251, approxLocation:true },
+  { id:"hk21", name:"津市地域包括支援センター", category:"地域包括支援センター", pref:"三重県", addr:"津市西丸之内23-1　津市役所内", phone:"059-229-3294", lat:34.7185, lon:136.5056, approxLocation:true },
+  { id:"hk22", name:"松阪市第一地域包括支援センター", category:"地域包括支援センター", pref:"三重県", addr:"松阪市白粉町363　松阪地区医師会館内", phone:"0598-25-1070", lat:34.577, lon:136.5257, approxLocation:true },
+  { id:"hk23", name:"伊勢市北地域包括支援センター", category:"地域包括支援センター", pref:"三重県", addr:"伊勢市馬瀬町１０９４番地９　楽寿苑内", phone:"0596-65-5070", lat:34.4859, lon:136.7096, approxLocation:true },
+  { id:"hk24", name:"鈴鹿市基幹型地域包括支援センターにじ", category:"地域包括支援センター", pref:"三重県", addr:"鈴鹿市神戸地子町383-1　鈴鹿市社会福祉協議会内", phone:"059-382-5233", lat:34.8778, lon:136.5849, approxLocation:true },
+  { id:"hk25", name:"名張市地域包括支援センター", category:"地域包括支援センター", pref:"三重県", addr:"名張市鴻之台１番町１番地　名張市役所内", phone:"0595-63-7833", lat:34.6333, lon:136.1088, approxLocation:true },
+  { id:"hk26", name:"伊賀市地域包括支援センター", category:"地域包括支援センター", pref:"三重県", addr:"伊賀市四十九町3184番地", phone:"0595-26-1521", lat:34.7686, lon:136.1298, approxLocation:true },
+  { id:"hk27", name:"尾鷲市地域包括支援センター", category:"地域包括支援センター", pref:"三重県", addr:"尾鷲市栄町5-5　尾鷲市福祉保健センター内", phone:"0597-22-3003", lat:34.0716, lon:136.1899, approxLocation:true }
 ];
 const STATUS_COLORS = {"未接触": "#546e7a", "接触済": "#1565c0", "提案中": "#e65100", "成約": "#2e7d32"};
 const STATUS_LIST   = ["未接触", "接触済", "提案中", "成約"];
@@ -300,9 +1963,9 @@ let refLayerGroup = L.layerGroup().addTo(map);
 let markerMap = {};
 let activeId = null;
 
-// 紹介元カテゴリ フィルタON/OFF状態（初期値：全カテゴリ表示）
+// 紹介元カテゴリ フィルタON/OFF状態（初期値：実データがあるカテゴリのみ表示。準備中カテゴリは常にfalse）
 const refCategoryState = {};
-Object.keys(REFERRAL_CATEGORIES).forEach(c => refCategoryState[c] = true);
+Object.entries(REFERRAL_CATEGORIES).forEach(([c,cat]) => refCategoryState[c] = !!cat.available);
 
 function getVisible() {
   const pv = document.getElementById('prefFilter').value;
@@ -316,7 +1979,7 @@ function getVisible() {
     const tm = tv==='ALL'||p.type.includes(tv);
     const sm = sv==='ALL'||p.status===sv;
     return pm && rm && tm && sm;
-  }).sort((a,b) => b.properties.score - a.properties.score);
+  }).sort((a,b) => b.properties.capacity - a.properties.capacity);
 }
 
 function getVisibleReferrals() {
@@ -324,6 +1987,8 @@ function getVisibleReferrals() {
   if (!masterOn) return [];
   const pv = document.getElementById('prefFilter').value;
   return REFERRAL_DATA.filter(r => {
+    const cat = REFERRAL_CATEGORIES[r.category];
+    if (!cat || !cat.available) return false;
     if (!refCategoryState[r.category]) return false;
     if (pv!=='ALL' && r.pref!==pv) return false;
     return true;
@@ -342,6 +2007,9 @@ function makeRefIcon(r) {
 
 function makeRefPopupHTML(r) {
   const cat = REFERRAL_CATEGORIES[r.category];
+  const locNote = r.approxLocation
+    ? '※実データ（県公式一覧より）。地図上の座標は市区町村中心の概算値'
+    : '※実データ（厚労省オープンデータより。緯度経度も実データ）';
   return `<div class="popup-wrap">
     <div class="popup-title">${cat.priority?'★ ':''}${r.name}</div>
     <div style="font-size:11px;color:#666;margin-bottom:8px">📍紹介元 ／ ${r.category}${cat.priority?'（最優先カテゴリ）':''}</div>
@@ -350,7 +2018,7 @@ function makeRefPopupHTML(r) {
       <tr><td>住所</td><td>${r.addr}</td></tr>
       <tr><td>電話</td><td><a href="tel:${r.phone}" style="color:#1565c0">${r.phone}</a></td></tr>
     </table>
-    <div style="margin-top:8px;font-size:10px;color:#999">※デモデータ（WAM NET等の実データ未投入）</div>
+    <div style="margin-top:8px;font-size:10px;color:#999">${locNote}</div>
   </div>`;
 }
 
@@ -368,9 +2036,9 @@ function renderReferrals() {
 function renderRefCategoryToggles() {
   const box = document.getElementById('ref-category-toggles');
   box.innerHTML = Object.entries(REFERRAL_CATEGORIES).map(([name,cat]) => `
-    <label class="ref-chip${cat.priority?' priority':''}">
-      <input type="checkbox" data-cat="${name}" ${refCategoryState[name]?'checked':''}>
-      <span class="dot diamond" style="background:${cat.color}"></span>${cat.priority?'★':''}${name}
+    <label class="ref-chip${cat.priority?' priority':''}" style="${cat.available?'':'opacity:.45;cursor:not-allowed;'}" title="${cat.available?'':'実データ未収集（準備中）'}">
+      <input type="checkbox" data-cat="${name}" ${refCategoryState[name]?'checked':''} ${cat.available?'':'disabled'}>
+      <span class="dot diamond" style="background:${cat.color}"></span>${cat.priority?'★':''}${name}${cat.available?'':'（準備中）'}
     </label>`).join('');
   box.querySelectorAll('input[data-cat]').forEach(cb => {
     cb.addEventListener('change', () => {
@@ -389,21 +2057,22 @@ function makeIcon(p, active=false) {
 }
 
 function makePopupHTML(p, id) {
-  const rankLabel = {A:'🔴 Aランク',B:'🟡 Bランク',C:'🔵 Cランク'};
+  const rankLabel = {A:'🔴 定員規模：大',B:'🟡 定員規模：中',C:'🔵 定員規模：小'};
   const statusOpts = STATUS_LIST.map(s =>
     `<option value="${s}" ${p.status===s?'selected':''}>${s}</option>`).join('');
   return `<div class="popup-wrap">
     <div class="popup-title">${p.name}</div>
-    <div style="font-size:11px;color:#666;margin-bottom:8px">${rankLabel[p.rank]||p.rank} ／ ${p.score}点</div>
+    <div style="font-size:11px;color:#666;margin-bottom:8px">${rankLabel[p.rank]||p.rank}（同種別36件内の相対順位）</div>
     <table class="popup-table">
       <tr><td>法人</td><td><b>${p.corp}</b></td></tr>
       <tr><td>種別</td><td>${p.type}</td></tr>
       <tr><td>住所</td><td>${p.addr}</td></tr>
       <tr><td>電話</td><td><a href="tel:${p.phone}" style="color:#1565c0">${p.phone}</a></td></tr>
-      <tr><td>定員</td><td>${p.capacity}名 ／ 待機${p.waitlist}名</td></tr>
-      <tr><td>加算</td><td style="color:${p.kaizen==='未取得'?'#c62828':'#2e7d32'};font-weight:bold">${p.kaizen}</td></tr>
-      <tr><td>理由</td><td style="color:#555;font-size:11px">${p.reason}</td></tr>
+      <tr><td>定員</td><td>${p.capacity}名</td></tr>
+      <tr><td>加算</td><td style="color:#8b949e">${p.kaizen}（オープンデータに含まれず）</td></tr>
+      <tr><td>判定根拠</td><td style="color:#555;font-size:11px">${p.reason}</td></tr>
     </table>
+    <div style="margin-top:6px;font-size:10px;color:#999">※厚労省オープンデータの実データ。処遇改善加算・開設年数・待機者数はこのデータに含まれないため未確認</div>
     <div style="margin-top:8px;font-size:11px;color:#666">アプローチ状況：</div>
     <select class="status-select" onchange="updateStatus(${id},this.value)">${statusOpts}</select>
   </div>`;
@@ -451,11 +2120,11 @@ function renderSidebar(visible) {
     const card = document.createElement('div');
     card.className = 'fac-card' + (id===activeId?' active':'');
     card.innerHTML = `
-      <div><span class="fac-rank" style="background:${p.color}22;color:${p.color};border:1px solid ${p.color}44">${p.rank}ランク</span>
+      <div><span class="fac-rank" style="background:${p.color}22;color:${p.color};border:1px solid ${p.color}44">${p.rank}</span>
            <span class="fac-status-badge" style="background:${sc}22;color:${sc};border:1px solid ${sc}44">${p.status}</span></div>
       <div class="fac-name">${p.name}</div>
       <div class="fac-meta">${p.corp} ／ ${p.type}</div>
-      <div class="fac-score">スコア ${p.score}点 ／ <span style="font-size:11px;font-weight:normal;color:#8b949e">${p.phone}</span></div>
+      <div class="fac-score">定員 ${p.capacity}名 ／ <span style="font-size:11px;font-weight:normal;color:#8b949e">${p.phone}</span></div>
     `;
     card.onclick = () => {
       activeId = id;
@@ -469,10 +2138,10 @@ function renderSidebar(visible) {
 // CSV出力
 document.getElementById('csv-btn').onclick = () => {
   const visible = getVisible();
-  const cols = ['施設名','法人名','種別','住所','電話番号','定員','待機者数','処遇改善加算','スコア','ランク','スコア理由','アプローチ状況'];
+  const cols = ['施設名','法人名','種別','住所','電話番号','定員','処遇改善加算(未確認)','定員規模ランク','判定根拠','アプローチ状況'];
   const rows = visible.map(f => {
     const p = f.properties;
-    return [p.name,p.corp,p.type,p.addr,p.phone,p.capacity,p.waitlist,p.kaizen,p.score,p.rank,p.reason,p.status]
+    return [p.name,p.corp,p.type,p.addr,p.phone,p.capacity,p.kaizen,p.rank,p.reason,p.status]
       .map(v => `"${String(v).replace(/"/g,'""')}"`).join(',');
   });
   const csv = '﻿' + cols.join(',') + '\n' + rows.join('\n');
@@ -509,12 +2178,13 @@ const legend = L.control({position:'bottomright'});
 legend.onAdd = () => {
   const d = L.DomUtil.create('div','legend');
   const refRows = Object.entries(REFERRAL_CATEGORIES).map(([name,cat]) =>
-    `<span class="dot diamond" style="background:${cat.color}"></span>${cat.priority?'★':''}${name}<br>`
+    `<span class="dot diamond" style="background:${cat.color};${cat.available?'':'opacity:.4;'}"></span>${cat.priority?'★':''}${name}${cat.available?'':'（準備中）'}<br>`
   ).join('');
-  d.innerHTML = `<b>優先度ランク（競合・供給側）</b><br>
-    <span class="dot" style="background:#e53935"></span>A：即アプローチ<br>
-    <span class="dot" style="background:#fb8c00"></span>B：準優先<br>
-    <span class="dot" style="background:#1e88e5"></span>C：様子見<br>
+  d.innerHTML = `<b>定員規模ランク（競合・供給側）</b><br>
+    <span class="dot" style="background:#e53935"></span>大（同種別上位）<br>
+    <span class="dot" style="background:#fb8c00"></span>中<br>
+    <span class="dot" style="background:#1e88e5"></span>小<br>
+    <div style="font-size:10px;color:#8b949e;margin:2px 0 4px;">※処遇改善加算・開設年数・待機者数は未取得データのため未反映</div>
     <hr style="border-color:#30363d;margin:5px 0">
     <b>紹介元（◆＝ひし形・★最優先カテゴリ）</b><br>
     ${refRows}
