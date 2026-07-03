@@ -650,8 +650,8 @@ tr:hover td{background:rgba(79,195,247,0.03);}
         <select id="lsrp-level" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:0.82rem;outline:none;">
           <option value="">─ 未入力 ─</option>
           <option value="安全">★☆☆ 安全圏</option>
-          <option value="警戒">★★☆ 要警戒</option>
-          <option value="危険">★★★ 危険</option>
+          <option value="要観察">★★☆ 要観察</option>
+          <option value="要フォロー">★★★ 要フォロー</option>
         </select>
       </div>
     </div>
@@ -987,10 +987,12 @@ function getRCStatus(ego){
   return {label:'安全',cls:'rc-safe',reason:'健全な自他肯定OS。凪を支える人材。'};
 }
 
+// 既存スタッフ向け表示は「中止・除外・危険・不適格」等の除外的文言を避け、支援的な表現に統一する
+// （06_イノベーション/奏Block1_LSRP高スコアアラート_文言使い分け設計_20260703.md §3-2準拠。採用面接時の文言は別途kanade_app.html側で維持）
 function getLSRPLabel(total){
   const t=n(total);
-  if(t>=16) return {label:'★★★ 危険',cls:'lsrp-D',short:'危険'};
-  if(t>=11) return {label:'★★☆ 要警戒',cls:'lsrp-W',short:'警戒'};
+  if(t>=16) return {label:'★★★ 要フォロー',cls:'lsrp-D',short:'要フォロー'};
+  if(t>=11) return {label:'★★☆ 要観察',cls:'lsrp-W',short:'要観察'};
   return {label:'★☆☆ 安全圏',cls:'lsrp-S',short:'安全'};
 }
 
@@ -2228,8 +2230,8 @@ function renderCompass(){
   let teamSignal, teamLabel, teamDesc;
   if(!allStaff.length){ teamSignal='gray'; teamLabel='データなし'; teamDesc='スタッフデータを入力してください'; }
   else if(teamIssueCount===0){ teamSignal='green'; teamLabel='安全'; teamDesc='RC・LSRP異常者ゼロ ✅'; }
-  else if(teamIssueCount<=2){ teamSignal='yellow'; teamLabel='要注意'; teamDesc=`RC異常${rcAnomalyCount}名・LSRP危険${lsrpDangerCount}名`; }
-  else { teamSignal='red'; teamLabel='要対応'; teamDesc=`RC異常${rcAnomalyCount}名・LSRP危険${lsrpDangerCount}名`; }
+  else if(teamIssueCount<=2){ teamSignal='yellow'; teamLabel='要注意'; teamDesc=`RC異常${rcAnomalyCount}名・LSRP要フォロー${lsrpDangerCount}名`; }
+  else { teamSignal='red'; teamLabel='要対応'; teamDesc=`RC異常${rcAnomalyCount}名・LSRP要フォロー${lsrpDangerCount}名`; }
 
   // ── 軸D：スタッフ性質 ──
   const staffWithLsrp=allStaff.filter(s=>s.lsrp?.total!==undefined&&s.lsrp?.total!==null);
@@ -2269,8 +2271,8 @@ function renderCompass(){
   // ── 次の手パネル ──
   const actions=[];
   if(rcAnomalyCount>0) actions.push({sys:'響',icon:'🗣',text:`RC異常者${rcAnomalyCount}名に個別面談を設計してください`,signal:'red',tab:'rc'});
-  if(lsrpDangerCount>0) actions.push({sys:'ミツメル',icon:'📓',text:`LSRP危険者${lsrpDangerCount}名に日次ジャーナリングを導入してください`,signal:'red',tab:'rc'});
-  if(lsrpWarnCount>0) actions.push({sys:'奏',icon:'🎵',text:`LSRP警戒者${lsrpWarnCount}名の配置見直しを検討してください`,signal:'yellow',tab:'staff'});
+  if(lsrpDangerCount>0) actions.push({sys:'ミツメル',icon:'📓',text:`LSRP要フォロー${lsrpDangerCount}名。本人との対話機会を設け、日次ジャーナリング（ミツメル）で継続的にフォローすることをおすすめします`,signal:'red',tab:'rc'});
+  if(lsrpWarnCount>0) actions.push({sys:'奏',icon:'🎵',text:`LSRP要観察${lsrpWarnCount}名。奏で追加の面談機会を設けることをおすすめします`,signal:'yellow',tab:'staff'});
   if(finItems.some(i=>i.level==='red')) actions.push({sys:'響',icon:'💸',text:`f/m130%超：固定費構造のヒアリングが必要です`,signal:'red',tab:'corp'});
   if(totalOccLoss>0) actions.push({sys:'響',icon:'🏠',text:`定員未充足による月次損失試算：-${(totalOccLoss/10000).toFixed(0)}万円。利用者確保のヒアリングを実施してください`,signal: totalOccLoss>=300000?'red':'yellow',tab:'corp'});
   if(kazanMissCount>0) actions.push({sys:'弦',icon:'📋',text:`処遇改善加算 未取得${kazanMissCount}件。月次機会損失試算：-${kazanMissCount*18}万円。加算申請サポートの提案先を確認してください`,signal:'red',tab:'corp'});
@@ -2530,7 +2532,7 @@ function renderBlacklist(){
     const until=new Date(b.retentionUntil);
     const daysLeft=Math.ceil((until-today)/(1000*60*60*24));
     const expired=daysLeft<=0;
-    const LSRP_CLS={危険:'color:var(--danger);font-weight:700;', 警戒:'color:var(--warn);font-weight:700;', 安全:'color:var(--accent2);'};
+    const LSRP_CLS={要フォロー:'color:var(--danger);font-weight:700;', 危険:'color:var(--danger);font-weight:700;', 要観察:'color:var(--warn);font-weight:700;', 警戒:'color:var(--warn);font-weight:700;', 安全:'color:var(--accent2);'};
     return `<tr>
       <td style="font-size:0.75rem;">${b.rejectDate||''}</td>
       <td style="font-size:0.78rem;">${b.corp||''}</td>
@@ -3497,7 +3499,7 @@ function openStaffDetail(staffId){
         <div style="text-align:center;">
           <span style="font-weight:700;color:${lsrpColor};">${lsrpL.label}</span>
         </div>
-        ${(s.lsrp?.total||0)>=11?`<div style="font-size:0.72rem;color:var(--sub);margin-top:6px;">${(s.lsrp?.total||0)>=16?'⚠️ 危険：即時介入が必要です':'注意：継続的な観察が必要です'}</div>`:''}
+        ${(s.lsrp?.total||0)>=11?`<div style="font-size:0.72rem;color:var(--sub);margin-top:6px;">${(s.lsrp?.total||0)>=16?'本人との対話機会を設けることをおすすめします':'継続的な面談・フォローをおすすめします'}</div>`:''}
       </div>
 
       <!-- エニアグラム -->
