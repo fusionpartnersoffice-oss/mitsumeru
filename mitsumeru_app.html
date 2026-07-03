@@ -1312,7 +1312,14 @@ function showSyncStatus(state) {
 // ===== Cloudflare KV =====
 const SYNC_URL = 'https://mitsumeru-sync.fusion-partners-office.workers.dev';
 
+// ミツメル安全装置②（2026-07-03・本番データ誤上書き事故の再発防止）
+// 本番GitHub Pages以外（ローカル開発サーバー等）ではCloudflare KVへの書き込みを行わない
+function isProductionHost(){
+  return location.hostname === 'fusionpartnersoffice-oss.github.io';
+}
+
 async function cloudSave(type, data, date) {
+  if (!isProductionHost()) { console.warn('[安全装置②] 本番URL以外のためcloudSaveをスキップしました:', type); return; }
   const key = type + '_' + (date || targetDate);
   showSyncStatus('saving');
   try {
@@ -1329,6 +1336,7 @@ async function cloudSave(type, data, date) {
 }
 
 async function cloudSaveGlobal(type, data) {
+  if (!isProductionHost()) { console.warn('[安全装置②] 本番URL以外のためcloudSaveGlobalをスキップしました:', type); return; }
   try {
     await fetch(`${SYNC_URL}?key=${encodeURIComponent(type + '_global')}`, {
       method: 'PUT', headers: { 'Content-Type': 'application/json' },
@@ -1338,6 +1346,7 @@ async function cloudSaveGlobal(type, data) {
 }
 
 async function cloudSaveFusionOSStatus(data) {
+  if (!isProductionHost()) { console.warn('[安全装置②] 本番URL以外のためcloudSaveFusionOSStatusをスキップしました'); return; }
   const date = targetDate || localDateStr(new Date());
   try {
     await fetch(`${SYNC_URL}?key=${encodeURIComponent('fusionos_status_' + date)}`, {
