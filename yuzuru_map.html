@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>弦システム 商圏マップ【デモ】— Fusion Partners</title>
+  <title>弦システム 商圏マップ【デモ・東海3県】— Fusion Partners</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
@@ -33,8 +33,10 @@
     .fac-meta{font-size:11px;color:#8b949e;margin-bottom:4px;}
     .fac-score{font-size:12px;color:#f0c674;font-weight:bold;}
     .fac-status-badge{display:inline-block;font-size:10px;padding:1px 7px;border-radius:10px;margin-left:6px;}
-    #csv-btn{margin:8px;padding:8px;background:#238636;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit;}
+    #csv-btn{margin:8px 8px 0;padding:8px;background:#238636;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit;}
     #csv-btn:hover{background:#2ea043;}
+    #ref-csv-btn{margin:6px 8px 8px;padding:8px;background:#00897b;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit;}
+    #ref-csv-btn:hover{background:#00a896;}
     #map{flex:1;}
     .legend{background:rgba(13,17,23,.92);color:#c9d1d9;padding:10px 14px;border-radius:8px;line-height:1.9;font-size:12px;border:1px solid #30363d;}
     .legend b{color:#fff;}
@@ -45,19 +47,34 @@
     .popup-table td{padding:3px 5px;vertical-align:top;}
     .popup-table td:first-child{color:#888;white-space:nowrap;padding-right:8px;min-width:50px;}
     .status-select{font-size:12px;padding:3px 6px;border:1px solid #ccc;border-radius:4px;margin-top:6px;width:100%;cursor:pointer;}
+    #ref-controls{background:#161b22;padding:6px 16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;border-bottom:1px solid #30363d;flex-shrink:0;}
+    #ref-controls label{font-size:12px;color:#8b949e;}
+    .ref-toggle{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+    .ref-chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#c9d1d9;background:#21262d;border:1px solid #30363d;border-radius:14px;padding:3px 9px;cursor:pointer;user-select:none;}
+    .ref-chip input{cursor:pointer;}
+    .ref-chip.priority{border-color:#f0c674;}
+    .ref-master{font-size:12px;color:#c9d1d9;display:flex;align-items:center;gap:6px;cursor:pointer;padding:3px 10px;border-radius:14px;background:#21262d;border:1px solid #30363d;}
+    .dot.diamond{border-radius:2px;transform:rotate(45deg);width:9px;height:9px;}
   </style>
 </head>
 <body>
 <div id="header">
-  <h1>弦システム 商圏マップ</h1>
+  <h1>弦システム 商圏マップ（東海3県パイロット）</h1>
   <span class="demo-badge">DEMO</span>
   <div class="stat">全 <span id="total-count">8</span> 件</div>
   <div class="stat" style="background:rgba(229,57,53,.25)">A <span style="color:#ff8a80" id="a-count">5</span></div>
   <div class="stat" style="background:rgba(251,140,0,.25)">B <span style="color:#ffcc80" id="b-count">1</span></div>
   <div class="stat" style="background:rgba(30,136,229,.25)">C <span style="color:#82b1ff" id="c-count">2</span></div>
+  <div class="stat" style="background:rgba(255,255,255,.1)">紹介元 <span id="ref-count">0</span> 件</div>
   <div style="margin-left:auto;font-size:11px;color:rgba(255,255,255,.5)">Fusion Partners © 2026</div>
 </div>
 <div id="controls">
+  <label>県：<select id="prefFilter">
+    <option value="ALL">すべて（東海3県）</option>
+    <option value="岐阜県">岐阜県</option>
+    <option value="愛知県">愛知県</option>
+    <option value="三重県">三重県</option>
+  </select></label>
   <label>ランク：<select id="rankFilter">
     <option value="ALL">すべて</option>
     <option value="A">A（即アプローチ）</option>
@@ -83,6 +100,10 @@
   </select></label>
   <span style="font-size:11px;color:#8b949e;margin-left:auto">← リスト or ピンをクリックで詳細</span>
 </div>
+<div id="ref-controls">
+  <label class="ref-master"><input type="checkbox" id="refMasterToggle" checked>📍 紹介元レイヤー表示</label>
+  <div class="ref-toggle" id="ref-category-toggles"></div>
+</div>
 <div id="body">
   <div id="sidebar">
     <div id="sidebar-header">
@@ -90,249 +111,163 @@
       <span id="sidebar-count">0件</span>
     </div>
     <div id="facility-list"></div>
-    <button id="csv-btn">📥 現在の一覧をCSVで出力</button>
+    <button id="csv-btn">📥 営業先リストをCSVで出力</button>
+    <button id="ref-csv-btn">📥 紹介元リストをCSVで出力</button>
   </div>
   <div id="map"></div>
 </div>
 
 <script>
+// ※東海3県パイロット：施設名・法人名はすべて架空のデモデータ（WAM NET実データ未投入。実データ投入は別タスク）
 const RAW_DATA = {
   "type": "FeatureCollection",
   "features": [
     {
       "type": "Feature",
       "id": 0,
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          135.489,
-          34.648
-        ]
-      },
+      "geometry": { "type": "Point", "coordinates": [136.760, 35.423] },
       "properties": {
-        "name": "あおぞら介護センター",
-        "corp": "社会福祉法人あおぞら会",
-        "type": "特別養護老人ホーム",
-        "addr": "大阪府大阪市西成区萩之茶屋1-1-1",
-        "phone": "06-1234-5678",
-        "capacity": 45,
-        "waitlist": 15,
-        "kaizen": "未取得",
-        "years": 2.2,
-        "lat": 34.648,
-        "lon": 135.489,
-        "score": 65,
-        "rank": "A",
-        "reason": "処遇改善加算未取得(+30) / 開設2.2年(+20) / 定員45名(+15)",
-        "color": "#e53935",
-        "status": "未接触"
+        "name": "岐阜さくらデイサービス", "corp": "社会福祉法人岐阜さくら会", "type": "通所介護",
+        "pref": "岐阜県", "addr": "岐阜県岐阜市司町1-1", "phone": "058-111-2233",
+        "capacity": 40, "waitlist": 14, "kaizen": "未取得", "years": 1.8,
+        "lat": 35.423, "lon": 136.760, "score": 75, "rank": "A",
+        "reason": "処遇改善加算未取得(+30) / 開設1.8年(+20) / 定員40名(+15) / 待機14名(+10)",
+        "color": "#e53935", "status": "未接触"
       }
     },
     {
       "type": "Feature",
       "id": 1,
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          135.601,
-          34.679
-        ]
-      },
+      "geometry": { "type": "Point", "coordinates": [136.614, 35.362] },
       "properties": {
-        "name": "かがやき就労支援センター",
-        "corp": "NPO法人かがやき",
-        "type": "就労継続支援B型",
-        "addr": "大阪府東大阪市高井田西3-3-3",
-        "phone": "06-3456-7890",
-        "capacity": 35,
-        "waitlist": 12,
-        "kaizen": "未取得",
-        "years": 1.4,
-        "lat": 34.679,
-        "lon": 135.601,
-        "score": 75,
-        "rank": "A",
-        "reason": "処遇改善加算未取得(+30) / 開設1.4年(+20) / 定員35名(+15) / 待機12名(+10)",
-        "color": "#e53935",
-        "status": "未接触"
+        "name": "大垣みずほグループホーム", "corp": "社会福祉法人みずほ福祉会", "type": "グループホーム",
+        "pref": "岐阜県", "addr": "岐阜県大垣市郭町2-2", "phone": "0584-22-3344",
+        "capacity": 18, "waitlist": 0, "kaizen": "未取得", "years": 6.5,
+        "lat": 35.362, "lon": 136.614, "score": 30, "rank": "B",
+        "reason": "処遇改善加算未取得(+30)",
+        "color": "#fb8c00", "status": "未接触"
       }
     },
     {
       "type": "Feature",
       "id": 2,
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          135.524,
-          34.76
-        ]
-      },
+      "geometry": { "type": "Point", "coordinates": [136.878, 35.397] },
       "properties": {
-        "name": "なごみデイサービス",
-        "corp": "医療法人なごみ会",
-        "type": "通所介護",
-        "addr": "大阪府吹田市江坂町4-4-4",
-        "phone": "06-4567-8901",
-        "capacity": 50,
-        "waitlist": 18,
-        "kaizen": "未取得",
-        "years": 3.8,
-        "lat": 34.76,
-        "lon": 135.524,
-        "score": 75,
-        "rank": "A",
-        "reason": "処遇改善加算未取得(+30) / 開設3.8年(+20) / 定員50名(+15) / 待機18名(+10)",
-        "color": "#e53935",
-        "status": "未接触"
+        "name": "各務原ひかり訪問介護", "corp": "医療法人ひかり会", "type": "訪問介護",
+        "pref": "岐阜県", "addr": "岐阜県各務原市那加桜町3-3", "phone": "058-333-4455",
+        "capacity": 30, "waitlist": 0, "kaizen": "取得済", "years": 12.0,
+        "lat": 35.397, "lon": 136.878, "score": -10, "rank": "C",
+        "reason": "過去加算取得歴あり(-10)",
+        "color": "#1e88e5", "status": "未接触"
       }
     },
     {
       "type": "Feature",
       "id": 3,
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          135.651,
-          34.814
-        ]
-      },
+      "geometry": { "type": "Point", "coordinates": [136.906, 35.181] },
       "properties": {
-        "name": "つながり障害福祉サービス",
-        "corp": "NPO法人つながり",
-        "type": "就労移行支援",
-        "addr": "大阪府枚方市岡東町6-6-6",
-        "phone": "072-456-7890",
-        "capacity": 20,
-        "waitlist": 3,
-        "kaizen": "未取得",
-        "years": 0.4,
-        "lat": 34.814,
-        "lon": 135.651,
-        "score": 50,
-        "rank": "A",
-        "reason": "処遇改善加算未取得(+30) / 開設0.4年(+20)",
-        "color": "#e53935",
-        "status": "未接触"
+        "name": "名古屋わかば就労支援センター", "corp": "NPO法人わかば", "type": "就労継続支援B型",
+        "pref": "愛知県", "addr": "愛知県名古屋市中村区名駅4-4", "phone": "052-111-2233",
+        "capacity": 30, "waitlist": 9, "kaizen": "未取得", "years": 1.1,
+        "lat": 35.181, "lon": 136.906, "score": 75, "rank": "A",
+        "reason": "処遇改善加算未取得(+30) / 開設1.1年(+20) / 定員30名(+15) / 待機9名(+10・目安)",
+        "color": "#e53935", "status": "未接触"
       }
     },
     {
       "type": "Feature",
       "id": 4,
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          135.569,
-          34.816
-        ]
-      },
+      "geometry": { "type": "Point", "coordinates": [136.803, 35.304] },
       "properties": {
-        "name": "さくらグループホーム",
-        "corp": "社会福祉法人さくら会",
-        "type": "認知症対応型グループホーム",
-        "addr": "大阪府茨木市双葉町7-7-7",
-        "phone": "072-567-8901",
-        "capacity": 18,
-        "waitlist": 0,
-        "kaizen": "未取得",
-        "years": 5.9,
-        "lat": 34.816,
-        "lon": 135.569,
-        "score": 30,
-        "rank": "B",
-        "reason": "処遇改善加算未取得(+30)",
-        "color": "#fb8c00",
-        "status": "未接触"
+        "name": "一宮なでしこ特別養護老人ホーム", "corp": "社会福祉法人なでしこ福祉会", "type": "特別養護老人ホーム",
+        "pref": "愛知県", "addr": "愛知県一宮市栄1-1", "phone": "0586-11-2233",
+        "capacity": 60, "waitlist": 20, "kaizen": "未取得", "years": 4.5,
+        "lat": 35.304, "lon": 136.803, "score": 85, "rank": "A",
+        "reason": "処遇改善加算未取得(+30) / 開設4.5年(+20) / 定員60名(+15) / 待機20名(+10)",
+        "color": "#e53935", "status": "未接触"
       }
     },
     {
       "type": "Feature",
       "id": 5,
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          135.361,
-          34.462
-        ]
-      },
+      "geometry": { "type": "Point", "coordinates": [137.156, 35.082] },
       "properties": {
-        "name": "光和訪問介護ステーション",
-        "corp": "医療法人光和会",
-        "type": "訪問介護",
-        "addr": "大阪府岸和田市宮本町8-8-8",
-        "phone": "0724-78-9012",
-        "capacity": 40,
-        "waitlist": 0,
-        "kaizen": "未取得",
-        "years": 10.1,
-        "lat": 34.462,
-        "lon": 135.361,
-        "score": 45,
-        "rank": "A",
-        "reason": "処遇改善加算未取得(+30) / 定員40名(+15)",
-        "color": "#e53935",
-        "status": "未接触"
+        "name": "豊田つばさ通所介護", "corp": "医療法人つばさ会", "type": "通所介護",
+        "pref": "愛知県", "addr": "愛知県豊田市喜多町5-5", "phone": "0565-11-2233",
+        "capacity": 45, "waitlist": 0, "kaizen": "取得済", "years": 15.0,
+        "lat": 35.082, "lon": 137.156, "score": -10, "rank": "C",
+        "reason": "過去加算取得歴あり(-10)",
+        "color": "#1e88e5", "status": "未接触"
       }
     },
     {
       "type": "Feature",
       "id": 6,
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          135.468,
-          34.782
-        ]
-      },
+      "geometry": { "type": "Point", "coordinates": [136.506, 34.719] },
       "properties": {
-        "name": "みのり特別養護老人ホーム",
-        "corp": "社会福祉法人みのり福祉会",
-        "type": "特別養護老人ホーム",
-        "addr": "大阪府豊中市曽根東町5-5-5",
-        "phone": "06-5678-9012",
-        "capacity": 80,
-        "waitlist": 5,
-        "kaizen": "取得済",
-        "years": 8.3,
-        "lat": 34.782,
-        "lon": 135.468,
-        "score": 5,
-        "rank": "C",
-        "reason": "過去加算取得歴あり(-10)",
-        "color": "#1e88e5",
-        "status": "未接触"
+        "name": "津あすなろ特別養護老人ホーム", "corp": "社会福祉法人あすなろ福祉会", "type": "特別養護老人ホーム",
+        "pref": "三重県", "addr": "三重県津市栄町1-1", "phone": "059-111-2233",
+        "capacity": 50, "waitlist": 16, "kaizen": "未取得", "years": 2.9,
+        "lat": 34.719, "lon": 136.506, "score": 75, "rank": "A",
+        "reason": "処遇改善加算未取得(+30) / 開設2.9年(+20) / 定員50名(+15) / 待機16名(+10)",
+        "color": "#e53935", "status": "未接触"
       }
     },
     {
       "type": "Feature",
       "id": 7,
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          135.482,
-          34.573
-        ]
-      },
+      "geometry": { "type": "Point", "coordinates": [136.625, 34.965] },
       "properties": {
-        "name": "ひまわりグループホーム",
-        "corp": "社会福祉法人ひまわり会",
-        "type": "認知症対応型グループホーム",
-        "addr": "大阪府堺市堺区新堀町2-2-2",
-        "phone": "072-234-5678",
-        "capacity": 18,
-        "waitlist": 0,
-        "kaizen": "取得済",
-        "years": 25.1,
-        "lat": 34.573,
-        "lon": 135.482,
-        "score": -15,
-        "rank": "C",
-        "reason": "過去加算取得歴あり(-10) / 老舗小規模(-5)",
-        "color": "#1e88e5",
-        "status": "未接触"
+        "name": "四日市みらい就労移行支援", "corp": "NPO法人みらい", "type": "就労移行支援",
+        "pref": "三重県", "addr": "三重県四日市市諏訪町2-2", "phone": "059-222-3344",
+        "capacity": 22, "waitlist": 2, "kaizen": "未取得", "years": 0.8,
+        "lat": 34.965, "lon": 136.625, "score": 50, "rank": "A",
+        "reason": "処遇改善加算未取得(+30) / 開設0.8年(+20)",
+        "color": "#e53935", "status": "未接触"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 8,
+      "geometry": { "type": "Point", "coordinates": [136.526, 34.577] },
+      "properties": {
+        "name": "松阪ほほえみグループホーム", "corp": "社会福祉法人ほほえみ会", "type": "グループホーム",
+        "pref": "三重県", "addr": "三重県松阪市京町3-3", "phone": "0598-11-2233",
+        "capacity": 18, "waitlist": 0, "kaizen": "未取得", "years": 7.2,
+        "lat": 34.577, "lon": 136.526, "score": 30, "rank": "B",
+        "reason": "処遇改善加算未取得(+30)",
+        "color": "#fb8c00", "status": "未接触"
       }
     }
   ]
 };
+
+// ※紹介元レイヤー：WAM NET・医療機能情報提供制度・自治体公開情報を投入する想定のデモデータ（実データ未投入）
+// field: 障がい福祉／介護保険　priority: true=★最優先カテゴリ（相談支援・精神科病院・ケアマネ・病院地域連携室）
+const REFERRAL_CATEGORIES = {
+  "相談支援事業所":       { color:"#43a047", field:"障がい福祉", priority:true  },
+  "精神科病院":           { color:"#8e24aa", field:"障がい福祉", priority:true  },
+  "ケアマネ事業所":       { color:"#00897b", field:"介護保険",   priority:true  },
+  "病院(地域連携室・MSW)": { color:"#3949ab", field:"介護保険",   priority:true  },
+  "地域包括支援センター": { color:"#7cb342", field:"介護保険",   priority:false },
+  "行政窓口":             { color:"#757575", field:"共通",       priority:false },
+  "特別支援学校":         { color:"#f57f17", field:"障がい福祉", priority:false },
+};
+
+const REFERRAL_DATA = [
+  { id:'r0', name:"岐阜市相談支援センター",       category:"相談支援事業所",        pref:"岐阜県", addr:"岐阜県岐阜市神田町1-1",   phone:"058-211-1000", lat:35.423, lon:136.7605 },
+  { id:'r1', name:"岐阜こころのクリニック",       category:"精神科病院",            pref:"岐阜県", addr:"岐阜県岐阜市金町2-2",     phone:"058-212-2000", lat:35.427, lon:136.755  },
+  { id:'r2', name:"大垣居宅介護支援センター",     category:"ケアマネ事業所",        pref:"岐阜県", addr:"岐阜県大垣市高屋町3-3",   phone:"0584-23-1000", lat:35.360, lon:136.618  },
+  { id:'r3', name:"各務原市地域包括支援センター", category:"地域包括支援センター", pref:"岐阜県", addr:"岐阜県各務原市那加不動丘4-4", phone:"058-383-1000", lat:35.399, lon:136.881  },
+  { id:'r4', name:"名古屋障害者相談支援センター", category:"相談支援事業所",        pref:"愛知県", addr:"愛知県名古屋市中区栄5-5", phone:"052-961-1000", lat:35.170, lon:136.908  },
+  { id:'r5', name:"名古屋中央病院 地域連携室",   category:"病院(地域連携室・MSW)", pref:"愛知県", addr:"愛知県名古屋市中区三の丸6-6", phone:"052-961-2000", lat:35.183, lon:136.900  },
+  { id:'r6', name:"一宮居宅介護支援事業所",       category:"ケアマネ事業所",        pref:"愛知県", addr:"愛知県一宮市本町7-7",     phone:"0586-73-1000", lat:35.306, lon:136.799  },
+  { id:'r7', name:"豊田市障害福祉課",             category:"行政窓口",              pref:"愛知県", addr:"愛知県豊田市西町8-8",     phone:"0565-34-1000", lat:35.083, lon:137.153  },
+  { id:'r8', name:"津こころのクリニック",         category:"精神科病院",            pref:"三重県", addr:"三重県津市桜橋9-9",       phone:"059-224-1000", lat:34.721, lon:136.510  },
+  { id:'r9', name:"津居宅介護支援センター",       category:"ケアマネ事業所",        pref:"三重県", addr:"三重県津市丸之内10-10",   phone:"059-224-2000", lat:34.717, lon:136.503  },
+  { id:'r10', name:"四日市特別支援学校",           category:"特別支援学校",          pref:"三重県", addr:"三重県四日市市日永11-11", phone:"059-345-1000", lat:34.960, lon:136.628  },
+  { id:'r11', name:"松阪市地域包括支援センター", category:"地域包括支援センター", pref:"三重県", addr:"三重県松阪市殿町12-12",   phone:"0598-53-1000", lat:34.575, lon:136.530  },
+];
 const STATUS_COLORS = {"未接触": "#546e7a", "接触済": "#1565c0", "提案中": "#e65100", "成約": "#2e7d32"};
 const STATUS_LIST   = ["未接触", "接触済", "提案中", "成約"];
 const RANK_COLOR    = {A:"#e53935",B:"#fb8c00",C:"#1e88e5"};
@@ -355,26 +290,94 @@ const data = RAW_DATA.features.map(f => {
 });
 
 // 地図初期化
-const map = L.map('map').setView([34.686, 135.520], 10);
+const map = L.map('map').setView([35.15, 136.75], 9);
 L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
   attribution:'© OpenStreetMap © CARTO', maxZoom:18
 }).addTo(map);
 
 let layerGroup = L.layerGroup().addTo(map);
+let refLayerGroup = L.layerGroup().addTo(map);
 let markerMap = {};
 let activeId = null;
 
+// 紹介元カテゴリ フィルタON/OFF状態（初期値：全カテゴリ表示）
+const refCategoryState = {};
+Object.keys(REFERRAL_CATEGORIES).forEach(c => refCategoryState[c] = true);
+
 function getVisible() {
+  const pv = document.getElementById('prefFilter').value;
   const rv = document.getElementById('rankFilter').value;
   const tv = document.getElementById('typeFilter').value;
   const sv = document.getElementById('statusFilter').value;
   return data.filter(f => {
     const p = f.properties;
+    const pm = pv==='ALL'||p.pref===pv;
     const rm = rv==='ALL'||(rv==='AB'&&(p.rank==='A'||p.rank==='B'))||p.rank===rv;
     const tm = tv==='ALL'||p.type.includes(tv);
     const sm = sv==='ALL'||p.status===sv;
-    return rm && tm && sm;
+    return pm && rm && tm && sm;
   }).sort((a,b) => b.properties.score - a.properties.score);
+}
+
+function getVisibleReferrals() {
+  const masterOn = document.getElementById('refMasterToggle').checked;
+  if (!masterOn) return [];
+  const pv = document.getElementById('prefFilter').value;
+  return REFERRAL_DATA.filter(r => {
+    if (!refCategoryState[r.category]) return false;
+    if (pv!=='ALL' && r.pref!==pv) return false;
+    return true;
+  });
+}
+
+function makeRefIcon(r) {
+  const cat = REFERRAL_CATEGORIES[r.category];
+  const size = cat.priority ? 16 : 12;
+  return L.divIcon({
+    className:'',
+    html:`<div class="dot diamond" style="width:${size}px;height:${size}px;background:${cat.color};border:${cat.priority?'2.5px solid #fff':'1.5px solid rgba(255,255,255,.6)'};box-shadow:0 2px 6px rgba(0,0,0,.6);"></div>`,
+    iconSize:[size,size], iconAnchor:[size/2,size/2],
+  });
+}
+
+function makeRefPopupHTML(r) {
+  const cat = REFERRAL_CATEGORIES[r.category];
+  return `<div class="popup-wrap">
+    <div class="popup-title">${cat.priority?'★ ':''}${r.name}</div>
+    <div style="font-size:11px;color:#666;margin-bottom:8px">📍紹介元 ／ ${r.category}${cat.priority?'（最優先カテゴリ）':''}</div>
+    <table class="popup-table">
+      <tr><td>分野</td><td>${cat.field}</td></tr>
+      <tr><td>住所</td><td>${r.addr}</td></tr>
+      <tr><td>電話</td><td><a href="tel:${r.phone}" style="color:#1565c0">${r.phone}</a></td></tr>
+    </table>
+    <div style="margin-top:8px;font-size:10px;color:#999">※デモデータ（WAM NET等の実データ未投入）</div>
+  </div>`;
+}
+
+function renderReferrals() {
+  refLayerGroup.clearLayers();
+  const visible = getVisibleReferrals();
+  document.getElementById('ref-count').textContent = visible.length;
+  visible.forEach(r => {
+    L.marker([r.lat, r.lon], {icon: makeRefIcon(r)})
+      .bindPopup(makeRefPopupHTML(r), {maxWidth:260,className:''})
+      .addTo(refLayerGroup);
+  });
+}
+
+function renderRefCategoryToggles() {
+  const box = document.getElementById('ref-category-toggles');
+  box.innerHTML = Object.entries(REFERRAL_CATEGORIES).map(([name,cat]) => `
+    <label class="ref-chip${cat.priority?' priority':''}">
+      <input type="checkbox" data-cat="${name}" ${refCategoryState[name]?'checked':''}>
+      <span class="dot diamond" style="background:${cat.color}"></span>${cat.priority?'★':''}${name}
+    </label>`).join('');
+  box.querySelectorAll('input[data-cat]').forEach(cb => {
+    cb.addEventListener('change', () => {
+      refCategoryState[cb.dataset.cat] = cb.checked;
+      renderReferrals();
+    });
+  });
 }
 
 function makeIcon(p, active=false) {
@@ -479,25 +482,51 @@ document.getElementById('csv-btn').onclick = () => {
   a.click();
 };
 
-['rankFilter','typeFilter','statusFilter'].forEach(id =>
-  document.getElementById(id).addEventListener('change', () => { activeId=null; render(); })
+['prefFilter','rankFilter','typeFilter','statusFilter'].forEach(id =>
+  document.getElementById(id).addEventListener('change', () => { activeId=null; render(); renderReferrals(); })
 );
+document.getElementById('refMasterToggle').addEventListener('change', renderReferrals);
+
+// 紹介元CSV出力
+function exportReferralCSV() {
+  const visible = getVisibleReferrals();
+  const cols = ['名称','分野','カテゴリ','最優先','都道府県','住所','電話番号'];
+  const rows = visible.map(r => {
+    const cat = REFERRAL_CATEGORIES[r.category];
+    return [r.name,cat.field,r.category,cat.priority?'★':'',r.pref,r.addr,r.phone]
+      .map(v => `"${String(v).replace(/"/g,'""')}"`).join(',');
+  });
+  const csv = '﻿' + cols.join(',') + '\n' + rows.join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8'}));
+  a.download = '弦システム_紹介元リスト_' + new Date().toISOString().slice(0,10).replace(/-/g,'') + '.csv';
+  a.click();
+}
+document.getElementById('ref-csv-btn').onclick = exportReferralCSV;
 
 // 凡例
 const legend = L.control({position:'bottomright'});
 legend.onAdd = () => {
   const d = L.DomUtil.create('div','legend');
-  d.innerHTML = `<b>優先度ランク</b><br>
+  const refRows = Object.entries(REFERRAL_CATEGORIES).map(([name,cat]) =>
+    `<span class="dot diamond" style="background:${cat.color}"></span>${cat.priority?'★':''}${name}<br>`
+  ).join('');
+  d.innerHTML = `<b>優先度ランク（競合・供給側）</b><br>
     <span class="dot" style="background:#e53935"></span>A：即アプローチ<br>
     <span class="dot" style="background:#fb8c00"></span>B：準優先<br>
     <span class="dot" style="background:#1e88e5"></span>C：様子見<br>
+    <hr style="border-color:#30363d;margin:5px 0">
+    <b>紹介元（◆＝ひし形・★最優先カテゴリ）</b><br>
+    ${refRows}
     <hr style="border-color:#30363d;margin:5px 0">
     <span style="font-size:10px;color:#8b949e">状況はクリックで変更・自動保存</span>`;
   return d;
 };
 legend.addTo(map);
 
+renderRefCategoryToggles();
 render();
+renderReferrals();
 </script>
 </body>
 </html>
