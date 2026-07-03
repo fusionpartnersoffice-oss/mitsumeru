@@ -320,6 +320,28 @@
     padding: 3px 10px; font-size: 10px; letter-spacing: 1px;
     margin-left: 6px; vertical-align: middle;
   }
+
+  /* ===== 音声入力 ===== */
+  .voice-btn {
+    padding: 9px 12px;
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    border-radius: 4px;
+    font-size: 17px;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.2s;
+    line-height: 1;
+  }
+  .voice-btn.recording {
+    background: var(--red);
+    animation: voicePulse 1s ease-in-out infinite;
+  }
+  @keyframes voicePulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.55; }
+  }
 </style>
 </head>
 <body>
@@ -484,7 +506,10 @@
       </div>
       <div class="field">
         <label>内容</label>
-        <textarea id="memo-content" placeholder="気づいたこと、起きたこと、ボヤキをそのまま入力"></textarea>
+        <div style="display:flex;gap:8px;align-items:flex-start;">
+          <textarea id="memo-content" placeholder="気づいたこと、起きたこと、ボヤキをそのまま入力" style="flex:1;"></textarea>
+          <button id="voice-btn-memo-content" class="voice-btn" onclick="toggleVoiceInput('memo-content','voice-btn-memo-content')" title="音声入力（タップで開始／停止）">🎤</button>
+        </div>
       </div>
       <button class="btn-primary" onclick="addMemo()">追加する</button>
     </div>
@@ -508,7 +533,10 @@
           <label style="margin:0;">20字以内で</label>
           <span id="three-summary-count" style="font-size:11px;color:var(--text3);">0/20</span>
         </div>
-        <textarea id="three-summary" maxlength="20" oninput="updateCharCount('three-summary','three-summary-count',20)" placeholder="例：上司に怒鳴られた" style="min-height:60px;resize:none;"></textarea>
+        <div style="display:flex;gap:8px;align-items:flex-start;">
+          <textarea id="three-summary" maxlength="20" oninput="updateCharCount('three-summary','three-summary-count',20)" placeholder="例：上司に怒鳴られた" style="flex:1;min-height:60px;resize:none;"></textarea>
+          <button id="voice-btn-three-summary" class="voice-btn" onclick="toggleVoiceInput('three-summary','voice-btn-three-summary')" title="音声入力（タップで開始／停止）">🎤</button>
+        </div>
       </div>
       <button class="btn-primary" onclick="goThreeStep(2)">次へ</button>
     </div>
@@ -529,7 +557,10 @@
           <label style="margin:0;">20字以内で</label>
           <span id="three-action-count" style="font-size:11px;color:var(--text3);">0/20</span>
         </div>
-        <textarea id="three-action" maxlength="20" oninput="updateCharCount('three-action','three-action-count',20)" placeholder="例：トイレで5分一人になる" style="min-height:60px;resize:none;"></textarea>
+        <div style="display:flex;gap:8px;align-items:flex-start;">
+          <textarea id="three-action" maxlength="20" oninput="updateCharCount('three-action','three-action-count',20)" placeholder="例：トイレで5分一人になる" style="flex:1;min-height:60px;resize:none;"></textarea>
+          <button id="voice-btn-three-action" class="voice-btn" onclick="toggleVoiceInput('three-action','voice-btn-three-action')" title="音声入力（タップで開始／停止）">🎤</button>
+        </div>
       </div>
       <button class="btn-secondary" onclick="setThreeAction('何もしない')" style="margin-bottom:8px;">何もしないと決める</button>
       <button class="btn-primary" onclick="completeThreeMin()">完了</button>
@@ -612,7 +643,10 @@
     </div>
     <div class="field">
       <label>具体的に何がありましたか？</label>
-      <textarea id="m-noise-detail" placeholder="誰のどんな言葉・行動に削られたか、事実だけを吐き出す"></textarea>
+      <div style="display:flex;gap:8px;align-items:flex-start;">
+        <textarea id="m-noise-detail" placeholder="誰のどんな言葉・行動に削られたか、事実だけを吐き出す" style="flex:1;"></textarea>
+        <button id="voice-btn-m-noise-detail" class="voice-btn" onclick="toggleVoiceInput('m-noise-detail','voice-btn-m-noise-detail')" title="音声入力（タップで開始／停止）">🎤</button>
+      </div>
     </div>
   </div>
 
@@ -631,7 +665,10 @@
     </div>
     <div class="field">
       <label>今日の一言（任意）</label>
-      <textarea id="m-want" oninput="saveMorning()" placeholder="面接前で緊張している、など。なければ空欄でOK" style="min-height:60px;"></textarea>
+      <div style="display:flex;gap:8px;align-items:flex-start;">
+        <textarea id="m-want" oninput="saveMorning()" placeholder="面接前で緊張している、など。なければ空欄でOK" style="flex:1;min-height:60px;"></textarea>
+        <button id="voice-btn-m-want" class="voice-btn" onclick="toggleVoiceInput('m-want','voice-btn-m-want')" title="音声入力（タップで開始／停止）">🎤</button>
+      </div>
     </div>
   </div>
 
@@ -835,6 +872,48 @@ function setNowTime() {
   const m = String(now.getMinutes()).padStart(2,'0');
   const el = document.getElementById('memo-time');
   if (el) el.value = `${h}:${m}`;
+}
+
+// ===== 音声入力（Web Speech API・音声データは保存せずその場でテキスト化するのみ・全プラン共通） =====
+let _voiceRecognizer = null;
+function toggleVoiceInput(targetId, btnId) {
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    alert('このブラウザは音声入力に対応していません。\nChrome または Edge をお使いください。');
+    return;
+  }
+  const btn = document.getElementById(btnId);
+  if (_voiceRecognizer) {
+    _voiceRecognizer.stop();
+    return;
+  }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  _voiceRecognizer = new SR();
+  _voiceRecognizer.lang = 'ja-JP';
+  _voiceRecognizer.interimResults = false;
+  _voiceRecognizer.continuous = true;
+  if (btn) { btn.textContent = '⏹'; btn.classList.add('recording'); }
+  _voiceRecognizer.onresult = function(e) {
+    const target = document.getElementById(targetId);
+    if (!target) return;
+    let transcript = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) transcript += e.results[i][0].transcript;
+    }
+    if (transcript) {
+      target.value = (target.value ? target.value + '\n' : '') + transcript;
+      target.dispatchEvent(new Event('input'));
+    }
+  };
+  _voiceRecognizer.onerror = function(e) {
+    if (btn) { btn.textContent = '🎤'; btn.classList.remove('recording'); }
+    _voiceRecognizer = null;
+    if (e.error !== 'aborted' && e.error !== 'no-speech') alert('音声入力エラー：' + e.error);
+  };
+  _voiceRecognizer.onend = function() {
+    if (btn) { btn.textContent = '🎤'; btn.classList.remove('recording'); }
+    _voiceRecognizer = null;
+  };
+  _voiceRecognizer.start();
 }
 
 function addMemo() {

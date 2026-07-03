@@ -697,11 +697,17 @@
     <div class="section-title">👤 基本情報</div>
     <div class="field">
       <label>名前</label>
-      <input type="text" id="p-name" placeholder="例：柴山 靖章">
+      <div style="display:flex;gap:8px;align-items:flex-start;">
+        <input type="text" id="p-name" placeholder="例：柴山 靖章">
+        <button id="voice-btn-p-name" class="voice-btn" onclick="toggleVoiceInput('p-name','voice-btn-p-name')" title="音声入力（タップで開始／停止）">🎤</button>
+      </div>
     </div>
     <div class="field">
       <label>役割・ポジション</label>
-      <input type="text" id="p-role" placeholder="例：代表 / 組織再設計アーキテクト">
+      <div style="display:flex;gap:8px;align-items:flex-start;">
+        <input type="text" id="p-role" placeholder="例：代表 / 組織再設計アーキテクト">
+        <button id="voice-btn-p-role" class="voice-btn" onclick="toggleVoiceInput('p-role','voice-btn-p-role')" title="音声入力（タップで開始／停止）">🎤</button>
+      </div>
     </div>
   </div>
 
@@ -812,15 +818,24 @@
     <div class="section-title">📝 キャリアアンカー・強み・弱み</div>
     <div class="field">
       <label>キャリアアンカー（何があっても譲れないもの）</label>
-      <textarea id="p-anchor" placeholder="例：専門職能、管理職能、安全安定など" style="min-height:60px;"></textarea>
+      <div style="display:flex;gap:8px;align-items:flex-start;">
+        <textarea id="p-anchor" placeholder="例：専門職能、管理職能、安全安定など" style="flex:1;min-height:60px;"></textarea>
+        <button id="voice-btn-p-anchor" class="voice-btn" onclick="toggleVoiceInput('p-anchor','voice-btn-p-anchor')" title="音声入力（タップで開始／停止）">🎤</button>
+      </div>
     </div>
     <div class="field">
       <label>MUST（好きなこと・得意なこと）</label>
-      <textarea id="p-must" placeholder="例：組織設計、数値分析、人材育成" style="min-height:60px;"></textarea>
+      <div style="display:flex;gap:8px;align-items:flex-start;">
+        <textarea id="p-must" placeholder="例：組織設計、数値分析、人材育成" style="flex:1;min-height:60px;"></textarea>
+        <button id="voice-btn-p-must" class="voice-btn" onclick="toggleVoiceInput('p-must','voice-btn-p-must')" title="音声入力（タップで開始／停止）">🎤</button>
+      </div>
     </div>
     <div class="field">
       <label>NEVER（嫌いなこと・苦手なこと）</label>
-      <textarea id="p-never" placeholder="例：精神論、穴埋め作業、優先順位づけ" style="min-height:60px;"></textarea>
+      <div style="display:flex;gap:8px;align-items:flex-start;">
+        <textarea id="p-never" placeholder="例：精神論、穴埋め作業、優先順位づけ" style="flex:1;min-height:60px;"></textarea>
+        <button id="voice-btn-p-never" class="voice-btn" onclick="toggleVoiceInput('p-never','voice-btn-p-never')" title="音声入力（タップで開始／停止）">🎤</button>
+      </div>
     </div>
   </div>
 
@@ -906,7 +921,10 @@
     </div>
     <div class="field">
       <label>具体的に何がありましたか？</label>
-      <textarea id="m-noise-detail" placeholder="誰のどんな言葉・行動に削られたか、事実だけを吐き出す"></textarea>
+      <div style="display:flex;gap:8px;align-items:flex-start;">
+        <textarea id="m-noise-detail" placeholder="誰のどんな言葉・行動に削られたか、事実だけを吐き出す" style="flex:1;"></textarea>
+        <button id="voice-btn-m-noise-detail" class="voice-btn" onclick="toggleVoiceInput('m-noise-detail','voice-btn-m-noise-detail')" title="音声入力（タップで開始／停止）">🎤</button>
+      </div>
     </div>
   </div>
 
@@ -925,7 +943,10 @@
     </div>
     <div class="field">
       <label>今日の一言（任意）</label>
-      <textarea id="m-want" oninput="saveMorning()" placeholder="面接前で緊張している、など。なければ空欄でOK" style="min-height:60px;"></textarea>
+      <div style="display:flex;gap:8px;align-items:flex-start;">
+        <textarea id="m-want" oninput="saveMorning()" placeholder="面接前で緊張している、など。なければ空欄でOK" style="flex:1;min-height:60px;"></textarea>
+        <button id="voice-btn-m-want" class="voice-btn" onclick="toggleVoiceInput('m-want','voice-btn-m-want')" title="音声入力（タップで開始／停止）">🎤</button>
+      </div>
     </div>
   </div>
 
@@ -959,7 +980,10 @@
     </div>
     <div class="field" style="margin-top:12px;">
       <label>補足・追記（随時メモに書ききれなかったこと）</label>
-      <textarea id="e-supplement" oninput="saveEvening()" placeholder="随時メモで拾えなかった出来事や気づきがあれば追記してください。なければ空欄でOK" style="min-height:60px;"></textarea>
+      <div style="display:flex;gap:8px;align-items:flex-start;">
+        <textarea id="e-supplement" oninput="saveEvening()" placeholder="随時メモで拾えなかった出来事や気づきがあれば追記してください。なければ空欄でOK" style="flex:1;min-height:60px;"></textarea>
+        <button id="voice-btn-e-supplement" class="voice-btn" onclick="toggleVoiceInput('e-supplement','voice-btn-e-supplement')" title="音声入力（タップで開始／停止）">🎤</button>
+      </div>
     </div>
   </div>
 
@@ -1001,7 +1025,10 @@
         <button class="debug-btn" onclick="selectDebug(this,'d1','sankaku')">△</button>
         <button class="debug-btn" onclick="selectDebug(this,'d1','batsu')">✕</button>
       </div>
-      <textarea id="d1-reason" placeholder="理由・気づきを一言"></textarea>
+      <div style="display:flex;gap:8px;align-items:flex-start;">
+        <textarea id="d1-reason" placeholder="理由・気づきを一言" style="flex:1;"></textarea>
+        <button id="voice-btn-d1-reason" class="voice-btn" onclick="toggleVoiceInput('d1-reason','voice-btn-d1-reason')" title="音声入力（タップで開始／停止）">🎤</button>
+      </div>
     </div>
 
     <div class="debug-item">
@@ -1012,7 +1039,10 @@
         <button class="debug-btn" onclick="selectDebug(this,'d2','sankaku')">△</button>
         <button class="debug-btn" onclick="selectDebug(this,'d2','batsu')">✕</button>
       </div>
-      <textarea id="d2-reason" placeholder="理由・気づきを一言"></textarea>
+      <div style="display:flex;gap:8px;align-items:flex-start;">
+        <textarea id="d2-reason" placeholder="理由・気づきを一言" style="flex:1;"></textarea>
+        <button id="voice-btn-d2-reason" class="voice-btn" onclick="toggleVoiceInput('d2-reason','voice-btn-d2-reason')" title="音声入力（タップで開始／停止）">🎤</button>
+      </div>
     </div>
 
     <div class="debug-item">
@@ -1023,7 +1053,10 @@
         <button class="debug-btn" onclick="selectDebug(this,'d3','sankaku')">△</button>
         <button class="debug-btn" onclick="selectDebug(this,'d3','batsu')">✕</button>
       </div>
-      <textarea id="d3-reason" placeholder="理由・気づきを一言"></textarea>
+      <div style="display:flex;gap:8px;align-items:flex-start;">
+        <textarea id="d3-reason" placeholder="理由・気づきを一言" style="flex:1;"></textarea>
+        <button id="voice-btn-d3-reason" class="voice-btn" onclick="toggleVoiceInput('d3-reason','voice-btn-d3-reason')" title="音声入力（タップで開始／停止）">🎤</button>
+      </div>
     </div>
 
     <div class="debug-item">
@@ -1034,7 +1067,10 @@
         <button class="debug-btn" onclick="selectDebug(this,'d4','sankaku')">△</button>
         <button class="debug-btn" onclick="selectDebug(this,'d4','batsu')">✕</button>
       </div>
-      <textarea id="d4-reason" placeholder="理由・気づきを一言"></textarea>
+      <div style="display:flex;gap:8px;align-items:flex-start;">
+        <textarea id="d4-reason" placeholder="理由・気づきを一言" style="flex:1;"></textarea>
+        <button id="voice-btn-d4-reason" class="voice-btn" onclick="toggleVoiceInput('d4-reason','voice-btn-d4-reason')" title="音声入力（タップで開始／停止）">🎤</button>
+      </div>
     </div>
 
     <div class="debug-item">
@@ -1045,7 +1081,10 @@
         <button class="debug-btn" onclick="selectDebug(this,'d5','sankaku')">△</button>
         <button class="debug-btn" onclick="selectDebug(this,'d5','batsu')">✕</button>
       </div>
-      <textarea id="d5-reason" placeholder="理由・気づきを一言"></textarea>
+      <div style="display:flex;gap:8px;align-items:flex-start;">
+        <textarea id="d5-reason" placeholder="理由・気づきを一言" style="flex:1;"></textarea>
+        <button id="voice-btn-d5-reason" class="voice-btn" onclick="toggleVoiceInput('d5-reason','voice-btn-d5-reason')" title="音声入力（タップで開始／停止）">🎤</button>
+      </div>
     </div>
   </div>
 
@@ -1081,11 +1120,17 @@
     <button onclick="addAdvanceRow()" style="margin-top:10px;margin-bottom:16px;padding:6px 14px;border-radius:6px;border:0.5px solid var(--border);background:var(--bg2);font-size:12px;cursor:pointer;color:var(--text);">＋ 行を追加</button>
     <div class="field">
       <label>遅延イベント（先送りタスク）</label>
-      <textarea id="e-delay" oninput="saveEvening()" placeholder="先送りしたタスクを記録"></textarea>
+      <div style="display:flex;gap:8px;align-items:flex-start;">
+        <textarea id="e-delay" oninput="saveEvening()" placeholder="先送りしたタスクを記録" style="flex:1;"></textarea>
+        <button id="voice-btn-e-delay" class="voice-btn" onclick="toggleVoiceInput('e-delay','voice-btn-e-delay')" title="音声入力（タップで開始／停止）">🎤</button>
+      </div>
     </div>
     <div class="field">
       <label>明日のTry100・読む本・参考URL</label>
-      <textarea id="e-try100" oninput="saveEvening()" placeholder="明日やりたいこと、読みたい本、NotebookLMに入れたい資料など箇条書きで"></textarea>
+      <div style="display:flex;gap:8px;align-items:flex-start;">
+        <textarea id="e-try100" oninput="saveEvening()" placeholder="明日やりたいこと、読みたい本、NotebookLMに入れたい資料など箇条書きで" style="flex:1;"></textarea>
+        <button id="voice-btn-e-try100" class="voice-btn" onclick="toggleVoiceInput('e-try100','voice-btn-e-try100')" title="音声入力（タップで開始／停止）">🎤</button>
+      </div>
     </div>
   </div>
 
@@ -1093,11 +1138,17 @@
     <div class="section-title">フィードバック</div>
     <div class="field">
       <label>SuccessOSへのフィードバック</label>
-      <textarea id="e-feedback" oninput="saveEvening()" placeholder="システムへの気づき・改善点"></textarea>
+      <div style="display:flex;gap:8px;align-items:flex-start;">
+        <textarea id="e-feedback" oninput="saveEvening()" placeholder="システムへの気づき・改善点" style="flex:1;"></textarea>
+        <button id="voice-btn-e-feedback" class="voice-btn" onclick="toggleVoiceInput('e-feedback','voice-btn-e-feedback')" title="音声入力（タップで開始／停止）">🎤</button>
+      </div>
     </div>
     <div class="field">
       <label>NotebookLMのまとめコメント（あれば貼り付け）</label>
-      <textarea id="e-notebooklm" oninput="saveEvening()" placeholder="HiNotesやNotebookLMの要約テキストをそのままペースト。なければ空欄でOK"></textarea>
+      <div style="display:flex;gap:8px;align-items:flex-start;">
+        <textarea id="e-notebooklm" oninput="saveEvening()" placeholder="HiNotesやNotebookLMの要約テキストをそのままペースト。なければ空欄でOK" style="flex:1;"></textarea>
+        <button id="voice-btn-e-notebooklm" class="voice-btn" onclick="toggleVoiceInput('e-notebooklm','voice-btn-e-notebooklm')" title="音声入力（タップで開始／停止）">🎤</button>
+      </div>
     </div>
   </div>
 

@@ -285,6 +285,31 @@
   .gate-btn{width:100%;padding:11px;border-radius:var(--radius);font-size:.92rem;font-weight:700;cursor:pointer;font-family:inherit;background:var(--accent);color:#1a0029;border:none;}
   .gate-btn:hover{opacity:.9;}
   @media print { .gate { display: none !important; } }
+
+  /* ===== 音声入力 ===== */
+  .voice-btn {
+    padding: 9px 12px;
+    background: var(--accent);
+    color: #1a0029;
+    border: none;
+    border-radius: 6px;
+    font-size: 17px;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.2s;
+    line-height: 1;
+  }
+  .voice-btn.recording {
+    background: var(--danger);
+    color: #fff;
+    animation: voicePulse 1s ease-in-out infinite;
+  }
+  @keyframes voicePulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.55; }
+  }
+  .voice-row { display: flex; gap: 8px; align-items: flex-start; }
+  .voice-row input, .voice-row textarea { flex: 1; }
 </style>
 </head>
 <body>
@@ -351,7 +376,10 @@
     <div class="info-form">
       <div class="form-group">
         <label>組織名・施設名（任意）</label>
-        <input type="text" id="orgName" placeholder="例：〇〇介護老人保健施設">
+        <div class="voice-row">
+          <input type="text" id="orgName" placeholder="例：〇〇介護老人保健施設">
+          <button id="voice-btn-orgName" class="voice-btn" onclick="toggleVoiceInput('orgName','voice-btn-orgName')" title="音声入力（タップで開始／停止）">🎤</button>
+        </div>
       </div>
       <div class="form-group">
         <label>あなたの役職</label>
@@ -367,7 +395,10 @@
       </div>
       <div class="form-group">
         <label>今、一番困っていること・解決したい問題</label>
-        <textarea id="initialInput" placeholder="例：スタッフが報告を上げてこない。何度言っても改善しない。なぜそうなっているのかわからない。"></textarea>
+        <div class="voice-row">
+          <textarea id="initialInput" placeholder="例：スタッフが報告を上げてこない。何度言っても改善しない。なぜそうなっているのかわからない。"></textarea>
+          <button id="voice-btn-initialInput" class="voice-btn" onclick="toggleVoiceInput('initialInput','voice-btn-initialInput')" title="音声入力（タップで開始／停止）">🎤</button>
+        </div>
       </div>
       <button class="start-btn" id="startBtn" onclick="startDrill()">掘り下げを始める →</button>
     </div>
@@ -400,8 +431,9 @@
           <div class="ai-text" id="aiQuestion"><span class="loading-dots">考えています</span></div>
         </div>
 
-        <div class="answer-area" id="answerArea" style="display:none">
+        <div class="answer-area voice-row" id="answerArea" style="display:none">
           <textarea id="drillAnswer" placeholder="思ったまま答えてください。短くても大丈夫です。"></textarea>
+          <button id="voice-btn-drillAnswer" class="voice-btn" onclick="toggleVoiceInput('drillAnswer','voice-btn-drillAnswer')" title="音声入力（タップで開始／停止）">🎤</button>
         </div>
 
         <button class="next-btn" id="nextBtn" style="display:none" onclick="nextRound()">次へ →</button>
@@ -483,6 +515,48 @@
 </div>
 
 <script>
+// ── 音声入力（Web Speech API・音声データは保存せずその場でテキスト化するのみ） ──
+let _voiceRecognizer = null;
+function toggleVoiceInput(targetId, btnId) {
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    alert('このブラウザは音声入力に対応していません。\nChrome または Edge をお使いください。');
+    return;
+  }
+  const btn = document.getElementById(btnId);
+  if (_voiceRecognizer) {
+    _voiceRecognizer.stop();
+    return;
+  }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  _voiceRecognizer = new SR();
+  _voiceRecognizer.lang = 'ja-JP';
+  _voiceRecognizer.interimResults = false;
+  _voiceRecognizer.continuous = true;
+  if (btn) { btn.textContent = '⏹'; btn.classList.add('recording'); }
+  _voiceRecognizer.onresult = function(e) {
+    const target = document.getElementById(targetId);
+    if (!target) return;
+    let transcript = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) transcript += e.results[i][0].transcript;
+    }
+    if (transcript) {
+      target.value = (target.value ? target.value + '\n' : '') + transcript;
+      target.dispatchEvent(new Event('input'));
+    }
+  };
+  _voiceRecognizer.onerror = function(e) {
+    if (btn) { btn.textContent = '🎤'; btn.classList.remove('recording'); }
+    _voiceRecognizer = null;
+    if (e.error !== 'aborted' && e.error !== 'no-speech') alert('音声入力エラー：' + e.error);
+  };
+  _voiceRecognizer.onend = function() {
+    if (btn) { btn.textContent = '🎤'; btn.classList.remove('recording'); }
+    _voiceRecognizer = null;
+  };
+  _voiceRecognizer.start();
+}
+
 // ── Worker設定 ──
 const WORKER_URL = 'https://hibiki-worker.fusion-partners-office.workers.dev';
 const DEMO_MAX = 20;
