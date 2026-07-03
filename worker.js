@@ -39,6 +39,17 @@ export default {
     }
 
     const url = new URL(request.url);
+
+    // ===== 安全装置①：プライベート版データのKV分離移行（2026-07-03・一度きりの手動トリガー） =====
+    // ドライラン：対象キーの一覧のみ返す（書き込みなし）
+    if (url.searchParams.get('action') === 'migrate_private_dryrun') {
+      return handleMigratePrivate(env, { commit: false });
+    }
+    // 本実行：バックアップ→private_プレフィックスへコピー（既存の本番キーは無変更・削除しない）
+    if (url.searchParams.get('action') === 'migrate_private_commit') {
+      return handleMigratePrivate(env, { commit: true });
+    }
+
     const key = url.searchParams.get('key');
 
     if (!key) {
@@ -110,6 +121,68 @@ export default {
     }
   },
 };
+
+// ===== 安全装置①：プライベート版データのKV分離移行（2026-07-03） =====
+// mitsumeru_private.html は元々 mitsumeru_app.html と同一のKVキー（例：evening_2026-07-03）を
+// 共有していた。既存データを private_ プレフィックス配下へ一括コピーし、以後は物理的に分離する。
+// 対象プレフィックス（プライベート版が実際に書き込んでいた種別のみ。dispatch_・knowledge_* 等の
+// 他システム共有キーは対象外）。
+const MIGRATE_TARGET_PREFIXES = [
+  'evening_', 'morning_', 'memos_', 'output_', 'calendar_', 'delay_',
+  'profile_global', 'lv_global', 'fusionos_status_',
+];
+const MIGRATE_DONE_KEY = 'private_migration_done';
+const MIGRATE_BACKUP_KEY = 'mitsumeru_migration_backup_20260703';
+
+async function listAllKeys(kv) {
+  let keys = [];
+  let cursor;
+  do {
+    const res = await kv.list(cursor ? { cursor } : {});
+    keys = keys.concat(res.keys.map(k => k.name));
+    cursor = res.list_complete ? undefined : res.cursor;
+  } while (cursor);
+  return keys;
+}
+
+async function handleMigratePrivate(env, { commit }) {
+  const kv = getKV(env);
+  const headers = { ...CORS_HEADERS, 'Content-Type': 'application/json' };
+
+  const already = await kv.get(MIGRATE_DONE_KEY);
+  if (commit && already) {
+    return new Response(JSON.stringify({ ok: true, skipped: true, reason: 'already migrated', doneInfo: JSON.parse(already) }), { status: 200, headers });
+  }
+
+  const allKeys = await listAllKeys(kv);
+  const toMigrate = allKeys.filter(k =>
+    MIGRATE_TARGET_PREFIXES.some(p => k.startsWith(p)) && !k.startsWith('private_')
+  );
+
+  if (!commit) {
+    // ドライラン：対象キーの一覧のみ返す（KVへの書き込みは一切行わない）
+    return new Response(JSON.stringify({ ok: true, commit: false, targetCount: toMigrate.length, keys: toMigrate }), { status: 200, headers });
+  }
+
+  // 本実行：①バックアップ→②private_プレフィックスへコピー（元キーは削除しない＝本番側は無変更）
+  const backup = {};
+  for (const k of toMigrate) {
+    backup[k] = await kv.get(k);
+  }
+  await kv.put(MIGRATE_BACKUP_KEY, JSON.stringify(backup), { expirationTtl: 7776000 });
+
+  let copiedCount = 0;
+  for (const k of toMigrate) {
+    if (backup[k] === null || backup[k] === undefined) continue;
+    await kv.put('private_' + k, backup[k], { expirationTtl: 7776000 });
+    copiedCount++;
+  }
+
+  const doneInfo = { _ts: Date.now(), targetCount: toMigrate.length, copiedCount };
+  await kv.put(MIGRATE_DONE_KEY, JSON.stringify(doneInfo), { expirationTtl: 7776000 });
+
+  return new Response(JSON.stringify({ ok: true, commit: true, ...doneInfo, keys: toMigrate }), { status: 200, headers });
+}
 
 // JSTの今日の日付 YYYY-MM-DD を返す（Cronは22:00 UTCに発火＝JST翌日7:00）
 function jstDateStr() {
