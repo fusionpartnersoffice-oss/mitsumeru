@@ -1143,6 +1143,13 @@
         <button id="voice-btn-e-feedback" class="voice-btn" onclick="toggleVoiceInput('e-feedback','voice-btn-e-feedback')" title="音声入力（タップで開始／停止）">🎤</button>
       </div>
     </div>
+    <div class="field">
+      <label>NotebookLMからの気づき（次回の戦略に反映されます）</label>
+      <div style="display:flex;gap:8px;align-items:flex-start;">
+        <textarea id="e-notebooklm" oninput="saveEvening()" placeholder="NotebookLMでディープリサーチ・音声解説を聞いて気づいた点を書くと、翌日以降の「翌日戦略を生成する」に反映されます。なければ空欄でOK" style="flex:1;"></textarea>
+        <button id="voice-btn-e-notebooklm" class="voice-btn" onclick="toggleVoiceInput('e-notebooklm','voice-btn-e-notebooklm')" title="音声入力（タップで開始／停止）">🎤</button>
+      </div>
+    </div>
   </div>
 
 </div>
@@ -1394,7 +1401,7 @@ function insertIntoTextarea(id, text) {
 
 function saveEvening() {
   const data = { _ts: Date.now() };
-  ['e-supplement','e-tomorrow','e-delay','e-try100','e-feedback',
+  ['e-supplement','e-tomorrow','e-delay','e-try100','e-feedback','e-notebooklm',
    'd1-reason','d2-reason','d3-reason','d4-reason','d5-reason'].forEach(id => {
     const el = document.getElementById(id);
     if (el) data[id] = el.value;
@@ -1588,7 +1595,7 @@ function applyMorningData(d) {
 
 function applyEveningData(d) {
   if (!d) return;
-  ['e-supplement','e-tomorrow','e-delay','e-try100','e-feedback',
+  ['e-supplement','e-tomorrow','e-delay','e-try100','e-feedback','e-notebooklm',
    'd1-reason','d2-reason','d3-reason','d4-reason','d5-reason'].forEach(id => {
     const el = document.getElementById(id); if (el && d[id]!==undefined) el.value=d[id];
   });
@@ -1832,7 +1839,7 @@ async function changeTargetDate(newDate) {
     const el=document.getElementById(id); if(el) el.value=id==='m-sleep'?'23:00':id==='m-wake'?'07:00':'';
   });
   document.querySelectorAll('#m-noise-group .checkbox-item').forEach(l=>l.classList.remove('checked'));
-  ['e-supplement','e-tomorrow','e-delay','e-try100','e-feedback',
+  ['e-supplement','e-tomorrow','e-delay','e-try100','e-feedback','e-notebooklm',
    'd1-reason','d2-reason','d3-reason','d4-reason','d5-reason'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.value='';
   });
@@ -2577,6 +2584,7 @@ async function generateEvening() {
   const delay       = document.getElementById('e-delay').value.trim();
   const try100      = document.getElementById('e-try100').value.trim();
   const feedback    = document.getElementById('e-feedback').value.trim();
+  const notebooklm  = document.getElementById('e-notebooklm').value.trim();
 
   const p = memos.filter(m=>m.tag==='P').map(m=>m.content).join(' / ') || 'なし';
   const v = memos.filter(m=>m.tag==='V').map(m=>m.content).join(' / ') || 'なし';
@@ -2727,6 +2735,7 @@ HP/MP消耗内訳：ポモ${close.pomoTotal}個→HP-${close.hpFromPomo}${close.
 補足・追記：${supplement || 'なし'}
 明日の確定アポ：${tomorrow || 'なし'}
 先送りタスク（フラグ付き）：${delayWithFlags || 'なし'}
+${notebooklm ? `NotebookLMからの気づき（ディープリサーチ・音声解説で得た視点。この観点も踏まえて明日の戦略を考えてください）：${notebooklm}` : ''}
 ${aiScheduleSuggestion ? '\n' + aiScheduleSuggestion : ''}
 ---
 
@@ -2825,8 +2834,29 @@ function copySummaryBox(boxId, btnId) {
 }
 
 function copyForNotebookLM() {
-  const text = document.getElementById('output-markdown').textContent;
-  if (!text) { alert('まだ出力がありません。「翌日戦略を生成する」を実行してください。'); return; }
+  const strategyText = document.getElementById('output-markdown').textContent;
+  if (!strategyText) { alert('まだ出力がありません。「翌日戦略を生成する」を実行してください。'); return; }
+
+  const p = memos.filter(m=>m.tag==='P').map(m=>m.content).join(' / ') || 'なし';
+  const v = memos.filter(m=>m.tag==='V').map(m=>m.content).join(' / ') || 'なし';
+  const g = memos.filter(m=>m.tag==='G').map(m=>m.content).join(' / ') || 'なし';
+  const debugText = `役割:${debugScores.d1||'—'}、委譲:${debugScores.d2||'—'}、動機:${debugScores.d3||'—'}、資産:${debugScores.d4||'—'}、余白:${debugScores.d5||'—'}`;
+  const weeklyBox = document.getElementById('weekly-summary');
+  const weeklyText = (weeklyBox && weeklyBox.classList.contains('visible') && weeklyBox.textContent.trim()) ? weeklyBox.textContent.trim() : '';
+
+  const parts = [
+    `【${targetDate} の生データ】`,
+    `P（実績）：${p}`,
+    `V（ノイズ）：${v}`,
+    `G（気づき）：${g}`,
+    `デバッグ5項目：${debugText}`,
+    '',
+    '【翌日戦略（Claude生成）】',
+    strategyText
+  ];
+  if (weeklyText) parts.push('', '【直近7日分の週次サマリー】', weeklyText);
+  const text = parts.join('\n');
+
   navigator.clipboard.writeText(text).then(() => {
     const btn = document.getElementById('copy-nlm-btn');
     const orig = btn.textContent;
