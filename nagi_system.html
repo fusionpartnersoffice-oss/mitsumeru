@@ -222,6 +222,7 @@ tr:hover td{background:rgba(79,195,247,0.03);}
     <a href="./ta_scan.html" target="_blank" class="btn btn-secondary btn-sm" style="text-decoration:none;">🧭 TAスキャン</a>
     <a href="./pm_scan.html" target="_blank" class="btn btn-secondary btn-sm" style="text-decoration:none;">🎯 PMスキャン</a>
     <a href="./nagi_mq.html" target="_blank" class="btn btn-secondary btn-sm" style="text-decoration:none;">💰 資金データ入力</a>
+    <a href="./nagi_pipe.html" target="_blank" class="btn btn-secondary btn-sm" style="text-decoration:none;">📈 営業データ入力</a>
     <span style="width:1px;height:18px;background:var(--border);margin:0 4px;"></span>
     <button class="btn btn-success btn-sm" onclick="autoSyncAll()" style="background:var(--accent2);border-color:var(--accent2);">🔄 診断データを同期</button>
     <button class="btn btn-secondary btn-sm" onclick="openModal('modal-bulk-import')">📥 手動インポート</button>
@@ -364,17 +365,12 @@ tr:hover td{background:rgba(79,195,247,0.03);}
 <div class="page" id="page-pipe">
   <div class="print-page-title">📈 営業パイプライン</div>
   <div class="section">
-    <div class="section-title">📊 全事業所 パイプライン一覧</div>
-    <div id="pipe-summary"></div>
-  </div>
-  <div class="grid-2">
-    <div class="section">
-      <div class="section-title">🏆 成約率ランキング</div>
-      <div id="pipe-ranking"></div>
-    </div>
-    <div class="section">
-      <div class="section-title">📋 案件ステータス（全事業所計）</div>
-      <div id="pipe-status"></div>
+    <div class="card">
+      <p style="font-size:0.82rem;color:var(--sub);margin-bottom:14px;line-height:1.6;">
+        営業パイプライン（全事業所一覧・成約率ランキング・案件ステータス）は<b style="color:var(--text);">軸B営業モジュール「nagi_pipe.html」</b>に移行しました。
+        入力・閲覧ともに同一localStorageを共有しているため、羅針盤タブの📈営業シグナルはこのままご利用いただけます。
+      </p>
+      <a href="./nagi_pipe.html" target="_blank" class="btn btn-primary" style="text-decoration:none;display:inline-block;">📈 nagi_pipe.html を開く</a>
     </div>
   </div>
 </div>
@@ -565,21 +561,11 @@ tr:hover td{background:rgba(79,195,247,0.03);}
 
     <!-- パイプライン -->
     <div id="data-pipe" style="display:none;">
-      <p style="font-size:0.78rem;color:var(--sub);margin-bottom:10px;">NDB動線の実数を入力してください。</p>
-      <div class="form-group">
-        <label>事業所</label>
-        <select id="pipe-office-sel" onchange="loadPipeForm()" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:0.82rem;outline:none;width:100%;"></select>
-      </div>
-      <div class="form-row3">
-        <div class="form-group"><label>アプローチ数</label><input id="pipe-approach" type="number" placeholder="100"></div>
-        <div class="form-group"><label>問い合わせ数</label><input id="pipe-inquiry" type="number" placeholder="10"></div>
-        <div class="form-group"><label>見学数</label><input id="pipe-visit" type="number" placeholder="5"></div>
-      </div>
-      <div class="form-row">
-        <div class="form-group"><label>成約数</label><input id="pipe-contract" type="number" placeholder="2"></div>
-        <div class="form-group"><label>リピート数</label><input id="pipe-repeat" type="number" placeholder="2"></div>
-      </div>
-      <button class="btn btn-primary" onclick="savePipe()">💾 保存</button>
+      <p style="font-size:0.82rem;color:var(--sub);margin-bottom:14px;line-height:1.6;">
+        NDB動線（アプローチ→問い合わせ→見学→成約→リピート）の入力は<b style="color:var(--text);">軸B営業モジュール「nagi_pipe.html」</b>に移行しました。
+        保存すると同じlocalStorageを共有しているため、この羅針盤・📈営業タブに即時反映されます。
+      </p>
+      <a href="./nagi_pipe.html" target="_blank" class="btn btn-primary" style="text-decoration:none;display:inline-block;">📈 nagi_pipe.html を開いて入力する</a>
     </div>
   </div>
 </div>
@@ -1200,100 +1186,9 @@ function drawCross(containerId, points, opts){
 //  ダッシュボードレンダリング
 // ════════════════════════════════════════════════════
 
-// ── 営業パイプライン ──
-function renderPipeTab(){
-  const allOffices=getAllOffices();
-  const pipeRows=allOffices.map(o=>{
-    const p=getPipe(o.id);
-    if(!p) return null;
-    const corp=getCorps().find(c=>c.id===o.corpId);
-    const rate=n(p.visit)?n(p.contract)/n(p.visit):null;
-    return {corpName:corp?corp.name:'─',officeName:o.name,p,rate};
-  }).filter(Boolean);
-
-  // 全事業所パイプライン一覧
-  if(!pipeRows.length){
-    document.getElementById('pipe-summary').innerHTML='<div class="card"><div class="empty">パイプラインデータがありません。データ管理からパイプラインを入力してください。</div></div>';
-    document.getElementById('pipe-ranking').innerHTML='';
-    document.getElementById('pipe-status').innerHTML='';
-    return;
-  }
-
-  let summaryHTML='<div class="card"><div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:0.78rem;">';
-  summaryHTML+='<thead><tr style="border-bottom:1px solid var(--border);color:var(--sub);">';
-  summaryHTML+='<th style="text-align:left;padding:6px 8px;">法人</th><th style="text-align:left;padding:6px 8px;">事業所</th>';
-  summaryHTML+='<th style="text-align:center;padding:6px 8px;">アプローチ</th><th style="text-align:center;padding:6px 8px;">問い合わせ</th>';
-  summaryHTML+='<th style="text-align:center;padding:6px 8px;">見学</th><th style="text-align:center;padding:6px 8px;">成約</th>';
-  summaryHTML+='<th style="text-align:center;padding:6px 8px;">リピート</th><th style="text-align:center;padding:6px 8px;">成約率</th>';
-  summaryHTML+='</tr></thead><tbody>';
-  pipeRows.forEach(({corpName,officeName,p,rate})=>{
-    const rateStr=rate!==null?`<span style="font-weight:700;color:${rate>=0.3?'var(--accent2)':rate>=0.1?'var(--warn)':'var(--danger)'};">${(rate*100).toFixed(1)}%</span>`:'─';
-    summaryHTML+=`<tr style="border-bottom:1px solid var(--border);">
-      <td style="padding:6px 8px;color:var(--sub);">${corpName}</td>
-      <td style="padding:6px 8px;font-weight:600;">${officeName}</td>
-      <td style="text-align:center;padding:6px 8px;">${n(p.approach)}</td>
-      <td style="text-align:center;padding:6px 8px;">${n(p.inquiry)}</td>
-      <td style="text-align:center;padding:6px 8px;">${n(p.visit)}</td>
-      <td style="text-align:center;padding:6px 8px;">${n(p.contract)}</td>
-      <td style="text-align:center;padding:6px 8px;">${n(p.repeat)}</td>
-      <td style="text-align:center;padding:6px 8px;">${rateStr}</td>
-    </tr>`;
-  });
-  summaryHTML+='</tbody></table></div></div>';
-  document.getElementById('pipe-summary').innerHTML=summaryHTML;
-
-  // 成約率ランキング
-  const ranked=[...pipeRows].filter(r=>r.rate!==null).sort((a,b)=>b.rate-a.rate);
-  let rankHTML='<div class="card">';
-  if(!ranked.length){
-    rankHTML+='<div class="empty">成約データなし</div>';
-  } else {
-    ranked.forEach(({officeName,rate},i)=>{
-      const medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}位`;
-      const col=rate>=0.3?'var(--accent2)':rate>=0.1?'var(--warn)':'var(--danger)';
-      rankHTML+=`<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border);font-size:0.82rem;">
-        <span style="min-width:28px;text-align:center;">${medal}</span>
-        <span style="flex:1;">${officeName}</span>
-        <span style="font-weight:700;color:${col};">${(rate*100).toFixed(1)}%</span>
-      </div>`;
-    });
-  }
-  rankHTML+='</div>';
-  document.getElementById('pipe-ranking').innerHTML=rankHTML;
-
-  // 案件ステータス集計
-  const totals={approach:0,inquiry:0,visit:0,contract:0,repeat:0};
-  pipeRows.forEach(({p})=>{
-    totals.approach+=n(p.approach);
-    totals.inquiry+=n(p.inquiry);
-    totals.visit+=n(p.visit);
-    totals.contract+=n(p.contract);
-    totals.repeat+=n(p.repeat);
-  });
-  const stages=[
-    {label:'アプローチ',key:'approach',icon:'📞'},
-    {label:'問い合わせ',key:'inquiry',icon:'📧'},
-    {label:'見学',key:'visit',icon:'👁'},
-    {label:'成約',key:'contract',icon:'✅'},
-    {label:'リピート',key:'repeat',icon:'🔄'},
-  ];
-  const maxVal=Math.max(...stages.map(s=>totals[s.key]),1);
-  let statusHTML='<div class="card">';
-  stages.forEach(s=>{
-    const v=totals[s.key];
-    const pct=Math.round(v/maxVal*100);
-    statusHTML+=`<div style="margin-bottom:10px;">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px;font-size:0.8rem;">
-        <span>${s.icon}</span><span style="flex:1;">${s.label}</span><span style="font-weight:700;">${v}件</span>
-      </div>
-      <div style="background:var(--surface);border-radius:4px;height:8px;overflow:hidden;">
-        <div style="background:var(--accent);height:8px;width:${pct}%;border-radius:4px;transition:width 0.3s;"></div>
-      </div>
-    </div>`;
-  });
-  statusHTML+='</div>';
-  document.getElementById('pipe-status').innerHTML=statusHTML;
-}
+// 営業パイプライン（全事業所一覧・成約率ランキング・案件ステータス）の入力・表示は
+// nagi_pipe.html（軸B営業モジュール）に移行済み。nagi_pipe は同一originのlocalStorageを
+// 共有しているため、このハブは読み取り専用で参照する。
 
 // ── 法人全体 ──
 function renderCorpDashboard(){
@@ -1803,7 +1698,6 @@ function goTab(tab){
     document.getElementById(`tab-${t}`)?.classList.toggle('active',t===tab);
   });
   if(tab==='compass') renderCompass();
-  else if(tab==='pipe') renderPipeTab();
   else if(tab==='retired') renderRetiredList();
   else if(tab==='candidate') renderCandidates();
   else if(tab==='blacklist') renderBlacklist();
@@ -1876,21 +1770,11 @@ function renderCorpsList(){
 
 function refreshOfficeSelectors(){
   const corps=getCorps();
-  ['new-office-corp','pipe-office-sel'].forEach(id=>{
-    const el=document.getElementById(id);
-    if(!el) return;
-    const cur=el.value;
-    el.innerHTML='<option value="">── 法人を選択 ──</option>';
-    if(id==='new-office-corp'){
-      corps.forEach(c=>el.innerHTML+=`<option value="${c.id}">${c.name}</option>`);
-    } else {
-      getAllOffices().forEach(o=>{
-        const c=corps.find(cc=>cc.id===o.corpId);
-        el.innerHTML+=`<option value="${o.id}">${c?.name||''} / ${o.name}</option>`;
-      });
-      if(cur) el.value=cur;
-    }
-  });
+  const newOfficeCorpSel=document.getElementById('new-office-corp');
+  if(newOfficeCorpSel){
+    newOfficeCorpSel.innerHTML='<option value="">── 法人を選択 ──</option>'
+      +corps.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+  }
   const mainSel=document.getElementById('sel-office');
   if(mainSel){
     const corpId=document.getElementById('sel-corp').value;
@@ -1940,34 +1824,8 @@ function renderOfficesList(){
 
 // 財務データの入力・編集は nagi_mq.html（軸A資金モジュール）に移行済み。
 // nagi_fin は同一originのlocalStorageを共有しているため、このハブは読み取り専用で参照する。
-
-function loadPipeForm(){
-  const oid=document.getElementById('pipe-office-sel').value;
-  if(!oid) return;
-  const p=getPipe(oid);
-  if(p){
-    ['approach','inquiry','visit','contract','repeat'].forEach(k=>{ const el=document.getElementById('pipe-'+k); if(el) el.value=p[k]||''; });
-  } else {
-    ['approach','inquiry','visit','contract','repeat'].forEach(k=>{ const el=document.getElementById('pipe-'+k); if(el) el.value=''; });
-  }
-}
-
-function savePipe(){
-  const oid=document.getElementById('pipe-office-sel').value;
-  if(!oid){ alert('事業所を選択してください'); return; }
-  const data=load('nagi_pipe').filter(p=>p.officeId!==oid);
-  data.push({
-    officeId:oid,
-    approach:n(document.getElementById('pipe-approach').value),
-    inquiry:n(document.getElementById('pipe-inquiry').value),
-    visit:n(document.getElementById('pipe-visit').value),
-    contract:n(document.getElementById('pipe-contract').value),
-    repeat:n(document.getElementById('pipe-repeat').value),
-  });
-  save('nagi_pipe',data);
-  alert('パイプラインデータを保存しました。');
-  renderCurrentTab();
-}
+// パイプラインデータの入力・編集は nagi_pipe.html（軸B営業モジュール）に移行済み。
+// nagi_pipe も同様に読み取り専用で参照する。
 
 // ════════════════════════════════════════════════════
 //  CRUD: スタッフ
@@ -3295,7 +3153,6 @@ function switchDataTab(tab){
   });
   if(tab==='corps') renderCorpsList();
   else if(tab==='offices') renderOfficesList();
-  else if(tab==='pipe') refreshOfficeSelectors();
 }
 
 // ════════════════════════════════════════════════════
