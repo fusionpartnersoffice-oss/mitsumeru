@@ -1143,13 +1143,6 @@
         <button id="voice-btn-e-feedback" class="voice-btn" onclick="toggleVoiceInput('e-feedback','voice-btn-e-feedback')" title="音声入力（タップで開始／停止）">🎤</button>
       </div>
     </div>
-    <div class="field">
-      <label>NotebookLMのまとめコメント（あれば貼り付け）</label>
-      <div style="display:flex;gap:8px;align-items:flex-start;">
-        <textarea id="e-notebooklm" oninput="saveEvening()" placeholder="HiNotesやNotebookLMの要約テキストをそのままペースト。なければ空欄でOK" style="flex:1;"></textarea>
-        <button id="voice-btn-e-notebooklm" class="voice-btn" onclick="toggleVoiceInput('e-notebooklm','voice-btn-e-notebooklm')" title="音声入力（タップで開始／停止）">🎤</button>
-      </div>
-    </div>
   </div>
 
 </div>
@@ -1401,7 +1394,7 @@ function insertIntoTextarea(id, text) {
 
 function saveEvening() {
   const data = { _ts: Date.now() };
-  ['e-supplement','e-tomorrow','e-delay','e-try100','e-feedback','e-notebooklm',
+  ['e-supplement','e-tomorrow','e-delay','e-try100','e-feedback',
    'd1-reason','d2-reason','d3-reason','d4-reason','d5-reason'].forEach(id => {
     const el = document.getElementById(id);
     if (el) data[id] = el.value;
@@ -1595,7 +1588,7 @@ function applyMorningData(d) {
 
 function applyEveningData(d) {
   if (!d) return;
-  ['e-supplement','e-tomorrow','e-delay','e-try100','e-feedback','e-notebooklm',
+  ['e-supplement','e-tomorrow','e-delay','e-try100','e-feedback',
    'd1-reason','d2-reason','d3-reason','d4-reason','d5-reason'].forEach(id => {
     const el = document.getElementById(id); if (el && d[id]!==undefined) el.value=d[id];
   });
@@ -1839,7 +1832,7 @@ async function changeTargetDate(newDate) {
     const el=document.getElementById(id); if(el) el.value=id==='m-sleep'?'23:00':id==='m-wake'?'07:00':'';
   });
   document.querySelectorAll('#m-noise-group .checkbox-item').forEach(l=>l.classList.remove('checked'));
-  ['e-supplement','e-tomorrow','e-delay','e-try100','e-feedback','e-notebooklm',
+  ['e-supplement','e-tomorrow','e-delay','e-try100','e-feedback',
    'd1-reason','d2-reason','d3-reason','d4-reason','d5-reason'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.value='';
   });
@@ -2584,7 +2577,6 @@ async function generateEvening() {
   const delay       = document.getElementById('e-delay').value.trim();
   const try100      = document.getElementById('e-try100').value.trim();
   const feedback    = document.getElementById('e-feedback').value.trim();
-  const notebooklm  = document.getElementById('e-notebooklm').value.trim();
 
   const p = memos.filter(m=>m.tag==='P').map(m=>m.content).join(' / ') || 'なし';
   const v = memos.filter(m=>m.tag==='V').map(m=>m.content).join(' / ') || 'なし';

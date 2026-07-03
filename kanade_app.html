@@ -357,6 +357,87 @@ function newId() {
   return max + 1;
 }
 
+// ---------- Block1：面接仮説生成（AI）・LSRPアラート ----------
+function getApiKey() {
+  let key = localStorage.getItem('kanade_api_key');
+  if (key) return key;
+  key = prompt('AnthropicのAPIキーを入力してください：\n\n取得方法：console.anthropic.com → API Keys → Create Key');
+  if (key && key.trim().startsWith('sk-')) {
+    key = key.trim();
+    localStorage.setItem('kanade_api_key', key);
+    return key;
+  } else if (key) {
+    alert('APIキーは「sk-」から始まる文字列です。もう一度確認してください。');
+    return null;
+  }
+  return null;
+}
+
+function callClaude(promptText, onSuccess, onError) {
+  const key = getApiKey();
+  if (!key) { onError('APIキーが設定されていません。'); return; }
+  fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+    body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1200, messages: [{ role: 'user', content: promptText }] })
+  }).then(r => r.json()).then(data => {
+    if (data.error) { onError(data.error.message); return; }
+    const text = data.content?.map(x => x.text || '').join('') || 'エラーが発生しました';
+    onSuccess(text);
+  }).catch(e => onError(e.message));
+}
+
+// LSRPアラート閾値は組織内の任意設定値（臨床的な検証済みカットオフ値ではない）。
+// 未設定の間はアラート自体を表示しない。
+function getLsrpThreshold(){ return localStorage.getItem('kanade_lsrp_threshold') || ''; }
+function setLsrpThreshold(v){ localStorage.setItem('kanade_lsrp_threshold', v.trim()); renderInterview(); }
+function lsrpTotal(c){
+  if (c.lsrp1==='' || c.lsrp2==='' || c.lsrp1==null || c.lsrp2==null) return null;
+  const a = Number(c.lsrp1), b = Number(c.lsrp2);
+  if (isNaN(a) || isNaN(b)) return null;
+  return a + b;
+}
+// 文言・表示ロジックは 06_イノベーション/奏Block1_LSRP高スコアアラート_文言使い分け設計_20260703.md §3-1準拠
+// （採用面接時＝原文「面接中止推奨」＋参考情報の付帯表示必須。自動除外・自動ステータス変更は行わない）
+function lsrpAlertBanner(c){
+  const th = getLsrpThreshold();
+  if (!th || !c.lsrpConsent) return '';
+  const total = lsrpTotal(c);
+  if (total===null || total <= Number(th)) return '';
+  return `<div class="legal-note" style="margin-top:10px">
+    <b>⚠ 面接中止推奨</b>（LSRP合計 ${total}pt／設定閾値 ${esc(th)}pt 超過）<br>
+    <span style="font-size:11px">※これは参考情報です。最終判断は面接官が行ってください。システムによる応募者の自動除外・ステータス変更は行いません（法務意見書条件2準拠）。</span>
+  </div>`;
+}
+
+function generateHypothesis() {
+  const c = cur(); if (!c) return;
+  const loading = document.getElementById('hyp-loading');
+  if (loading) loading.style.display = 'block';
+  const ego = ['CP','NP','A','FC','AC'].map(k=>`${k}:${c['ego'+k]||'—'}`).join(' ');
+  const promptText = `あなたは採用面接の設計を支援する専門家です。以下の適性検査結果から、面接で重点的に確認すべき問いを3〜5点、日本語で簡潔に生成してください。
+各問いは1行・質問文のみ（番号付き箇条書き）。前置きや解説文は書かないこと。ハルシネーション禁止、検査結果にない事実を創作しないこと。
+
+候補者：${c.name}（応募ポジション：${c.position||'未設定'}）
+エゴグラム（5つの自我状態）：${ego}
+エニアグラム：${c.ennea||'未入力'} ${c.enneaWing||''}
+検査から立てた仮説メモ（面接官記入）：${c.p1note||'なし'}
+${c.lsrpConsent ? `LSRP参考スコア：一次${c.lsrp1||'—'}pt／二次${c.lsrp2||'—'}pt（面接で事実確認すべき参考情報。医学的診断ではない）` : 'LSRP：本人同意未取得のため未実施'}`;
+
+  callClaude(promptText,
+    text => {
+      if (loading) loading.style.display = 'none';
+      c.aiHypothesis = text.trim();
+      c.aiHypothesisAt = new Date().toISOString().slice(0,16).replace('T',' ');
+      save(); renderInterview();
+    },
+    err => {
+      if (loading) loading.style.display = 'none';
+      toast('生成エラー：' + err);
+    }
+  );
+}
+
 // ---------- 候補者操作 ----------
 function addCandidate() {
   const name = document.getElementById('new-name').value.trim();
@@ -370,6 +451,8 @@ function addCandidate() {
     egoCP:'', egoNP:'', egoA:'', egoFC:'', egoAC:'', ennea:'', enneaWing:'', p1note:'',
     // 適性検査フェーズ2：LSRP（法務確認済み・参考指標）＋本人同意
     lsrp1:'', lsrp2:'', lsrpNote:'', lsrpConsent:false, lsrpConsentDate:'',
+    // Block1：面接仮説（AI生成）
+    aiHypothesis:'', aiHypothesisAt:'',
     // スコア
     s_skill:0, s_seika:0, s_senryaku:0, s_henkaku:0,
     s_kouki:0, s_dosatsu:0, s_tanryoku:0, s_kyomei:0, s_values:0,
@@ -519,6 +602,26 @@ function renderInterview() {
       🔒 保管・取扱い（運用規程No.001 第4条）：データは本端末のlocalStorageにのみ保存し、外部送信しません。
       本人からの開示請求に対応。不採用者は採用活動終了後6ヶ月以内に削除（候補者一覧の✕で削除）。
     </div>
+  </div>
+
+  <!-- Block1：面接仮説（AI生成） -->
+  <div class="section">
+    <div class="section-title">🎯 面接仮説（AI生成）</div>
+    <div class="note-box" style="margin-bottom:10px">
+      フェーズ1・フェーズ2（エゴグラム・エニアグラム・LSRP・所見メモ）の入力内容から、面接で重点確認すべき問いをAIが3〜5点生成します。初回のみAnthropic APIキーの入力が必要です。
+    </div>
+    <div class="btn-row" style="margin-bottom:10px">
+      <button class="btn btn-primary" onclick="generateHypothesis()">🎯 面接仮説を生成する</button>
+    </div>
+    <div id="hyp-loading" style="display:none;font-size:12px;color:var(--text3)">生成中…</div>
+    ${c.aiHypothesis ? `<div id="hyp-result" style="white-space:pre-wrap;font-size:13px;line-height:1.7">${esc(c.aiHypothesis)}</div>
+    <div class="note-box" style="margin-top:6px">生成日時：${esc(c.aiHypothesisAt||'—')}</div>` : `<div class="empty" style="padding:12px 0">まだ生成していません。</div>`}
+
+    <div class="field" style="max-width:280px;margin-top:14px">
+      <label>LSRPアラート閾値（合計pt・任意設定）</label>
+      <input type="text" inputmode="numeric" value="${esc(getLsrpThreshold())}" onchange="setLsrpThreshold(this.value)" placeholder="未設定＝アラート非表示">
+    </div>
+    ${lsrpAlertBanner(c)}
   </div>
 
   <!-- フェーズ2：地上1F -->
@@ -682,6 +785,9 @@ function buildMarkdown(c) {
 - 一次サイコパシー：${c.lsrp1||'—'} pt ／ 二次サイコパシー：${c.lsrp2||'—'} pt
 - 面談で確認した事実・所見：${c.lsrpNote||'—'}
 - ※LSRPは医学的診断ではなく参考指標。スコアのみでの採否・配置決定は不可。これはトリガーであり命令ではない（運用規程No.001）。
+
+## 面接仮説（AI生成・Block1）
+${c.aiHypothesis ? c.aiHypothesis + '\n\n生成日時：' + (c.aiHypothesisAt||'—') : '未生成'}
 
 ## フェーズ2：根拠コメント
 - コンピテンシー：${c.note_comp||'—'}
