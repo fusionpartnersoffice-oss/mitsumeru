@@ -2206,12 +2206,10 @@ function renderCompass(){
   }
 
   // ── 軸B：営業 ──
+  // nagi_pipe のスキーマは {officeId, approach, inquiry, visit, contract, repeat}（p.stages は旧スキーマ・廃止済み）
   let pipeSignal='green', pipeLabel='順調', pipeDesc='', pipeCount=0;
   if(allPipe.length){
-    allPipe.forEach(p=>{
-      const stages=p.stages||[];
-      stages.forEach(s=>{ if(s.count&&s.stage!=='成約'&&s.stage!=='失注') pipeCount+=n(s.count); });
-    });
+    allPipe.forEach(p=>{ pipeCount+=n(p.approach); });
     if(pipeCount===0){ pipeSignal='red'; pipeLabel='案件なし'; pipeDesc='商談中の案件がゼロです'; }
     else if(pipeCount<=2){ pipeSignal='yellow'; pipeLabel='案件少'; pipeDesc=`商談中 ${pipeCount}件`; }
     else { pipeSignal='green'; pipeLabel='順調'; pipeDesc=`商談中 ${pipeCount}件`; }
