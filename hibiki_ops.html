@@ -560,6 +560,9 @@ function submitItemForm() {
     activeBin: 'A',
     needsOrder: false,
     binSwitchedAt: null,
+    binCapacity: 0,
+    kanbanCode: '',
+    kanbanPhotoDataUrl: '',
   };
   currentFacility.modules.items.push(entry);
   saveCurrentFacility();
@@ -653,6 +656,22 @@ function toggleTwoBin(itemId, enabled) {
   renderStock();
 }
 
+// ビン容量（目安値）：複雑な自動計算式は使わず目視運用を主軸とする設計のため、
+// 「リードタイム中消費量」を参考値として自動計算する補助ボタンのみ提供し、手動での上書きも可能にする
+function updateBinCapacity(itemId, value) {
+  const item = getItemById(itemId);
+  if (!item) return;
+  item.binCapacity = parseFloat(value) || 0;
+  saveCurrentFacility();
+}
+function autoCalcBinCapacity(itemId) {
+  const item = getItemById(itemId);
+  if (!item) return;
+  item.binCapacity = Math.ceil((parseFloat(item.dailyConsumption) || 0) * (parseFloat(item.leadTime) || 0));
+  saveCurrentFacility();
+  renderStock();
+}
+
 // 使用中のビンが空になったら押す＝ビン切替＋発注要フラグを立てる（計算式より目視を主軸とする設計）
 function switchBin(itemId) {
   const item = getItemById(itemId);
@@ -669,6 +688,36 @@ function completeOrder(itemId) {
   const item = getItemById(itemId);
   if (!item) return;
   item.needsOrder = false;
+  saveCurrentFacility();
+  renderStock();
+}
+
+// 発注コード（QR/バーコード代替の手動入力欄。実際のQR/バーコード生成は行わず、枠+手動入力欄で足りるとする設計）
+function updateKanbanCode(itemId, value) {
+  const item = getItemById(itemId);
+  if (!item) return;
+  item.kanbanCode = value.trim();
+  saveCurrentFacility();
+}
+
+// ラベル用写真添付欄（任意）：ファイルをdata URLとして読み込み保存
+function uploadKanbanPhoto(itemId, inputEl) {
+  const file = inputEl.files && inputEl.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const item = getItemById(itemId);
+    if (!item) return;
+    item.kanbanPhotoDataUrl = reader.result;
+    saveCurrentFacility();
+    renderStock();
+  };
+  reader.readAsDataURL(file);
+}
+function clearKanbanPhoto(itemId) {
+  const item = getItemById(itemId);
+  if (!item) return;
+  item.kanbanPhotoDataUrl = '';
   saveCurrentFacility();
   renderStock();
 }
@@ -694,15 +743,35 @@ function renderStock() {
           ? `<span class="bin-badge bin-order-needed">🚨発注要（ビン${it.activeBin}使用中）</span>`
           : `<span class="bin-badge ${it.activeBin === 'A' ? 'bin-a' : 'bin-b'}">ビン${it.activeBin}使用中</span>`)
       : '<span class="stock-card-meta">2ビン管理：未使用</span>';
-    return `<div class="stock-card">
-      <div class="stock-card-name">${esc(it.itemName)}<div class="stock-card-meta">${esc(it.category)}／発注先：${esc(it.supplier || '—')}</div></div>
-      ${binBadge}
-      <div class="stock-actions">
+    const photoThumb = it.kanbanPhotoDataUrl
+      ? `<img src="${it.kanbanPhotoDataUrl}" style="width:32px;height:32px;object-fit:cover;border-radius:4px;border:1px solid var(--border);">`
+      : '';
+    return `<div class="stock-card" style="align-items:flex-start;flex-direction:column;">
+      <div style="display:flex;align-items:center;gap:12px;width:100%;flex-wrap:wrap;">
+        <div class="stock-card-name">${esc(it.itemName)}<div class="stock-card-meta">${esc(it.category)}／発注先：${esc(it.supplier || '—')}</div></div>
+        ${binBadge}
+      </div>
+      <div class="stock-actions" style="margin-top:8px;">
         <label style="font-size:.72rem;color:var(--sub);display:flex;align-items:center;gap:4px;">
           <input type="checkbox" ${it.twoBinEnabled ? 'checked' : ''} onchange="toggleTwoBin('${it.itemId}', this.checked)"> 2ビン運用
         </label>
-        ${it.twoBinEnabled ? `<button class="hdr-btn" onclick="switchBin('${it.itemId}')">ビンが空になった（切替）</button>` : ''}
+        ${it.twoBinEnabled ? `
+          <span style="font-size:.72rem;color:var(--sub);display:flex;align-items:center;gap:4px;">
+            ビン容量（目安）：<input type="number" min="0" step="1" value="${it.binCapacity || 0}" style="width:70px;padding:3px 6px;" onchange="updateBinCapacity('${it.itemId}', this.value)">${esc(it.unit || '')}
+            <button class="hdr-btn" style="padding:3px 8px;" onclick="autoCalcBinCapacity('${it.itemId}')">自動計算（リードタイム×日次消費量）</button>
+          </span>
+          <button class="hdr-btn" onclick="switchBin('${it.itemId}')">ビンが空になった（切替）</button>
+        ` : ''}
         ${it.twoBinEnabled && it.needsOrder ? `<button class="hdr-btn" style="border-color:var(--accent);color:var(--accent);" onclick="completeOrder('${it.itemId}')">発注完了（補充済み）</button>` : ''}
+      </div>
+      <div class="stock-actions" style="margin-top:8px;border-top:1px solid var(--border);padding-top:8px;width:100%;">
+        <span style="font-size:.72rem;color:var(--sub);display:flex;align-items:center;gap:4px;">
+          発注コード（QR/バーコード代替）：<input type="text" value="${esc(it.kanbanCode || '')}" placeholder="例：手入力の管理番号" style="width:140px;padding:3px 6px;" onchange="updateKanbanCode('${it.itemId}', this.value)">
+        </span>
+        <span style="font-size:.72rem;color:var(--sub);display:flex;align-items:center;gap:4px;">
+          ラベル用写真：${photoThumb}<input type="file" accept="image/*" style="width:120px;font-size:.68rem;" onchange="uploadKanbanPhoto('${it.itemId}', this)">
+          ${it.kanbanPhotoDataUrl ? `<button class="hdr-btn" style="padding:3px 8px;" onclick="clearKanbanPhoto('${it.itemId}')">削除</button>` : ''}
+        </span>
         <button class="hdr-btn" onclick="printKanbanLabel('${it.itemId}')">🏷️ カンバンラベル発行</button>
       </div>
     </div>`;
@@ -714,6 +783,12 @@ function renderStock() {
 // ═══════════════════════════════════════════════
 function buildKanbanLabelHtml(it) {
   const today = fmtDate(new Date().toISOString());
+  const photoBox = it.kanbanPhotoDataUrl
+    ? `<img src="${it.kanbanPhotoDataUrl}" style="width:100%;max-height:110px;object-fit:cover;border:1px solid #999;border-radius:4px;">`
+    : `<div style="border:1px dashed #999;border-radius:4px;height:70px;display:flex;align-items:center;justify-content:center;color:#999;font-size:.75rem;">写真：未添付</div>`;
+  const codeBox = it.kanbanCode
+    ? `<div style="border:2px solid #333;border-radius:4px;padding:8px;text-align:center;font-size:1rem;font-weight:700;letter-spacing:.05em;">${esc(it.kanbanCode)}</div>`
+    : `<div style="border:1px dashed #999;border-radius:4px;padding:8px;text-align:center;color:#999;font-size:.75rem;">QR/バーコード：未設定（手動記入欄）</div>`;
   return `<div class="kanban-label">
     <div class="kanban-label-title">${esc(it.itemName)}</div>
     <div class="kanban-label-row"><b>カテゴリ</b>${esc(it.category)}</div>
@@ -721,6 +796,11 @@ function buildKanbanLabelHtml(it) {
     <div class="kanban-label-row"><b>安全在庫数</b>${esc(it.safetyStock)}${esc(it.unit || '')}</div>
     <div class="kanban-label-row"><b>発注先</b>${esc(it.supplier || '—')}</div>
     <div class="kanban-label-row"><b>リードタイム</b>${esc(it.leadTime)}日</div>
+    ${it.twoBinEnabled ? `<div class="kanban-label-row"><b>ビン容量目安</b>${esc(it.binCapacity || 0)}${esc(it.unit || '')}</div>` : ''}
+    <div class="kanban-label-row"><b>写真添付欄</b></div>
+    ${photoBox}
+    <div class="kanban-label-row" style="margin-top:8px;"><b>発注報告コード</b></div>
+    ${codeBox}
     <div class="kanban-label-footer">響②運用支援系 ／ ${esc(currentFacility.meta.name)} ／ 発行日：${today}</div>
   </div>`;
 }
