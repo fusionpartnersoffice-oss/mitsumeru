@@ -56,6 +56,38 @@
     .ref-chip.priority{border-color:#f0c674;}
     .ref-master{font-size:12px;color:#c9d1d9;display:flex;align-items:center;gap:6px;cursor:pointer;padding:3px 10px;border-radius:14px;background:#21262d;border:1px solid #30363d;}
     .dot.diamond{border-radius:2px;transform:rotate(45deg);width:9px;height:9px;}
+
+    /* ── Block2：クライアント中心抽出 ── */
+    .client-mode-btn{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.3);color:#fff;font-size:11px;padding:5px 12px;border-radius:16px;cursor:pointer;font-family:inherit;white-space:nowrap;}
+    .client-mode-btn:hover{background:rgba(255,255,255,.22);}
+    .client-mode-btn.active{background:#f0c674;border-color:#f0c674;color:#1a1500;font-weight:bold;}
+    #client-panel{padding:10px;display:flex;flex-direction:column;gap:10px;overflow-y:auto;}
+    .client-section{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:10px;}
+    .client-label{font-size:11px;color:#8b949e;display:block;margin:8px 0 3px;}
+    .client-label:first-child{margin-top:0;}
+    #client-panel input[type="text"],#client-panel input[type="date"],#client-panel select{
+      width:100%;font-size:12px;padding:6px 8px;border-radius:5px;border:1px solid #30363d;background:#21262d;color:#c9d1d9;font-family:inherit;}
+    .client-form-title{font-size:13px;font-weight:bold;color:#e6edf3;margin-bottom:4px;}
+    .client-geocode-row{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;}
+    .client-geocode-status{font-size:11px;color:#8b949e;margin-top:4px;min-height:14px;}
+    .client-latlng-row{display:flex;gap:8px;margin-top:4px;}
+    .client-latlng-row > div{flex:1;}
+    .client-form-actions{display:flex;gap:8px;margin-top:10px;}
+    .client-btn-primary{background:#238636;color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:12px;cursor:pointer;font-family:inherit;}
+    .client-btn-primary:hover{background:#2ea043;}
+    .client-btn-secondary{background:#21262d;color:#c9d1d9;border:1px solid #30363d;border-radius:6px;padding:6px 12px;font-size:11px;cursor:pointer;font-family:inherit;}
+    .client-btn-secondary:hover{border-color:#58a6ff;color:#58a6ff;}
+    #client-radius-slider{width:100%;margin-top:4px;}
+    .client-density-badge{display:inline-block;font-size:11px;font-weight:bold;padding:2px 9px;border-radius:10px;margin-left:4px;}
+    .client-density-high{background:rgba(46,125,50,.25);color:#81c784;}
+    .client-density-mid{background:rgba(251,140,0,.25);color:#ffcc80;}
+    .client-density-low{background:rgba(229,57,53,.25);color:#ff8a80;}
+    .client-advice-card{font-size:12px;color:#c9d1d9;line-height:1.7;padding:6px 0;border-bottom:1px solid #21262d;}
+    .client-advice-card:last-child{border-bottom:none;}
+    .client-ref-row{background:#0d1117;border:1px solid #21262d;border-radius:6px;padding:8px;margin-bottom:6px;}
+    .client-ref-row-hdr{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#e6edf3;margin-bottom:4px;}
+    .client-ref-row-meta{font-size:10px;color:#8b949e;margin-bottom:5px;}
+    .client-ref-row select{width:100%;font-size:11px;padding:4px 6px;border-radius:4px;border:1px solid #30363d;background:#21262d;color:#c9d1d9;font-family:inherit;cursor:pointer;}
   </style>
 </head>
 <body>
@@ -67,6 +99,7 @@
   <div class="stat" style="background:rgba(251,140,0,.25)">中 <span style="color:#ffcc80" id="b-count">1</span></div>
   <div class="stat" style="background:rgba(30,136,229,.25)">小 <span style="color:#82b1ff" id="c-count">2</span></div>
   <div class="stat" style="background:rgba(255,255,255,.1)">紹介元 <span id="ref-count">0</span> 件</div>
+  <button id="client-mode-btn" class="client-mode-btn" onclick="toggleClientMode()">🏢 クライアント中心抽出</button>
   <div style="margin-left:auto;font-size:11px;color:rgba(255,255,255,.5)">Fusion Partners © 2026</div>
 </div>
 <div id="controls">
@@ -112,6 +145,59 @@
     <div id="facility-list"></div>
     <button id="csv-btn">📥 営業先リストをCSVで出力</button>
     <button id="ref-csv-btn">📥 紹介元リストをCSVで出力</button>
+
+    <div id="client-panel" style="display:none">
+      <div class="client-section">
+        <label class="client-label">クライアント選択</label>
+        <select id="client-select" onchange="onClientSelectChange()">
+          <option value="">選択してください</option>
+        </select>
+        <button id="client-new-btn" class="client-btn-secondary" onclick="showClientForm()">＋ 新規クライアント登録</button>
+      </div>
+
+      <div id="client-form" class="client-section" style="display:none">
+        <div class="client-form-title">新規クライアント登録</div>
+        <label class="client-label">施設名</label>
+        <input type="text" id="client-form-name" placeholder="例：特別養護老人ホーム サンビレッジ新生苑">
+        <label class="client-label">種別</label>
+        <select id="client-form-type">
+          <option value="特別養護老人ホーム">特別養護老人ホーム</option>
+          <option value="通所介護">通所介護</option>
+          <option value="訪問介護">訪問介護</option>
+          <option value="認知症対応型共同生活介護">認知症対応型共同生活介護</option>
+          <option value="その他">その他</option>
+        </select>
+        <label class="client-label">住所</label>
+        <input type="text" id="client-form-addr" placeholder="例：岐阜県揖斐郡池田町...">
+        <label class="client-label">契約開始日</label>
+        <input type="date" id="client-form-contract-date">
+
+        <div class="client-geocode-row">
+          <button class="client-btn-secondary" onclick="clientSearchFacility()">🔍 既存データから施設名で検索</button>
+          <button class="client-btn-secondary" onclick="clientGeocodeFromAddress()">📍 住所から座標を検索（参考値）</button>
+        </div>
+        <div id="client-geocode-status" class="client-geocode-status"></div>
+        <div class="client-latlng-row">
+          <div><label class="client-label">緯度</label><input type="text" id="client-form-lat" placeholder="例：35.4440335"></div>
+          <div><label class="client-label">経度</label><input type="text" id="client-form-lng" placeholder="例：136.5755478"></div>
+        </div>
+
+        <div class="client-form-actions">
+          <button class="client-btn-primary" onclick="submitClientForm()">登録する</button>
+          <button class="client-btn-secondary" onclick="hideClientForm()">キャンセル</button>
+        </div>
+      </div>
+
+      <div id="client-detail" style="display:none">
+        <div class="client-section">
+          <label class="client-label">抽出半径：<span id="client-radius-value">5</span>km</label>
+          <input type="range" id="client-radius-slider" min="1" max="20" value="5" oninput="onClientRadiusChange(this.value)">
+        </div>
+        <div id="client-summary" class="client-section"></div>
+        <div id="client-referral-list" class="client-section"></div>
+        <button id="client-csv-btn" class="client-btn-secondary" onclick="exportClientReferralCSVClick()">📥 抽出リストをCSVで出力</button>
+      </div>
+    </div>
   </div>
   <div id="map"></div>
 </div>
@@ -1945,6 +2031,75 @@ function saveStatus(id, status) {
   const s = loadStatuses(); s[id] = status; localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
 }
 
+// ═══════════════════════════════════════════════
+//  Block2：クライアント中心抽出（データ層）
+// ═══════════════════════════════════════════════
+const CLIENT_STORAGE_KEY = 'yuzuru_client_list';
+const CLIENT_REF_STATUS_KEY = 'yuzuru_client_ref_status';
+const CLIENT_TYPES = ['特別養護老人ホーム','通所介護','訪問介護','認知症対応型共同生活介護','その他'];
+const CLIENT_DEFAULT_RADIUS_KM = 5;
+
+function loadClients() {
+  try { return JSON.parse(localStorage.getItem(CLIENT_STORAGE_KEY) || '[]'); } catch { return []; }
+}
+function saveClients(list) {
+  localStorage.setItem(CLIENT_STORAGE_KEY, JSON.stringify(list));
+}
+function addClient(obj) {
+  const list = loadClients();
+  const client = {
+    clientId: 'client_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    name: obj.name || '',
+    addr: obj.addr || '',
+    type: obj.type || 'その他',
+    pref: obj.pref || '',
+    contractStartDate: obj.contractStartDate || '',
+    lat: obj.lat,
+    lng: obj.lng,
+    radiusKm: obj.radiusKm || CLIENT_DEFAULT_RADIUS_KM,
+    memo: obj.memo || '',
+    createdAt: new Date().toISOString(),
+  };
+  list.push(client);
+  saveClients(list);
+  return client;
+}
+function getClientById(clientId) {
+  return loadClients().find(c => c.clientId === clientId) || null;
+}
+function updateClientRadius(clientId, radiusKm) {
+  const list = loadClients();
+  const c = list.find(x => x.clientId === clientId);
+  if (c) { c.radiusKm = radiusKm; saveClients(list); }
+}
+function deleteClient(clientId) {
+  saveClients(loadClients().filter(c => c.clientId !== clientId));
+}
+
+function loadClientRefStatuses() {
+  try { return JSON.parse(localStorage.getItem(CLIENT_REF_STATUS_KEY) || '{}'); } catch { return {}; }
+}
+function saveClientRefStatus(clientId, referralId, status) {
+  const s = loadClientRefStatuses();
+  s[clientId + '::' + referralId] = status;
+  localStorage.setItem(CLIENT_REF_STATUS_KEY, JSON.stringify(s));
+}
+function getClientRefStatus(clientId, referralId) {
+  const s = loadClientRefStatuses();
+  return s[clientId + '::' + referralId] || '未接触';
+}
+
+// Haversine公式：2地点間の距離(km)を算出
+function clientHaversineKm(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const toRad = d => d * Math.PI / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat / 2) ** 2 +
+            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.asin(Math.sqrt(a));
+}
+
 // データ初期化
 const statuses = loadStatuses();
 const data = RAW_DATA.features.map(f => {
@@ -1963,6 +2118,12 @@ let layerGroup = L.layerGroup().addTo(map);
 let refLayerGroup = L.layerGroup().addTo(map);
 let markerMap = {};
 let activeId = null;
+
+// Block2：クライアント中心抽出のマップ状態（既存レイヤーとは別名前空間）
+let clientLayerGroup = L.layerGroup();
+let clientRadiusCircle = null;
+let clientModeOn = false;
+let activeClientId = null;
 
 // 紹介元カテゴリ フィルタON/OFF状態（初期値：実データがあるカテゴリのみ表示。準備中カテゴリは常にfalse）
 const refCategoryState = {};
@@ -2195,9 +2356,294 @@ legend.onAdd = () => {
 };
 legend.addTo(map);
 
+// ═══════════════════════════════════════════════
+//  Block2：クライアント中心抽出（ロジック・描画）
+// ═══════════════════════════════════════════════
+
+// --- 座標取得 ---
+function clientFindFacilityByName(name) {
+  if (!name || !name.trim()) return null;
+  const f = data.find(x => x.properties.name.includes(name.trim()));
+  if (!f) return null;
+  return { lat: f.properties.lat, lng: f.properties.lon, name: f.properties.name };
+}
+
+async function clientGeocodeAddress(addr) {
+  const url = 'https://nominatim.openstreetmap.org/search?format=json&countrycodes=jp&limit=1&q=' + encodeURIComponent(addr);
+  try {
+    const res = await fetch(url);
+    const json = await res.json();
+    if (json && json[0]) return { lat: parseFloat(json[0].lat), lng: parseFloat(json[0].lon) };
+  } catch (e) {}
+  return null;
+}
+
+function clientSearchFacility() {
+  const name = document.getElementById('client-form-name').value;
+  const status = document.getElementById('client-geocode-status');
+  const hit = clientFindFacilityByName(name);
+  if (hit) {
+    document.getElementById('client-form-lat').value = hit.lat;
+    document.getElementById('client-form-lng').value = hit.lng;
+    status.textContent = `✓ 既存データ「${hit.name}」の座標を反映しました`;
+  } else {
+    status.textContent = '既存データに該当施設が見つかりませんでした。住所検索または手動入力をご利用ください。';
+  }
+}
+
+async function clientGeocodeFromAddress() {
+  const addr = document.getElementById('client-form-addr').value;
+  const status = document.getElementById('client-geocode-status');
+  if (!addr.trim()) { status.textContent = '住所を入力してください。'; return; }
+  status.textContent = '検索中…';
+  const result = await clientGeocodeAddress(addr);
+  if (result) {
+    document.getElementById('client-form-lat').value = result.lat;
+    document.getElementById('client-form-lng').value = result.lng;
+    status.textContent = '⚠️ 参考値を取得しました。地図で位置がずれていないか必ずご確認ください。';
+  } else {
+    status.textContent = '取得できませんでした。緯度経度を手動で入力してください。';
+  }
+}
+
+// --- 登録フォーム ---
+function showClientForm() {
+  document.getElementById('client-form-name').value = '';
+  document.getElementById('client-form-addr').value = '';
+  document.getElementById('client-form-contract-date').value = '';
+  document.getElementById('client-form-lat').value = '';
+  document.getElementById('client-form-lng').value = '';
+  document.getElementById('client-geocode-status').textContent = '';
+  document.getElementById('client-form').style.display = '';
+  document.getElementById('client-detail').style.display = 'none';
+}
+function hideClientForm() {
+  document.getElementById('client-form').style.display = 'none';
+}
+
+function submitClientForm() {
+  const name = document.getElementById('client-form-name').value.trim();
+  const lat = parseFloat(document.getElementById('client-form-lat').value);
+  const lng = parseFloat(document.getElementById('client-form-lng').value);
+  if (!name) { alert('施設名を入力してください。'); return; }
+  if (isNaN(lat) || isNaN(lng)) { alert('緯度・経度が未確定です。「既存データから検索」「住所から検索」を試すか、緯度経度を手動で入力してください。'); return; }
+  const client = addClient({
+    name,
+    type: document.getElementById('client-form-type').value,
+    addr: document.getElementById('client-form-addr').value.trim(),
+    contractStartDate: document.getElementById('client-form-contract-date').value,
+    lat, lng,
+    radiusKm: CLIENT_DEFAULT_RADIUS_KM,
+  });
+  hideClientForm();
+  renderClientSelectOptions();
+  document.getElementById('client-select').value = client.clientId;
+  onClientSelectChange();
+}
+
+// --- クライアント選択・詳細表示 ---
+function renderClientSelectOptions() {
+  const sel = document.getElementById('client-select');
+  const clients = loadClients();
+  const current = sel.value;
+  sel.innerHTML = '<option value="">選択してください</option>' +
+    clients.map(c => `<option value="${c.clientId}">${esc(c.name)}</option>`).join('');
+  if (clients.some(c => c.clientId === current)) sel.value = current;
+}
+function esc(s) {
+  return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function onClientSelectChange() {
+  const id = document.getElementById('client-select').value;
+  activeClientId = id || null;
+  hideClientForm();
+  if (!activeClientId) {
+    document.getElementById('client-detail').style.display = 'none';
+    clientLayerGroup.clearLayers();
+    if (clientRadiusCircle) { map.removeLayer(clientRadiusCircle); clientRadiusCircle = null; }
+    return;
+  }
+  const client = getClientById(activeClientId);
+  document.getElementById('client-detail').style.display = '';
+  document.getElementById('client-radius-slider').value = client.radiusKm;
+  document.getElementById('client-radius-value').textContent = client.radiusKm;
+  renderClientPanel();
+  renderClientMap(client);
+}
+
+function onClientRadiusChange(value) {
+  const radiusKm = parseInt(value, 10);
+  document.getElementById('client-radius-value').textContent = radiusKm;
+  if (!activeClientId) return;
+  updateClientRadius(activeClientId, radiusKm);
+  const client = getClientById(activeClientId);
+  renderClientPanel();
+  renderClientMap(client);
+}
+
+// --- 抽出ロジック ---
+function getClientNearbyReferrals(client) {
+  return REFERRAL_DATA
+    .filter(r => {
+      const cat = REFERRAL_CATEGORIES[r.category];
+      if (!cat || !cat.available) return false;
+      return clientHaversineKm(client.lat, client.lng, r.lat, r.lon) <= client.radiusKm;
+    })
+    .map(r => ({ ...r, distanceKm: clientHaversineKm(client.lat, client.lng, r.lat, r.lon) }))
+    .sort((a, b) => a.distanceKm - b.distanceKm);
+}
+
+function getClientNearbyCompetitors(client) {
+  return data.filter(f => {
+    const p = f.properties;
+    if (p.type !== client.type) return false;
+    if (p.name === client.name) return false; // クライアント自身が見込み客データにも存在する場合は除外
+    return clientHaversineKm(client.lat, client.lng, p.lat, p.lon) <= client.radiusKm;
+  });
+}
+
+function clientCompetitorDensityLevel(count) {
+  if (count <= 2) return { level: '競合薄い', priority: '高', cls: 'client-density-high' };
+  if (count <= 5) return { level: '競合中程度', priority: '中', cls: 'client-density-mid' };
+  return { level: '競合過密', priority: '低', cls: 'client-density-low' };
+}
+
+function clientBuildPriorityAdvice(client) {
+  const referrals = getClientNearbyReferrals(client);
+  const competitors = getClientNearbyCompetitors(client);
+  const density = clientCompetitorDensityLevel(competitors.length);
+  const byCategory = {};
+  referrals.forEach(r => {
+    const st = getClientRefStatus(client.clientId, r.id);
+    if (!byCategory[r.category]) byCategory[r.category] = { total: 0, untouched: 0 };
+    byCategory[r.category].total++;
+    if (st === '未接触') byCategory[r.category].untouched++;
+  });
+  return Object.entries(byCategory).map(([category, stat]) => ({
+    category, untouched: stat.untouched, total: stat.total,
+    text: `${client.name}の周辺${client.radiusKm}km圏内に、未接触の${category}が${stat.untouched}件あります。競合密度は${density.level}のため、優先度は${density.priority}です。`,
+  }));
+}
+
+function clientReferralPriorityLabel(status, densityPriority) {
+  if (status !== '未接触') return '低（対応中/完了）';
+  return densityPriority;
+}
+
+// --- 描画 ---
+function renderClientPanel() {
+  const client = getClientById(activeClientId);
+  if (!client) return;
+  const referrals = getClientNearbyReferrals(client);
+  const competitors = getClientNearbyCompetitors(client);
+  const density = clientCompetitorDensityLevel(competitors.length);
+  const advice = clientBuildPriorityAdvice(client);
+
+  const summary = document.getElementById('client-summary');
+  summary.innerHTML = `
+    <div style="font-size:13px;font-weight:bold;color:#e6edf3;">${esc(client.name)}</div>
+    <div style="font-size:11px;color:#8b949e;margin:4px 0 8px;">${esc(client.type)} ／ ${esc(client.addr || '住所未登録')}${client.contractStartDate ? ' ／ 契約開始：' + esc(client.contractStartDate) : ''}</div>
+    <div style="font-size:12px;color:#c9d1d9;">競合（同種別）：${competitors.length}件　<span class="client-density-badge ${density.cls}">${density.level}・優先度${density.priority}</span></div>
+    <div style="font-size:12px;color:#c9d1d9;margin-top:4px;">抽出紹介元：${referrals.length}件</div>
+    <div style="margin-top:8px;">
+      ${advice.length ? advice.map(a => `<div class="client-advice-card">${esc(a.text)}</div>`).join('') : '<div class="client-advice-card">半径圏内に対象カテゴリの紹介元データがありません。</div>'}
+    </div>
+  `;
+
+  const list = document.getElementById('client-referral-list');
+  if (!referrals.length) {
+    list.innerHTML = '<div style="font-size:12px;color:#8b949e;">半径圏内に紹介元データがありません。</div>';
+    return;
+  }
+  list.innerHTML = `<div style="font-size:11px;color:#8b949e;margin-bottom:6px;">抽出された紹介元（距離が近い順）</div>` +
+    referrals.map(r => {
+      const cat = REFERRAL_CATEGORIES[r.category];
+      const st = getClientRefStatus(client.clientId, r.id);
+      const pr = clientReferralPriorityLabel(st, density.priority);
+      const statusOpts = STATUS_LIST.map(s => `<option value="${s}" ${st===s?'selected':''}>${s}</option>`).join('');
+      return `<div class="client-ref-row">
+        <div class="client-ref-row-hdr">
+          <span>${cat && cat.priority ? '★ ' : ''}${esc(r.name)}</span>
+          <span style="font-size:10px;color:#8b949e">${r.distanceKm.toFixed(1)}km</span>
+        </div>
+        <div class="client-ref-row-meta">${esc(r.category)} ／ 優先度：${esc(pr)}</div>
+        <select onchange="onClientRefStatusChange('${client.clientId}','${r.id}',this.value)">${statusOpts}</select>
+      </div>`;
+    }).join('');
+}
+
+function onClientRefStatusChange(clientId, referralId, status) {
+  saveClientRefStatus(clientId, referralId, status);
+  renderClientPanel();
+}
+
+function renderClientMap(client) {
+  clientLayerGroup.clearLayers();
+  if (clientRadiusCircle) { map.removeLayer(clientRadiusCircle); clientRadiusCircle = null; }
+  if (!client) return;
+  L.marker([client.lat, client.lng], {
+    icon: L.divIcon({
+      className: '',
+      html: `<div style="width:22px;height:22px;border-radius:6px;background:#f0c674;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;font-size:12px;">🏢</div>`,
+      iconSize: [22, 22], iconAnchor: [11, 11],
+    }),
+  }).bindPopup(`<b>${esc(client.name)}</b><br>クライアント中心点（半径${client.radiusKm}km）`).addTo(clientLayerGroup);
+  clientRadiusCircle = L.circle([client.lat, client.lng], {
+    radius: client.radiusKm * 1000, color: '#f0c674', weight: 2, fillOpacity: 0.06,
+  }).addTo(map);
+  map.panTo([client.lat, client.lng]);
+}
+
+// --- モード切替 ---
+function toggleClientMode() {
+  clientModeOn = !clientModeOn;
+  document.getElementById('client-mode-btn').classList.toggle('active', clientModeOn);
+  document.getElementById('client-panel').style.display = clientModeOn ? '' : 'none';
+  document.getElementById('facility-list').style.display = clientModeOn ? 'none' : '';
+  document.getElementById('csv-btn').style.display = clientModeOn ? 'none' : '';
+  document.getElementById('ref-csv-btn').style.display = clientModeOn ? 'none' : '';
+  if (clientModeOn) {
+    map.addLayer(clientLayerGroup);
+    renderClientSelectOptions();
+    if (activeClientId) {
+      const client = getClientById(activeClientId);
+      if (client) { renderClientPanel(); renderClientMap(client); }
+    }
+  } else {
+    map.removeLayer(clientLayerGroup);
+    if (clientRadiusCircle) { map.removeLayer(clientRadiusCircle); clientRadiusCircle = null; }
+  }
+}
+
+// --- CSV出力 ---
+function exportClientReferralCSV(client) {
+  const referrals = getClientNearbyReferrals(client);
+  const competitors = getClientNearbyCompetitors(client);
+  const density = clientCompetitorDensityLevel(competitors.length);
+  const cols = ['名称','カテゴリ','距離(km)','アプローチ状況','優先度'];
+  const rows = referrals.map(r => {
+    const st = getClientRefStatus(client.clientId, r.id);
+    const pr = clientReferralPriorityLabel(st, density.priority);
+    return [r.name, r.category, r.distanceKm.toFixed(1), st, pr]
+      .map(v => `"${String(v).replace(/"/g,'""')}"`).join(',');
+  });
+  const csv = '﻿' + cols.join(',') + '\n' + rows.join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8'}));
+  a.download = `弦システム_クライアント抽出リスト_${client.name}_${new Date().toISOString().slice(0,10).replace(/-/g,'')}.csv`;
+  a.click();
+}
+function exportClientReferralCSVClick() {
+  const client = getClientById(activeClientId);
+  if (!client) { alert('クライアントを選択してください。'); return; }
+  exportClientReferralCSV(client);
+}
+
 renderRefCategoryToggles();
 render();
 renderReferrals();
+renderClientSelectOptions();
 </script>
 </body>
 </html>
