@@ -294,6 +294,10 @@ select option{background:var(--card);}
         <label>氏名（仮名・イニシャル）</label>
         <input type="text" id="b-alias" placeholder="例：Aさん">
       </div>
+      <div class="form-group" style="flex:0 0 140px">
+        <label>呼び方</label>
+        <input type="text" id="b-nickname" placeholder="例：Aさん、A様">
+      </div>
       <div class="form-group" style="flex:0 0 160px">
         <label>生年月日</label>
         <input type="date" id="b-dob" onchange="calcAge()">
@@ -328,6 +332,38 @@ select option{background:var(--card);}
           <option value="グループホーム">グループホーム</option>
           <option value="その他">その他</option>
         </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group" style="flex:0 0 200px">
+        <label>障がい区分</label>
+        <select id="b-grade">
+          <option value="">選択してください</option>
+          <option value="区分1">区分1</option>
+          <option value="区分2">区分2</option>
+          <option value="区分3">区分3</option>
+          <option value="区分4">区分4</option>
+          <option value="区分5">区分5</option>
+          <option value="区分6">区分6</option>
+          <option value="申請中">申請中</option>
+          <option value="区変中">区変中</option>
+        </select>
+      </div>
+      <div class="form-group" style="flex:0 0 220px">
+        <label>利用経緯</label>
+        <select id="b-reason" onchange="toggleReasonOther()">
+          <option value="">選択してください</option>
+          <option value="新規受入">新規受入</option>
+          <option value="目標見直し（長期）">目標見直し（長期）</option>
+          <option value="目標見直し（短期）">目標見直し（短期）</option>
+          <option value="認定更新">認定更新</option>
+          <option value="現状把握">現状把握</option>
+          <option value="その他">その他</option>
+        </select>
+      </div>
+      <div class="form-group" id="reasonOtherGroup" style="display:none;">
+        <label>利用経緯（その他・自由記述）</label>
+        <input type="text" id="b-reason-other" placeholder="具体的に記入してください">
       </div>
     </div>
     <div class="form-group">
@@ -396,7 +432,7 @@ select option{background:var(--card);}
   <!-- 緊急連絡先 -->
   <div class="tab-panel" id="tab-emergency">
     <div class="module-title">🚨 緊急連絡先</div>
-    <div class="module-desc">家族・主治医・相談支援員など、連絡先を追加できます。連絡可否は必ず確認してください。</div>
+    <div class="module-desc">「誰が連絡するか」「誰に連絡するか」「いつ連絡するか」の3項目を、必要な人数分登録できます。</div>
     <div class="emergency-list" id="emergencyList"></div>
     <button class="add-row-btn" onclick="addEmergencyRow()">＋ 連絡先を追加する</button>
     <div style="display:flex;align-items:center;margin-top:14px;">
@@ -459,6 +495,66 @@ select option{background:var(--card);}
     </div>
 
     <div class="attr-section">
+      <div class="attr-section-title">😊 特徴</div>
+      <div class="form-group">
+        <label>障がい特性・特徴（病名・服薬状況含む）</label>
+        <textarea id="a-feature" placeholder="例：自閉スペクトラム症。感覚過敏あり。服薬は朝夕2回。"></textarea>
+      </div>
+      <div class="form-group">
+        <label>嬉しいこと</label>
+        <input type="text" id="a-happy" placeholder="例：褒められること、好きな音楽をかけてもらうこと">
+      </div>
+      <div class="form-group">
+        <label>NGワード</label>
+        <input type="text" id="a-ngword" placeholder="例：「早く」「なんで」等の急かす言葉">
+      </div>
+    </div>
+
+    <div class="attr-section">
+      <div class="attr-section-title">⚖️ 権利・判断</div>
+      <div class="form-row">
+        <div class="form-group"><label>金銭管理</label><input type="text" id="a-money" placeholder="例：自己管理可能。大きな買い物は要相談。"></div>
+        <div class="form-group"><label>スケジュールや時間・見通し</label><input type="text" id="a-schedule" placeholder="例：予定変更は事前に伝えると混乱少ない"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>ハウスルールの理解</label><input type="text" id="a-houserule" placeholder="例：概ね理解しているが確認が必要な時あり"></div>
+        <div class="form-group"><label>気持ちの理解・距離感</label><input type="text" id="a-feeling" placeholder="例：距離が近すぎると不安になる"></div>
+      </div>
+      <div class="form-group">
+        <label>合理的配慮</label>
+        <textarea id="a-accommodation" placeholder="例：口頭指示より視覚的な提示（絵カード等）を優先する"></textarea>
+      </div>
+    </div>
+
+    <div class="attr-section">
+      <div class="attr-section-title">💬 コミュニケーション方法</div>
+      <div class="form-group">
+        <label>意思表示手段</label>
+        <input type="text" id="a-commmethod" placeholder="例：単語＋ジェスチャー、絵カード、筆談">
+      </div>
+      <div class="form-group">
+        <label>ご本人が理解を示すには</label>
+        <input type="text" id="a-commhow" placeholder="例：ゆっくり短い文で話しかけると頷きで応答">
+      </div>
+    </div>
+
+    <div class="attr-section">
+      <div class="attr-section-title">📝 補足事項</div>
+      <div class="form-group">
+        <label>家族関係</label>
+        <textarea id="a-familyrel" placeholder="例：両親と同居。兄が県外在住で月1回連絡あり。"></textarea>
+      </div>
+      <div class="form-group">
+        <label>生活歴</label>
+        <textarea id="a-history" placeholder="例：〇〇支援学校卒業後、就労継続支援B型を利用。"></textarea>
+      </div>
+      <div class="form-group">
+        <label>利用希望に至る経緯</label>
+        <textarea id="a-usereason" placeholder="例：前事業所で対人トラブルが続き、環境を変えたいと家族が相談。"></textarea>
+      </div>
+    </div>
+
+    <div class="attr-section">
       <div class="attr-section-title">➕ 自由項目（ラベル＋内容）</div>
       <div class="free-attr-list" id="freeAttrList"></div>
       <button class="add-row-btn" onclick="addFreeAttr()">＋ 項目を追加する</button>
@@ -473,7 +569,7 @@ select option{background:var(--card);}
   <!-- ICF -->
   <div class="tab-panel" id="tab-icf">
     <div class="module-title">🧩 ICFアセスメント</div>
-    <div class="module-desc">6領域×4セルのマトリクスです。赤＝リスク、青＝強み・資源としてトリアージしてください。</div>
+    <div class="module-desc">7カテゴリ×5項目のマトリクスです。赤＝リスク、青＝強み・資源としてトリアージしてください。</div>
     <div id="icfMatrix"></div>
     <div style="display:flex;align-items:center;margin-top:8px;">
       <button class="save-btn" onclick="saveIcf()">保存する</button>
@@ -484,8 +580,8 @@ select option{background:var(--card);}
   <!-- 氷山モデル -->
   <div class="tab-panel" id="tab-iceberg">
     <div class="module-title">🏔 氷山モデル</div>
-    <div class="module-desc">ICFの赤セル（リスク）をもとに、問題の構造を5層で掘り下げます。AIが下書きを生成→人が修正してください。</div>
-    <button class="ai-btn" id="icebergAiBtn" onclick="generateIceberg()">✨ AIで下書き生成（ICF赤セルから）</button>
+    <div class="module-desc">ICFの🔴リスク・🔵強みセルをもとに、①目に見えるリスクと強み→②背景→③対応・注意事項の3段で掘り下げます。AIが下書きを生成→人が修正してください。</div>
+    <button class="ai-btn" id="icebergAiBtn" onclick="generateIceberg()">✨ AIで下書き生成（ICFの🔴🔵セルから）</button>
     <span class="ai-status" id="icebergStatus"></span>
     <div style="margin-top:16px;" id="icebergLayers"></div>
     <div style="display:flex;align-items:center;margin-top:8px;">
@@ -505,7 +601,7 @@ select option{background:var(--card);}
       <div class="attr-section">
         <div class="attr-section-title">📌 選択した課題（編集可）</div>
         <div class="form-group">
-          <label>優先課題</label>
+          <label>優先課題（支援に際しての課題）</label>
           <textarea id="g-issue" placeholder="課題を記入してください" style="min-height:80px;"></textarea>
         </div>
       </div>
@@ -520,8 +616,27 @@ select option{background:var(--card);}
           <textarea id="g-short" placeholder="例：転倒リスクを下げるため、住環境整備と歩行訓練を週2回継続する"></textarea>
         </div>
         <div class="form-group">
-          <label>本人の意向・希望</label>
+          <label>本人の意向・希望（今の願い）</label>
           <textarea id="g-wish" placeholder="例：「もう少し外に出たい」「家族に迷惑をかけたくない」"></textarea>
+        </div>
+      </div>
+      <div class="attr-section">
+        <div class="attr-section-title">🗺 支援方針（本人と周りを知るための地図）</div>
+        <div class="form-group">
+          <label>社会での活動・参加イメージ</label>
+          <textarea id="g-participation" placeholder="氷山モデルのストレングスポイントを参考に記入してください"></textarea>
+        </div>
+        <div class="form-group">
+          <label>支援方針</label>
+          <textarea id="g-policy" placeholder="上記の課題・活動参加イメージを踏まえた支援方針を記入してください"></textarea>
+        </div>
+        <div class="form-group">
+          <label>本人の将来の夢・願い</label>
+          <textarea id="g-dream" placeholder="例：「いつかまた仕事に就きたい」"></textarea>
+        </div>
+        <div class="form-group">
+          <label>家族の今の願い・希望</label>
+          <textarea id="g-familywish" placeholder="例：「本人らしく穏やかに過ごしてほしい」"></textarea>
         </div>
       </div>
     </div>
@@ -750,14 +865,24 @@ function showTab(name) {
 function renderBasic() {
   if (!currentData) return;
   const b = currentData.modules.basic || {};
-  document.getElementById('b-alias').value   = b.alias   || '';
-  document.getElementById('b-dob').value     = b.dob     || '';
-  document.getElementById('b-age').value     = b.age     || '';
-  document.getElementById('b-address').value = b.address || '';
-  document.getElementById('b-family').value  = b.family  || '';
-  document.getElementById('b-note').value    = b.note    || '';
+  document.getElementById('b-alias').value    = b.alias      || '';
+  document.getElementById('b-nickname').value = b.nickname   || '';
+  document.getElementById('b-dob').value      = b.dob        || '';
+  document.getElementById('b-age').value      = b.age        || '';
+  document.getElementById('b-address').value  = b.address    || '';
+  document.getElementById('b-family').value   = b.family     || '';
+  document.getElementById('b-grade').value    = b.grade      || '';
+  document.getElementById('b-reason').value   = b.reason     || '';
+  document.getElementById('b-reason-other').value = b.reasonOther || '';
+  document.getElementById('b-note').value     = b.note       || '';
   setGenderUI(b.gender || '');
+  toggleReasonOther();
   if (b.dob) calcAge();
+}
+
+function toggleReasonOther() {
+  const isOther = document.getElementById('b-reason').value === 'その他';
+  document.getElementById('reasonOtherGroup').style.display = isOther ? '' : 'none';
 }
 
 function setGender(g) {
@@ -785,13 +910,17 @@ function calcAge() {
 function saveBasic() {
   if (!currentData) return;
   currentData.modules.basic = {
-    alias:   document.getElementById('b-alias').value.trim(),
-    dob:     document.getElementById('b-dob').value,
-    age:     document.getElementById('b-age').value,
-    gender:  currentData.modules.basic?.gender || '',
-    address: document.getElementById('b-address').value.trim(),
-    family:  document.getElementById('b-family').value,
-    note:    document.getElementById('b-note').value.trim(),
+    alias:       document.getElementById('b-alias').value.trim(),
+    nickname:    document.getElementById('b-nickname').value.trim(),
+    dob:         document.getElementById('b-dob').value,
+    age:         document.getElementById('b-age').value,
+    gender:      currentData.modules.basic?.gender || '',
+    address:     document.getElementById('b-address').value.trim(),
+    family:      document.getElementById('b-family').value,
+    grade:       document.getElementById('b-grade').value,
+    reason:      document.getElementById('b-reason').value,
+    reasonOther: document.getElementById('b-reason-other').value.trim(),
+    note:        document.getElementById('b-note').value.trim(),
   };
   if (currentData.modules.basic.alias) {
     currentData.meta.alias = currentData.modules.basic.alias;
@@ -815,6 +944,12 @@ function renderEmergency() {
 }
 
 function buildEmergRow(row, i) {
+  // 旧スキーマ（name/relation/tel/contact）からの後方互換フォールバック
+  const toName     = row.toName     ?? row.name     ?? '';
+  const toRelation = row.toRelation ?? row.relation ?? 'その他';
+  const toTel      = row.toTel      ?? row.tel      ?? '';
+  const whenNote   = row.whenNote   ?? (row.contact ? `（旧データ）連絡可否：${row.contact}` : '');
+
   const div = document.createElement('div');
   div.className = 'emerg-row';
   div.dataset.idx = i;
@@ -823,38 +958,40 @@ function buildEmergRow(row, i) {
       <span class="emerg-no">連絡先 ${i + 1}</span>
       <button class="del-btn" onclick="delEmergRow(${i})">✕ 削除</button>
     </div>
+    <div class="attr-section-title">📞 誰が連絡するか</div>
     <div class="form-row">
-      <div class="form-group"><label>氏名</label><input type="text" class="er-name" value="${esc(row.name||'')}"></div>
+      <div class="form-group"><label>担当者名</label><input type="text" class="er-who-name" value="${esc(row.whoName||'')}" placeholder="例：田中"></div>
       <div class="form-group" style="flex:0 0 140px">
-        <label>続柄</label>
-        <select class="er-rel">
-          ${['配偶者','子','親','兄弟姉妹','主治医','相談支援員','訪問看護師','ケアマネ','その他'].map(v =>
-            `<option ${row.relation===v?'selected':''}>${v}</option>`).join('')}
+        <label>職種</label>
+        <select class="er-who-role">
+          ${['管理者','サビ管','支援員','夜勤者','その他'].map(v => `<option ${row.whoRole===v?'selected':''}>${v}</option>`).join('')}
         </select>
       </div>
-      <div class="form-group"><label>電話番号</label><input type="tel" class="er-tel" value="${esc(row.tel||'')}"></div>
     </div>
-    <div class="form-group"><label>連絡可否</label>
-      <div class="btn-group">
-        <button class="tog-btn ok ${row.contact==='OK'?'active':''}" onclick="setContact(this,'OK')">✅ 連絡OK</button>
-        <button class="tog-btn ng ${row.contact==='NG'?'active':''}" onclick="setContact(this,'NG')">🚫 連絡NG</button>
-        <button class="tog-btn ${row.contact==='要確認'?'active':''}" onclick="setContact(this,'要確認')">⚠️ 要確認</button>
+    <div class="attr-section-title">👤 誰に連絡するか</div>
+    <div class="form-row">
+      <div class="form-group"><label>氏名</label><input type="text" class="er-to-name" value="${esc(toName)}"></div>
+      <div class="form-group" style="flex:0 0 140px">
+        <label>続柄</label>
+        <select class="er-to-rel">
+          ${['配偶者','子','親','兄弟姉妹','主治医','相談支援員','訪問看護師','ケアマネ','その他'].map(v =>
+            `<option ${toRelation===v?'selected':''}>${v}</option>`).join('')}
+        </select>
       </div>
+      <div class="form-group"><label>電話番号</label><input type="tel" class="er-to-tel" value="${esc(toTel)}"></div>
+    </div>
+    <div class="form-group">
+      <label>いつ連絡するか（OK/NG条件）</label>
+      <textarea class="er-when" placeholder="例：日中は本人不在のため夜間のみ連絡OK">${esc(whenNote)}</textarea>
     </div>
   `;
   return div;
 }
 
-function setContact(btn, val) {
-  const row = btn.closest('.emerg-row');
-  row.querySelectorAll('.tog-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-}
-
 function addEmergencyRow() {
   if (!currentData) return;
   currentData.modules.emergency = currentData.modules.emergency || [];
-  currentData.modules.emergency.push({ name:'', relation:'その他', tel:'', contact:'OK' });
+  currentData.modules.emergency.push({ whoName:'', whoRole:'支援員', toName:'', toRelation:'その他', toTel:'', whenNote:'' });
   renderEmergency();
 }
 function delEmergRow(i) {
@@ -866,12 +1003,13 @@ function saveEmergency() {
   if (!currentData) return;
   const rows = [];
   document.querySelectorAll('#emergencyList .emerg-row').forEach(row => {
-    const activeTog = row.querySelector('.tog-btn.active');
     rows.push({
-      name:     row.querySelector('.er-name').value.trim(),
-      relation: row.querySelector('.er-rel').value,
-      tel:      row.querySelector('.er-tel').value.trim(),
-      contact:  activeTog ? activeTog.textContent.replace(/[✅🚫⚠️]\s*/g,'').trim() : '',
+      whoName:    row.querySelector('.er-who-name').value.trim(),
+      whoRole:    row.querySelector('.er-who-role').value,
+      toName:     row.querySelector('.er-to-name').value.trim(),
+      toRelation: row.querySelector('.er-to-rel').value,
+      toTel:      row.querySelector('.er-to-tel').value.trim(),
+      whenNote:   row.querySelector('.er-when').value.trim(),
     });
   });
   currentData.modules.emergency = rows;
@@ -885,14 +1023,27 @@ function saveEmergency() {
 function renderAttributes() {
   if (!currentData) return;
   const a = currentData.modules.attributes || {};
-  document.getElementById('a-disease').value = a.disease || '';
-  document.getElementById('a-doctor').value  = a.doctor  || '';
-  document.getElementById('a-prof').value    = a.prof    || '';
-  document.getElementById('a-height').value  = a.height  || '';
-  document.getElementById('a-weight').value  = a.weight  || '';
-  document.getElementById('a-grade').value   = a.grade   || '';
-  document.getElementById('a-like').value    = a.like    || '';
-  document.getElementById('a-dislike').value = a.dislike || '';
+  document.getElementById('a-disease').value  = a.disease  || '';
+  document.getElementById('a-doctor').value   = a.doctor   || '';
+  document.getElementById('a-prof').value     = a.prof     || '';
+  document.getElementById('a-height').value   = a.height   || '';
+  document.getElementById('a-weight').value   = a.weight   || '';
+  document.getElementById('a-grade').value    = a.grade    || '';
+  document.getElementById('a-like').value     = a.like     || '';
+  document.getElementById('a-dislike').value  = a.dislike  || '';
+  document.getElementById('a-feature').value  = a.feature  || '';
+  document.getElementById('a-happy').value    = a.happy    || '';
+  document.getElementById('a-ngword').value   = a.ngword   || '';
+  document.getElementById('a-money').value    = a.money    || '';
+  document.getElementById('a-schedule').value = a.schedule || '';
+  document.getElementById('a-houserule').value      = a.houserule      || '';
+  document.getElementById('a-feeling').value         = a.feeling       || '';
+  document.getElementById('a-accommodation').value   = a.accommodation || '';
+  document.getElementById('a-commmethod').value = a.commMethod || '';
+  document.getElementById('a-commhow').value    = a.commHow    || '';
+  document.getElementById('a-familyrel').value  = a.familyRel  || '';
+  document.getElementById('a-history').value    = a.history    || '';
+  document.getElementById('a-usereason').value  = a.useReason  || '';
   renderFreeAttrs(a.free || []);
 }
 
@@ -930,14 +1081,27 @@ function saveAttributes() {
     if (label || value) free.push({ label, value });
   });
   currentData.modules.attributes = {
-    disease: document.getElementById('a-disease').value.trim(),
-    doctor:  document.getElementById('a-doctor').value.trim(),
-    prof:    document.getElementById('a-prof').value.trim(),
-    height:  document.getElementById('a-height').value.trim(),
-    weight:  document.getElementById('a-weight').value.trim(),
-    grade:   document.getElementById('a-grade').value.trim(),
-    like:    document.getElementById('a-like').value.trim(),
-    dislike: document.getElementById('a-dislike').value.trim(),
+    disease:       document.getElementById('a-disease').value.trim(),
+    doctor:        document.getElementById('a-doctor').value.trim(),
+    prof:          document.getElementById('a-prof').value.trim(),
+    height:        document.getElementById('a-height').value.trim(),
+    weight:        document.getElementById('a-weight').value.trim(),
+    grade:         document.getElementById('a-grade').value.trim(),
+    like:          document.getElementById('a-like').value.trim(),
+    dislike:       document.getElementById('a-dislike').value.trim(),
+    feature:       document.getElementById('a-feature').value.trim(),
+    happy:         document.getElementById('a-happy').value.trim(),
+    ngword:        document.getElementById('a-ngword').value.trim(),
+    money:         document.getElementById('a-money').value.trim(),
+    schedule:      document.getElementById('a-schedule').value.trim(),
+    houserule:     document.getElementById('a-houserule').value.trim(),
+    feeling:       document.getElementById('a-feeling').value.trim(),
+    accommodation: document.getElementById('a-accommodation').value.trim(),
+    commMethod:    document.getElementById('a-commmethod').value.trim(),
+    commHow:       document.getElementById('a-commhow').value.trim(),
+    familyRel:     document.getElementById('a-familyrel').value.trim(),
+    history:       document.getElementById('a-history').value.trim(),
+    useReason:     document.getElementById('a-usereason').value.trim(),
     free,
   };
   saveCurrentPerson();
@@ -948,12 +1112,13 @@ function saveAttributes() {
 //  部品4：ICF
 // ═══════════════════════════════════════════════
 const ICF_DOMAINS = [
-  {id:'health',label:'① 健康状態・医療',icon:'🏥',cells:['現疾患・内服管理','医療的ケア','聴力・視力・感覚','疼痛・浮腫・倦怠感']},
-  {id:'body',label:'② 心身機能',icon:'🧠',cells:['ADL（立ち上がり・移動）','排泄・入浴・食事','認知機能・記憶・判断','精神・意欲・睡眠']},
-  {id:'activity',label:'③ 活動',icon:'⚡',cells:['家事・IADL（炊事・洗濯）','買い物・財産管理','服薬管理・セルフケア','外出・移動手段']},
-  {id:'participation',label:'④ 参加',icon:'🌐',cells:['家族・近所との交流','コミュニティ参加','趣味・余暇活動','就労・社会的役割']},
-  {id:'environment',label:'⑤ 環境因子',icon:'🏘',cells:['家族サポート状況','経済状況・制度利用','住環境・物理的環境','サービス体制・連携']},
-  {id:'personal',label:'⑥ 個人因子',icon:'✨',cells:['価値観・意思・信念','生い立ち・職業歴','強み・得意なこと','本人の夢・希望・不安']},
+  {id:'disability',label:'① 障害等',icon:'🦽',cells:['欠損や皮膚疾患','聴力・視力','マヒや骨折','酸素・レスピ・気切','ストマ・カテーテル']},
+  {id:'disease',label:'② 疾患',icon:'💊',cells:['主治医','人体図（マーク式）','義歯などのツール','服薬管理','診断名']},
+  {id:'adl',label:'③ ADL（自立度）',icon:'🚿',cells:['立ち上がり・移乗・移動','排泄','更衣・整容','入浴','食事・嚥下']},
+  {id:'iadl',label:'④ IADL・適応',icon:'🛒',cells:['炊事・食事準備','買物・金銭管理','コミュニケーション','掃除・洗濯','電話使用']},
+  {id:'mental',label:'⑤ 知的・精神',icon:'🧩',cells:['理解力','行動上課題','精神疾患・知的','対人スキル','精神症状']},
+  {id:'environment',label:'⑥ 周囲環境',icon:'🏘',cells:['自宅環境','家族との接触','外出頻度','コミュニティ参加','近所との交流']},
+  {id:'person',label:'⑦ 本人',icon:'✨',cells:['性格','生い立ち','趣味','職業・就業可能性','嗜好等']},
 ];
 
 function renderIcf() {
@@ -1029,6 +1194,19 @@ function getRedCells() {
   return reds;
 }
 
+function getTriagedCells() {
+  const icf = currentData?.modules?.icf || {};
+  const cells = [];
+  ICF_DOMAINS.forEach(dom => {
+    const domData = icf[dom.id] || {};
+    dom.cells.forEach((label, ci) => {
+      const cd = domData[`c${ci}`] || {};
+      if ((cd.tri === 'red' || cd.tri === 'blue') && cd.text) cells.push({ domain: dom.label, cell: label, text: cd.text, tri: cd.tri });
+    });
+  });
+  return cells;
+}
+
 // ═══════════════════════════════════════════════
 //  Worker AI呼び出し共通
 // ═══════════════════════════════════════════════
@@ -1085,11 +1263,9 @@ async function callWorkerStream(system, userContent, onChunk) {
 //  部品5：氷山モデル
 // ═══════════════════════════════════════════════
 const ICEBERG_LAYERS = [
-  { key: 'visible',   label: '① 今見えること',   hint: '表面に現れている問題・症状・行動。誰もが気づいていること。' },
-  { key: 'pattern',   label: '② くせ・傾向',     hint: 'くり返されるパターン。状況が悪化する前のサイン。' },
-  { key: 'structure', label: '③ 仕組み・構造',   hint: 'なぜそのパターンが起きるか。環境・制度・役割の問題。' },
-  { key: 'belief',    label: '④ 思い込み・価値観', hint: '本人・家族・支援者が持っている前提・信念・思い込み。' },
-  { key: 'root',      label: '⑤ 本当の原因',     hint: '深層にある根本的な原因。ここに働きかけると全体が変わる。' },
+  { key: 'visible',    label: '① 目に見えるリスクと強み（何が？）', hint: 'ICFで🔴リスク・🔵強みとした項目から自動的に転記されます（「AIで下書き生成」を押すと更新されます）。' },
+  { key: 'background', label: '② 背景（なんで？）',                 hint: 'その症状・強みの背景にあると考えられる要因。関連する他のICF項目も参考にしてください。' },
+  { key: 'action',     label: '③ 対応・注意事項（まずどうする？）', hint: '仮説としての対応策・留意点。完璧な答えを求めるものではありません。' },
 ];
 
 function renderIceberg() {
@@ -1108,9 +1284,9 @@ function renderIceberg() {
 }
 
 async function generateIceberg() {
-  const reds = getRedCells();
-  if (!reds.length) {
-    alert('ICFタブで赤（リスク）セルを入力してから実行してください。');
+  const cells = getTriagedCells();
+  if (!cells.length) {
+    alert('ICFタブで🔴リスクまたは🔵強みのセルを入力してから実行してください。');
     return;
   }
   const btn = document.getElementById('icebergAiBtn');
@@ -1118,28 +1294,30 @@ async function generateIceberg() {
   btn.disabled = true;
   status.textContent = '生成中...';
 
-  const redText = reds.map(r => `【${r.domain}・${r.cell}】${r.text}`).join('\n');
+  const visibleText = cells.map(c => `【${c.tri==='red'?'🔴リスク':'🔵強み'}・${c.domain}/${c.cell}】${c.text}`).join('\n');
+  // ①は自動転記（ICFの赤・青セルからそのまま）
+  const visibleEl = document.getElementById('ice-visible');
+  if (visibleEl) visibleEl.value = visibleText;
+
   const b = currentData.modules.basic || {};
 
-  const system = `あなたは福祉・介護の専門家です。ICFアセスメントの結果をもとに、氷山モデルの5層分析の下書きを生成します。
+  const system = `あなたは福祉・介護の専門家です。ICFアセスメントの🔴リスク・🔵強み項目をもとに、氷山モデルの「②背景（なんで？）」「③対応・注意事項（まずどうする？）」の下書きを生成します。
 断定せず「〜と考えられます」「〜の可能性があります」の形で書いてください。
 必ず以下のJSON形式のみで返答してください：
-{"visible":"...","pattern":"...","structure":"...","belief":"...","root":"..."}`;
+{"background":"...","action":"..."}`;
 
   const userContent = `利用者：${b.alias||'不明'}（${b.age||'—'}歳・${b.gender||'—'}）
-ICFリスク項目：
-${redText}
+ICFの🔴リスク・🔵強み項目：
+${visibleText}
 
-上記をもとに氷山モデル5層の下書きを生成してください。`;
+上記をもとに②背景（なぜそうなっているか）と③対応・注意事項（まずどうするか）の下書きを生成してください。`;
 
   let raw = '';
   try {
     await callWorkerStream(system, userContent, chunk => { raw += chunk; });
     const json = JSON.parse(raw.match(/\{[\s\S]*\}/)?.[0] || '{}');
-    ICEBERG_LAYERS.forEach(l => {
-      const el = document.getElementById('ice-' + l.key);
-      if (el && json[l.key]) el.value = json[l.key];
-    });
+    if (json.background) document.getElementById('ice-background').value = json.background;
+    if (json.action)     document.getElementById('ice-action').value = json.action;
     status.textContent = '✓ 下書き生成完了。内容を確認・修正してから保存してください。';
   } catch(e) {
     status.textContent = 'エラー: ' + e.message;
@@ -1169,6 +1347,10 @@ function renderGoal() {
   document.getElementById('g-long').value  = g.longTerm || '';
   document.getElementById('g-short').value = g.shortTerm || '';
   document.getElementById('g-wish').value  = g.wish || '';
+  document.getElementById('g-participation').value = g.participation || '';
+  document.getElementById('g-policy').value        = g.policy        || '';
+  document.getElementById('g-dream').value         = g.dream         || '';
+  document.getElementById('g-familywish').value    = g.familyWish    || '';
   if (g.issue) document.getElementById('goalForm').style.display = '';
 }
 
@@ -1237,10 +1419,14 @@ function selectCandidate(el, title, body) {
 function saveGoal() {
   if (!currentData) return;
   currentData.modules.goal = {
-    issue:     document.getElementById('g-issue').value.trim(),
-    longTerm:  document.getElementById('g-long').value.trim(),
-    shortTerm: document.getElementById('g-short').value.trim(),
-    wish:      document.getElementById('g-wish').value.trim(),
+    issue:         document.getElementById('g-issue').value.trim(),
+    longTerm:      document.getElementById('g-long').value.trim(),
+    shortTerm:     document.getElementById('g-short').value.trim(),
+    wish:          document.getElementById('g-wish').value.trim(),
+    participation: document.getElementById('g-participation').value.trim(),
+    policy:        document.getElementById('g-policy').value.trim(),
+    dream:         document.getElementById('g-dream').value.trim(),
+    familyWish:    document.getElementById('g-familywish').value.trim(),
   };
   saveCurrentPerson();
   flashSave('goal');
@@ -1272,14 +1458,17 @@ function buildOutputHtml(data) {
 
   // 基本情報
   if (Object.keys(b).some(k => b[k])) {
+    const reasonText = b.reason === 'その他' ? `その他（${b.reasonOther||'—'}）` : (b.reason||'—');
     html += `
     <div class="ps-section">
       <div class="ps-section-title">■ 基本情報</div>
       <div class="ps-grid">
-        <div class="ps-field"><label>氏名（仮名）</label><span>${esc(b.alias||'—')}</span></div>
+        <div class="ps-field"><label>氏名（仮名）/ 呼び方</label><span>${esc(b.alias||'—')} / ${esc(b.nickname||'—')}</span></div>
         <div class="ps-field"><label>生年月日 / 年齢</label><span>${esc(b.dob||'—')} / ${esc(b.age||'—')}歳</span></div>
         <div class="ps-field"><label>性別</label><span>${esc(b.gender||'—')}</span></div>
         <div class="ps-field"><label>家族構成</label><span>${esc(b.family||'—')}</span></div>
+        <div class="ps-field"><label>障がい区分</label><span>${esc(b.grade||'—')}</span></div>
+        <div class="ps-field"><label>利用経緯</label><span>${esc(reasonText)}</span></div>
         <div class="ps-field" style="grid-column:1/-1"><label>住所</label><span>${esc(b.address||'—')}</span></div>
         ${b.note?`<div class="ps-field" style="grid-column:1/-1"><label>備考</label><span>${esc(b.note)}</span></div>`:''}
       </div>
@@ -1294,13 +1483,19 @@ function buildOutputHtml(data) {
     <div class="ps-section">
       <div class="ps-section-title">■ 緊急連絡先</div>
       <table class="ps-emerg-table">
-        <tr><th>続柄</th><th>氏名</th><th>電話番号</th><th>連絡可否</th></tr>
-        ${e.map(r => `<tr>
-          <td>${esc(r.relation||'—')}</td>
-          <td>${esc(r.name||'—')}</td>
-          <td>${esc(r.tel||'—')}</td>
-          <td class="${r.contact==='OK'?'ps-ok':r.contact==='NG'?'ps-ng':''}">${esc(r.contact||'—')}</td>
-        </tr>`).join('')}
+        <tr><th>誰が連絡</th><th>誰に連絡（続柄）</th><th>電話番号</th><th>いつ連絡するか</th></tr>
+        ${e.map(r => {
+          const toName     = r.toName     ?? r.name     ?? '';
+          const toRelation = r.toRelation ?? r.relation ?? '';
+          const toTel      = r.toTel      ?? r.tel      ?? '';
+          const whenNote   = r.whenNote   ?? (r.contact ? `（旧データ）連絡可否：${r.contact}` : '');
+          return `<tr>
+          <td>${esc(r.whoName||'—')}${r.whoRole?'（'+esc(r.whoRole)+'）':''}</td>
+          <td>${esc(toName||'—')}${toRelation?'（'+esc(toRelation)+'）':''}</td>
+          <td>${esc(toTel||'—')}</td>
+          <td>${esc(whenNote||'—')}</td>
+        </tr>`;
+        }).join('')}
       </table>
     </div>`;
   } else {
@@ -1314,6 +1509,11 @@ function buildOutputHtml(data) {
       ['主疾患名', a.disease], ['主治医・医療機関', a.doctor], ['関わる専門職', a.prof],
       ['身長', a.height ? a.height + ' cm' : ''], ['体重', a.weight ? a.weight + ' kg' : ''],
       ['障がい区分・介護度', a.grade], ['好きなこと', a.like], ['苦手なこと', a.dislike],
+      ['障がい特性・特徴', a.feature], ['嬉しいこと', a.happy], ['NGワード', a.ngword],
+      ['金銭管理', a.money], ['スケジュールや時間・見通し', a.schedule],
+      ['ハウスルールの理解', a.houserule], ['気持ちの理解・距離感', a.feeling], ['合理的配慮', a.accommodation],
+      ['意思表示手段', a.commMethod], ['ご本人が理解を示すには', a.commHow],
+      ['家族関係', a.familyRel], ['生活歴', a.history], ['利用希望に至る経緯', a.useReason],
       ...(a.free || []).map(f => [f.label, f.value]),
     ].filter(([, v]) => v);
     html += `
@@ -1368,10 +1568,22 @@ function buildOutputHtml(data) {
     if (g.issue)    html += `<tr><td>優先課題</td><td style="white-space:pre-wrap;">${esc(g.issue)}</td></tr>`;
     if (g.longTerm) html += `<tr><td>長期目標</td><td>${esc(g.longTerm)}</td></tr>`;
     if (g.shortTerm)html += `<tr><td>短期目標</td><td>${esc(g.shortTerm)}</td></tr>`;
-    if (g.wish)     html += `<tr><td>本人の意向</td><td>${esc(g.wish)}</td></tr>`;
+    if (g.wish)     html += `<tr><td>本人の意向（今の願い）</td><td>${esc(g.wish)}</td></tr>`;
     html += `</table></div>`;
   } else {
     html += `<div class="ps-section"><div class="ps-section-title">■ 課題・目標設定</div><div class="ps-placeholder">未入力（「課題・目標」タブから入力してください）</div></div>`;
+  }
+
+  // 支援方針（本人と周りを知るための地図）
+  if (g.participation || g.policy || g.dream || g.familyWish) {
+    html += `<div class="ps-section"><div class="ps-section-title">■ 支援方針（本人と周りを知るための地図）</div><table class="ps-attr-table">`;
+    if (g.participation) html += `<tr><td>社会での活動・参加イメージ</td><td>${esc(g.participation)}</td></tr>`;
+    if (g.policy)         html += `<tr><td>支援方針</td><td>${esc(g.policy)}</td></tr>`;
+    if (g.dream)          html += `<tr><td>本人の将来の夢・願い</td><td>${esc(g.dream)}</td></tr>`;
+    if (g.familyWish)     html += `<tr><td>家族の今の願い・希望</td><td>${esc(g.familyWish)}</td></tr>`;
+    html += `</table></div>`;
+  } else {
+    html += `<div class="ps-section"><div class="ps-section-title">■ 支援方針（本人と周りを知るための地図）</div><div class="ps-placeholder">未入力（「課題・目標」タブから入力してください）</div></div>`;
   }
   const pl = data.modules.plan || {};
   if (pl.actions?.length || pl.wishSelf || pl.nextDate) {
@@ -1434,18 +1646,32 @@ function downloadPdf() {
 function loadSampleData() {
   if (!currentData) return;
   currentData.modules.basic = {
-    alias: 'Aさん', dob: '1952-03-15', age: '74', gender: '男性',
-    address: '大阪府〇〇市', family: '配偶者と同居', note: '長男家族が近隣在住。週1回訪問あり。',
+    alias: 'Aさん', nickname: 'Aさん', dob: '1952-03-15', age: '74', gender: '男性',
+    address: '大阪府〇〇市', family: '配偶者と同居', grade: '区分4', reason: '現状把握', reasonOther: '',
+    note: '長男家族が近隣在住。週1回訪問あり。',
   };
   currentData.modules.emergency = [
-    { name: 'B子さん', relation: '配偶者', tel: '090-XXXX-XXXX', contact: 'OK' },
-    { name: 'C夫さん', relation: '子', tel: '080-XXXX-XXXX', contact: 'OK' },
-    { name: '山田Dr', relation: '主治医', tel: '06-XXXX-XXXX', contact: '要確認' },
+    { whoName: '田中', whoRole: 'サビ管', toName: 'B子さん', toRelation: '配偶者', toTel: '090-XXXX-XXXX', whenNote: '日中・夜間とも連絡OK' },
+    { whoName: '田中', whoRole: 'サビ管', toName: 'C夫さん', toRelation: '子', toTel: '080-XXXX-XXXX', whenNote: '平日夜間のみ連絡OK（仕事中はNG）' },
+    { whoName: '佐藤', whoRole: '支援員', toName: '山田Dr', toRelation: '主治医', toTel: '06-XXXX-XXXX', whenNote: '緊急時のみ。事前に医院の受付を通すこと' },
   ];
   currentData.modules.attributes = {
     disease: '脳梗塞後遺症（右片麻痺）', doctor: '〇〇クリニック 山田Dr',
     prof: 'PT週2回・訪問看護週1回', height: '168', weight: '62',
     grade: '障がい支援区分4', like: '音楽鑑賞（演歌）・将棋', dislike: '人混み・急な予定変更',
+    feature: '脳梗塞後遺症による右片麻痺。降圧剤・抗凝固剤を朝夕2回服薬。',
+    happy: '将棋の話をされること、演歌をかけてもらうこと',
+    ngword: '「早く」「まだできないの」等の急かす言葉',
+    money: '本人管理だが大きな買い物は長男に相談',
+    schedule: '予定変更は前日までに伝えると混乱が少ない',
+    houserule: '概ね理解している',
+    feeling: '距離が近すぎると遠慮してしまう傾向',
+    accommodation: '歩行時は右側から声をかけ、急かさずゆっくり待つ',
+    commMethod: '発話明瞭。杖歩行のため移動を伴う会話はゆっくり行う',
+    commHow: 'ゆっくり短い文で話しかけると頷きで応答',
+    familyRel: '配偶者と同居。長男家族が近隣在住、週1回訪問あり。',
+    history: '元大工。定年後に脳梗塞を発症し右片麻痺が残る。',
+    useReason: '退院後の在宅生活継続に向けたアセスメントのため利用開始。',
     free: [{ label: '特記事項', value: '糖尿病管理中。食事制限あり。' }],
   };
   currentData.modules.plan = {
@@ -1462,25 +1688,28 @@ function loadSampleData() {
     reviewNote: '住環境整備完了後に歩行状態を再評価。外出頻度の増加を目標に調整予定。',
   };
   currentData.modules.iceberg = {
-    visible:   '夜間の転倒リスクが高く、歩行時に右足がもつれる場面が増えている。意欲の低下も見られる。',
-    pattern:   '疲労が蓄積する夕方以降に転倒リスクが高まる。「迷惑をかけたくない」という思いから助けを求めない傾向がある。',
-    structure: '住環境の段差・照明が不十分。PT訓練の頻度が減少しており、筋力低下が進行している。',
-    belief:    '「自分でできることはやるべき」「家族に頼ってはいけない」という強い価値観がある。',
-    root:      '脳梗塞後の身体機能低下に加え、「迷惑をかけたくない」という思いが適切なSOSを妨げている。住環境整備と心理的サポートが根本的な対策となる。',
+    visible:    '【🔴リスク・①障害等/マヒや骨折】右片麻痺。歩行は杖使用で見守り。\n【🔴リスク・⑥周囲環境/自宅環境】戸建て。段差多く転倒リスクあり。\n【🔵強み・⑤知的・精神/対人スキル】配偶者・長男と良好な関係。\n【🔵強み・⑦本人/趣味】将棋が好き。友人と月1回。',
+    background: '疲労が蓄積する夕方以降に転倒リスクが高まっていると考えられます。「迷惑をかけたくない」という思いから助けを求めない傾向があり、住環境の段差・照明が不十分な点も影響している可能性があります。',
+    action:     '住環境整備（段差解消・夜間照明設置）と、本人の「自分でやりたい」という思いを尊重しつつSOSを出しやすくする声かけの両輪で対応することが考えられます。',
   };
   currentData.modules.goal = {
     issue:    '転倒リスクの高い住環境（段差・照明）の整備\n夕方以降の歩行時のサポート体制構築',
     longTerm: '自宅での安全な生活を継続し、家族と過ごす時間を楽しめる状態を維持する（6ヶ月）',
     shortTerm: '転倒ゼロを目標に住環境整備を実施し、PT訓練を週2回継続する（1ヶ月）',
     wish:     '「もう少し外に出たい」「家族に迷惑をかけたくない」',
+    participation: '将棋仲間との月1回の集まりを継続し、外出の機会を維持する。',
+    policy:        '住環境整備と歩行訓練で転倒リスクを下げつつ、本人の「自分でやりたい」という気持ちを尊重した支援を行う。',
+    dream:         '「いつかまた将棋の大会に出てみたい」',
+    familyWish:    '「本人らしく、無理なく穏やかに過ごしてほしい」',
   };
   currentData.modules.icf = {
-    health: { c0:{text:'脳梗塞後遺症。降圧剤・抗凝固剤内服中。',tri:'red'}, c1:{text:'',tri:'none'}, c2:{text:'',tri:'none'}, c3:{text:'右半身に軽度疼痛あり',tri:'red'} },
-    body:   { c0:{text:'右片麻痺。歩行は杖使用で見守り。',tri:'red'}, c1:{text:'入浴は一部介助。排泄は自立。',tri:'none'}, c2:{text:'認知機能は保たれている。',tri:'blue'}, c3:{text:'意欲はあるが疲れやすい。',tri:'none'} },
-    activity:{ c0:{text:'調理は難しい。簡単な片付けは可能。',tri:'red'}, c1:{text:'買い物は家族が代行。',tri:'none'}, c2:{text:'服薬は自己管理できている。',tri:'blue'}, c3:{text:'外出は週1回・家族の車。',tri:'none'} },
-    participation:{ c0:{text:'配偶者・長男と良好な関係。',tri:'blue'}, c1:{text:'近所付き合いは減少。',tri:'none'}, c2:{text:'将棋が好き。友人と月1回。',tri:'blue'}, c3:{text:'',tri:'none'} },
-    environment:{ c0:{text:'配偶者が主介護者。長男が週1回支援。',tri:'blue'}, c1:{text:'年金・障がい者手帳あり。制度は活用中。',tri:'blue'}, c2:{text:'戸建て。段差多く転倒リスクあり。',tri:'red'}, c3:{text:'訪問リハ・ヘルパー利用中。',tri:'blue'} },
-    personal:{ c0:{text:'「家族に迷惑をかけたくない」という思い強い。',tri:'none'}, c1:{text:'元大工。手先が器用で几帳面。',tri:'blue'}, c2:{text:'忍耐力がある。前向きに取り組む姿勢。',tri:'blue'}, c3:{text:'「もう少し外に出たい」と話している。',tri:'none'} },
+    disability:  { c0:{text:'',tri:'none'}, c1:{text:'',tri:'none'}, c2:{text:'右片麻痺。歩行は杖使用で見守り。',tri:'red'}, c3:{text:'',tri:'none'}, c4:{text:'',tri:'none'} },
+    disease:     { c0:{text:'〇〇クリニック 山田Dr',tri:'none'}, c1:{text:'',tri:'none'}, c2:{text:'',tri:'none'}, c3:{text:'降圧剤・抗凝固剤を朝夕2回服薬。自己管理できている。',tri:'blue'}, c4:{text:'脳梗塞後遺症（右片麻痺）',tri:'red'} },
+    adl:         { c0:{text:'立ち上がりは見守りが必要。',tri:'red'}, c1:{text:'排泄は自立。',tri:'blue'}, c2:{text:'更衣は一部介助。',tri:'none'}, c3:{text:'入浴は一部介助。',tri:'none'}, c4:{text:'食事は自立。嚥下に問題なし。',tri:'blue'} },
+    iadl:        { c0:{text:'調理は難しい。簡単な片付けは可能。',tri:'red'}, c1:{text:'買い物は家族が代行。',tri:'none'}, c2:{text:'意思疎通は良好。',tri:'blue'}, c3:{text:'洗濯は一部介助。',tri:'none'}, c4:{text:'電話は自立して使用可能。',tri:'blue'} },
+    mental:      { c0:{text:'認知機能は保たれている。',tri:'blue'}, c1:{text:'特になし。',tri:'none'}, c2:{text:'該当なし。',tri:'none'}, c3:{text:'配偶者・長男と良好な関係。',tri:'blue'}, c4:{text:'意欲はあるが疲れやすい。',tri:'none'} },
+    environment: { c0:{text:'戸建て。段差多く転倒リスクあり。',tri:'red'}, c1:{text:'配偶者が主介護者。長男が週1回支援。',tri:'blue'}, c2:{text:'外出は週1回・家族の車。',tri:'none'}, c3:{text:'将棋仲間と月1回交流。',tri:'blue'}, c4:{text:'近所付き合いは減少。',tri:'none'} },
+    person:      { c0:{text:'「家族に迷惑をかけたくない」という思い強い。',tri:'none'}, c1:{text:'元大工。手先が器用で几帳面。',tri:'blue'}, c2:{text:'将棋・演歌鑑賞。',tri:'blue'}, c3:{text:'定年退職済み。',tri:'none'}, c4:{text:'「もう少し外に出たい」と話している。',tri:'none'} },
   };
 }
 
@@ -1563,7 +1792,7 @@ async function generatePlan() {
 長期目標：${g.longTerm||'—'}
 短期目標：${g.shortTerm||'—'}
 本人の意向：${g.wish||'—'}
-${ice.root ? '根本原因：' + ice.root : ''}
+${ice.background ? '背景：' + ice.background : ''}
 
 具体的支援計画を3〜5項目提案してください。`;
 
