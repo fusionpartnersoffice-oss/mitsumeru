@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>響② 運用支援系 | 運用標準書・在庫管理 | Fusion Partners</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%2381c784'/><text x='16' y='24' font-size='20' text-anchor='middle'>⚙️</text></svg>">
+<style>
+:root {
+  --bg:#0f1923; --surface:#1a2634; --card:#223044;
+  --accent:#81c784; --accent2:#ce93d8; --accent3:#ffb74d;
+  --danger:#ef5350; --text:#e8eaf0; --sub:#8fa3b8;
+  --border:#2e4460; --radius:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Hiragino Kaku Gothic Pro','Meiryo',sans-serif;min-height:100vh;}
+
+/* ── 同意ゲート ── */
+.gate{position:fixed;inset:0;background:rgba(15,25,35,.97);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;}
+.gate.hidden{display:none;}
+.gate-box{max-width:500px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px 24px;}
+.gate-title{font-size:1.1rem;font-weight:700;color:var(--accent);margin-bottom:14px;}
+.gate-body{font-size:.83rem;color:var(--sub);line-height:1.8;margin-bottom:20px;}
+.gate-body strong{color:var(--text);}
+.gate-btn{width:100%;padding:12px;background:var(--accent);color:#04210a;border:none;border-radius:var(--radius);font-size:.92rem;font-weight:700;cursor:pointer;font-family:inherit;}
+
+/* ── ヘッダー ── */
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:9px 14px;display:flex;align-items:center;gap:8px;position:sticky;top:0;z-index:100;flex-wrap:wrap;}
+.hdr-logo{font-size:.98rem;font-weight:700;color:var(--accent);}
+.facility-badge{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:3px 11px;font-size:.76rem;color:var(--sub);}
+.hdr-spacer{flex:1;}
+.hdr-btn{background:var(--card);border:1px solid var(--border);color:var(--sub);border-radius:6px;padding:5px 11px;font-size:.74rem;cursor:pointer;font-family:inherit;transition:all .15s;}
+.hdr-btn:hover{color:var(--text);border-color:var(--sub);}
+
+/* ── フェーズ切り替え ── */
+.phase{display:none;}.phase.active{display:block;}
+
+/* ── Phase 0: 施設一覧 ── */
+#phaseList{padding:24px 16px;}
+.p0-wrap{max-width:860px;margin:0 auto;}
+.p0-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;}
+.p0-title{font-size:1.05rem;font-weight:700;}
+.p0-desc{font-size:.78rem;color:var(--sub);margin-top:3px;line-height:1.6;}
+.facility-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;}
+.facility-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;cursor:pointer;transition:all .18s;}
+.facility-card:hover{border-color:var(--accent);}
+.fc-name{font-weight:700;font-size:.95rem;margin-bottom:4px;}
+.fc-date{font-size:.68rem;color:var(--sub);margin-top:4px;}
+.empty-state{text-align:center;padding:40px 20px;color:var(--sub);font-size:.88rem;line-height:1.7;}
+
+/* ── タブナビ ── */
+.tab-nav{display:flex;background:var(--surface);border-bottom:1px solid var(--border);padding:0 14px;overflow-x:auto;gap:2px;}
+.tab-btn{background:none;border:none;border-bottom:3px solid transparent;color:var(--sub);padding:12px 16px;font-size:.82rem;font-family:inherit;cursor:pointer;white-space:nowrap;transition:all .15s;}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);}
+.tab-btn:hover{color:var(--text);}
+
+.tab-panel{display:none;padding:20px 16px;max-width:820px;margin:0 auto;}
+.tab-panel.active{display:block;}
+
+.module-title{font-size:.95rem;font-weight:700;margin-bottom:4px;}
+.module-desc{font-size:.76rem;color:var(--sub);line-height:1.6;margin-bottom:18px;}
+.form-group{margin-bottom:14px;}
+.form-group label{font-size:.76rem;color:var(--sub);display:block;margin-bottom:5px;}
+.form-row{display:flex;gap:10px;flex-wrap:wrap;}
+.form-row .form-group{flex:1;min-width:140px;}
+input[type="text"],input[type="number"],input[type="date"],select,textarea{
+  width:100%;background:var(--card);border:1px solid var(--border);border-radius:8px;
+  color:var(--text);padding:9px 12px;font-size:.86rem;outline:none;font-family:inherit;transition:border .15s;}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);}
+textarea{resize:vertical;min-height:68px;}
+select option{background:var(--card);}
+
+.save-btn{background:var(--accent);color:#04210a;border:none;border-radius:var(--radius);padding:11px 28px;font-size:.88rem;font-weight:700;cursor:pointer;font-family:inherit;margin-top:8px;}
+.save-btn:hover{opacity:.9;}
+.save-msg{font-size:.74rem;color:var(--accent2);margin-left:10px;opacity:0;transition:opacity .3s;}
+.save-msg.show{opacity:1;}
+.add-row-btn{background:none;border:1px dashed var(--border);border-radius:6px;color:var(--sub);padding:6px 12px;font-size:.76rem;cursor:pointer;font-family:inherit;width:100%;margin-top:4px;}
+.add-row-btn:hover{border-color:var(--sub);color:var(--text);}
+.del-btn{background:none;border:none;color:var(--danger);cursor:pointer;font-size:.78rem;padding:2px 6px;}
+.del-btn:hover{opacity:.7;}
+
+/* ── 運用標準書（B-1） ── */
+.standard-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px;}
+.standard-card-title{font-size:.9rem;font-weight:700;color:var(--accent);margin-bottom:8px;}
+.standard-field{margin-bottom:6px;font-size:.8rem;line-height:1.6;}
+.standard-field b{color:var(--sub);font-weight:700;margin-right:4px;}
+.person-ref-chip{display:inline-flex;align-items:center;gap:5px;background:rgba(129,199,132,.15);border:1px solid var(--accent);color:var(--accent);border-radius:14px;padding:2px 10px;font-size:.72rem;margin:2px 4px 2px 0;}
+.person-ref-chip button{background:none;border:none;color:var(--accent);cursor:pointer;font-size:.7rem;}
+
+/* ── 品目管理・ABC分析（C-1） ── */
+.item-table{width:100%;border-collapse:collapse;font-size:.8rem;margin-top:10px;}
+.item-table th{background:var(--surface);color:var(--sub);text-align:left;padding:7px 8px;border-bottom:1px solid var(--border);font-weight:700;font-size:.72rem;}
+.item-table td{padding:7px 8px;border-bottom:1px solid var(--border);}
+.abc-badge{display:inline-block;font-size:.7rem;font-weight:700;padding:2px 9px;border-radius:10px;}
+.abc-a{background:rgba(239,83,80,.2);color:#ef9a9a;}
+.abc-b{background:rgba(255,183,77,.2);color:var(--accent3);}
+.abc-c{background:rgba(100,181,246,.2);color:#64b5f6;}
+</style>
+</head>
+<body>
+
+<!-- 同意ゲート -->
+<div class="gate" id="gate">
+  <div class="gate-box">
+    <div class="gate-title">⚙️ 響② 運用支援系 ご利用前の確認</div>
+    <div class="gate-body">
+      本ツールでは、施設単位の運用標準書・品目在庫データを入力・管理します。<br><br>
+      <strong>入力したデータについて：</strong><br>
+      ・お使いの端末（ブラウザ）内にのみ保存されます<br>
+      ・外部サーバーには送信されません<br>
+      ・タブを閉じてもデータは保持されます<br><br>
+      <strong>個人ルール参照ポインタについて：</strong><br>
+      ・「響（利用者支援系）」で登録済みの利用者IDを参照できますが、この画面から利用者データを編集することはできません<br><br>
+      上記をご確認のうえ、ご利用ください。
+    </div>
+    <button class="gate-btn" onclick="giveConsent()">確認しました・利用を開始する</button>
+  </div>
+</div>
+
+<!-- ヘッダー -->
+<header>
+  <span class="hdr-logo">⚙️ 響②運用支援系</span>
+  <span class="facility-badge" id="facilityBadge">施設未選択</span>
+  <span class="hdr-spacer"></span>
+  <button class="hdr-btn" onclick="goList()">← 施設一覧</button>
+</header>
+
+<!-- Phase 0: 施設一覧 -->
+<div class="phase active" id="phaseList">
+  <div class="p0-wrap">
+    <div class="p0-header">
+      <div>
+        <div class="p0-title">施設を選んでください</div>
+        <div class="p0-desc">運用標準書・品目管理を行う施設を選ぶか、新しく追加してください</div>
+      </div>
+      <button class="hdr-btn" style="background:rgba(129,199,132,.15);border-color:var(--accent);color:var(--accent);" onclick="createFacility()">＋ 新しい施設を追加</button>
+    </div>
+    <div class="facility-grid" id="facilityGrid"></div>
+  </div>
+</div>
+
+<!-- Phase 1: 施設編集 -->
+<div class="phase" id="phaseEdit">
+  <nav class="tab-nav" id="tabNav">
+    <button class="tab-btn active" onclick="showTab('standards')" id="tabBtn-standards">📋 運用標準書</button>
+    <button class="tab-btn" onclick="showTab('items')" id="tabBtn-items">📦 品目管理・ABC分析</button>
+  </nav>
+
+  <!-- 運用標準書（B-1） -->
+  <div class="tab-panel active" id="tab-standards">
+    <div class="module-title">📋 運用標準書</div>
+    <div class="module-desc">目的・運用時期・完了ゴール・運用手順書・留意事項・参考文献の6項目で作成します。個別の利用者ルールがあれば参照ポインタを追加できます。</div>
+    <button class="hdr-btn" style="background:rgba(129,199,132,.15);border-color:var(--accent);color:var(--accent);margin-bottom:14px;" onclick="showStandardForm()">＋ 新規標準書作成</button>
+
+    <div id="standardForm" style="display:none;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:16px;">
+      <div class="form-group"><label>タイトル</label><input type="text" id="st-title" placeholder="例：朝の申し送り運用"></div>
+      <div class="form-group"><label>①目的</label><textarea id="st-purpose" placeholder="この運用標準が何のためにあるか"></textarea></div>
+      <div class="form-group"><label>②運用時期</label><input type="text" id="st-timing" placeholder="例：毎日／週次／イベント発生時"></div>
+      <div class="form-group"><label>③完了ゴール</label><textarea id="st-goal" placeholder="何をもって完了とするか"></textarea></div>
+      <div class="form-group"><label>④運用手順書</label><textarea id="st-procedure" placeholder="具体的な手順（ステップ形式で記入）" style="min-height:100px;"></textarea></div>
+      <div class="form-group"><label>⑤留意事項</label><textarea id="st-notes" placeholder="注意点・NG事項"></textarea></div>
+      <div class="form-group"><label>⑥参考文献・引用（備考）</label><input type="text" id="st-references" placeholder="根拠となる資料・出典"></div>
+
+      <div class="form-group">
+        <label>個人ルール参照ポインタ（響・利用者支援系のIDを参照）</label>
+        <div class="form-row">
+          <select id="st-personSelect" style="flex:1"><option value="">（響側に登録済みの利用者一覧）</option></select>
+          <button class="hdr-btn" style="flex:0 0 auto" onclick="addPersonRefToForm()">＋ 追加</button>
+        </div>
+        <div id="st-personRefChips" style="margin-top:8px;"></div>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-top:10px;">
+        <button class="save-btn" onclick="submitStandardForm()">登録する</button>
+        <button class="hdr-btn" onclick="hideStandardForm()">キャンセル</button>
+      </div>
+    </div>
+
+    <div id="standardList"></div>
+  </div>
+
+  <!-- 品目管理・ABC分析（C-1） -->
+  <div class="tab-panel" id="tab-items">
+    <div class="module-title">📦 品目管理・ABC分析</div>
+    <div class="module-desc">品目を登録すると、年間コスト・使用頻度・利用者安全リスクからABCランクを自動判定します（Aランク＝発注点計算方式向き、Cランク＝2ビン方式向き）。</div>
+    <button class="hdr-btn" style="background:rgba(129,199,132,.15);border-color:var(--accent);color:var(--accent);margin-bottom:14px;" onclick="showItemForm()">＋ 品目を登録</button>
+
+    <div id="itemForm" style="display:none;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:16px;">
+      <div class="form-row">
+        <div class="form-group"><label>品目名</label><input type="text" id="it-name" placeholder="例：紙おむつ（Mサイズ）"></div>
+        <div class="form-group" style="flex:0 0 140px"><label>カテゴリ</label>
+          <select id="it-category">
+            <option value="食材">食材</option>
+            <option value="日用品">日用品</option>
+            <option value="衛生用品">衛生用品</option>
+            <option value="その他">その他</option>
+          </select>
+        </div>
+        <div class="form-group" style="flex:0 0 100px"><label>単位</label><input type="text" id="it-unit" placeholder="例：個・箱"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>使用頻度</label>
+          <select id="it-usage">
+            <option value="毎日">毎日</option>
+            <option value="週数回">週数回</option>
+            <option value="週1回">週1回</option>
+            <option value="月数回">月数回</option>
+            <option value="安定供給">安定供給</option>
+          </select>
+        </div>
+        <div class="form-group"><label>日次消費量（目安）</label><input type="number" id="it-daily" placeholder="例：5" min="0" step="0.1"></div>
+        <div class="form-group"><label>リードタイム（日）</label><input type="number" id="it-leadtime" placeholder="例：3" min="0"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>発注先</label><input type="text" id="it-supplier" placeholder="例：〇〇卸業者"></div>
+        <div class="form-group"><label>単価（円）</label><input type="number" id="it-price" placeholder="例：120" min="0" step="1"></div>
+        <div class="form-group" style="flex:0 0 120px"><label>利用者安全リスク</label>
+          <select id="it-risk">
+            <option value="高">高</option>
+            <option value="中">中</option>
+            <option value="低">低</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>発注ロット数</label><input type="number" id="it-lotsize" placeholder="例：1" min="0"></div>
+        <div class="form-group"><label>安全在庫数</label><input type="number" id="it-safetystock" placeholder="例：10" min="0"></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px;">
+        <button class="save-btn" onclick="submitItemForm()">登録する</button>
+        <button class="hdr-btn" onclick="hideItemForm()">キャンセル</button>
+      </div>
+    </div>
+
+    <button class="hdr-btn" onclick="exportItemsCSV()">📥 品目リストをCSVで出力</button>
+    <div id="itemTableWrap"></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+//  部品0：土台・データ管理（施設単位）
+// ═══════════════════════════════════════════════
+const STORE_PREFIX_OPS = 'hibiki_ops_facility_';
+const INDEX_KEY_OPS    = 'hibiki_ops_index';
+const CONSENT_KEY_OPS  = 'hibiki_ops_consent';
+
+let currentFacilityId = null;
+let currentFacility = null;
+let standardFormPersonRefs = [];
+
+function giveConsent() {
+  localStorage.setItem(CONSENT_KEY_OPS, '1');
+  document.getElementById('gate').classList.add('hidden');
+}
+function checkConsent() {
+  if (localStorage.getItem(CONSENT_KEY_OPS) === '1') {
+    document.getElementById('gate').classList.add('hidden');
+  }
+}
+
+function newFacilityData(name) {
+  return {
+    id: 'fac' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    meta: { name: name || '新しい施設', createdAt: new Date().toISOString(), updatedAt: '' },
+    modules: { standards: [], items: [] },
+  };
+}
+
+function getIndex() { return JSON.parse(localStorage.getItem(INDEX_KEY_OPS) || '[]'); }
+function setIndex(arr) { localStorage.setItem(INDEX_KEY_OPS, JSON.stringify(arr)); }
+
+function loadFacilityById(id) {
+  const raw = localStorage.getItem(STORE_PREFIX_OPS + id);
+  return raw ? JSON.parse(raw) : null;
+}
+function saveCurrentFacility() {
+  if (!currentFacility) return;
+  currentFacility.meta.updatedAt = new Date().toISOString();
+  localStorage.setItem(STORE_PREFIX_OPS + currentFacility.id, JSON.stringify(currentFacility));
+  let idx = getIndex();
+  const existing = idx.findIndex(x => x.id === currentFacility.id);
+  const entry = { id: currentFacility.id, name: currentFacility.meta.name, updatedAt: currentFacility.meta.updatedAt };
+  if (existing >= 0) idx[existing] = entry; else idx.push(entry);
+  setIndex(idx);
+}
+function deleteFacility(id, e) {
+  e.stopPropagation();
+  if (!confirm('この施設を削除しますか？')) return;
+  localStorage.removeItem(STORE_PREFIX_OPS + id);
+  setIndex(getIndex().filter(x => x.id !== id));
+  renderFacilityList();
+}
+
+// ═══════════════════════════════════════════════
+//  施設一覧
+// ═══════════════════════════════════════════════
+function renderFacilityList() {
+  const grid = document.getElementById('facilityGrid');
+  const idx = getIndex();
+  if (!idx.length) {
+    grid.innerHTML = '<div class="empty-state">施設がまだ登録されていません。<br>「＋ 新しい施設を追加」から始めてください。</div>';
+    return;
+  }
+  grid.innerHTML = idx.slice().reverse().map(f => `
+    <div class="facility-card" onclick="openFacility('${f.id}')">
+      <div class="fc-name">${esc(f.name)}</div>
+      <div class="fc-date">${f.updatedAt ? '更新: ' + fmtDate(f.updatedAt) : '未保存'}</div>
+      <div style="margin-top:8px;">
+        <button style="font-size:.65rem;background:none;border:1px solid var(--danger);color:var(--danger);border-radius:4px;padding:2px 7px;cursor:pointer;" onclick="deleteFacility('${f.id}',event)">削除</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function createFacility() {
+  const name = prompt('施設名を入力してください', '');
+  if (name === null) return;
+  const facility = newFacilityData(name || '名称未設定');
+  currentFacility = facility;
+  saveCurrentFacility();
+  openFacility(facility.id);
+}
+
+function openFacility(id) {
+  const facility = loadFacilityById(id);
+  if (!facility) { alert('データが見つかりません'); renderFacilityList(); return; }
+  currentFacilityId = id;
+  currentFacility = facility;
+  document.getElementById('facilityBadge').textContent = facility.meta.name;
+  showPhase('phaseEdit');
+  showTab('standards');
+  renderStandards();
+  renderItems();
+}
+
+function goList() {
+  currentFacilityId = null; currentFacility = null;
+  document.getElementById('facilityBadge').textContent = '施設未選択';
+  renderFacilityList();
+  showPhase('phaseList');
+}
+
+function showPhase(id) {
+  document.querySelectorAll('.phase').forEach(el => el.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function showTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  document.getElementById('tabBtn-' + name).classList.add('active');
+}
+
+// ═══════════════════════════════════════════════
+//  個人ルール参照ポインタ（響・利用者支援系との連携／同一origin参照のみ）
+// ═══════════════════════════════════════════════
+function getV2PersonIndex() {
+  try { return JSON.parse(localStorage.getItem('hibiki_v2_index') || '[]'); } catch { return []; }
+}
+function lookupPersonAlias(personId) {
+  try {
+    const raw = localStorage.getItem('hibiki_v2_person_' + personId);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    return data?.meta?.alias || null;
+  } catch { return null; }
+}
+function renderPersonSelect() {
+  const sel = document.getElementById('st-personSelect');
+  const list = getV2PersonIndex();
+  sel.innerHTML = '<option value="">（響側に登録済みの利用者一覧）</option>' +
+    list.map(p => `<option value="${p.id}">${esc(p.alias)}</option>`).join('');
+}
+function addPersonRefToForm() {
+  const sel = document.getElementById('st-personSelect');
+  const id = sel.value;
+  if (!id) return;
+  if (!standardFormPersonRefs.includes(id)) standardFormPersonRefs.push(id);
+  renderPersonRefChips();
+}
+function removePersonRefFromForm(id) {
+  standardFormPersonRefs = standardFormPersonRefs.filter(x => x !== id);
+  renderPersonRefChips();
+}
+function renderPersonRefChips() {
+  const box = document.getElementById('st-personRefChips');
+  box.innerHTML = standardFormPersonRefs.map(id => {
+    const alias = lookupPersonAlias(id) || `（未検出・ID:${id}）`;
+    return `<span class="person-ref-chip">${esc(alias)}<button onclick="removePersonRefFromForm('${id}')">✕</button></span>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════
+//  B-1：運用標準書
+// ═══════════════════════════════════════════════
+function showStandardForm(editId) {
+  standardFormPersonRefs = [];
+  document.getElementById('st-title').value = '';
+  document.getElementById('st-purpose').value = '';
+  document.getElementById('st-timing').value = '';
+  document.getElementById('st-goal').value = '';
+  document.getElementById('st-procedure').value = '';
+  document.getElementById('st-notes').value = '';
+  document.getElementById('st-references').value = '';
+  document.getElementById('standardForm').dataset.editId = '';
+  if (editId) {
+    const s = (currentFacility.modules.standards || []).find(x => x.id === editId);
+    if (s) {
+      document.getElementById('st-title').value = s.title || '';
+      document.getElementById('st-purpose').value = s.purpose || '';
+      document.getElementById('st-timing').value = s.timing || '';
+      document.getElementById('st-goal').value = s.goal || '';
+      document.getElementById('st-procedure').value = s.procedure || '';
+      document.getElementById('st-notes').value = s.notes || '';
+      document.getElementById('st-references').value = s.references || '';
+      standardFormPersonRefs = [...(s.personRefs || [])];
+      document.getElementById('standardForm').dataset.editId = editId;
+    }
+  }
+  renderPersonSelect();
+  renderPersonRefChips();
+  document.getElementById('standardForm').style.display = '';
+}
+function hideStandardForm() {
+  document.getElementById('standardForm').style.display = 'none';
+}
+function submitStandardForm() {
+  const title = document.getElementById('st-title').value.trim();
+  if (!title) { alert('タイトルを入力してください。'); return; }
+  currentFacility.modules.standards = currentFacility.modules.standards || [];
+  const editId = document.getElementById('standardForm').dataset.editId;
+  const entry = {
+    id: editId || ('std' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6)),
+    title,
+    purpose: document.getElementById('st-purpose').value.trim(),
+    timing: document.getElementById('st-timing').value.trim(),
+    goal: document.getElementById('st-goal').value.trim(),
+    procedure: document.getElementById('st-procedure').value.trim(),
+    notes: document.getElementById('st-notes').value.trim(),
+    references: document.getElementById('st-references').value.trim(),
+    personRefs: [...standardFormPersonRefs],
+    createdAt: editId ? (currentFacility.modules.standards.find(x => x.id === editId)?.createdAt || new Date().toISOString()) : new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+  const idx = currentFacility.modules.standards.findIndex(x => x.id === editId);
+  if (idx >= 0) currentFacility.modules.standards[idx] = entry; else currentFacility.modules.standards.push(entry);
+  saveCurrentFacility();
+  hideStandardForm();
+  renderStandards();
+}
+function deleteStandard(id) {
+  if (!confirm('この運用標準書を削除しますか？')) return;
+  currentFacility.modules.standards = (currentFacility.modules.standards || []).filter(x => x.id !== id);
+  saveCurrentFacility();
+  renderStandards();
+}
+function renderStandards() {
+  const list = document.getElementById('standardList');
+  const standards = currentFacility.modules.standards || [];
+  if (!standards.length) {
+    list.innerHTML = '<div style="font-size:.8rem;color:var(--sub);">まだ運用標準書が登録されていません。</div>';
+    return;
+  }
+  list.innerHTML = standards.map(s => `
+    <div class="standard-card">
+      <div class="standard-card-title">${esc(s.title)}</div>
+      <div class="standard-field"><b>①目的</b>${esc(s.purpose || '—')}</div>
+      <div class="standard-field"><b>②運用時期</b>${esc(s.timing || '—')}</div>
+      <div class="standard-field"><b>③完了ゴール</b>${esc(s.goal || '—')}</div>
+      <div class="standard-field"><b>④運用手順書</b><div style="white-space:pre-wrap;margin-top:2px;">${esc(s.procedure || '—')}</div></div>
+      <div class="standard-field"><b>⑤留意事項</b>${esc(s.notes || '—')}</div>
+      <div class="standard-field"><b>⑥参考文献・引用</b>${esc(s.references || '—')}</div>
+      ${(s.personRefs && s.personRefs.length) ? `<div class="standard-field"><b>個人ルール参照</b>${s.personRefs.map(id => `<span class="person-ref-chip">${esc(lookupPersonAlias(id) || `未検出・ID:${id}`)}</span>`).join('')}</div>` : ''}
+      <div style="margin-top:8px;display:flex;gap:8px;">
+        <button class="hdr-btn" onclick="showStandardForm('${s.id}')">編集</button>
+        <button class="del-btn" onclick="deleteStandard('${s.id}')">✕ 削除</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ═══════════════════════════════════════════════
+//  C-1：品目登録・ABC分析
+// ═══════════════════════════════════════════════
+function showItemForm() {
+  ['it-name','it-unit','it-daily','it-leadtime','it-supplier','it-price','it-lotsize','it-safetystock'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('it-category').value = '食材';
+  document.getElementById('it-usage').value = '毎日';
+  document.getElementById('it-risk').value = '中';
+  document.getElementById('itemForm').style.display = '';
+}
+function hideItemForm() {
+  document.getElementById('itemForm').style.display = 'none';
+}
+function submitItemForm() {
+  const itemName = document.getElementById('it-name').value.trim();
+  if (!itemName) { alert('品目名を入力してください。'); return; }
+  currentFacility.modules.items = currentFacility.modules.items || [];
+  const entry = {
+    itemId: 'item' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    itemName,
+    category: document.getElementById('it-category').value,
+    unit: document.getElementById('it-unit').value.trim(),
+    usageFrequency: document.getElementById('it-usage').value,
+    dailyConsumption: parseFloat(document.getElementById('it-daily').value) || 0,
+    leadTime: parseFloat(document.getElementById('it-leadtime').value) || 0,
+    supplier: document.getElementById('it-supplier').value.trim(),
+    unitPrice: parseFloat(document.getElementById('it-price').value) || 0,
+    riskLevel: document.getElementById('it-risk').value,
+    lotSize: parseFloat(document.getElementById('it-lotsize').value) || 0,
+    safetyStock: parseFloat(document.getElementById('it-safetystock').value) || 0,
+    createdAt: new Date().toISOString(),
+  };
+  currentFacility.modules.items.push(entry);
+  saveCurrentFacility();
+  hideItemForm();
+  renderItems();
+}
+function deleteItem(itemId) {
+  if (!confirm('この品目を削除しますか？')) return;
+  currentFacility.modules.items = (currentFacility.modules.items || []).filter(x => x.itemId !== itemId);
+  saveCurrentFacility();
+  renderItems();
+}
+
+// ABC分析：年間コスト（日次消費量×365×単価）のパレート順位＋リスク・頻度による上書き
+function computeAbcRanks(items) {
+  const withCost = items.map(it => ({
+    ...it,
+    annualCost: (parseFloat(it.dailyConsumption) || 0) * 365 * (parseFloat(it.unitPrice) || 0),
+  }));
+  const sorted = [...withCost].sort((a, b) => b.annualCost - a.annualCost);
+  const n = sorted.length;
+  const rankByCost = {};
+  sorted.forEach((it, i) => {
+    const pct = n ? (i + 1) / n : 1;
+    rankByCost[it.itemId] = pct <= 0.2 ? 'A' : (pct <= 0.5 ? 'B' : 'C');
+  });
+  return withCost.map(it => {
+    let rank = rankByCost[it.itemId] || 'C';
+    if (it.riskLevel === '高' && it.usageFrequency === '毎日') rank = 'A';
+    else if (rank !== 'A' && it.riskLevel === '中' && (it.usageFrequency === '毎日' || it.usageFrequency === '週数回')) rank = 'B';
+    return { ...it, rank };
+  });
+}
+
+function renderItems() {
+  const wrap = document.getElementById('itemTableWrap');
+  const items = currentFacility.modules.items || [];
+  if (!items.length) {
+    wrap.innerHTML = '<div style="font-size:.8rem;color:var(--sub);margin-top:10px;">まだ品目が登録されていません。</div>';
+    return;
+  }
+  const ranked = computeAbcRanks(items).sort((a, b) => (a.rank > b.rank ? 1 : a.rank < b.rank ? -1 : b.annualCost - a.annualCost));
+  const badgeCls = { A: 'abc-a', B: 'abc-b', C: 'abc-c' };
+  wrap.innerHTML = `<table class="item-table">
+    <tr><th>品目名</th><th>カテゴリ</th><th>使用頻度</th><th>リスク</th><th>年間コスト</th><th>ABCランク</th><th></th></tr>
+    ${ranked.map(it => `<tr>
+      <td>${esc(it.itemName)}</td>
+      <td>${esc(it.category)}</td>
+      <td>${esc(it.usageFrequency)}</td>
+      <td>${esc(it.riskLevel)}</td>
+      <td>${Math.round(it.annualCost).toLocaleString()}円</td>
+      <td><span class="abc-badge ${badgeCls[it.rank]}">${it.rank}</span></td>
+      <td><button class="del-btn" onclick="deleteItem('${it.itemId}')">✕</button></td>
+    </tr>`).join('')}
+  </table>`;
+}
+
+function exportItemsCSV() {
+  const items = currentFacility.modules.items || [];
+  const ranked = computeAbcRanks(items);
+  const cols = ['品目名','カテゴリ','単位','使用頻度','日次消費量','リードタイム(日)','発注先','単価(円)','年間コスト(円)','リスク','ABCランク','発注ロット数','安全在庫数'];
+  const rows = ranked.map(it => [
+    it.itemName, it.category, it.unit, it.usageFrequency, it.dailyConsumption, it.leadTime,
+    it.supplier, it.unitPrice, Math.round(it.annualCost), it.riskLevel, it.rank, it.lotSize, it.safetyStock,
+  ].map(v => `"${String(v ?? '').replace(/"/g,'""')}"`).join(','));
+  const csv = '﻿' + cols.join(',') + '\n' + rows.join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8'}));
+  a.download = `響②品目リスト_${currentFacility.meta.name}_${new Date().toISOString().slice(0,10).replace(/-/g,'')}.csv`;
+  a.click();
+}
+
+// ═══════════════════════════════════════════════
+//  ユーティリティ
+// ═══════════════════════════════════════════════
+function esc(s) {
+  return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function fmtDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
+}
+
+// ═══════════════════════════════════════════════
+//  起動
+// ═══════════════════════════════════════════════
+checkConsent();
+renderFacilityList();
+</script>
+</body>
+</html>
