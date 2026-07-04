@@ -159,19 +159,16 @@ function normalizeLabel(raw){
 
 function getRCStatus(ego){
   if(!ego) return {label:'─',cls:'',reason:'',display:'─'};
-  const cp=n(ego.CP),np=n(ego.NP),fc=n(ego.FC),ac=n(ego.AC);
-  const I=cp+fc, U=np+ac;
+  const cp=n(ego.CP),np=n(ego.NP),a=n(ego.A),fc=n(ego.FC),ac=n(ego.AC);
+  const vals=[cp,np,a,fc,ac];
+  const maxV=Math.max(...vals), minV=Math.min(...vals);
   let label,cls;
-  // 判定ロジック自体は既存(凪システム構造定義書v3①軸C)を継承。ラベル文言のみ刷新
-  if(I>9 && U<5){ label='要フォロー'; cls='rc-danger'; }
-  else if(I>7 && U<5){ label='要フォロー'; cls='rc-danger'; }
-  else if(I<5 && U<5){ label='要観察'; cls='rc-warn'; }
-  // 【暫定・要確認】「AC極端高→要対話」は設計書に既存ロジックとして記載されているが、
-  // 実際のnagi_system.html側にはこの分岐が実装されていなかった（要フォロー/要観察/安定の3値のみ）。
-  // 数値基準が定義済みの箇所に見当たらなかったため、AC>=8（10点満点中）を暫定的な閾値として
-  // 新規に追加した。柴山さんのご確認をお願いしたい。
+  // 判定基準：指示キュー2026-07-04（柴山さん壁打ち確定・凪軸C軸D詳細設計§3-1-1-2）の正式版。
+  // 既存nagi_system.html側の合計値方式（I=CP+FC・U=NP+AC）とは判定ロジックが異なる（開発A報告済み）。
+  if(cp>=7 && np<=3 && ac>=6){ label='要フォロー'; cls='rc-danger'; }
   else if(ac>=8){ label='要対話'; cls='rc-warn'; }
-  else { label='安定'; cls='rc-safe'; }
+  else if(np>=maxV && (maxV-minV)<=3){ label='安定'; cls='rc-safe'; }
+  else { label='要観察'; cls='rc-warn'; }
   const reason=RC_REASON[label]||'';
   return {label,cls,reason,display:`${label}（${reason}）`};
 }
