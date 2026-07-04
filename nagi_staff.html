@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>凪 軸D：スタッフ性質 | Fusion Partners</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%234fc3f7'/><text x='16' y='24' font-size='18' text-anchor='middle'>🧬</text></svg>">
+<style>
+:root {
+  --bg:#0f1923; --surface:#1a2634; --card:#223044;
+  --accent:#4fc3f7; --accent2:#81c784; --accent3:#ffb74d; --accent4:#f06292;
+  --danger:#ef5350; --warn:#ffa726; --text:#e8eaf0; --sub:#8fa3b8;
+  --border:#2e4460; --radius:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Hiragino Kaku Gothic Pro','Meiryo',sans-serif;min-height:100vh;font-size:14px;}
+
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.logo{width:30px;height:30px;background:linear-gradient(135deg,#4fc3f7,#0277bd);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
+header h1{font-size:1rem;font-weight:700;color:var(--accent);flex:1;}
+header h1 span{font-size:0.68rem;font-weight:400;color:var(--sub);}
+
+.selector-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:8px 20px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.selector-bar select{background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 10px;font-size:0.8rem;outline:none;}
+.selector-bar label{font-size:0.78rem;color:var(--sub);}
+
+.nav-tabs{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;display:flex;gap:4px;overflow-x:auto;}
+.nav-tab{padding:10px 14px;font-size:0.8rem;color:var(--sub);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;}
+.nav-tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:700;}
+
+main{max-width:1080px;margin:0 auto;padding:20px 16px 80px;}
+.page{display:none;} .page.active{display:block;}
+
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+@media(max-width:760px){.grid-2{grid-template-columns:1fr;}}
+
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;}
+.card-title{font-size:0.72rem;color:var(--sub);margin-bottom:6px;}
+.empty{text-align:center;color:var(--sub);padding:30px 20px;font-size:0.82rem;}
+
+.section{margin-bottom:22px;}
+.section-title{font-size:0.85rem;color:var(--accent);margin-bottom:12px;border-left:3px solid var(--accent);padding-left:8px;display:flex;justify-content:space-between;align-items:center;}
+
+.btn{padding:8px 18px;border-radius:7px;border:none;font-size:0.82rem;font-weight:600;cursor:pointer;}
+.btn-primary{background:var(--accent);color:#000;}
+.btn-secondary{background:var(--card);color:var(--sub);border:1px solid var(--border);}
+.btn-danger{background:var(--danger);color:#fff;}
+.btn-sm{padding:5px 12px;font-size:0.74rem;}
+.btn-xs{padding:3px 8px;font-size:0.68rem;}
+
+.table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:0.78rem;}
+th{text-align:left;padding:6px 8px;color:var(--sub);border-bottom:1px solid var(--border);white-space:nowrap;}
+td{padding:6px 8px;border-bottom:1px solid var(--border);white-space:nowrap;}
+
+.rc-danger{color:var(--danger);} .rc-warn{color:var(--warn);} .rc-safe{color:var(--accent2);}
+.lsrp-D{color:var(--danger);font-weight:700;} .lsrp-W{color:var(--warn);font-weight:700;} .lsrp-S{color:var(--accent2);}
+.tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:0.68rem;background:var(--surface);color:var(--sub);}
+
+.form-group{margin-bottom:12px;}
+.form-group label{font-size:0.78rem;color:var(--sub);display:block;margin-bottom:3px;}
+.form-group input,.form-group select{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:0.85rem;outline:none;}
+
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:100;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;width:90%;position:relative;}
+.modal-title{font-size:1rem;font-weight:700;margin-bottom:14px;}
+.modal-close{position:absolute;top:12px;right:14px;background:none;border:none;color:var(--sub);font-size:1.2rem;cursor:pointer;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🧬</div>
+  <h1>凪 軸D：スタッフ性質 <span>個人プロファイル（ミツメル/奏連携） | Fusion Partners</span></h1>
+  <a href="./nagi_system.html" class="btn btn-secondary btn-sm" style="text-decoration:none;">🧭 ハブ（羅針盤）へ戻る</a>
+</header>
+
+<div class="selector-bar">
+  <label>法人</label>
+  <select id="sel-corp" onchange="onCorpChange()"><option value="">── 全法人 ──</option></select>
+  <label>事業所</label>
+  <select id="sel-office" onchange="onOfficeChange()"><option value="">── 全事業所 ──</option></select>
+  <span style="font-size:0.7rem;color:var(--sub);margin-left:auto;">RC/LSRPのチーム集計は<a href="./nagi_team.html" style="color:var(--accent);">軸C（チーム）</a>を参照</span>
+</div>
+
+<div class="nav-tabs">
+  <div class="nav-tab active" onclick="goTab('roster')" id="tab-roster">📇 スタッフ台帳</div>
+  <div class="nav-tab" onclick="goTab('map')" id="tab-map">🗺 TA・PMマップ</div>
+  <div class="nav-tab" onclick="goTab('candidate')" id="tab-candidate">📋 候補者管理</div>
+</div>
+
+<main>
+
+<!-- 台帳 -->
+<div class="page active" id="page-roster">
+  <div class="section">
+    <div class="section-title">
+      <span>📇 スタッフ台帳</span>
+      <button class="btn btn-primary btn-sm" onclick="openAddStaff()">＋ スタッフ追加</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>事業所</th><th>氏名</th><th>役割</th><th>Task</th><th>Social</th><th>PM</th>
+          <th>CP</th><th>NP</th><th>A</th><th>FC</th><th>AC</th>
+          <th>RC判定（理由）</th><th>LSRP判定（理由）</th><th>操作</th>
+        </tr></thead>
+        <tbody id="staff-tbody"></tbody>
+      </table>
+    </div>
+    <div id="staff-empty" class="empty" style="display:none;">スタッフデータがありません。「スタッフ追加」または候補者管理タブから登録してください。</div>
+  </div>
+  <div class="section" id="detail-section" style="display:none;">
+    <div class="section-title">👤 個人カルテ</div>
+    <div class="card" id="staff-detail-body"></div>
+  </div>
+</div>
+
+<!-- マップ -->
+<div class="page" id="page-map">
+  <div class="grid-2">
+    <div class="section">
+      <div class="section-title">🗺 TAマップ（事業所平均・Task×Social）</div>
+      <div class="card" id="chart-ta-map"></div>
+    </div>
+    <div class="section">
+      <div class="section-title">🎯 PMマップ（管理者・P行動×M行動）</div>
+      <div class="card" id="chart-pm-map"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 候補者管理 -->
+<div class="page" id="page-candidate">
+  <div class="section">
+    <div class="section-title">
+      <span>📋 候補者リスト</span>
+      <span style="font-size:0.72rem;color:var(--sub);font-weight:400;">ミツメルスキャンから受け取ったデータ。採用判断を行ってください。</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>受検日</th><th>法人</th><th>事業所</th><th>氏名</th>
+          <th>LSRP</th><th>RC</th><th>EG:CP</th><th>EG:NP</th><th>EG:A</th><th>EG:FC</th><th>EG:AC</th>
+          <th>エニアTop1</th><th>採否判断</th>
+        </tr></thead>
+        <tbody id="candidate-tbody"></tbody>
+      </table>
+    </div>
+    <div id="candidate-empty" class="empty" style="display:none;">候補者データはありません。ミツメルスキャンの「凪へ送る」ボタンで追加できます。</div>
+  </div>
+</div>
+
+</main>
+
+<!-- MODAL: スタッフ追加 -->
+<div class="modal-overlay" id="modal-add-staff" onclick="if(event.target===this)closeModal('modal-add-staff')">
+  <div class="modal" style="max-width:420px;">
+    <button class="modal-close" onclick="closeModal('modal-add-staff')">✕</button>
+    <div class="modal-title">＋ スタッフ追加</div>
+    <div class="form-group"><label>法人</label><select id="new-staff-corp" onchange="onNewStaffCorpChange()"><option value="">選択してください</option></select></div>
+    <div class="form-group"><label>事業所</label><select id="new-staff-office"><option value="">法人を先に選択</option></select></div>
+    <div class="form-group"><label>氏名</label><input id="new-staff-name" placeholder="山田 太郎"></div>
+    <div class="form-group"><label>役割</label><select id="new-staff-role">
+      <option value="一般職">一般職</option><option value="リーダークラス">リーダークラス</option><option value="管理者クラス">管理者クラス</option>
+    </select></div>
+    <button class="btn btn-primary" onclick="confirmAddStaff()">登録する</button>
+  </div>
+</div>
+
+<!-- MODAL: 採用確定 -->
+<div class="modal-overlay" id="modal-hire" onclick="if(event.target===this)closeModal('modal-hire')">
+  <div class="modal" style="max-width:420px;">
+    <button class="modal-close" onclick="closeModal('modal-hire')">✕</button>
+    <div class="modal-title">✅ 採用確定</div>
+    <input type="hidden" id="hire-candidate-idx">
+    <div style="font-size:0.82rem;color:var(--sub);margin-bottom:14px;">
+      <span id="hire-candidate-name" style="font-weight:700;color:var(--text);"></span> をスタッフとして登録します。診断データはそのままカルテに引き継がれます。
+    </div>
+    <div class="form-group"><label>配属 法人</label><select id="hire-corp" onchange="onHireCorpChange()"><option value="">選択してください</option></select></div>
+    <div class="form-group"><label>配属 事業所</label><select id="hire-office"><option value="">法人を先に選択</option></select></div>
+    <div class="form-group"><label>役職</label><select id="hire-role">
+      <option value="一般職">一般職</option><option value="主任・リーダー">主任・リーダー</option><option value="管理職">管理職</option><option value="経営層">経営層</option>
+    </select></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button class="btn btn-secondary" onclick="closeModal('modal-hire')">キャンセル</button>
+      <button class="btn btn-primary" onclick="confirmHire()">✅ 採用登録を確定</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: 不採用 -->
+<div class="modal-overlay" id="modal-reject" onclick="if(event.target===this)closeModal('modal-reject')">
+  <div class="modal" style="max-width:400px;">
+    <button class="modal-close" onclick="closeModal('modal-reject')">✕</button>
+    <div class="modal-title">🚫 不採用処理</div>
+    <input type="hidden" id="reject-candidate-idx">
+    <div style="font-size:0.82rem;color:var(--sub);margin-bottom:14px;">
+      <span id="reject-candidate-name" style="font-weight:700;color:var(--text);"></span> をブラックリストに移動します（法令に基づき5年間保管）。
+    </div>
+    <div class="form-group"><label>不採用理由（任意）</label><textarea id="reject-reason" rows="3" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px;font-size:0.82rem;"></textarea></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button class="btn btn-secondary" onclick="closeModal('modal-reject')">キャンセル</button>
+      <button class="btn btn-danger" onclick="confirmReject()">🚫 不採用を確定</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════
+//  共通ヘルパー（nagi_system.html と同一実装・localStorageスキーマ互換）
+// ════════════════════════════════════════════════════
+function load(k){ try{ return JSON.parse(localStorage.getItem(k)||'[]'); }catch{ return []; } }
+function save(k,v){ localStorage.setItem(k,JSON.stringify(v)); }
+function n(v){ return Number(v)||0; }
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+function getCorps(){ return load('nagi_corps'); }
+function getAllOffices(){ return load('nagi_offices'); }
+function getOffices(corpId){ const a=getAllOffices(); return corpId?a.filter(o=>o.corpId===corpId):a; }
+function getAllStaff(){ return load('nagi_staff'); }
+function getStaffById(id){ return getAllStaff().find(s=>s.id===id)||null; }
+function getStaffByOffice(oid){ return getAllStaff().filter(s=>s.officeId===oid); }
+function getStaffByCorp(cid){ return getAllStaff().filter(s=>s.corpId===cid); }
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+const ENN_NAMES={T1:'完璧主義',T2:'献身家',T3:'達成者',T4:'芸術家',T5:'研究者',T6:'堅実家',T7:'楽天家',T8:'統率者',T9:'調停者'};
+
+// ════════════════════════════════════════════════════
+//  RC・LSRP判定：軸Cと同一実装（06_イノベーション/凪軸C軸D_nagi_team_nagi_staff_詳細設計_20260704.md §3-1・3-1-2・3-1-3）
+//  ラベル単体表示は不可。必ず「{ラベル}（{理由文言}）」のセット形式で表示する。
+// ════════════════════════════════════════════════════
+const RC_REASON = {
+  '要フォロー': '短時間で信頼関係を築く関わりが効果的なタイプです',
+  '要観察':   'しばらく様子を見ながら変化に気づいていくとよいタイプです',
+  '要対話':   '本人の話をじっくり聞く時間を取ると効果的なタイプです',
+  '安定':     '現状のバランスが取れているタイプです',
+};
+const LSRP_REASON = {
+  '安全圏':   '現時点で特段の配慮は不要です',
+  '要観察':   '時々声をかけながら様子を見ていくとよいタイプです',
+  '要フォロー': '定期的な1on1等でこまめに関わりを持つと効果的なタイプです',
+};
+function normalizeLabel(raw){
+  const map={'危険★':'要フォロー','危険':'要フォロー','要警戒':'要観察','注意':'要観察','依存':'要対話','安全':'安定'};
+  return map[raw]!==undefined ? map[raw] : raw;
+}
+function getRCStatus(ego){
+  if(!ego) return {label:'─',cls:'',reason:'',display:'─'};
+  const cp=n(ego.CP),np=n(ego.NP),fc=n(ego.FC),ac=n(ego.AC);
+  const I=cp+fc, U=np+ac;
+  let label,cls;
+  if(I>9 && U<5){ label='要フォロー'; cls='rc-danger'; }
+  else if(I>7 && U<5){ label='要フォロー'; cls='rc-danger'; }
+  else if(I<5 && U<5){ label='要観察'; cls='rc-warn'; }
+  // 【暫定・要確認】AC>=8（10点満点）を「AC極端高→要対話」の閾値として暫定採用（既存実装に数値基準がなかったため）
+  else if(ac>=8){ label='要対話'; cls='rc-warn'; }
+  else { label='安定'; cls='rc-safe'; }
+  const reason=RC_REASON[label]||'';
+  return {label,cls,reason,display:`${label}（${reason}）`};
+}
+function getLSRPLabel(total){
+  const t=n(total);
+  let label,cls,short;
+  if(t>=16){ label='要フォロー'; cls='lsrp-D'; short='要フォロー'; }
+  else if(t>=11){ label='要観察'; cls='lsrp-W'; short='要観察'; }
+  else { label='安全圏'; cls='lsrp-S'; short='安全'; }
+  const reason=LSRP_REASON[label]||'';
+  return {label,cls,short,reason,display:`${label}（${reason}）`};
+}
+function getPMStyle(p,m){
+  const pp=n(p)>20, mm=n(m)>20;
+  if(pp&&mm) return {label:'PM型',cls:''};
+  if(pp&&!mm) return {label:'Pm型',cls:''};
+  if(!pp&&mm) return {label:'pM型',cls:''};
+  return {label:'pm型',cls:''};
+}
+function ennLabel(enn){
+  if(!enn||!enn.length) return '─';
+  return enn.slice(0,3).map(e=>`${e.type||''}${ENN_NAMES[e.type]||e.name||''}`).join(' / ');
+}
+
+// ════════════════════════════════════════════════════
+//  タブ切替
+// ════════════════════════════════════════════════════
+function goTab(name){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  document.getElementById('tab-'+name).classList.add('active');
+  if(name==='map') renderMaps();
+  if(name==='candidate') renderCandidates();
+}
+
+// ════════════════════════════════════════════════════
+//  法人・事業所セレクタ
+// ════════════════════════════════════════════════════
+function refreshCorpSelect(){
+  const sel=document.getElementById('sel-corp');
+  sel.innerHTML='<option value="">── 全法人 ──</option>'+getCorps().map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+}
+function onCorpChange(){
+  const corpId=document.getElementById('sel-corp').value;
+  const officeSel=document.getElementById('sel-office');
+  const corps=getCorps();
+  officeSel.innerHTML='<option value="">── 全事業所 ──</option>'+getOffices(corpId).map(o=>{
+    const c=corps.find(cc=>cc.id===o.corpId);
+    return `<option value="${o.id}">${c?.name||''} / ${o.name}</option>`;
+  }).join('');
+  renderStaffList();
+}
+function onOfficeChange(){ renderStaffList(); }
+function currentStaffScope(){
+  const corpId=document.getElementById('sel-corp').value;
+  const oid=document.getElementById('sel-office').value;
+  return oid ? getStaffByOffice(oid) : corpId ? getStaffByCorp(corpId) : getAllStaff();
+}
+
+// ════════════════════════════════════════════════════
+//  スタッフ台帳
+// ════════════════════════════════════════════════════
+function renderStaffList(){
+  const staff=currentStaffScope();
+  const offices=getAllOffices();
+  const tbody=document.getElementById('staff-tbody');
+  const empty=document.getElementById('staff-empty');
+  if(!staff.length){ tbody.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  tbody.innerHTML=staff.map(s=>{
+    const off=offices.find(o=>o.id===s.officeId);
+    const pm=getPMStyle(s.p,s.m);
+    const rc=getRCStatus(s.ego);
+    const lsrpL=getLSRPLabel(s.lsrp?.total||0);
+    const ego=s.ego||{};
+    return `<tr>
+      <td>${off?.name||'─'}</td>
+      <td style="font-weight:600;">${s.name}</td>
+      <td><span class="tag">${s.role}</span></td>
+      <td>${n(s.task)}</td><td>${n(s.social)}</td>
+      <td style="font-weight:700;">${pm.label}</td>
+      <td>${n(ego.CP)}</td><td>${n(ego.NP)}</td><td>${n(ego.A)}</td><td>${n(ego.FC)}</td><td>${n(ego.AC)}</td>
+      <td class="${rc.cls}" style="font-weight:600;">${rc.display}</td>
+      <td class="${lsrpL.cls}">${lsrpL.display}</td>
+      <td><button class="btn btn-secondary btn-xs" onclick="openStaffDetail('${s.id}')">詳細</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function openStaffDetail(staffId){
+  const s=getStaffById(staffId);
+  if(!s) return;
+  const off=getAllOffices().find(o=>o.id===s.officeId);
+  const pm=getPMStyle(s.p,s.m);
+  const rc=getRCStatus(s.ego);
+  const lsrpL=getLSRPLabel(s.lsrp?.total||0);
+  const ego=s.ego||{};
+  const enn=s.enn||[];
+  document.getElementById('detail-section').style.display='block';
+  document.getElementById('staff-detail-body').innerHTML=`
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+      <div style="font-size:1.8rem;">👤</div>
+      <div><div style="font-weight:700;font-size:1.05rem;">${s.name}</div><div style="font-size:0.78rem;color:var(--sub);">${off?.name||'─'} ／ ${s.role}</div></div>
+    </div>
+    <div class="grid-2">
+      <div>
+        <div style="font-size:0.75rem;color:var(--sub);margin-bottom:6px;">🧭 チームアセスメント</div>
+        <div>Task：${n(s.task)} ／ Social：${n(s.social)}</div>
+        <div style="margin-top:6px;">PMスタイル：<span style="font-weight:700;">${pm.label}</span>（P:${n(s.p)} M:${n(s.m)}）</div>
+        <div style="margin-top:10px;font-size:0.75rem;color:var(--sub);">🔮 エニアグラム</div>
+        <div>${ennLabel(enn)}</div>
+      </div>
+      <div>
+        <div style="font-size:0.75rem;color:var(--sub);margin-bottom:6px;">🧠 エゴグラム × RC判定</div>
+        <div>CP:${n(ego.CP)} NP:${n(ego.NP)} A:${n(ego.A)} FC:${n(ego.FC)} AC:${n(ego.AC)}</div>
+        <div class="${rc.cls}" style="margin-top:6px;font-weight:700;">${rc.display}</div>
+        <div style="font-size:0.75rem;color:var(--sub);margin-top:10px;">⚠️ LSRP（反社会傾向スコア）</div>
+        <div style="font-size:1.4rem;font-weight:700;" class="${lsrpL.cls}">${s.lsrp?.total||0}</div>
+        <div class="${lsrpL.cls}">${lsrpL.display}</div>
+      </div>
+    </div>
+  `;
+}
+
+// ════════════════════════════════════════════════════
+//  スタッフ追加
+// ════════════════════════════════════════════════════
+function openAddStaff(){
+  const corpSel=document.getElementById('new-staff-corp');
+  corpSel.innerHTML='<option value="">選択してください</option>'+getCorps().map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+  document.getElementById('new-staff-office').innerHTML='<option value="">法人を先に選択</option>';
+  document.getElementById('new-staff-name').value='';
+  openModal('modal-add-staff');
+}
+function onNewStaffCorpChange(){
+  const corpId=document.getElementById('new-staff-corp').value;
+  const sel=document.getElementById('new-staff-office');
+  sel.innerHTML=corpId ? ('<option value="">選択してください</option>'+getOffices(corpId).map(o=>`<option value="${o.id}">${o.name}</option>`).join('')) : '<option value="">法人を先に選択</option>';
+}
+function confirmAddStaff(){
+  const corpId=document.getElementById('new-staff-corp').value;
+  const officeId=document.getElementById('new-staff-office').value;
+  const name=document.getElementById('new-staff-name').value.trim();
+  const role=document.getElementById('new-staff-role').value;
+  if(!corpId||!officeId||!name){ alert('法人・事業所・氏名を入力してください'); return; }
+  const allStaff=getAllStaff();
+  allStaff.push({id:uid(), corpId, officeId, name, role, cp:0,np:0,a:0,fc:0,ac:0, ego:{CP:0,NP:0,A:0,FC:0,AC:0}, task:0,social:0,p:0,m:0, lsrp:null, enn:[], transferHistory:[]});
+  save('nagi_staff', allStaff);
+  closeModal('modal-add-staff');
+  renderStaffList();
+}
+
+// ════════════════════════════════════════════════════
+//  TA・PMマップ（nagi_system.html renderCorpDashboard()と同一ロジック）
+// ════════════════════════════════════════════════════
+function drawCross(containerId, points, opts){
+  const W=380, H=360, PX=44, PY=30;
+  const xMax=opts.xMax||56, yMax=opts.yMax||56;
+  const xMid=opts.xMid||32, yMid=opts.yMid||32;
+  const cw=W-2*PX, ch=H-2*PY;
+  const sx=x=>PX+x/xMax*cw;
+  const sy=y=>H-PY-y/yMax*ch;
+  const mx=sx(xMid), my=sy(yMid);
+  const [q_tl,q_tr,q_bl,q_br]=opts.quad||['左上','右上','左下','右下'];
+  const [c_tl,c_tr,c_bl,c_br]=opts.qcol||['#ffa726','#81c784','#ef5350','#4fc3f7'];
+  let s=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;">
+  <rect width="${W}" height="${H}" fill="#1a2634" rx="8"/>
+  <rect x="${PX}" y="${PY}" width="${mx-PX}" height="${my-PY}" fill="${c_tl}11"/>
+  <rect x="${mx}" y="${PY}" width="${W-PX-mx}" height="${my-PY}" fill="${c_tr}11"/>
+  <rect x="${PX}" y="${my}" width="${mx-PX}" height="${H-PY-my}" fill="${c_bl}11"/>
+  <rect x="${mx}" y="${my}" width="${W-PX-mx}" height="${H-PY-my}" fill="${c_br}11"/>
+  <line x1="${mx}" y1="${PY}" x2="${mx}" y2="${H-PY}" stroke="#2e4460" stroke-width="1"/>
+  <line x1="${PX}" y1="${my}" x2="${W-PX}" y2="${my}" stroke="#2e4460" stroke-width="1"/>
+  <line x1="${PX}" y1="${PY}" x2="${W-PX}" y2="${PY}" stroke="#4fc3f7" stroke-width="1" opacity="0.4"/>
+  <line x1="${PX}" y1="${H-PY}" x2="${W-PX}" y2="${H-PY}" stroke="#4fc3f7" stroke-width="1.5"/>
+  <line x1="${PX}" y1="${PY}" x2="${PX}" y2="${H-PY}" stroke="#4fc3f7" stroke-width="1.5"/>
+  <text x="${(PX+mx)/2}" y="${PY+14}" text-anchor="middle" fill="${c_tl}" font-size="10" font-weight="bold">${q_tl}</text>
+  <text x="${(mx+W-PX)/2}" y="${PY+14}" text-anchor="middle" fill="${c_tr}" font-size="10" font-weight="bold">${q_tr}</text>
+  <text x="${(PX+mx)/2}" y="${H-PY-6}" text-anchor="middle" fill="${c_bl}" font-size="10" font-weight="bold">${q_bl}</text>
+  <text x="${(mx+W-PX)/2}" y="${H-PY-6}" text-anchor="middle" fill="${c_br}" font-size="10" font-weight="bold">${q_br}</text>
+  <text x="${W/2}" y="${H-4}" text-anchor="middle" fill="#8fa3b8" font-size="9">${opts.xLabel||'→'}</text>
+  <text x="8" y="${H/2}" text-anchor="middle" fill="#8fa3b8" font-size="9" transform="rotate(-90,8,${H/2})">${opts.yLabel||'↑'}</text>
+  <text x="${mx+3}" y="${PY+9}" fill="#8fa3b8" font-size="8">${xMid}</text>
+  <text x="${PX+2}" y="${my-2}" fill="#8fa3b8" font-size="8">${yMid}</text>`;
+  points.forEach(p=>{
+    const px=sx(n(p.x)), py=sy(n(p.y));
+    const col=p.col||'#4fc3f7';
+    s+=`<circle cx="${px}" cy="${py}" r="${p.r||5}" fill="${col}" opacity="0.9" stroke="${col}" stroke-width="1"/>`;
+    if(p.label){
+      const lx=Math.min(Math.max(px,PX+4),W-PX-4);
+      const ly=Math.max(py-8,PY+12);
+      s+=`<text x="${lx}" y="${ly}" text-anchor="middle" fill="#e8eaf0" font-size="8.5">${p.label}</text>`;
+    }
+  });
+  s+=`</svg>`;
+  const el=document.getElementById(containerId);
+  if(el) el.innerHTML=s;
+  return s;
+}
+function renderMaps(){
+  const offices=getAllOffices();
+  const staff=currentStaffScope();
+  const taPts=offices.map(o=>{
+    const st=getStaffByOffice(o.id);
+    if(!st.length) return null;
+    const avgTask=st.reduce((a,s)=>a+n(s.task),0)/st.length;
+    const avgSoc=st.reduce((a,s)=>a+n(s.social),0)/st.length;
+    return {x:avgTask,y:avgSoc,label:o.name,col:'#4fc3f7'};
+  }).filter(Boolean);
+  drawCross('chart-ta-map',taPts,{
+    xLabel:'Task（タスク）→',yLabel:'Social（社会性）↑',
+    quad:['自己満足\nM2','弾力的\nM4','機能不全\nM1','駆り立てられた\nM3'],
+    qcol:['#ffa726','#81c784','#ef5350','#4fc3f7'],
+  });
+  const mgrs=staff.filter(s=>s.role==='管理者クラス'||s.role==='リーダークラス');
+  const pmPts=mgrs.map(s=>({x:n(s.p),y:n(s.m),label:(s.name||'').split(' ')[0],col:'#ffb74d'}));
+  drawCross('chart-pm-map',pmPts,{
+    xLabel:'P行動 →',yLabel:'M行動 ↑',
+    xMax:40,yMax:40,xMid:20,yMid:20,
+    quad:['pM型','PM型','pm型','Pm型'],
+    qcol:['#4fc3f7','#81c784','#8fa3b8','#ffa726'],
+  });
+}
+
+// ════════════════════════════════════════════════════
+//  候補者管理（nagi_system.html §候補者リスト と同一ロジック）
+// ════════════════════════════════════════════════════
+function getCandidates(){ try{ return JSON.parse(localStorage.getItem('nagi_candidates')||'[]'); }catch{ return []; } }
+function saveCandidates(arr){ localStorage.setItem('nagi_candidates', JSON.stringify(arr)); }
+function getBlacklist(){ try{ return JSON.parse(localStorage.getItem('nagi_blacklist')||'[]'); }catch{ return []; } }
+function saveBlacklist(arr){ localStorage.setItem('nagi_blacklist', JSON.stringify(arr)); }
+function checkBlacklist(name){ return getBlacklist().find(b=>(b.name||'').trim()===(name||'').trim()); }
+
+function renderCandidates(){
+  const list=getCandidates();
+  const tbody=document.getElementById('candidate-tbody');
+  const empty=document.getElementById('candidate-empty');
+  if(!list.length){ tbody.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  tbody.innerHTML=list.map((c,i)=>{
+    const blMatch=checkBlacklist(c.name);
+    const blWarn=blMatch?`<span title="過去に不採用歴あり（${blMatch.rejectDate}）" style="color:var(--danger);font-weight:700;">⚠️ </span>`:'';
+    const eg=c.egogram||{};
+    return `<tr${blMatch?' style="background:rgba(198,40,40,0.08);"':''}>
+      <td style="font-size:0.75rem;color:var(--sub);">${(c.savedAt||'').slice(0,10)}</td>
+      <td>${c.corp||''}</td><td>${c.office||''}</td>
+      <td style="font-weight:600;">${blWarn}${c.name||''}</td>
+      <td>${normalizeLabel(c.lsrpLevelShort)||'─'}</td>
+      <td>${normalizeLabel(c.rcShort)||'─'}</td>
+      <td>${eg.CP??'─'}</td><td>${eg.NP??'─'}</td><td>${eg.A??'─'}</td><td>${eg.FC??'─'}</td><td>${eg.AC??'─'}</td>
+      <td style="font-size:0.75rem;">${c.ennTop1||''}</td>
+      <td style="white-space:nowrap;">
+        <button class="btn btn-primary btn-xs" onclick="openHireCandidate(${i})">✅ 採用</button>
+        <button class="btn btn-secondary btn-xs" onclick="holdCandidate(${i})">⏸ 保留</button>
+        <button class="btn btn-danger btn-xs" onclick="openRejectCandidate(${i})">🚫 不採用</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+function openHireCandidate(idx){
+  const c=getCandidates()[idx];
+  if(!c) return;
+  const blMatch=checkBlacklist(c.name);
+  if(blMatch){
+    const go=confirm(`⚠️ 過去の不採用歴があります\n\n氏名：${c.name}\n不採用日：${blMatch.rejectDate}\n理由：${blMatch.reason||'記載なし'}\n\nそれでも採用処理を続けますか？`);
+    if(!go) return;
+  }
+  document.getElementById('hire-candidate-idx').value=idx;
+  document.getElementById('hire-candidate-name').textContent=c.name||'';
+  const corpSel=document.getElementById('hire-corp');
+  corpSel.innerHTML='<option value="">選択してください</option>'+getCorps().map(corp=>`<option value="${corp.id}">${corp.name}</option>`).join('');
+  document.getElementById('hire-office').innerHTML='<option value="">法人を先に選択</option>';
+  const matchCorp=getCorps().find(corp=>corp.name===c.corp);
+  if(matchCorp){
+    corpSel.value=matchCorp.id;
+    onHireCorpChange();
+    const matchOff=getOffices(matchCorp.id).find(o=>o.name===c.office);
+    if(matchOff) document.getElementById('hire-office').value=matchOff.id;
+  }
+  openModal('modal-hire');
+}
+function onHireCorpChange(){
+  const corpId=document.getElementById('hire-corp').value;
+  const sel=document.getElementById('hire-office');
+  sel.innerHTML=corpId ? ('<option value="">選択してください</option>'+getOffices(corpId).map(o=>`<option value="${o.id}">${o.name}</option>`).join('')) : '<option value="">法人を先に選択</option>';
+}
+function confirmHire(){
+  const idx=parseInt(document.getElementById('hire-candidate-idx').value);
+  const corpId=document.getElementById('hire-corp').value;
+  const officeId=document.getElementById('hire-office').value;
+  const role=document.getElementById('hire-role').value;
+  if(!corpId||!officeId){ alert('法人と事業所を選択してください'); return; }
+  const candidates=getCandidates();
+  const c=candidates[idx];
+  if(!c) return;
+  const staffRec={
+    id: uid(), corpId, officeId,
+    name: c.name, nameKana: c.nameKana||'', role,
+    lsrp: c.lsrp||(c.lsrpTotal?{total:c.lsrpTotal, levelShort:c.lsrpLevelShort}:null),
+    ego: c.egogram ? {CP:c.egogram.CP,NP:c.egogram.NP,A:c.egogram.A,FC:c.egogram.FC,AC:c.egogram.AC} : {},
+    enn: c.enneagram?.top3?.map(t=>({type:t.type||'',name:t.name||'',score:t.score||0}))||[],
+    task:0, social:0, p:0, m:0,
+    transferHistory:[],
+    note:`ミツメルスキャンより採用登録（${new Date().toISOString().slice(0,10)}）`,
+  };
+  const allStaff=getAllStaff();
+  allStaff.push(staffRec);
+  save('nagi_staff', allStaff);
+  candidates.splice(idx,1);
+  saveCandidates(candidates);
+  closeModal('modal-hire');
+  alert(`✅ ${c.name} をスタッフとして登録しました。スタッフ台帳タブで確認できます。`);
+  renderCandidates();
+  renderStaffList();
+}
+function holdCandidate(idx){ alert('⏸ 保留しました。候補者リストに残ります。'); }
+function openRejectCandidate(idx){
+  const c=getCandidates()[idx];
+  if(!c) return;
+  document.getElementById('reject-candidate-idx').value=idx;
+  document.getElementById('reject-candidate-name').textContent=c.name||'';
+  document.getElementById('reject-reason').value='';
+  openModal('modal-reject');
+}
+function confirmReject(){
+  const idx=parseInt(document.getElementById('reject-candidate-idx').value);
+  const reason=document.getElementById('reject-reason').value.trim();
+  const candidates=getCandidates();
+  const c=candidates[idx];
+  if(!c) return;
+  const rejectDate=new Date().toISOString().slice(0,10);
+  const retentionUntil=new Date(new Date().setFullYear(new Date().getFullYear()+5)).toISOString().slice(0,10);
+  const bl=getBlacklist();
+  bl.unshift({...c, rejectDate, reason, retentionUntil});
+  saveBlacklist(bl);
+  candidates.splice(idx,1);
+  saveCandidates(candidates);
+  closeModal('modal-reject');
+  renderCandidates();
+}
+
+// ════════════════════════════════════════════════════
+//  init
+// ════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', ()=>{
+  refreshCorpSelect();
+  renderStaffList();
+});
+</script>
+</body>
+</html>

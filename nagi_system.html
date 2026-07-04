@@ -381,26 +381,14 @@ tr:hover td{background:rgba(79,195,247,0.03);}
 <div class="page" id="page-staff">
   <div class="print-page-title">👥 スタッフ一覧</div>
   <div class="section">
-    <div class="section-title">
-      <span>👥 事業所別スタッフ一覧（全カラム表示）</span>
-      <button class="btn btn-primary btn-sm" onclick="openAddStaff()">＋ スタッフ追加</button>
+    <div class="section-title">👥 スタッフ一覧</div>
+    <div class="card">
+      <p style="font-size:0.85rem;color:var(--sub);line-height:1.8;margin-bottom:14px;">
+        スタッフ台帳・個人カルテ・TAマップ・PMマップ・候補者管理は、軸D（スタッフ性質モジュール）に移行しました。
+        RC/LSRP判定は支援的な文言（ラベル＋理由のセット）で表示されます。
+      </p>
+      <a href="./nagi_staff.html" target="_blank" class="btn btn-primary" style="text-decoration:none;">🧬 nagi_staff.html を開く</a>
     </div>
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>事業所</th><th>氏名</th><th>役割</th>
-            <th>Task</th><th>Social</th><th>P行動</th><th>M行動</th><th>PM</th>
-            <th>KSA</th><th>Gap</th>
-            <th>CP</th><th>NP</th><th>A</th><th>FC</th><th>AC</th>
-            <th>エニア Top3</th><th>RC判定</th><th>LSRP</th><th>SL段階</th>
-            <th>操作</th>
-          </tr>
-        </thead>
-        <tbody id="staff-tbody"></tbody>
-      </table>
-    </div>
-    <div id="staff-empty" class="empty" style="display:none;">スタッフデータがありません。「スタッフ追加」ボタンで登録してください。</div>
   </div>
 </div>
 
@@ -410,39 +398,14 @@ tr:hover td{background:rgba(79,195,247,0.03);}
 <div class="page" id="page-rc">
   <div class="print-page-title">🚨 RC異常者リスト</div>
   <div class="section">
-    <div class="section-title">🚨 RC異常者（エゴグラム由来：心理的OS異常）</div>
-    <div class="table-wrap" id="rc-anomaly-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>事業所</th><th>氏名</th><th>役割</th><th>RC判定</th>
-            <th>Task</th><th>Social</th><th>KSA Gap</th>
-            <th>CP</th><th>NP</th><th>A</th><th>FC</th><th>AC</th>
-            <th>エニア Top3</th><th>異常理由・介入指針</th><th>操作</th>
-          </tr>
-        </thead>
-        <tbody id="rc-tbody"></tbody>
-      </table>
+    <div class="section-title">🚨 RC・LSRP チーム評価</div>
+    <div class="card">
+      <p style="font-size:0.85rem;color:var(--sub);line-height:1.8;margin-bottom:14px;">
+        RC判定サマリー・LSRP警戒サマリー・管理者RC一覧・RC/LSRP異常者一覧は、軸C（チーム評価モジュール）に移行しました。
+        表示文言は支援的な表現（ラベル＋理由のセット）に統一されています。
+      </p>
+      <a href="./nagi_team.html" target="_blank" class="btn btn-primary" style="text-decoration:none;">👥 nagi_team.html を開く</a>
     </div>
-    <div id="rc-empty" class="empty" style="display:none;"></div>
-  </div>
-
-  <div class="section" style="margin-top:28px;">
-    <div class="section-title">🧠 LSRP要観察以上（★★☆ スコア11〜 / ★★★ スコア16〜）</div>
-    <div class="table-wrap" id="lsrp-anomaly-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>事業所</th><th>氏名</th><th>役割</th><th>LSRP判定</th><th>LSRPスコア</th>
-            <th>RC判定</th><th>Task</th><th>Social</th><th>KSA Gap</th>
-            <th>CP</th><th>NP</th><th>A</th><th>FC</th><th>AC</th>
-            <th>エニア Top3</th><th>リスク概要</th><th>操作</th>
-          </tr>
-        </thead>
-        <tbody id="lsrp-tbody"></tbody>
-      </table>
-    </div>
-    <div id="lsrp-empty" class="empty" style="display:none;"></div>
   </div>
 </div>
 
@@ -1533,161 +1496,8 @@ function renderLeaderAnalysis(oid, staff, teamStage, avgTask, avgSoc){
   });
 }
 
-// ── スタッフ一覧 ──
-function renderStaffList(){
-  const corpId=document.getElementById('sel-corp').value;
-  const oid=document.getElementById('sel-office').value;
-  const allStaff=oid ? getStaffByOffice(oid) : corpId ? getStaffByCorp(corpId) : getAllStaff();
-  const tbody=document.getElementById('staff-tbody');
-  const empty=document.getElementById('staff-empty');
-  if(!allStaff.length){ tbody.innerHTML=''; empty.style.display='block'; return; }
-  empty.style.display='none';
-  const offices=getAllOffices();
-  // 部署平均キャッシュ（officeId → {avgTask, avgSoc}）
-  const offAvgCache={};
-  tbody.innerHTML=allStaff.map(s=>{
-    const off=offices.find(o=>o.id===s.officeId);
-    const pm=getPMStyle(s.p,s.m);
-    const rc=getRCStatus(s.ego);
-    if(!offAvgCache[s.officeId]) offAvgCache[s.officeId]=getOfficeAvgTA(s.officeId);
-    const {avgTask:oAvgT,avgSoc:oAvgS}=offAvgCache[s.officeId];
-    const gap=getKSAGap(s.ksa, oAvgT, oAvgS);
-    const gapCls=gap>20?'color:var(--danger)':gap>10?'color:var(--warn)':'color:var(--accent2)';
-    const lsrpL=getLSRPLabel(s.lsrp?.total||0);
-    const slStage=getSLStage(s.task,s.social);
-    const ego=s.ego||{};
-    const enn=s.enn||[];
-    return `<tr>
-      <td>${off?.name||'─'}</td>
-      <td style="font-weight:600;white-space:nowrap;">${s.name}</td>
-      <td><span class="tag tag-sub" style="font-size:0.65rem;">${s.role}</span></td>
-      <td>${arw(n(s.task),32)}</td>
-      <td>${arw(n(s.social),32)}</td>
-      <td>${arw(n(s.p),20)}</td>
-      <td>${arw(n(s.m),20)}</td>
-      <td><span class="${pm.cls}" style="font-weight:700;">${pm.label}</span></td>
-      <td>${n(s.ksa)}</td>
-      <td><span style="${gapCls}">${gap>0?'+':''}${gap.toFixed(1)}%${gap>0?'↑':'↓'}</span></td>
-      <td>${n(ego.CP)}</td><td>${n(ego.NP)}</td><td>${n(ego.A)}</td><td>${n(ego.FC)}</td><td>${n(ego.AC)}</td>
-      <td>${ennLabel(enn)}</td>
-      <td class="${rc.cls}" style="font-weight:600;white-space:nowrap;">${rc.label}</td>
-      <td class="${lsrpL.cls}" style="white-space:nowrap;">${lsrpL.label}</td>
-      <td><span class="tag sl-${slStage}">${slStage}</span></td>
-      <td style="white-space:nowrap;">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:2px;min-width:96px;">
-          <button class="btn btn-primary btn-xs" onclick="openStaffDetail('${s.id}')">詳細</button>
-          <button class="btn btn-secondary btn-xs" onclick="openEditStaff('${s.id}')">編集</button>
-          <button class="btn btn-secondary btn-xs" onclick="openTransfer('${s.id}')">異動</button>
-          <button class="btn btn-danger btn-xs" onclick="openRetire('${s.id}')">退職</button>
-        </div>
-      </td>
-    </tr>`;
-  }).join('');
-}
-
-// ── RC異常者一覧 ──
-function renderRCList(){
-  const corpId=document.getElementById('sel-corp').value;
-  const oid=document.getElementById('sel-office').value;
-  const allStaff=oid ? getStaffByOffice(oid) : corpId ? getStaffByCorp(corpId) : getAllStaff();
-  const offices=getAllOffices();
-
-  // 部署平均キャッシュ
-  const rcAvgCache={};
-  const getOffAvg=(oid)=>{ if(!rcAvgCache[oid]) rcAvgCache[oid]=getOfficeAvgTA(oid); return rcAvgCache[oid]; };
-
-  // RC異常者
-  const rcAnomalies=allStaff.filter(s=>{
-    const rc=getRCStatus(s.ego);
-    const {avgTask,avgSoc}=getOffAvg(s.officeId);
-    const gap=getKSAGap(s.ksa, avgTask, avgSoc);
-    return rc.label!=='安全' || gap>=20;
-  });
-
-  const rcTbody=document.getElementById('rc-tbody');
-  const rcEmpty=document.getElementById('rc-empty');
-  if(!rcAnomalies.length){
-    rcTbody.innerHTML='';
-    rcEmpty.style.display='block';
-    rcEmpty.innerHTML='RC異常者は検出されていません ✅';
-  } else {
-    rcEmpty.style.display='none';
-    rcTbody.innerHTML=rcAnomalies.map(s=>{
-      const off=offices.find(o=>o.id===s.officeId);
-      const rc=getRCStatus(s.ego);
-      const {avgTask,avgSoc}=getOffAvg(s.officeId);
-      const gap=getKSAGap(s.ksa, avgTask, avgSoc);
-      const gapStr=gap>=20?`<span style="color:var(--danger);">+${gap.toFixed(1)}%↑ 🚨KSA乖離</span>`:`${gap>0?'+':''}${gap.toFixed(1)}%`;
-      const ego=s.ego||{};
-      const enn=s.enn||[];
-      // 理由
-      let reason=rc.reason;
-      if(gap>=20) reason+=(reason?' / ':'')+`KSA乖離：自己評価が客観評価を${gap.toFixed(1)}%上回っており「裸の王様」リスク。`;
-      return `<tr>
-        <td>${off?.name||'─'}</td>
-        <td style="font-weight:600;white-space:nowrap;">${s.name}</td>
-        <td><span class="tag tag-sub" style="font-size:0.65rem;">${s.role}</span></td>
-        <td class="${rc.cls}" style="font-weight:700;white-space:nowrap;">${rc.label}</td>
-        <td>${arw(n(s.task),32)}</td>
-        <td>${arw(n(s.social),32)}</td>
-        <td>${gapStr}</td>
-        <td>${n(ego.CP)}</td><td>${n(ego.NP)}</td><td>${n(ego.A)}</td><td>${n(ego.FC)}</td><td>${n(ego.AC)}</td>
-        <td>${ennLabel(enn)}</td>
-        <td style="font-size:0.72rem;color:var(--sub);max-width:200px;">${reason}</td>
-        <td style="white-space:nowrap;">
-          <button class="btn btn-primary btn-xs" onclick="openStaffDetail('${s.id}')">詳細</button>
-          <button class="btn btn-secondary btn-xs" onclick="openEditStaff('${s.id}')">編集</button>
-          <button class="btn btn-danger btn-xs" onclick="deleteStaff('${s.id}')">削除</button>
-        </td>
-      </tr>`;
-    }).join('');
-  }
-
-  // LSRP異常者（★★☆=11以上）
-  const lsrpAnomalies=allStaff.filter(s=>n(s.lsrp?.total)>=11);
-  const lsrpTbody=document.getElementById('lsrp-tbody');
-  const lsrpEmpty=document.getElementById('lsrp-empty');
-  if(!lsrpAnomalies.length){
-    lsrpTbody.innerHTML='';
-    lsrpEmpty.style.display='block';
-    lsrpEmpty.innerHTML='LSRP要観察以上の人物は検出されていません ✅';
-  } else {
-    lsrpEmpty.style.display='none';
-    lsrpTbody.innerHTML=lsrpAnomalies.map(s=>{
-      const off=offices.find(o=>o.id===s.officeId);
-      const lsrp=getLSRPLabel(s.lsrp?.total||0);
-      const rc=getRCStatus(s.ego);
-      const {avgTask:lAvgT,avgSoc:lAvgS}=getOffAvg(s.officeId);
-      const gap=getKSAGap(s.ksa, lAvgT, lAvgS);
-      const ego=s.ego||{};
-      const enn=s.enn||[];
-      const total=n(s.lsrp?.total);
-      const isDanger=total>=16;
-      const riskStr=isDanger?
-        '★★★ 要フォロー：一部、衝動制御が難しい傾向が確認。本人との対話機会を設けることをおすすめします。':
-        '★★☆ 要観察：一部の冷徹・衝動的傾向が確認。継続的な面談・フォロー体制をおすすめします。';
-      return `<tr>
-        <td>${off?.name||'─'}</td>
-        <td style="font-weight:600;white-space:nowrap;">${s.name}</td>
-        <td><span class="tag tag-sub" style="font-size:0.65rem;">${s.role}</span></td>
-        <td class="${lsrp.cls}" style="font-weight:700;white-space:nowrap;">${lsrp.label}</td>
-        <td class="${lsrp.cls}" style="font-weight:700;">${total}</td>
-        <td class="${rc.cls}" style="font-weight:600;">${rc.label}</td>
-        <td>${arw(n(s.task),32)}</td>
-        <td>${arw(n(s.social),32)}</td>
-        <td>${gap>0?'+':''}${gap.toFixed(1)}%</td>
-        <td>${n(ego.CP)}</td><td>${n(ego.NP)}</td><td>${n(ego.A)}</td><td>${n(ego.FC)}</td><td>${n(ego.AC)}</td>
-        <td>${ennLabel(enn)}</td>
-        <td style="font-size:0.72rem;color:${isDanger?'var(--danger)':'var(--warn)'};max-width:200px;">${riskStr}</td>
-        <td style="white-space:nowrap;">
-          <button class="btn btn-primary btn-xs" onclick="openStaffDetail('${s.id}')">詳細</button>
-          <button class="btn btn-secondary btn-xs" onclick="openEditStaff('${s.id}')">編集</button>
-          <button class="btn btn-danger btn-xs" onclick="deleteStaff('${s.id}')">削除</button>
-        </td>
-      </tr>`;
-    }).join('');
-  }
-}
+// 👥スタッフ一覧・🚨RC異常者の表示ロジックは nagi_staff.html（軸D）・nagi_team.html（軸C）に移行済み。
+// ハブは案内カードのみを表示する読み取り専用の位置づけ（renderStaffList/renderRCListは削除済み）。
 
 // ════════════════════════════════════════════════════
 //  ナビゲーション
@@ -1711,8 +1521,8 @@ function goTab(tab){
 function renderCurrentTab(){
   if(currentTab==='corp') renderCorpDashboard();
   else if(currentTab==='office') renderOfficeDashboard();
-  else if(currentTab==='staff') renderStaffList();
-  else if(currentTab==='rc') renderRCList();
+  // 👥スタッフ一覧・🚨RC異常者の入力・詳細表示は nagi_staff.html（軸D）・nagi_team.html（軸C）に移行済み。
+  // このハブは案内カードのみを表示するため、レンダリング処理は不要。
 }
 
 function onCorpChange(){
@@ -3636,17 +3446,16 @@ function printStaffCard(){
 // ════════════════════════════════════════════════════
 function printAll(){
   // 全タブを一時的に表示してレンダリング
-  ['corp','office','staff','rc'].forEach(t=>{
+  // 👥スタッフ一覧・🚨RC異常者は nagi_staff.html／nagi_team.html に移行済みのため印刷対象から除外
+  ['corp','office'].forEach(t=>{
     document.getElementById(`page-${t}`).style.display='block';
   });
   renderCorpDashboard();
   renderOfficeDashboard();
-  renderStaffList();
-  renderRCList();
 
   // 印刷後に元のタブ表示に戻す
   const restore=()=>{
-    ['corp','office','staff','rc'].forEach(t=>{
+    ['corp','office'].forEach(t=>{
       const el=document.getElementById(`page-${t}`);
       el.style.display='';
       el.classList.toggle('active',t===currentTab);

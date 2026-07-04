@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>凪 軸C：チーム | Fusion Partners</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23f06292'/><text x='16' y='24' font-size='18' text-anchor='middle'>👥</text></svg>">
+<style>
+:root {
+  --bg:#0f1923; --surface:#1a2634; --card:#223044;
+  --accent:#4fc3f7; --accent2:#81c784; --accent3:#ffb74d; --accent4:#f06292;
+  --danger:#ef5350; --warn:#ffa726; --text:#e8eaf0; --sub:#8fa3b8;
+  --border:#2e4460; --radius:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Hiragino Kaku Gothic Pro','Meiryo',sans-serif;min-height:100vh;font-size:14px;}
+
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.logo{width:30px;height:30px;background:linear-gradient(135deg,#f06292,#ad1457);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
+header h1{font-size:1rem;font-weight:700;color:var(--accent4);flex:1;}
+header h1 span{font-size:0.68rem;font-weight:400;color:var(--sub);}
+
+.selector-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:8px 20px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.selector-bar select{background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 10px;font-size:0.8rem;outline:none;}
+.selector-bar label{font-size:0.78rem;color:var(--sub);}
+
+main{max-width:1080px;margin:0 auto;padding:20px 16px 80px;}
+
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+@media(max-width:760px){.grid-2{grid-template-columns:1fr;}.grid-4{grid-template-columns:repeat(2,1fr);}}
+
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;}
+.card-title{font-size:0.72rem;color:var(--sub);margin-bottom:6px;}
+.card-value{font-size:1.4rem;font-weight:700;}
+.empty{text-align:center;color:var(--sub);padding:30px 20px;font-size:0.82rem;}
+
+.section{margin-bottom:22px;}
+.section-title{font-size:0.85rem;color:var(--accent4);margin-bottom:12px;border-left:3px solid var(--accent4);padding-left:8px;}
+
+.btn{padding:8px 18px;border-radius:7px;border:none;font-size:0.82rem;font-weight:600;cursor:pointer;}
+.btn-secondary{background:var(--card);color:var(--sub);border:1px solid var(--border);}
+.btn-sm{padding:5px 12px;font-size:0.74rem;}
+
+.table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:0.78rem;}
+th{text-align:left;padding:6px 8px;color:var(--sub);border-bottom:1px solid var(--border);white-space:nowrap;}
+td{padding:6px 8px;border-bottom:1px solid var(--border);white-space:nowrap;}
+
+.rc-danger{color:var(--danger);} .rc-warn{color:var(--warn);} .rc-safe{color:var(--accent2);}
+.lsrp-D{color:var(--danger);font-weight:700;} .lsrp-W{color:var(--warn);font-weight:700;} .lsrp-S{color:var(--accent2);}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">👥</div>
+  <h1>凪 軸C：チーム <span>組織評価（RC・LSRP・PM×SL） | Fusion Partners</span></h1>
+  <a href="./nagi_system.html" class="btn btn-secondary btn-sm" style="text-decoration:none;">🧭 ハブ（羅針盤）へ戻る</a>
+</header>
+
+<div class="selector-bar">
+  <label>法人</label>
+  <select id="sel-corp" onchange="onCorpChange()"><option value="">── 全法人 ──</option></select>
+  <label>事業所</label>
+  <select id="sel-office" onchange="onOfficeChange()"><option value="">── 全事業所 ──</option></select>
+  <span style="font-size:0.7rem;color:var(--sub);margin-left:auto;">スタッフの登録・編集は<a href="./nagi_staff.html" style="color:var(--accent4);">軸D（スタッフ性質）</a>から行ってください</span>
+</div>
+
+<main>
+
+<div class="section">
+  <div class="section-title">🚦 RC・LSRP サマリー</div>
+  <div class="grid-4">
+    <div class="card"><div class="card-title">RC 要フォロー</div><div class="card-value" style="color:var(--danger);" id="rc-c-follow">0<span style="font-size:0.7rem;">名</span></div></div>
+    <div class="card"><div class="card-title">RC 要観察</div><div class="card-value" style="color:var(--warn);" id="rc-c-watch">0<span style="font-size:0.7rem;">名</span></div></div>
+    <div class="card"><div class="card-title">RC 要対話</div><div class="card-value" style="color:var(--warn);" id="rc-c-talk">0<span style="font-size:0.7rem;">名</span></div></div>
+    <div class="card"><div class="card-title">RC 安定</div><div class="card-value" style="color:var(--accent2);" id="rc-c-stable">0<span style="font-size:0.7rem;">名</span></div></div>
+  </div>
+  <div class="grid-4" style="margin-top:10px;">
+    <div class="card"><div class="card-title">LSRP 要フォロー</div><div class="card-value" style="color:var(--danger);" id="lsrp-c-follow">0<span style="font-size:0.7rem;">名</span></div></div>
+    <div class="card"><div class="card-title">LSRP 要観察</div><div class="card-value" style="color:var(--warn);" id="lsrp-c-watch">0<span style="font-size:0.7rem;">名</span></div></div>
+    <div class="card"><div class="card-title">LSRP 安全圏</div><div class="card-value" style="color:var(--accent2);" id="lsrp-c-safe">0<span style="font-size:0.7rem;">名</span></div></div>
+    <div class="card"></div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">👔 管理者・リーダー RC一覧</div>
+  <div class="card" id="mgr-rc-list"></div>
+</div>
+
+<div class="section">
+  <div class="section-title">⚖ PM × SL 不一致アラート</div>
+  <div class="card">
+    <div class="empty">未実装（SL確定フロー実装待ち）<br><span style="font-size:0.72rem;">凪システム構造定義書v3 ⓪-2のとおり、AI推定SLは「暫定」表示のみで、確定は柴山さんの確定操作を経る必要があります。この確定フロー自体がまだ実装されていないため、PM×SL不一致検知は次フェーズへ持ち越します。</span></div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">🚨 RC異常者一覧（要フォロー・要対話・要観察）</div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>事業所</th><th>氏名</th><th>役割</th><th>RC判定（理由）</th></tr></thead>
+      <tbody id="rc-tbody"></tbody>
+    </table>
+  </div>
+  <div id="rc-empty" class="empty" style="display:none;"></div>
+</div>
+
+<div class="section">
+  <div class="section-title">🧠 LSRP 要観察・要フォロー一覧</div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>事業所</th><th>氏名</th><th>役割</th><th>LSRPスコア</th><th>LSRP判定（理由）</th></tr></thead>
+      <tbody id="lsrp-tbody"></tbody>
+    </table>
+  </div>
+  <div id="lsrp-empty" class="empty" style="display:none;"></div>
+</div>
+
+</main>
+
+<script>
+// ════════════════════════════════════════════════════
+//  共通ヘルパー（nagi_system.html と同一実装・localStorageスキーマ互換）
+// ════════════════════════════════════════════════════
+function load(k){ try{ return JSON.parse(localStorage.getItem(k)||'[]'); }catch{ return []; } }
+function n(v){ return Number(v)||0; }
+function getCorps(){ return load('nagi_corps'); }
+function getAllOffices(){ return load('nagi_offices'); }
+function getOffices(corpId){ const a=getAllOffices(); return corpId?a.filter(o=>o.corpId===corpId):a; }
+function getAllStaff(){ return load('nagi_staff'); }
+function getStaffByOffice(oid){ return getAllStaff().filter(s=>s.officeId===oid); }
+function getStaffByCorp(cid){ return getAllStaff().filter(s=>s.corpId===cid); }
+
+// ════════════════════════════════════════════════════
+//  RC・LSRP判定：既存ロジックを継承し、ラベル・reason文言のみ支援的表現に刷新
+//  （06_イノベーション/凪軸C軸D_nagi_team_nagi_staff_詳細設計_20260704.md §3-1・§3-1-2・§3-1-3）
+//  ラベル単体表示は不可。必ず「{ラベル}（{理由文言}）」のセット形式で表示する。
+// ════════════════════════════════════════════════════
+const RC_REASON = {
+  '要フォロー': '短時間で信頼関係を築く関わりが効果的なタイプです',
+  '要観察':   'しばらく様子を見ながら変化に気づいていくとよいタイプです',
+  '要対話':   '本人の話をじっくり聞く時間を取ると効果的なタイプです',
+  '安定':     '現状のバランスが取れているタイプです',
+};
+const LSRP_REASON = {
+  '安全圏':   '現時点で特段の配慮は不要です',
+  '要観察':   '時々声をかけながら様子を見ていくとよいタイプです',
+  '要フォロー': '定期的な1on1等でこまめに関わりを持つと効果的なタイプです',
+};
+
+// 旧ラベル→新ラベルの後方互換変換（保存済みの生文字列を表示する箇所でのみ使用）
+function normalizeLabel(raw){
+  const map={'危険★':'要フォロー','危険':'要フォロー','要警戒':'要観察','注意':'要観察','依存':'要対話','安全':'安定'};
+  return map[raw]!==undefined ? map[raw] : raw;
+}
+
+function getRCStatus(ego){
+  if(!ego) return {label:'─',cls:'',reason:'',display:'─'};
+  const cp=n(ego.CP),np=n(ego.NP),fc=n(ego.FC),ac=n(ego.AC);
+  const I=cp+fc, U=np+ac;
+  let label,cls;
+  // 判定ロジック自体は既存(凪システム構造定義書v3①軸C)を継承。ラベル文言のみ刷新
+  if(I>9 && U<5){ label='要フォロー'; cls='rc-danger'; }
+  else if(I>7 && U<5){ label='要フォロー'; cls='rc-danger'; }
+  else if(I<5 && U<5){ label='要観察'; cls='rc-warn'; }
+  // 【暫定・要確認】「AC極端高→要対話」は設計書に既存ロジックとして記載されているが、
+  // 実際のnagi_system.html側にはこの分岐が実装されていなかった（要フォロー/要観察/安定の3値のみ）。
+  // 数値基準が定義済みの箇所に見当たらなかったため、AC>=8（10点満点中）を暫定的な閾値として
+  // 新規に追加した。柴山さんのご確認をお願いしたい。
+  else if(ac>=8){ label='要対話'; cls='rc-warn'; }
+  else { label='安定'; cls='rc-safe'; }
+  const reason=RC_REASON[label]||'';
+  return {label,cls,reason,display:`${label}（${reason}）`};
+}
+
+function getLSRPLabel(total){
+  const t=n(total);
+  let label,cls,short;
+  if(t>=16){ label='要フォロー'; cls='lsrp-D'; short='要フォロー'; }
+  else if(t>=11){ label='要観察'; cls='lsrp-W'; short='要観察'; }
+  else { label='安全圏'; cls='lsrp-S'; short='安全'; }
+  const reason=LSRP_REASON[label]||'';
+  return {label,cls,short,reason,display:`${label}（${reason}）`};
+}
+
+// ════════════════════════════════════════════════════
+//  法人・事業所セレクタ
+// ════════════════════════════════════════════════════
+function refreshCorpSelect(){
+  const sel=document.getElementById('sel-corp');
+  sel.innerHTML='<option value="">── 全法人 ──</option>'+getCorps().map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+}
+function onCorpChange(){
+  const corpId=document.getElementById('sel-corp').value;
+  const officeSel=document.getElementById('sel-office');
+  const corps=getCorps();
+  officeSel.innerHTML='<option value="">── 全事業所 ──</option>'+getOffices(corpId).map(o=>{
+    const c=corps.find(cc=>cc.id===o.corpId);
+    return `<option value="${o.id}">${c?.name||''} / ${o.name}</option>`;
+  }).join('');
+  renderAll();
+}
+function onOfficeChange(){ renderAll(); }
+
+function currentStaffScope(){
+  const corpId=document.getElementById('sel-corp').value;
+  const oid=document.getElementById('sel-office').value;
+  return oid ? getStaffByOffice(oid) : corpId ? getStaffByCorp(corpId) : getAllStaff();
+}
+
+// ════════════════════════════════════════════════════
+//  サマリー・一覧レンダリング
+// ════════════════════════════════════════════════════
+function renderAll(){
+  const staff=currentStaffScope();
+  const offices=getAllOffices();
+
+  const rcCounts={'要フォロー':0,'要観察':0,'要対話':0,'安定':0};
+  const lsrpCounts={'要フォロー':0,'要観察':0,'安全圏':0};
+  const mgrsRC=[];
+  const rcAnomalies=[];
+  const lsrpAnomalies=[];
+
+  staff.forEach(s=>{
+    const rc=getRCStatus(s.ego);
+    if(rcCounts[rc.label]!==undefined) rcCounts[rc.label]++;
+    const lsrpL=getLSRPLabel(s.lsrp?.total||0);
+    if(lsrpCounts[lsrpL.label]!==undefined) lsrpCounts[lsrpL.label]++;
+    const off=offices.find(o=>o.id===s.officeId);
+    if(s.role==='管理者クラス'||s.role==='リーダークラス'){
+      mgrsRC.push({name:s.name, role:s.role, office:off?.name||'', rc});
+    }
+    if(rc.label!=='安定') rcAnomalies.push({name:s.name, role:s.role, office:off?.name||'', rc});
+    const total=n(s.lsrp?.total);
+    if(total>=11) lsrpAnomalies.push({name:s.name, role:s.role, office:off?.name||'', total, lsrpL});
+  });
+
+  document.getElementById('rc-c-follow').innerHTML=`${rcCounts['要フォロー']}<span style="font-size:0.7rem;">名</span>`;
+  document.getElementById('rc-c-watch').innerHTML=`${rcCounts['要観察']}<span style="font-size:0.7rem;">名</span>`;
+  document.getElementById('rc-c-talk').innerHTML=`${rcCounts['要対話']}<span style="font-size:0.7rem;">名</span>`;
+  document.getElementById('rc-c-stable').innerHTML=`${rcCounts['安定']}<span style="font-size:0.7rem;">名</span>`;
+  document.getElementById('lsrp-c-follow').innerHTML=`${lsrpCounts['要フォロー']}<span style="font-size:0.7rem;">名</span>`;
+  document.getElementById('lsrp-c-watch').innerHTML=`${lsrpCounts['要観察']}<span style="font-size:0.7rem;">名</span>`;
+  document.getElementById('lsrp-c-safe').innerHTML=`${lsrpCounts['安全圏']}<span style="font-size:0.7rem;">名</span>`;
+
+  const mgrList=document.getElementById('mgr-rc-list');
+  if(!mgrsRC.length){
+    mgrList.innerHTML='<div class="empty">管理者・リーダーデータなし</div>';
+  } else {
+    mgrList.innerHTML=mgrsRC.map(m=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:0.8rem;">
+      <span style="color:var(--sub);min-width:90px;">${m.office}</span><span style="min-width:90px;">${m.name}</span>
+      <span class="${m.rc.cls}" style="margin-left:auto;font-weight:700;">${m.rc.display}</span>
+    </div>`).join('');
+  }
+
+  const rcTbody=document.getElementById('rc-tbody');
+  const rcEmpty=document.getElementById('rc-empty');
+  if(!rcAnomalies.length){
+    rcTbody.innerHTML=''; rcEmpty.style.display='block'; rcEmpty.textContent='RC「安定」以外のスタッフはいません ✅';
+  } else {
+    rcEmpty.style.display='none';
+    rcTbody.innerHTML=rcAnomalies.map(a=>`<tr>
+      <td>${a.office}</td><td style="font-weight:600;">${a.name}</td><td>${a.role}</td>
+      <td class="${a.rc.cls}" style="font-weight:700;">${a.rc.display}</td>
+    </tr>`).join('');
+  }
+
+  const lsrpTbody=document.getElementById('lsrp-tbody');
+  const lsrpEmpty=document.getElementById('lsrp-empty');
+  if(!lsrpAnomalies.length){
+    lsrpTbody.innerHTML=''; lsrpEmpty.style.display='block'; lsrpEmpty.textContent='LSRP要観察以上の人物は検出されていません ✅';
+  } else {
+    lsrpEmpty.style.display='none';
+    lsrpTbody.innerHTML=lsrpAnomalies.map(a=>`<tr>
+      <td>${a.office}</td><td style="font-weight:600;">${a.name}</td><td>${a.role}</td>
+      <td>${a.total}</td>
+      <td class="${a.lsrpL.cls}" style="font-weight:700;">${a.lsrpL.display}</td>
+    </tr>`).join('');
+  }
+}
+
+document.addEventListener('DOMContentLoaded', ()=>{
+  refreshCorpSelect();
+  renderAll();
+});
+</script>
+</body>
+</html>
