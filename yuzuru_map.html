@@ -50,6 +50,8 @@
     .status-select{font-size:12px;padding:3px 6px;border:1px solid #ccc;border-radius:4px;margin-top:6px;width:100%;cursor:pointer;}
     #ref-controls{background:#161b22;padding:6px 16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;border-bottom:1px solid #30363d;flex-shrink:0;}
     #ref-controls label{font-size:12px;color:#8b949e;}
+    #type-controls{background:#161b22;padding:6px 16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;border-bottom:1px solid #30363d;flex-shrink:0;}
+    #type-controls label{font-size:12px;color:#8b949e;}
     .ref-toggle{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
     .ref-chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#c9d1d9;background:#21262d;border:1px solid #30363d;border-radius:14px;padding:3px 9px;cursor:pointer;user-select:none;}
     .ref-chip input{cursor:pointer;}
@@ -109,19 +111,15 @@
     <option value="愛知県">愛知県</option>
     <option value="三重県">三重県</option>
   </select></label>
+  <label>市町村：<select id="cityFilter">
+    <option value="ALL">すべて</option>
+  </select></label>
   <label>定員規模：<select id="rankFilter">
     <option value="ALL">すべて</option>
     <option value="A">大（上位）</option>
     <option value="AB">大 + 中</option>
     <option value="B">中 のみ</option>
     <option value="C">小 のみ</option>
-  </select></label>
-  <label>種別：<select id="typeFilter">
-    <option value="ALL">すべて</option>
-    <option value="特別養護老人ホーム">特養</option>
-    <option value="通所介護">通所介護</option>
-    <option value="訪問介護">訪問介護</option>
-    <option value="認知症対応型共同生活介護">認知症対応型GH</option>
   </select></label>
   <label>状況：<select id="statusFilter">
     <option value="ALL">すべて</option>
@@ -131,6 +129,10 @@
     <option value="成約">成約</option>
   </select></label>
   <span style="font-size:11px;color:#8b949e;margin-left:auto">← リスト or ピンをクリックで詳細</span>
+</div>
+<div id="type-controls">
+  <label style="font-size:12px;color:#8b949e;">種別（複数選択可）：</label>
+  <div class="ref-toggle" id="type-category-toggles"></div>
 </div>
 <div id="ref-controls">
   <label class="ref-master"><input type="checkbox" id="refMasterToggle" checked>📍 紹介元レイヤー表示</label>
@@ -1947,11 +1949,27 @@ const REFERRAL_CATEGORIES = {
   "ケアマネ事業所":       { color:"#00897b", field:"介護保険",   priority:true,  available:true  },
   "地域包括支援センター": { color:"#7cb342", field:"介護保険",   priority:false, available:true  },
   "相談支援事業所":       { color:"#43a047", field:"障がい福祉", priority:true,  available:false },
+  "基幹相談支援センター": { color:"#00acc1", field:"障がい福祉", priority:true,  available:false },
   "精神科病院":           { color:"#8e24aa", field:"障がい福祉", priority:true,  available:false },
   "病院(地域連携室・MSW)": { color:"#3949ab", field:"介護保険",   priority:true,  available:false },
   "地域の他事業所":       { color:"#795548", field:"共通",       priority:false, available:false },
   "特別支援学校":         { color:"#f57f17", field:"障がい福祉", priority:false, available:false },
 };
+
+// C-2：施設種別カテゴリの拡張（既存4種＝実データあり／新規4種＝就労系・GH＝WAM NETで取得可能だが
+// 実データ未収集のため「準備中」表示。C-3：typeFilterを単一選択→複数選択チェックボックスに変更）
+const FACILITY_TYPE_CATEGORIES = {
+  "特別養護老人ホーム":       { short:"特養",             available:true  },
+  "通所介護":                 { short:"通所介護",         available:true  },
+  "訪問介護":                 { short:"訪問介護",         available:true  },
+  "認知症対応型共同生活介護": { short:"認知症対応型GH",   available:true  },
+  "就労継続支援A型":         { short:"就労継続支援A型", available:false },
+  "就労継続支援B型":         { short:"就労継続支援B型", available:false },
+  "就労移行支援":             { short:"就労移行支援",     available:false },
+  "共同生活援助":             { short:"共同生活援助(GH)", available:false },
+};
+let typeFilterState = {};
+Object.keys(FACILITY_TYPE_CATEGORIES).forEach(k => typeFilterState[k] = true);
 
 const REFERRAL_DATA = [
   { id:"cm1", name:"ケアサポート静春", category:"ケアマネ事業所", pref:"岐阜県", addr:"岐阜県岐阜市西島町２ー６", phone:"058-233-6555", lat:35.4260864, lon:136.73180200000002 },
@@ -2130,18 +2148,40 @@ let activeClientId = null;
 const refCategoryState = {};
 Object.entries(REFERRAL_CATEGORIES).forEach(([c,cat]) => refCategoryState[c] = !!cat.available);
 
+// C-1：住所文字列から市町村を抽出（郡＋町村はまとめて1単位として扱う。政令市の区までは分解しない簡易実装）
+function extractCity(addr) {
+  const m = addr && addr.match(/^(?:岐阜県|愛知県|三重県)(.+?(?:市|区|町|村))/);
+  return m ? m[1] : '';
+}
+
+function populateCityFilter() {
+  const pv = document.getElementById('prefFilter').value;
+  const sel = document.getElementById('cityFilter');
+  const cities = new Set();
+  data.forEach(f => {
+    if (pv !== 'ALL' && f.properties.pref !== pv) return;
+    const c = extractCity(f.properties.addr);
+    if (c) cities.add(c);
+  });
+  const sorted = Array.from(cities).sort((a,b) => a.localeCompare(b, 'ja'));
+  const current = sel.value;
+  sel.innerHTML = '<option value="ALL">すべて</option>' + sorted.map(c => `<option value="${c}">${c}</option>`).join('');
+  sel.value = sorted.includes(current) ? current : 'ALL';
+}
+
 function getVisible() {
   const pv = document.getElementById('prefFilter').value;
+  const cv = document.getElementById('cityFilter').value;
   const rv = document.getElementById('rankFilter').value;
-  const tv = document.getElementById('typeFilter').value;
   const sv = document.getElementById('statusFilter').value;
   return data.filter(f => {
     const p = f.properties;
     const pm = pv==='ALL'||p.pref===pv;
+    const cm = cv==='ALL'||extractCity(p.addr)===cv;
     const rm = rv==='ALL'||(rv==='AB'&&(p.rank==='A'||p.rank==='B'))||p.rank===rv;
-    const tm = tv==='ALL'||p.type.includes(tv);
+    const tm = typeFilterState[p.type] !== false;
     const sm = sv==='ALL'||p.status===sv;
-    return pm && rm && tm && sm;
+    return pm && cm && rm && tm && sm;
   }).sort((a,b) => b.properties.capacity - a.properties.capacity);
 }
 
@@ -2207,6 +2247,23 @@ function renderRefCategoryToggles() {
     cb.addEventListener('change', () => {
       refCategoryState[cb.dataset.cat] = cb.checked;
       renderReferrals();
+    });
+  });
+}
+
+// C-3：施設種別の複数選択チェックボックス（全て選択がデフォルト。1つ以上外すとOR条件で絞り込み）
+function renderTypeCategoryToggles() {
+  const box = document.getElementById('type-category-toggles');
+  box.innerHTML = Object.entries(FACILITY_TYPE_CATEGORIES).map(([name,cat]) => `
+    <label class="ref-chip" style="${cat.available?'':'opacity:.45;cursor:not-allowed;'}" title="${cat.available?'':'実データ未収集（準備中）'}">
+      <input type="checkbox" data-type="${name}" ${typeFilterState[name]?'checked':''} ${cat.available?'':'disabled'}>
+      ${cat.short}${cat.available?'':'（準備中）'}
+    </label>`).join('');
+  box.querySelectorAll('input[data-type]').forEach(cb => {
+    cb.addEventListener('change', () => {
+      typeFilterState[cb.dataset.type] = cb.checked;
+      activeId = null;
+      render();
     });
   });
 }
@@ -2328,7 +2385,10 @@ document.getElementById('csv-btn').onclick = () => {
   a.click();
 };
 
-['prefFilter','rankFilter','typeFilter','statusFilter'].forEach(id =>
+document.getElementById('prefFilter').addEventListener('change', () => {
+  activeId=null; populateCityFilter(); render(); renderReferrals();
+});
+['cityFilter','rankFilter','statusFilter'].forEach(id =>
   document.getElementById(id).addEventListener('change', () => { activeId=null; render(); renderReferrals(); })
 );
 document.getElementById('refMasterToggle').addEventListener('change', renderReferrals);
@@ -2655,6 +2715,8 @@ function exportClientReferralCSVClick() {
   exportClientReferralCSV(client);
 }
 
+populateCityFilter();
+renderTypeCategoryToggles();
 renderRefCategoryToggles();
 render();
 renderReferrals();
