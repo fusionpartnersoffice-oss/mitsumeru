@@ -2118,6 +2118,7 @@ let layerGroup = L.layerGroup().addTo(map);
 let refLayerGroup = L.layerGroup().addTo(map);
 let markerMap = {};
 let activeId = null;
+let _rebuildingMarkers = false; // render()のclearLayers()に伴う内部的なpopupcloseと、ユーザーの実際の操作を区別するためのフラグ
 
 // Block2：クライアント中心抽出のマップ状態（既存レイヤーとは別名前空間）
 let clientLayerGroup = L.layerGroup();
@@ -2251,7 +2252,9 @@ function updateStatus(id, status) {
 }
 
 function render() {
+  _rebuildingMarkers = true;
   layerGroup.clearLayers();
+  _rebuildingMarkers = false;
   markerMap = {};
   const visible = getVisible();
   document.getElementById('total-count').textContent = visible.length;
@@ -2263,8 +2266,20 @@ function render() {
     const id = f.id;
     const marker = L.marker(f.geometry.coordinates.slice().reverse(), {icon: makeIcon(p, id===activeId)})
       .bindPopup(makePopupHTML(p, id), {maxWidth:290,className:''})
-      .on('click', () => { activeId=id; render(); })
-      .on('popupclose', () => { if(activeId===id){activeId=null; render();} });
+      .on('click', () => {
+        // マーカー全体をclearLayers()で再構築すると、開いたばかりのpopupが
+        // 同期的に破棄されてしまうため、ここではrender()を呼ばずアイコンの
+        // 見た目更新・サイドバーのハイライト・popup再表示のみを行う
+        const prevId = activeId;
+        activeId = id;
+        if (prevId !== null && prevId !== id && markerMap[prevId] && data[prevId]) {
+          markerMap[prevId].setIcon(makeIcon(data[prevId].properties, false));
+        }
+        marker.setIcon(makeIcon(p, true));
+        marker.openPopup();
+        renderSidebar(visible);
+      })
+      .on('popupclose', () => { if(!_rebuildingMarkers && activeId===id){activeId=null; renderSidebar(visible);} });
     marker.addTo(layerGroup);
     markerMap[id] = marker;
   });
