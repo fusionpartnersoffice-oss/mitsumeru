@@ -146,6 +146,10 @@ main{max-width:1000px;margin:0 auto;padding:20px 16px 80px;}
     </div>
   </div>
 
+  <div class="section" id="mq-ai-section" style="display:none;">
+    <div class="card" id="mq-ai-comment"></div>
+  </div>
+
 </div>
 
 <div class="section">
@@ -318,6 +322,76 @@ function loadFinForm(){
   calcOccRate();
   document.getElementById('mq-signal-card').innerHTML = renderSignalCard(f);
   document.getElementById('mq-sens-card').innerHTML = renderSensCard(f);
+  loadMqAIComment(f);
+}
+
+// ════════════════════════════════════════════════════
+//  次の手AI化・軸A：AI補足コメント（ルールベースとは別枠・表示のみ・自動アクション化しない）
+//  設計：06_イノベーション/凪次の手AI化_弦凪連携_モジュール分解_デバッグ_20260705.md §1
+//  （軸Bの`nagi_pipe.html`実装と同一パターン。APIキーはハブと同一localStorageキーを共有）
+// ════════════════════════════════════════════════════
+function nagiMqGetApiKey(){
+  return localStorage.getItem('mitsumeru_api_key') || '';
+}
+
+function callClaudeForMqAI(prompt, onSuccess, onError){
+  const key = nagiMqGetApiKey();
+  if(!key){ onError('APIキー未設定'); return; }
+  fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': key,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 300,
+      messages: [{ role: 'user', content: prompt }]
+    })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if(data.error){ onError(data.error.message || 'APIエラー'); return; }
+    const text = data.content?.[0]?.text || '';
+    onSuccess(text);
+  })
+  .catch(e => onError(e.message || 'ネットワークエラー'));
+}
+
+function buildMqAIPrompt(f){
+  return `以下は、ある事業所の財務・稼働データです。
+- 売上PQ：${n(f.pq)}円
+- 延べ人数Q：${n(f.q)}
+- 変動費VQ：${n(f.vq)}円
+- 粗利MQ：${n(f.mq)}円
+- 固定費F：${n(f.f)}円
+- 利益G：${n(f.g)}円
+- 定員：${f.capacity||'未入力'}名／実績：${f.occupancy||'未入力'}名
+- 処遇改善加算：${f.kazan||'未入力'}
+
+この数字の組み合わせから読み取れる傾向やタイミングの助言を1〜2文で述べてください。
+f/m比率が130%を超えているか、充足率が85%未満か、加算が未取得か、という指摘は
+既に別の仕組みで行っているため、それ以外の視点（数値の組み合わせから読み取れる傾向等）に限定してください。
+断定的な経営判断（「撤退すべき」等）は避け、観察に基づく助言に留めてください。`;
+}
+
+function loadMqAIComment(f){
+  const section = document.getElementById('mq-ai-section');
+  const box = document.getElementById('mq-ai-comment');
+  if(!f){ section.style.display='none'; return; }
+  section.style.display='block';
+  const key = nagiMqGetApiKey();
+  if(!key){
+    box.innerHTML = '<div class="card-title">🤖 AIからの補足コメント</div><div style="font-size:0.76rem;color:var(--sub);">APIキー未設定のため表示できません（<a href="./nagi_system.html" style="color:var(--accent3);">ハブ</a>の⚙データ管理から設定してください。設定済みの場合はブラウザ・端末が異なる可能性があります）</div>';
+    return;
+  }
+  box.innerHTML = '<div class="card-title">🤖 AIからの補足コメント</div><div style="font-size:0.76rem;color:var(--sub);">生成中…</div>';
+  callClaudeForMqAI(buildMqAIPrompt(f),
+    text => { box.innerHTML = '<div class="card-title">🤖 AIからの補足コメント</div><div style="font-size:0.82rem;line-height:1.6;">'+text.replace(/</g,'&lt;')+'</div>'; },
+    err => { box.innerHTML = '<div class="card-title">🤖 AIからの補足コメント</div><div style="font-size:0.76rem;color:var(--sub);">生成できませんでした（ルールベース表示のみ有効・上の「現在の状態」をご参照ください）：'+err+'</div>'; }
+  );
 }
 
 function saveFin(){
