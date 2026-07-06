@@ -7,6 +7,10 @@
   <title>弦システム 商圏マップ【東海3県・実データ】— Fusion Partners</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- P-1：マーカークラスタリング（弦_地図描画パフォーマンス最適化_設計_20260707.md） -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
   <style>
     *{box-sizing:border-box;margin:0;padding:0;}
     body{font-family:"Hiragino Kaku Gothic Pro",Meiryo,sans-serif;background:#0d1117;display:flex;flex-direction:column;height:100vh;overflow:hidden;}
@@ -22307,11 +22311,25 @@ L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
   attribution:'© OpenStreetMap © CARTO', maxZoom:18
 }).addTo(map);
 
-let layerGroup = L.layerGroup().addTo(map);
-let refLayerGroup = L.layerGroup().addTo(map);
+// P-1：マーカークラスタリング（広域表示時は近接マーカーをまとめ、ズームインで個別マーカーに分解）
+// disableClusteringAtZoom：この地図の初期ズーム(9)より十分ズームインした時点で個別マーカーに戻す
+let layerGroup = L.markerClusterGroup({ disableClusteringAtZoom: 15, spiderfyOnMaxZoom: false, maxClusterRadius: 60 }).addTo(map);
+let refLayerGroup = L.markerClusterGroup({ disableClusteringAtZoom: 15, spiderfyOnMaxZoom: false, maxClusterRadius: 60 }).addTo(map);
 let markerMap = {};
 let activeId = null;
 let _rebuildingMarkers = false; // render()のclearLayers()に伴う内部的なpopupcloseと、ユーザーの実際の操作を区別するためのフラグ
+
+// P-2：フィルタ変更時の再描画デバウンス（連続操作の最後から150ms後に1回だけ実行）
+// マーカー・カード直接クリック時は即時反応が必要なため対象外（フィルタ操作のみに適用）
+function debounce(fn, wait) {
+  let t = null;
+  return (...args) => {
+    clearTimeout(t);
+    t = setTimeout(() => fn(...args), wait);
+  };
+}
+const debouncedRender = debounce(() => render(), 150);
+const debouncedRenderReferrals = debounce(() => renderReferrals(), 150);
 
 // Block2：クライアント中心抽出のマップ状態（既存レイヤーとは別名前空間）
 let clientLayerGroup = L.layerGroup();
@@ -22411,8 +22429,9 @@ function renderReferrals() {
   const visible = getVisibleReferrals();
   document.getElementById('ref-count').textContent = visible.length;
   visible.forEach(r => {
+    // P-3：ポップアップHTMLはクリック時に遅延生成（全件事前生成のコストを避ける）
     L.marker([r.lat, r.lon], {icon: makeRefIcon(r)})
-      .bindPopup(makeRefPopupHTML(r), {maxWidth:260,className:''})
+      .bindPopup(() => makeRefPopupHTML(r), {maxWidth:260,className:''})
       .addTo(refLayerGroup);
   });
 }
@@ -22427,7 +22446,7 @@ function renderRefCategoryToggles() {
   box.querySelectorAll('input[data-cat]').forEach(cb => {
     cb.addEventListener('change', () => {
       refCategoryState[cb.dataset.cat] = cb.checked;
-      renderReferrals();
+      debouncedRenderReferrals();
     });
   });
 }
@@ -22444,7 +22463,7 @@ function renderTypeCategoryToggles() {
     cb.addEventListener('change', () => {
       typeFilterState[cb.dataset.type] = cb.checked;
       activeId = null;
-      render();
+      debouncedRender();
     });
   });
 }
@@ -22525,8 +22544,9 @@ function render() {
   visible.forEach(f => {
     const p = f.properties;
     const id = f.id;
+    // P-3：ポップアップHTMLはクリック時に遅延生成（全件事前生成のコストを避ける）
     const marker = L.marker(f.geometry.coordinates.slice().reverse(), {icon: makeIcon(p, id===activeId)})
-      .bindPopup(makePopupHTML(p, id), {maxWidth:290,className:''})
+      .bindPopup(() => makePopupHTML(p, id), {maxWidth:290,className:''})
       .on('click', () => {
         // マーカー全体をclearLayers()で再構築すると、開いたばかりのpopupが
         // 同期的に破棄されてしまうため、ここではrender()を呼ばずアイコンの
@@ -22593,12 +22613,12 @@ document.getElementById('csv-btn').onclick = () => {
 };
 
 document.getElementById('prefFilter').addEventListener('change', () => {
-  activeId=null; populateCityFilter(); render(); renderReferrals();
+  activeId=null; populateCityFilter(); debouncedRender(); debouncedRenderReferrals();
 });
 ['cityFilter','rankFilter','statusFilter','facilityStatusFilter'].forEach(id =>
-  document.getElementById(id).addEventListener('change', () => { activeId=null; render(); renderReferrals(); })
+  document.getElementById(id).addEventListener('change', () => { activeId=null; debouncedRender(); debouncedRenderReferrals(); })
 );
-document.getElementById('refMasterToggle').addEventListener('change', renderReferrals);
+document.getElementById('refMasterToggle').addEventListener('change', debouncedRenderReferrals);
 
 // 紹介元CSV出力
 function exportReferralCSV() {
