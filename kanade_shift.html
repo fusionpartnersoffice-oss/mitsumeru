@@ -134,6 +134,7 @@
   <button class="mode-tab active" onclick="switchTab('facility')">🏢 施設マスタ</button>
   <button class="mode-tab" onclick="switchTab('staff')">👤 職員マスタ</button>
   <button class="mode-tab" onclick="switchTab('check')">✅ 法定基準チェック</button>
+  <button class="mode-tab" onclick="switchTab('contract')">⏱ 契約時間・有給管理</button>
 </div>
 
 <!-- ══════════ モジュールF：施設マスタ ══════════ -->
@@ -241,9 +242,16 @@
       <div class="field"><label>契約勤務日数（月あたり）</label><input type="number" id="s-days" min="0" value="20"></div>
       <div class="field"><label>契約勤務時間（週あたり・h）</label><input type="number" id="s-hours" min="0" max="40" value="40"></div>
     </div>
-    <div class="field">
-      <label>年次有給休暇 残日数（当年度・年5日消化義務の管理対象）</label>
-      <input type="number" id="s-paid-leave" min="0" value="10">
+    <div class="section-title" style="margin-top:14px;">モジュールD：契約時間の実績（差分可視化用）</div>
+    <div class="note">シフト作成機能（モジュールA・未実装）が完成するまでの暫定運用として、実績を手入力してください。Aの実装後は自動集計に置き換え予定です。</div>
+    <div class="field-row" style="margin-top:8px;">
+      <div class="field"><label>実績勤務日数（今月・累計）</label><input type="number" id="s-actual-days" min="0" value="0"></div>
+      <div class="field"><label>実績勤務時間（今週・累計h）</label><input type="number" id="s-actual-hours" min="0" value="0"></div>
+    </div>
+    <div class="section-title" style="margin-top:14px;">モジュールE：年次有給休暇の消化状況</div>
+    <div class="field-row">
+      <div class="field"><label>残日数（当年度）</label><input type="number" id="s-paid-leave" min="0" value="10"></div>
+      <div class="field"><label>当年度取得日数（年5日消化義務の判定対象）</label><input type="number" id="s-paid-leave-taken" min="0" value="0"></div>
     </div>
     <div style="display:flex; gap:10px; margin-top:14px;">
       <button class="btn-primary" onclick="saveStaff()">保存する</button>
@@ -260,6 +268,17 @@
   </div>
 
   <div id="check-result-area">
+    <div class="empty-state">施設を選択してください</div>
+  </div>
+</div>
+
+<!-- ══════════ モジュールD＋E：契約時間・有給管理 ══════════ -->
+<div id="screen-contract" class="screen">
+  <div class="section">
+    <div class="section-title">対象施設</div>
+    <select id="contract-facility-select" onchange="renderContractLeave()"></select>
+  </div>
+  <div id="contract-result-area">
     <div class="empty-state">施設を選択してください</div>
   </div>
 </div>
@@ -292,12 +311,13 @@ let editingStaffId = null;
 // ═══════════════════════════════════════════════
 function switchTab(tab) {
   document.querySelectorAll('.mode-tab').forEach((t,i) => {
-    t.classList.toggle('active', ['facility','staff','check'][i] === tab);
+    t.classList.toggle('active', ['facility','staff','check','contract'][i] === tab);
   });
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-'+tab).classList.add('active');
   if (tab === 'staff') { populateFacilitySelect('staff-facility-select'); renderStaffList(); }
   if (tab === 'check') { populateFacilitySelect('check-facility-select'); renderLegalCheck(); }
+  if (tab === 'contract') { populateFacilitySelect('contract-facility-select'); renderContractLeave(); }
 }
 
 function populateFacilitySelect(selectId) {
@@ -468,14 +488,20 @@ function showStaffForm(id) {
     document.getElementById('s-role').value = s.role;
     document.getElementById('s-days').value = s.contractDays;
     document.getElementById('s-hours').value = s.contractHours;
+    document.getElementById('s-actual-days').value = s.actualMonthlyDays ?? 0;
+    document.getElementById('s-actual-hours').value = s.actualWeeklyHours ?? 0;
     document.getElementById('s-paid-leave').value = s.paidLeaveRemaining;
+    document.getElementById('s-paid-leave-taken').value = s.paidLeaveTakenThisYear ?? 0;
   } else {
     document.getElementById('s-name').value = '';
     document.getElementById('s-gender').value = '女性';
     document.getElementById('s-role').value = '生活支援員';
     document.getElementById('s-days').value = 20;
     document.getElementById('s-hours').value = 40;
+    document.getElementById('s-actual-days').value = 0;
+    document.getElementById('s-actual-hours').value = 0;
     document.getElementById('s-paid-leave').value = 10;
+    document.getElementById('s-paid-leave-taken').value = 0;
   }
   updateStaffRoleNote();
 }
@@ -510,7 +536,10 @@ function saveStaff() {
     role: document.getElementById('s-role').value,
     contractDays: parseInt(document.getElementById('s-days').value)||0,
     contractHours: parseInt(document.getElementById('s-hours').value)||0,
+    actualMonthlyDays: parseInt(document.getElementById('s-actual-days').value)||0,
+    actualWeeklyHours: parseInt(document.getElementById('s-actual-hours').value)||0,
     paidLeaveRemaining: parseInt(document.getElementById('s-paid-leave').value)||0,
+    paidLeaveTakenThisYear: parseInt(document.getElementById('s-paid-leave-taken').value)||0,
   };
   if (editingStaffId) {
     const idx = staffList.findIndex(s => s.id === editingStaffId);
@@ -630,6 +659,79 @@ function renderLegalCheck() {
     </div>` : ''}
     <div class="section" style="font-size:11px;color:var(--text3);">
       ★世話人の報酬区分（令和6年度改定での変更詳細）・都道府県条例上乗せ基準（埼玉県以外）は出典未確認のため、本チェックには反映していません。上記の判定は「指定基準（最低ライン）」に基づくものであり、報酬請求上の加算判定とは別のロジックです。
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════════════
+// モジュールD：契約時間管理／モジュールE：有給管理
+// D：契約勤務日数・時間のマスタ管理、実績との差分可視化、週40時間残時間表示
+// E：年5日消化義務の進捗追跡、未消化リスクの表示
+// 注：シフト作成機能（モジュールA・未実装）が完成するまでは、実績（actualMonthlyDays／
+//     actualWeeklyHours）は職員マスタでの手入力による暫定運用。A実装後は自動集計に置き換え予定。
+// ═══════════════════════════════════════════════
+function calcWeeklyHoursRemaining(staff) {
+  const remaining = 40 - (staff.actualWeeklyHours || 0);
+  return remaining;
+}
+
+function calcContractDaysDiff(staff) {
+  return (staff.actualMonthlyDays || 0) - (staff.contractDays || 0);
+}
+
+// 年5日消化義務：当年度取得日数が5日未満なら未消化リスク
+function calcPaidLeaveRisk(staff) {
+  const taken = staff.paidLeaveTakenThisYear || 0;
+  const shortfall = Math.max(0, 5 - taken);
+  return { taken, shortfall, atRisk: shortfall > 0 };
+}
+
+function renderContractLeave() {
+  const fid = document.getElementById('contract-facility-select').value;
+  const area = document.getElementById('contract-result-area');
+  if (!fid) { area.innerHTML = '<div class="empty-state">施設を選択してください</div>'; return; }
+  const facility = facilities.find(f => f.id === fid);
+  const list = staffList.filter(s => s.facilityId === fid);
+  if (!facility) { area.innerHTML = '<div class="empty-state">施設を選択してください</div>'; return; }
+  if (!list.length) { area.innerHTML = '<div class="empty-state">この施設の職員はまだ登録されていません</div>'; return; }
+
+  const rows = list.map(s => {
+    const weeklyRemaining = calcWeeklyHoursRemaining(s);
+    const daysDiff = calcContractDaysDiff(s);
+    const leave = calcPaidLeaveRisk(s);
+
+    const overContractHours = (s.actualWeeklyHours || 0) > (s.contractHours || 0);
+    const over40h = weeklyRemaining < 0;
+
+    const warnings = [];
+    if (over40h) warnings.push(`🔴 週40時間超過（残り${weeklyRemaining}h）`);
+    else if (weeklyRemaining <= 4) warnings.push(`⚠ 週40時間まで残り${weeklyRemaining}h（超過見込み）`);
+    if (overContractHours) warnings.push(`⚠ 契約時間（週${s.contractHours}h）を実績（週${s.actualWeeklyHours}h）が上回っています`);
+    if (leave.atRisk) warnings.push(`⚠ 有給未消化リスク（当年度取得${leave.taken}日／年5日消化義務まであと${leave.shortfall}日）`);
+
+    const rowCls = warnings.some(w => w.startsWith('🔴')) ? 'result-ng' : (warnings.length ? 'result-warn' : 'result-ok');
+
+    return `<tr>
+      <td>${s.name}（${s.role}）</td>
+      <td>${s.contractDays}日 ／ 週${s.contractHours}h</td>
+      <td>${s.actualMonthlyDays}日（${daysDiff>=0?'+':''}${daysDiff}） ／ 週${s.actualWeeklyHours}h</td>
+      <td>${weeklyRemaining}h</td>
+      <td>残${s.paidLeaveRemaining}日／取得${leave.taken}日</td>
+      <td class="${rowCls}" style="border-radius:0;">${warnings.length ? warnings.join('<br>') : '✅ 問題なし'}</td>
+    </tr>`;
+  }).join('');
+
+  area.innerHTML = `
+    <div class="section">
+      <div class="section-title">${facility.name} — 契約時間・有給管理一覧</div>
+      <div class="note">モジュールA（シフト作成）が未実装のため、実績（勤務日数・時間）は職員マスタでの手入力です。Aの実装後は自動集計に置き換える予定です。</div>
+      <table class="calc-table">
+        <tr><th>職員</th><th>契約（日数／週時間）</th><th>実績（日数／週時間）</th><th>週40h残り</th><th>有給（残／取得）</th><th>警告</th></tr>
+        ${rows}
+      </table>
+    </div>
+    <div class="section" style="font-size:11px;color:var(--text3);">
+      週40時間残り時間は「実績勤務時間（今週・累計h）」を40時間から差し引いた値です。有給休暇の年5日消化義務は、基準日（入社後6か月等）からの1年以内が対象期間ですが、本ツールでは簡易的に「当年度の取得日数」で判定しています（正確な基準日管理は次フェーズで検討）。
     </div>
   `;
 }
