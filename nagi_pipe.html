@@ -102,6 +102,10 @@ main{max-width:1000px;margin:0 auto;padding:20px 16px 80px;}
     <div class="card" id="pipe-signal-card"></div>
   </div>
 
+  <div class="section" id="pipe-ai-section" style="display:none;">
+    <div class="card" id="pipe-ai-comment"></div>
+  </div>
+
 </div>
 
 <div class="section">
@@ -163,6 +167,7 @@ function loadPipeForm(){
   const p=getPipe(oid);
   ['approach','inquiry','visit','contract','repeat'].forEach(k=>{ document.getElementById('pipe-'+k).value = p ? (p[k]||'') : ''; });
   document.getElementById('pipe-signal-card').innerHTML = renderSignalCard(p);
+  loadPipeAIComment(p);
 }
 
 function savePipe(){
@@ -176,6 +181,7 @@ function savePipe(){
     visit:n(document.getElementById('pipe-visit').value),
     contract:n(document.getElementById('pipe-contract').value),
     repeat:n(document.getElementById('pipe-repeat').value),
+    updatedAt:new Date().toISOString(),
   });
   save('nagi_pipe',data);
   const msg=document.getElementById('save-msg');
@@ -183,6 +189,72 @@ function savePipe(){
   setTimeout(()=>{ msg.textContent=''; },4000);
   loadPipeForm();
   renderAllOfficesPipe();
+}
+
+// ════════════════════════════════════════════════════
+//  B-AI：AI補足コメント（ルールベースとは別枠・表示のみ・自動アクション化しない）
+//  設計書：06_イノベーション/凪次の手AI化_軸B詳細設計_20260706.md §2-3
+//  APIキーはハブ（nagi_system.html）と同一localStorageキーを共有（同一origin）
+// ════════════════════════════════════════════════════
+function nagiPipeGetApiKey(){
+  return localStorage.getItem('mitsumeru_api_key') || '';
+}
+
+function callClaudeForPipeAI(prompt, onSuccess, onError){
+  const key = nagiPipeGetApiKey();
+  if(!key){ onError('APIキー未設定'); return; }
+  fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': key,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 300,
+      messages: [{ role: 'user', content: prompt }]
+    })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if(data.error){ onError(data.error.message || 'APIエラー'); return; }
+    const text = data.content?.[0]?.text || '';
+    onSuccess(text);
+  })
+  .catch(e => onError(e.message || 'ネットワークエラー'));
+}
+
+function buildPipeAIPrompt(p){
+  return `以下は、ある事業所の営業パイプライン状況です。
+- アプローチ：${n(p.approach)}件
+- 問い合わせ：${n(p.inquiry)}件
+- 訪問：${n(p.visit)}件
+- 成約：${n(p.contract)}件
+- リピート：${n(p.repeat)}件
+- 最終更新：${p.updatedAt ? new Date(p.updatedAt).toLocaleDateString('ja-JP') : '未記録'}
+
+この数字の並びから読み取れる「段階間の停滞」や「タイミングの助言」を1〜2文で述べてください。
+件数の絶対的な多い・少ないの指摘は不要です（別の仕組みで対応済みのため）。
+断定的な経営判断（「担当を変えるべき」等）は避け、観察に基づく助言に留めてください。`;
+}
+
+function loadPipeAIComment(p){
+  const section = document.getElementById('pipe-ai-section');
+  const box = document.getElementById('pipe-ai-comment');
+  if(!p){ section.style.display='none'; return; }
+  section.style.display='block';
+  const key = nagiPipeGetApiKey();
+  if(!key){
+    box.innerHTML = '<div class="card-title">🤖 AIからの補足コメント</div><div style="font-size:0.76rem;color:var(--sub);">APIキー未設定のため表示できません（<a href="./nagi_system.html" style="color:var(--accent3);">ハブ</a>の⚙データ管理から設定してください。設定済みの場合はブラウザ・端末が異なる可能性があります）</div>';
+    return;
+  }
+  box.innerHTML = '<div class="card-title">🤖 AIからの補足コメント</div><div style="font-size:0.76rem;color:var(--sub);">生成中…</div>';
+  callClaudeForPipeAI(buildPipeAIPrompt(p),
+    text => { box.innerHTML = '<div class="card-title">🤖 AIからの補足コメント</div><div style="font-size:0.82rem;line-height:1.6;">'+text.replace(/</g,'&lt;')+'</div>'; },
+    err => { box.innerHTML = '<div class="card-title">🤖 AIからの補足コメント</div><div style="font-size:0.76rem;color:var(--sub);">生成できませんでした（ルールベース表示のみ有効・上の「現在の状態」をご参照ください）：'+err+'</div>'; }
+  );
 }
 
 // ════════════════════════════════════════════════════
