@@ -83,6 +83,7 @@ td{padding:6px 8px;border-bottom:1px solid var(--border);white-space:nowrap;}
     <div class="card"><div class="card-title">LSRP 安全圏</div><div class="card-value" style="color:var(--accent2);" id="lsrp-c-safe">0<span style="font-size:0.7rem;">名</span></div></div>
     <div class="card"></div>
   </div>
+  <div class="card" id="team-ai-comment" style="margin-top:10px;"></div>
 </div>
 
 <div class="section">
@@ -242,6 +243,7 @@ function renderAll(){
   document.getElementById('lsrp-c-follow').innerHTML=`${lsrpCounts['要フォロー']}<span style="font-size:0.7rem;">名</span>`;
   document.getElementById('lsrp-c-watch').innerHTML=`${lsrpCounts['要観察']}<span style="font-size:0.7rem;">名</span>`;
   document.getElementById('lsrp-c-safe').innerHTML=`${lsrpCounts['安全圏']}<span style="font-size:0.7rem;">名</span>`;
+  loadTeamAIComment(rcCounts, lsrpCounts, staff.length);
 
   const mgrList=document.getElementById('mgr-rc-list');
   if(!mgrsRC.length){
@@ -277,6 +279,66 @@ function renderAll(){
       <td class="${a.lsrpL.cls}" style="font-weight:700;">${a.lsrpL.display}</td>
     </tr>`).join('');
   }
+}
+
+// ════════════════════════════════════════════════════
+//  次の手AI化・軸C：AI補足コメント（ルールベースとは別枠・表示のみ・自動アクション化しない）
+//  設計：06_イノベーション/凪次の手AI化_軸C軸D詳細設計_20260707.md §1
+//  個人名・個人の詳細スコアはプロンプトに含めない（チーム単位の集計値のみ）
+//  APIキーはハブと同一localStorageキーを共有（同一origin）
+// ════════════════════════════════════════════════════
+function nagiTeamGetApiKey(){
+  return localStorage.getItem('mitsumeru_api_key') || '';
+}
+
+function callClaudeForTeamAI(prompt, onSuccess, onError){
+  const key = nagiTeamGetApiKey();
+  if(!key){ onError('APIキー未設定'); return; }
+  fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': key,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 300,
+      messages: [{ role: 'user', content: prompt }]
+    })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if(data.error){ onError(data.error.message || 'APIエラー'); return; }
+    const text = data.content?.[0]?.text || '';
+    onSuccess(text);
+  })
+  .catch(e => onError(e.message || 'ネットワークエラー'));
+}
+
+function buildTeamAIPrompt(rcCounts, lsrpCounts){
+  return `あるチームのRC判定結果です。
+- 要フォロー：${rcCounts['要フォロー']}名 / 要観察：${rcCounts['要観察']}名 / 要対話：${rcCounts['要対話']}名 / 安定：${rcCounts['安定']}名
+- LSRP警戒：要フォロー${lsrpCounts['要フォロー']}名 / 要観察${lsrpCounts['要観察']}名 / 安全圏${lsrpCounts['安全圏']}名
+
+このチーム全体の傾向から読み取れる、マネジメント上の観察点を1〜2文で述べてください。
+個人を特定するような言及は避け、チーム全体の傾向としてのみ述べてください。`;
+}
+
+function loadTeamAIComment(rcCounts, lsrpCounts, staffCount){
+  const box = document.getElementById('team-ai-comment');
+  if(!staffCount){ box.innerHTML = ''; return; }
+  const key = nagiTeamGetApiKey();
+  if(!key){
+    box.innerHTML = '<div class="card-title">🤖 AIからの補足コメント</div><div style="font-size:0.76rem;color:var(--sub);">APIキー未設定のため表示できません（<a href="./nagi_system.html" style="color:var(--accent4);">ハブ</a>の⚙データ管理から設定してください。設定済みの場合はブラウザ・端末が異なる可能性があります）</div>';
+    return;
+  }
+  box.innerHTML = '<div class="card-title">🤖 AIからの補足コメント</div><div style="font-size:0.76rem;color:var(--sub);">生成中…</div>';
+  callClaudeForTeamAI(buildTeamAIPrompt(rcCounts, lsrpCounts),
+    text => { box.innerHTML = '<div class="card-title">🤖 AIからの補足コメント</div><div style="font-size:0.82rem;line-height:1.6;">'+text.replace(/</g,'&lt;')+'</div>'; },
+    err => { box.innerHTML = '<div class="card-title">🤖 AIからの補足コメント</div><div style="font-size:0.76rem;color:var(--sub);">生成できませんでした（ルールベース表示のみ有効・上記サマリーをご参照ください）：'+err+'</div>'; }
+  );
 }
 
 document.addEventListener('DOMContentLoaded', ()=>{
