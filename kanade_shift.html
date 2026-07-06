@@ -134,6 +134,7 @@
   <button class="mode-tab active" onclick="switchTab('facility')">🏢 施設マスタ</button>
   <button class="mode-tab" onclick="switchTab('staff')">👤 職員マスタ</button>
   <button class="mode-tab" onclick="switchTab('check')">✅ 法定基準チェック</button>
+  <button class="mode-tab" onclick="switchTab('shift')">📅 シフト作成</button>
   <button class="mode-tab" onclick="switchTab('contract')">⏱ 契約時間・有給管理</button>
 </div>
 
@@ -195,6 +196,10 @@
       <div class="field"><label>区分6</label><input type="number" id="f-u6" min="0" value="0"></div>
     </div>
     <div id="f-total-users" class="note"></div>
+    <div class="field" style="margin-top:14px;">
+      <label>夜間支援時間帯（モジュールA・シフト表の表示用。「22時〜5時」説は★出典未確認のためハードコードせず設定可能な変数にしています）</label>
+      <input type="text" id="f-night-range" placeholder="例：22:00〜05:00" value="22:00〜05:00">
+    </div>
     <div style="display:flex; gap:10px; margin-top:14px;">
       <button class="btn-primary" onclick="saveFacility()">保存する</button>
       <button class="btn-secondary" onclick="hideFacilityForm()">キャンセル</button>
@@ -238,12 +243,21 @@
       </select>
     </div>
     <div id="s-role-note" class="note"></div>
+    <div class="field">
+      <label>モジュールA：シフトチーム区分</label>
+      <select id="s-shift-team">
+        <option value="対象外">対象外（シフト自動生成の対象にしない）</option>
+        <option value="昼team">昼team（二交代制・日中勤務ローテーション）</option>
+        <option value="夜team">夜team（二交代制・夜勤ローテーション）</option>
+      </select>
+      <div class="note">管理者・サービス管理責任者は通常「対象外」。生活支援員・世話人を昼team／夜teamに割り振ってください。</div>
+    </div>
     <div class="field-row">
       <div class="field"><label>契約勤務日数（月あたり）</label><input type="number" id="s-days" min="0" value="20"></div>
       <div class="field"><label>契約勤務時間（週あたり・h）</label><input type="number" id="s-hours" min="0" max="40" value="40"></div>
     </div>
     <div class="section-title" style="margin-top:14px;">モジュールD：契約時間の実績（差分可視化用）</div>
-    <div class="note">シフト作成機能（モジュールA・未実装）が完成するまでの暫定運用として、実績を手入力してください。Aの実装後は自動集計に置き換え予定です。</div>
+    <div class="note">現時点ではモジュールAの自動シフトから実績を自動集計する連携は未実装のため、実績は引き続き手入力です（次フェーズで自動連携予定）。</div>
     <div class="field-row" style="margin-top:8px;">
       <div class="field"><label>実績勤務日数（今月・累計）</label><input type="number" id="s-actual-days" min="0" value="0"></div>
       <div class="field"><label>実績勤務時間（今週・累計h）</label><input type="number" id="s-actual-hours" min="0" value="0"></div>
@@ -269,6 +283,22 @@
 
   <div id="check-result-area">
     <div class="empty-state">施設を選択してください</div>
+  </div>
+</div>
+
+<!-- ══════════ モジュールA：シフト作成 ══════════ -->
+<div id="screen-shift" class="screen">
+  <div class="section">
+    <div class="section-title">対象施設・対象月</div>
+    <div class="field-row">
+      <div class="field"><label>施設</label><select id="shift-facility-select" onchange="renderShiftScreen()"></select></div>
+      <div class="field"><label>対象年月</label><input type="month" id="shift-month" onchange="renderShiftScreen()"></div>
+    </div>
+    <button class="btn-primary" onclick="generateShift()">シフトを生成する</button>
+    <div class="note" style="margin-top:8px;">昼間team・夜間teamそれぞれの職員を職員マスタで設定してから生成してください（管理者・サービス管理責任者は通常「対象外」のまま）。夜勤ルール：夜勤→明け→休みの3日1セット。性別配慮制約（施設が「女性のみ」の場合、男性職員は自動除外）を反映します。</div>
+  </div>
+  <div id="shift-result-area">
+    <div class="empty-state">施設と対象年月を選択し、「シフトを生成する」を押してください</div>
   </div>
 </div>
 
@@ -311,12 +341,13 @@ let editingStaffId = null;
 // ═══════════════════════════════════════════════
 function switchTab(tab) {
   document.querySelectorAll('.mode-tab').forEach((t,i) => {
-    t.classList.toggle('active', ['facility','staff','check','contract'][i] === tab);
+    t.classList.toggle('active', ['facility','staff','check','shift','contract'][i] === tab);
   });
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-'+tab).classList.add('active');
   if (tab === 'staff') { populateFacilitySelect('staff-facility-select'); renderStaffList(); }
   if (tab === 'check') { populateFacilitySelect('check-facility-select'); renderLegalCheck(); }
+  if (tab === 'shift') { populateFacilitySelect('shift-facility-select'); renderShiftScreen(); }
   if (tab === 'contract') { populateFacilitySelect('contract-facility-select'); renderContractLeave(); }
 }
 
@@ -376,12 +407,14 @@ function showFacilityForm(id) {
     document.getElementById('f-u4').value = f.u4;
     document.getElementById('f-u5').value = f.u5;
     document.getElementById('f-u6').value = f.u6;
+    document.getElementById('f-night-range').value = f.nightRange || '22:00〜05:00';
   } else {
     ['f-name'].forEach(id => document.getElementById(id).value = '');
     ['f-u1','f-u2','f-u3','f-u4','f-u5','f-u6'].forEach(id => document.getElementById(id).value = 0);
     document.getElementById('f-pref').value = '埼玉県';
     document.getElementById('f-type').value = '日中サービス支援型';
     document.getElementById('f-gender').value = '混合';
+    document.getElementById('f-night-range').value = '22:00〜05:00';
   }
   updateFacilityTypeNote();
   updateFacilityTotalUsers();
@@ -426,6 +459,7 @@ function saveFacility() {
     u4: parseInt(document.getElementById('f-u4').value)||0,
     u5: parseInt(document.getElementById('f-u5').value)||0,
     u6: parseInt(document.getElementById('f-u6').value)||0,
+    nightRange: document.getElementById('f-night-range').value.trim() || '22:00〜05:00',
   };
   if (editingFacilityId) {
     const idx = facilities.findIndex(f => f.id === editingFacilityId);
@@ -455,7 +489,7 @@ function renderStaffList() {
     <div class="item-card">
       <div>
         <div class="item-name">${s.name}（${s.gender}）</div>
-        <div class="item-meta">${s.role} ／ 契約：月${s.contractDays}日・週${s.contractHours}h ／ 有給残${s.paidLeaveRemaining}日</div>
+        <div class="item-meta">${s.role}（${s.shiftTeam||'対象外'}） ／ 契約：月${s.contractDays}日・週${s.contractHours}h ／ 有給残${s.paidLeaveRemaining}日</div>
       </div>
       <div class="item-actions">
         <button class="btn-secondary" onclick="editStaff('${s.id}')">編集</button>
@@ -486,6 +520,7 @@ function showStaffForm(id) {
     document.getElementById('s-name').value = s.name;
     document.getElementById('s-gender').value = s.gender;
     document.getElementById('s-role').value = s.role;
+    document.getElementById('s-shift-team').value = s.shiftTeam || '対象外';
     document.getElementById('s-days').value = s.contractDays;
     document.getElementById('s-hours').value = s.contractHours;
     document.getElementById('s-actual-days').value = s.actualMonthlyDays ?? 0;
@@ -496,6 +531,7 @@ function showStaffForm(id) {
     document.getElementById('s-name').value = '';
     document.getElementById('s-gender').value = '女性';
     document.getElementById('s-role').value = '生活支援員';
+    document.getElementById('s-shift-team').value = '対象外';
     document.getElementById('s-days').value = 20;
     document.getElementById('s-hours').value = 40;
     document.getElementById('s-actual-days').value = 0;
@@ -534,6 +570,7 @@ function saveStaff() {
     name,
     gender,
     role: document.getElementById('s-role').value,
+    shiftTeam: document.getElementById('s-shift-team').value,
     contractDays: parseInt(document.getElementById('s-days').value)||0,
     contractHours: parseInt(document.getElementById('s-hours').value)||0,
     actualMonthlyDays: parseInt(document.getElementById('s-actual-days').value)||0,
@@ -664,6 +701,138 @@ function renderLegalCheck() {
 }
 
 // ═══════════════════════════════════════════════
+// モジュールA：シフト作成機能
+// 昼間team・夜間teamそれぞれの職員を職員マスタで設定し、月単位でシフト枠を生成する。
+// 夜勤ルール：夜勤→明け→休みの3日1セット（明け翌日も休み）。夜teamの人数をNとし、
+// 各人の夜勤日を (day-1)%N===本人のteam内インデックス、という単純ラウンドロビンで
+// 割り当てることで、N>=3であれば自動的に「夜勤の翌々日までは次の夜勤が回ってこない」
+// （＝3日1セットのルール）を満たす。
+// 性別配慮制約：施設の性別構成が「女性のみ」なら男性職員を、「男性のみ」なら女性職員を
+// 昼team・夜teamの割り当てから自動除外する。
+// ═══════════════════════════════════════════════
+let lastShiftResult = null;
+
+function genderExcluded(facility, staff) {
+  if (facility.gender === '女性のみ') return staff.gender === '男性';
+  if (facility.gender === '男性のみ') return staff.gender === '女性';
+  return false;
+}
+
+// 該当職員（夜team内インデックスstaffIdx・team人数teamSize）の、指定日における状態を判定
+function nightStatusFor(staffIdx, day, teamSize) {
+  if (teamSize <= 0) return '休み';
+  const isNightDay = (day - 1) % teamSize === staffIdx;
+  if (isNightDay) return '夜勤';
+  if (day >= 2 && (day - 2) % teamSize === staffIdx) return '明け';
+  if (day >= 3 && (day - 3) % teamSize === staffIdx) return '休み（明け翌日）';
+  return '休み';
+}
+
+function generateShiftForFacility(facility, allStaff, year, month) {
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const facilityStaff = allStaff.filter(s => s.facilityId === facility.id);
+
+  const dayTeamAll   = facilityStaff.filter(s => s.shiftTeam === '昼team');
+  const nightTeamAll = facilityStaff.filter(s => s.shiftTeam === '夜team');
+  const dayTeam   = dayTeamAll.filter(s => !genderExcluded(facility, s));
+  const nightTeam = nightTeamAll.filter(s => !genderExcluded(facility, s));
+  const excludedByGender = [...dayTeamAll, ...nightTeamAll].filter(s => genderExcluded(facility, s));
+
+  const dayCount = {};
+  dayTeam.forEach(s => dayCount[s.id] = 0);
+  let dayPointer = 0;
+
+  const rows = [];
+  for (let day = 1; day <= daysInMonth; day++) {
+    const dateObj = new Date(year, month - 1, day);
+    const weekday = ['日','月','火','水','木','金','土'][dateObj.getDay()];
+
+    // 夜勤：ラウンドロビン（team人数N>=3なら3日1セットのルールを自動的に満たす）
+    let nightPerson = null;
+    if (nightTeam.length) nightPerson = nightTeam[(day - 1) % nightTeam.length];
+
+    // 昼勤：ラウンドロビン。契約勤務日数（月あたり）の上限に達したメンバーは飛ばす
+    let dayPerson = null;
+    if (dayTeam.length) {
+      let attempts = 0;
+      while (attempts < dayTeam.length) {
+        const candidate = dayTeam[dayPointer % dayTeam.length];
+        dayPointer++;
+        if (dayCount[candidate.id] < (candidate.contractDays || 0)) {
+          dayPerson = candidate;
+          dayCount[candidate.id]++;
+          break;
+        }
+        attempts++;
+      }
+    }
+
+    // 前日夜勤者の「明け」表示（3日1セットルールの可視化）
+    let note = '';
+    if (day >= 2 && nightTeam.length) {
+      const prevIdx = (day - 2) % nightTeam.length;
+      const prevPerson = nightTeam[prevIdx];
+      if (prevPerson && prevPerson.id !== (nightPerson && nightPerson.id)) {
+        note = `${prevPerson.name}：明け`;
+      }
+    }
+
+    rows.push({ day, weekday, nightPerson, dayPerson, note });
+  }
+
+  return { rows, dayTeam, nightTeam, excludedByGender, daysInMonth };
+}
+
+function generateShift() {
+  const fid = document.getElementById('shift-facility-select').value;
+  const monthVal = document.getElementById('shift-month').value; // "YYYY-MM"
+  if (!fid) { alert('施設を選択してください。'); return; }
+  if (!monthVal) { alert('対象年月を選択してください。'); return; }
+  const facility = facilities.find(f => f.id === fid);
+  const [year, month] = monthVal.split('-').map(Number);
+  lastShiftResult = { facility, year, month, result: generateShiftForFacility(facility, staffList, year, month) };
+  renderShiftScreen();
+}
+
+function renderShiftScreen() {
+  const area = document.getElementById('shift-result-area');
+  if (!lastShiftResult) { area.innerHTML = '<div class="empty-state">施設と対象年月を選択し、「シフトを生成する」を押してください</div>'; return; }
+  const { facility, year, month, result } = lastShiftResult;
+  const { rows, dayTeam, nightTeam, excludedByGender } = result;
+
+  const warnings = [];
+  if (!dayTeam.length) warnings.push('⚠ 昼teamに割り当てられた職員がいません（職員マスタで「昼team」を設定してください）');
+  if (!nightTeam.length) warnings.push('⚠ 夜teamに割り当てられた職員がいません（職員マスタで「夜team」を設定してください）');
+  if (nightTeam.length > 0 && nightTeam.length < 3) warnings.push(`⚠ 夜teamが${nightTeam.length}名のため、3日1セット（夜勤→明け→休み）のルールを満たすには本来3名以上が必要です。人数不足のまま生成しています。`);
+  const unassignedDays = rows.filter(r => dayTeam.length && !r.dayPerson).length;
+  if (unassignedDays > 0) warnings.push(`⚠ ${unassignedDays}日分、昼勤担当が契約日数の上限により割り当てできませんでした（契約勤務日数の見直しが必要な可能性があります）`);
+  if (excludedByGender.length) warnings.push(`⚠ 性別配慮制約により${excludedByGender.length}名（${excludedByGender.map(s=>s.name).join('・')}）を自動除外しました（施設の性別構成：${facility.gender}）`);
+
+  const rowsHtml = rows.map(r => `
+    <tr>
+      <td>${month}/${r.day}（${r.weekday}）</td>
+      <td>${r.dayPerson ? r.dayPerson.name : (dayTeam.length ? '（割当なし）' : '—')}</td>
+      <td>${r.nightPerson ? r.nightPerson.name : '—'}</td>
+      <td style="font-size:11px;color:var(--text3);">${r.note}</td>
+    </tr>`).join('');
+
+  area.innerHTML = `
+    <div class="section">
+      <div class="section-title">${facility.name}（${year}年${month}月） — 昼team${dayTeam.length}名／夜team${nightTeam.length}名</div>
+      <div class="note">夜間支援時間帯：${facility.nightRange || '22:00〜05:00'}（★出典未確認のため設定可能な変数。埼玉県資料・厚労省資料で該当箇所を再確認してから正式反映すること）</div>
+      ${warnings.map(w => `<div class="warn-note">${w}</div>`).join('')}
+      <table class="calc-table">
+        <tr><th>日付</th><th>昼勤担当</th><th>夜勤担当</th><th>備考</th></tr>
+        ${rowsHtml}
+      </table>
+    </div>
+    <div class="section" style="font-size:11px;color:var(--text3);">
+      昼勤担当は契約勤務日数（月あたり）の上限まで、ラウンドロビンで割り当てています。週40時間の労働時間上限・有給消化状況は「契約時間・有給管理」タブで別途確認してください（本シフト生成は現時点では週40時間の自動チェックまでは行っていません）。
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════════════
 // モジュールD：契約時間管理／モジュールE：有給管理
 // D：契約勤務日数・時間のマスタ管理、実績との差分可視化、週40時間残時間表示
 // E：年5日消化義務の進捗追跡、未消化リスクの表示
@@ -747,6 +916,8 @@ window.addEventListener('DOMContentLoaded', () => {
   });
   updateFacilityTypeNote();
   updateStaffRoleNote();
+  const now = new Date();
+  document.getElementById('shift-month').value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
 });
 </script>
 </body>
