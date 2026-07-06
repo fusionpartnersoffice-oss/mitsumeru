@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>凪 心理的安全性診断 — Fusion Partners</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%231565c0'/><text x='16' y='24' font-size='18' text-anchor='middle'>🛡️</text></svg>">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;500&family=Noto+Sans+JP:wght@300;400;500&display=swap');
+  :root {
+    --bg:#0d1117; --bg2:#161b22; --border:#30363d; --text:#c9d1d9; --text2:#8b949e;
+    --accent:#58a6ff; --green:#2d7a52; --red:#c0392b; --gold:#b8860b; --card:#161b22;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family:'Noto Sans JP',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; padding:0 0 100px 0; font-size:14px; line-height:1.7; }
+  .header { background:#000; color:#fff; padding:18px 24px 14px; position:sticky; top:0; z-index:100; display:flex; align-items:baseline; gap:12px; }
+  .header h1 { font-family:'Noto Serif JP',serif; font-size:18px; font-weight:400; letter-spacing:3px; }
+  .header span { font-size:11px; color:#8b949e; letter-spacing:2px; }
+  .mode-tabs { display:flex; border-bottom:1px solid var(--border); background:var(--bg2); position:sticky; top:55px; z-index:99; flex-wrap:wrap; }
+  .mode-tab { flex:1; min-width:90px; padding:12px 6px; text-align:center; font-size:12px; cursor:pointer; border:none; background:none; color:var(--text2); letter-spacing:0.5px; border-bottom:2px solid transparent; transition:all .2s; }
+  .mode-tab.active { color:var(--text); border-bottom-color:var(--accent); background:var(--bg); font-weight:500; }
+  .screen { display:none; padding:18px 16px; max-width:820px; margin:0 auto; }
+  .screen.active { display:block; }
+  .section { background:var(--card); border:0.5px solid var(--border); border-radius:8px; padding:16px; margin-bottom:14px; }
+  .section-title { font-size:13px; font-weight:500; color:var(--text); margin-bottom:12px; letter-spacing:1px; }
+  .note { font-size:11px; color:var(--text2); margin-top:4px; }
+  .field { margin-bottom:12px; }
+  .field label { display:block; font-size:12px; color:var(--text2); margin-bottom:4px; }
+  .field select { width:100%; padding:8px 10px; border:1px solid var(--border); border-radius:5px; background:#21262d; color:var(--text); font-size:13px; font-family:inherit; }
+  .btn-primary { background:var(--accent); color:#000; border:none; border-radius:6px; padding:10px 18px; font-size:13px; cursor:pointer; letter-spacing:1px; font-weight:500; }
+  .q-item { margin-bottom:16px; padding-bottom:14px; border-bottom:1px solid var(--border); }
+  .q-num { font-size:11px; color:var(--text2); }
+  .q-text { font-size:13px; margin:4px 0 10px; }
+  .q-reverse-tag { font-size:10px; color:var(--gold); border:1px solid var(--gold); border-radius:3px; padding:0 4px; margin-left:6px; }
+  .likert-row { display:flex; gap:4px; }
+  .likert-btn { flex:1; text-align:center; padding:8px 2px; border:1px solid var(--border); border-radius:5px; cursor:pointer; font-size:12px; background:#21262d; }
+  .likert-btn.selected { background:var(--accent); color:#000; border-color:var(--accent); font-weight:700; }
+  .stage-card { border-radius:10px; padding:20px; text-align:center; margin-bottom:14px; }
+  .stage-1 { background:rgba(239,83,80,.15); border:1px solid #ef5350; }
+  .stage-2 { background:rgba(255,167,38,.15); border:1px solid #ffa726; }
+  .stage-3 { background:rgba(129,199,132,.15); border:1px solid #81c784; }
+  .stage-4 { background:rgba(88,166,255,.15); border:1px solid var(--accent); }
+  .stage-title { font-size:20px; font-weight:700; margin-bottom:6px; }
+  .stage-score { font-size:12px; color:var(--text2); }
+  table.calc-table { width:100%; border-collapse:collapse; font-size:12px; margin-top:8px; }
+  table.calc-table th, table.calc-table td { border:1px solid var(--border); padding:6px 8px; text-align:left; }
+  table.calc-table th { background:#21262d; font-weight:500; }
+  .empty-state { text-align:center; color:var(--text2); font-size:12px; padding:30px 0; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>凪 — 組織の心理的安全性診断</h1>
+  <span>NAGI PSYCH SAFETY · MVP</span>
+</div>
+
+<div class="mode-tabs">
+  <button class="mode-tab active" onclick="switchTab('survey')">📝 7問アンケート</button>
+  <button class="mode-tab" onclick="switchTab('result')">🛡️ 診断結果・履歴</button>
+</div>
+
+<!-- ══════════ C5-1：エドモンドソン7問アンケート ══════════ -->
+<div id="screen-survey" class="screen active">
+  <div class="section">
+    <div class="section-title">対象事業所</div>
+    <select id="survey-office-select"></select>
+    <div class="note">既存の凪システム（`nagi_system.html`）の法人・事業所マスタを読み取り専用で参照しています。回答は事業所単位（チーム単位）で集計します（個人を特定する設問ではありません）。</div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">エドモンドソン 心理的安全性 7問アンケート</div>
+    <div class="note">各設問について、このチームの実感に最も近いものを1（全くそう思わない）〜7（強くそう思う）で選んでください。★は逆転項目（数値が高いほど心理的安全性が「低い」ことを示す設問）です。</div>
+    <div id="survey-questions"></div>
+    <button class="btn-primary" onclick="submitSurvey()">この回答を保存する</button>
+    <div id="survey-save-msg" class="note" style="margin-top:8px;"></div>
+  </div>
+</div>
+
+<!-- ══════════ C5-2：判定結果／履歴 ══════════ -->
+<div id="screen-result" class="screen">
+  <div class="section">
+    <div class="section-title">対象事業所</div>
+    <select id="result-office-select" onchange="renderResult()"></select>
+  </div>
+  <div id="result-area">
+    <div class="empty-state">事業所を選択してください</div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// エドモンドソン7問（心理的安全性の学術尺度・Edmondson 1999）
+// ★は逆転項目（数値が高いほど心理的安全性が低い）
+// ═══════════════════════════════════════════════
+const EDMONDSON_QUESTIONS = [
+  { text: 'このチームでミスをすると、責められることが多い', reverse: true },
+  { text: 'このチームのメンバーは、問題や難しい課題を提起することができる', reverse: false },
+  { text: 'このチームのメンバーは、人と違うことを理由に他者を拒絶することがある', reverse: true },
+  { text: 'このチームでは、リスクを取っても安全である', reverse: false },
+  { text: 'このチームの他のメンバーに助けを求めることは難しい', reverse: true },
+  { text: 'このチームの誰も、私の努力を意図的に損なうような行動はしない', reverse: false },
+  { text: 'このチームで働く中で、自分ならではのスキルや才能が尊重され、活かされている', reverse: false },
+];
+
+// ═══════════════════════════════════════════════
+// データ層（法人・事業所は既存nagi_system.htmlのlocalStorageを読み取り専用で参照）
+// ═══════════════════════════════════════════════
+function loadCorpsReadOnly() { try { return JSON.parse(localStorage.getItem('nagi_corps') || '[]'); } catch(e) { return []; } }
+function loadOfficesReadOnly() { try { return JSON.parse(localStorage.getItem('nagi_offices') || '[]'); } catch(e) { return []; } }
+
+function psychKey(officeId) { return 'nagi_psychsafety_' + officeId; }
+function loadPsych(officeId) {
+  try { return JSON.parse(localStorage.getItem(psychKey(officeId)) || 'null'); } catch(e) { return null; }
+}
+function savePsych(officeId, data) { localStorage.setItem(psychKey(officeId), JSON.stringify(data)); }
+
+let corps = loadCorpsReadOnly();
+let offices = loadOfficesReadOnly();
+let currentAnswers = new Array(EDMONDSON_QUESTIONS.length).fill(null);
+
+// ═══════════════════════════════════════════════
+// タブ切替
+// ═══════════════════════════════════════════════
+function switchTab(tab) {
+  document.querySelectorAll('.mode-tab').forEach((t,i) => {
+    t.classList.toggle('active', ['survey','result'][i] === tab);
+  });
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-'+tab).classList.add('active');
+  corps = loadCorpsReadOnly();
+  offices = loadOfficesReadOnly();
+  if (tab === 'survey') { populateOfficeSelect('survey-office-select'); }
+  if (tab === 'result') { populateOfficeSelect('result-office-select'); renderResult(); }
+}
+
+function officeLabel(o) {
+  const corp = corps.find(c => c.id === o.corpId);
+  return (corp ? corp.name + ' / ' : '') + o.name;
+}
+
+function populateOfficeSelect(selectId) {
+  const sel = document.getElementById(selectId);
+  const current = sel.value;
+  sel.innerHTML = offices.length
+    ? offices.map(o => `<option value="${o.id}">${officeLabel(o)}</option>`).join('')
+    : '<option value="">（事業所未登録・先にnagi_system.htmlで登録してください）</option>';
+  if (offices.some(o => o.id === current)) sel.value = current;
+}
+
+// ═══════════════════════════════════════════════
+// C5-1：アンケート表示・回答
+// ═══════════════════════════════════════════════
+function renderSurveyQuestions() {
+  const box = document.getElementById('survey-questions');
+  box.innerHTML = EDMONDSON_QUESTIONS.map((q, i) => `
+    <div class="q-item">
+      <div class="q-num">Q${i+1}${q.reverse ? '<span class="q-reverse-tag">★逆転項目</span>' : ''}</div>
+      <div class="q-text">${q.text}</div>
+      <div class="likert-row" id="likert-${i}">
+        ${[1,2,3,4,5,6,7].map(v => `<div class="likert-btn" onclick="selectAnswer(${i},${v})" data-val="${v}">${v}</div>`).join('')}
+      </div>
+    </div>`).join('');
+}
+
+function selectAnswer(qIndex, value) {
+  currentAnswers[qIndex] = value;
+  document.querySelectorAll(`#likert-${qIndex} .likert-btn`).forEach(el => {
+    el.classList.toggle('selected', Number(el.dataset.val) === value);
+  });
+}
+
+// ═══════════════════════════════════════════════
+// C5-2：クラーク4段階の判定ロジック（ルールベース）
+// ⚠重要な申し送り：エドモンドソンの7問尺度とクラークの4段階モデルは、
+// それぞれ別の研究者による別の学術的枠組みであり、両者を直接対応させる
+// 検証済みの換算式は存在しない（★出典未確認）。本ツールでは、エドモンドソン
+// スコアを0〜100%に正規化した上で、便宜的に4等分してクラークの4段階名称に
+// 割り当てる簡易ヒューリスティックを採用している。正式な組織診断として使う
+// 場合は、この簡易対応関係を一次資料で裏付けてから確定させること。
+// ═══════════════════════════════════════════════
+function calcPsychSafetyScore(answers) {
+  const reversed = answers.map((v, i) => EDMONDSON_QUESTIONS[i].reverse ? (8 - v) : v);
+  const total = reversed.reduce((a,b) => a+b, 0); // 7〜49
+  const pct = ((total - 7) / (49 - 7)) * 100; // 0〜100%に正規化
+  return { total, pct: Math.round(pct * 10) / 10, reversed };
+}
+
+const CLARK_STAGES = [
+  { key: 'インクルージョン安全性', min: 0,  max: 25,  cls: 'stage-1', desc: 'チームの一員として受け入れられている、という最も基礎的な安全感がまだ育っていない段階。' },
+  { key: 'ラーナー安全性',         min: 25, max: 50,  cls: 'stage-2', desc: '質問したり間違えたりしながら学ぶことへの安全感は一定あるが、自ら意見を出す段階には至っていない。' },
+  { key: 'コントリビューター安全性', min: 50, max: 75,  cls: 'stage-3', desc: '自分の考えやアイデアを出し、チームに貢献することへの安全感がある段階。' },
+  { key: 'チャレンジャー安全性',    min: 75, max: 100.01, cls: 'stage-4', desc: '現状に対して率直に異を唱えても不利益を受けないという、最も高い水準の安全感がある段階。' },
+];
+
+function judgeClarkStage(pct) {
+  return CLARK_STAGES.find(s => pct >= s.min && pct < s.max) || CLARK_STAGES[0];
+}
+
+function submitSurvey() {
+  const officeId = document.getElementById('survey-office-select').value;
+  const msg = document.getElementById('survey-save-msg');
+  if (!officeId) { alert('事業所を選択してください。'); return; }
+  if (currentAnswers.some(v => v === null)) { alert('7問すべてに回答してください。'); return; }
+
+  const { total, pct } = calcPsychSafetyScore(currentAnswers);
+  const stage = judgeClarkStage(pct);
+  const data = { scores: currentAnswers.slice(), total, pct, stage: stage.key, updatedAt: new Date().toISOString() };
+  savePsych(officeId, data);
+  msg.textContent = `保存しました（スコア${total}/49・${stage.key}）。「診断結果・履歴」タブで確認できます。`;
+  msg.style.color = 'var(--accent)';
+  currentAnswers = new Array(EDMONDSON_QUESTIONS.length).fill(null);
+  renderSurveyQuestions();
+}
+
+// ═══════════════════════════════════════════════
+// C5-2続き：結果表示
+// ═══════════════════════════════════════════════
+function renderResult() {
+  const officeId = document.getElementById('result-office-select').value;
+  const area = document.getElementById('result-area');
+  if (!officeId) { area.innerHTML = '<div class="empty-state">事業所を選択してください</div>'; return; }
+  const data = loadPsych(officeId);
+  if (!data) { area.innerHTML = '<div class="empty-state">この事業所の診断結果はまだありません</div>'; return; }
+
+  const stage = CLARK_STAGES.find(s => s.key === data.stage) || CLARK_STAGES[0];
+  const office = offices.find(o => o.id === officeId);
+
+  const rows = EDMONDSON_QUESTIONS.map((q, i) => `
+    <tr>
+      <td>Q${i+1}${q.reverse?' ★':''}</td>
+      <td>${q.text}</td>
+      <td>${data.scores[i]}</td>
+    </tr>`).join('');
+
+  area.innerHTML = `
+    <div class="stage-card ${stage.cls}">
+      <div class="stage-title">${stage.key}</div>
+      <div class="stage-score">スコア ${data.total}/49（正規化 ${data.pct}%） ／ 診断日：${new Date(data.updatedAt).toLocaleString('ja-JP')}</div>
+      <div style="font-size:12px;margin-top:8px;">${stage.desc}</div>
+    </div>
+    <div class="section">
+      <div class="section-title">${office ? officeLabel(office) : ''} — 回答内訳</div>
+      <table class="calc-table">
+        <tr><th>設問</th><th>内容</th><th>回答（1〜7）</th></tr>
+        ${rows}
+      </table>
+      <div class="note">★は逆転項目のため、集計時は「8－回答値」に変換してから合計しています。</div>
+    </div>
+    <div class="section" style="font-size:11px;color:var(--text2);">
+      ⚠この4段階判定は、エドモンドソンの7問尺度スコアを0〜100%に正規化し便宜的に4等分してクラークの4段階名称に割り当てた簡易ヒューリスティックです。両モデルの学術的な対応関係を検証した一次資料は確認できていません（★出典未確認）。正式な組織診断としての利用にはこの点にご留意ください。
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════════════
+// 起動時
+// ═══════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  populateOfficeSelect('survey-office-select');
+  renderSurveyQuestions();
+});
+</script>
+</body>
+</html>

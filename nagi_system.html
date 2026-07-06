@@ -263,8 +263,8 @@ tr:hover td{background:rgba(79,195,247,0.03);}
     <div style="font-size:0.78rem;color:var(--sub);">更新：<span id="compass-updated">─</span>　対象：<span id="compass-scope">全法人</span></div>
   </div>
 
-  <!-- 4軸シグナルカード -->
-  <div class="grid-4" id="compass-signals" style="margin-bottom:20px;"></div>
+  <!-- 5軸シグナルカード（軸A資金・軸B営業・軸Cチーム・軸Dスタッフ性質・軸E心理的安全性） -->
+  <div class="grid-5" id="compass-signals" style="margin-bottom:20px;"></div>
 
   <!-- 次の手パネル -->
   <div class="section">
@@ -2055,6 +2055,21 @@ function renderCompass(){
   else if(safeRate>=0.70){ staffSignal='yellow'; staffLabel='要注意'; staffDesc=`LSRP安全率 ${(safeRate*100).toFixed(0)}%`; }
   else { staffSignal='red'; staffLabel='要対応'; staffDesc=`LSRP安全率 ${(safeRate*100).toFixed(0)}%`; }
 
+  // ── 軸E：心理的安全性（凪C-5・nagi_psychsafety.htmlのデータを読み取り専用で参照） ──
+  const allOfficesForPsych=getAllOffices();
+  const psychStages=allOfficesForPsych.map(o=>{
+    try{ return JSON.parse(localStorage.getItem('nagi_psychsafety_'+o.id)||'null'); }catch{ return null; }
+  }).filter(Boolean);
+  let psychSignal, psychLabel, psychDesc;
+  const STAGE_ORDER={'インクルージョン安全性':1,'ラーナー安全性':2,'コントリビューター安全性':3,'チャレンジャー安全性':4};
+  if(!psychStages.length){ psychSignal='gray'; psychLabel='データなし'; psychDesc='7問アンケートが未実施です'; }
+  else {
+    const worst=psychStages.reduce((a,b)=>(STAGE_ORDER[a.stage]<=STAGE_ORDER[b.stage]?a:b));
+    if(STAGE_ORDER[worst.stage]<=1){ psychSignal='red'; psychLabel='要対応'; psychDesc=`最も低い事業所：${worst.stage}`; }
+    else if(STAGE_ORDER[worst.stage]===2){ psychSignal='yellow'; psychLabel='要注意'; psychDesc=`最も低い事業所：${worst.stage}`; }
+    else { psychSignal='green'; psychLabel='良好'; psychDesc=`最も低い事業所でも：${worst.stage}`; }
+  }
+
   // ── シグナルカード描画 ──
   const SIG_COL={green:'var(--accent2)',yellow:'var(--warn)',red:'var(--danger)',gray:'var(--sub)'};
   const SIG_BG={green:'rgba(129,199,132,0.12)',yellow:'rgba(255,167,38,0.12)',red:'rgba(239,83,80,0.12)',gray:'rgba(143,163,184,0.08)'};
@@ -2065,11 +2080,12 @@ function renderCompass(){
     {key:'pipe', icon:'📈', title:'営業',       signal:pipeSignal, label:pipeLabel, desc:pipeDesc, tab:'pipe'},
     {key:'team', icon:'👥', title:'チーム',     signal:teamSignal, label:teamLabel, desc:teamDesc, tab:'rc'},
     {key:'staff',icon:'🧬', title:'スタッフ性質',signal:staffSignal,label:staffLabel,desc:staffDesc,tab:'staff'},
+    {key:'psych',icon:'🛡️', title:'心理的安全性',signal:psychSignal,label:psychLabel,desc:psychDesc,externalUrl:'nagi_psychsafety.html'},
   ];
 
   document.getElementById('compass-signals').innerHTML=axes.map(a=>`
     <div class="card" style="border-left:4px solid ${SIG_COL[a.signal]};background:${SIG_BG[a.signal]};cursor:pointer;"
-         onclick="goTab('${a.tab}')">
+         onclick="${a.externalUrl?`window.location.href='${a.externalUrl}'`:`goTab('${a.tab}')`}">
       <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
         <span style="font-size:1.1rem;">${a.icon}</span>
         <span style="font-size:0.72rem;color:var(--sub);flex:1;">${a.title}</span>
