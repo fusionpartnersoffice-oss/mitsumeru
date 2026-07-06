@@ -136,6 +136,7 @@
   <button class="mode-tab" onclick="switchTab('check')">✅ 法定基準チェック</button>
   <button class="mode-tab" onclick="switchTab('shift')">📅 シフト作成</button>
   <button class="mode-tab" onclick="switchTab('contract')">⏱ 契約時間・有給管理</button>
+  <button class="mode-tab" onclick="switchTab('warnings')">⚠ 警告一覧</button>
 </div>
 
 <!-- ══════════ モジュールF：施設マスタ ══════════ -->
@@ -313,6 +314,17 @@
   </div>
 </div>
 
+<!-- ══════════ モジュールC：警告機能（A・D・Eの出力を統合） ══════════ -->
+<div id="screen-warnings" class="screen">
+  <div class="section">
+    <div class="section-title">対象施設</div>
+    <select id="warnings-facility-select" onchange="renderWarningsDashboard()"></select>
+  </div>
+  <div id="warnings-result-area">
+    <div class="empty-state">施設を選択してください</div>
+  </div>
+</div>
+
 <script>
 // ═══════════════════════════════════════════════
 // データ層（localStorage・施設マスタ／職員マスタ）
@@ -341,7 +353,7 @@ let editingStaffId = null;
 // ═══════════════════════════════════════════════
 function switchTab(tab) {
   document.querySelectorAll('.mode-tab').forEach((t,i) => {
-    t.classList.toggle('active', ['facility','staff','check','shift','contract'][i] === tab);
+    t.classList.toggle('active', ['facility','staff','check','shift','contract','warnings'][i] === tab);
   });
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-'+tab).classList.add('active');
@@ -349,6 +361,7 @@ function switchTab(tab) {
   if (tab === 'check') { populateFacilitySelect('check-facility-select'); renderLegalCheck(); }
   if (tab === 'shift') { populateFacilitySelect('shift-facility-select'); renderShiftScreen(); }
   if (tab === 'contract') { populateFacilitySelect('contract-facility-select'); renderContractLeave(); }
+  if (tab === 'warnings') { populateFacilitySelect('warnings-facility-select'); renderWarningsDashboard(); }
 }
 
 function populateFacilitySelect(selectId) {
@@ -893,7 +906,7 @@ function renderContractLeave() {
   area.innerHTML = `
     <div class="section">
       <div class="section-title">${facility.name} — 契約時間・有給管理一覧</div>
-      <div class="note">モジュールA（シフト作成）が未実装のため、実績（勤務日数・時間）は職員マスタでの手入力です。Aの実装後は自動集計に置き換える予定です。</div>
+      <div class="note">現時点ではモジュールA（シフト作成）の生成結果から実績を自動集計する連携は未実装のため、実績（勤務日数・時間）は引き続き職員マスタでの手入力です（次フェーズで自動連携予定）。</div>
       <table class="calc-table">
         <tr><th>職員</th><th>契約（日数／週時間）</th><th>実績（日数／週時間）</th><th>週40h残り</th><th>有給（残／取得）</th><th>警告</th></tr>
         ${rows}
@@ -901,6 +914,78 @@ function renderContractLeave() {
     </div>
     <div class="section" style="font-size:11px;color:var(--text3);">
       週40時間残り時間は「実績勤務時間（今週・累計h）」を40時間から差し引いた値です。有給休暇の年5日消化義務は、基準日（入社後6か月等）からの1年以内が対象期間ですが、本ツールでは簡易的に「当年度の取得日数」で判定しています（正確な基準日管理は次フェーズで検討）。
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════════════
+// モジュールC：警告機能（A・D・Eの出力を統合表示）
+// 法定基準割れ（モジュールB）・週40時間超過見込み／契約時間逸脱（モジュールD）・
+// 有給消化遅れ（モジュールE）を1画面に集約する。新規の判定ロジックは追加せず、
+// 既存の計算関数（calcSeikatsuShienStaffRequired等・calcWeeklyHoursRemaining等）を
+// そのまま呼び出して警告条件として使う設計。
+// ═══════════════════════════════════════════════
+function renderWarningsDashboard() {
+  const fid = document.getElementById('warnings-facility-select').value;
+  const area = document.getElementById('warnings-result-area');
+  if (!fid) { area.innerHTML = '<div class="empty-state">施設を選択してください</div>'; return; }
+  const facility = facilities.find(f => f.id === fid);
+  if (!facility) { area.innerHTML = '<div class="empty-state">施設を選択してください</div>'; return; }
+  const staffOfFacility = staffList.filter(s => s.facilityId === fid);
+
+  const warningItems = [];
+
+  // ① 法定基準割れ（モジュールB：既存の計算関数をそのまま使う）
+  const seikatsuUp = calcSeikatsuShienStaffRequired(facility, 'up');
+  const sewaninUp  = calcSewaninStaffRequired(facility, 'up');
+  const sabikanRequired = calcServiceKanrisekininRequired(facility);
+  const legalChecks = [
+    { label: '生活支援員', required: seikatsuUp.required, actual: countActualStaff(fid, '生活支援員') },
+    { label: '世話人',     required: sewaninUp.required,  actual: countActualStaff(fid, '世話人') },
+    { label: '管理者',     required: 1,                    actual: countActualStaff(fid, '管理者') },
+    { label: 'サービス管理責任者', required: sabikanRequired, actual: countActualStaff(fid, 'サービス管理責任者') },
+  ];
+  legalChecks.forEach(c => {
+    if (c.actual < c.required) {
+      warningItems.push({ cat: '法定基準割れ', level: 'ng', text: `${c.label}：基準${c.required}名に対し実配置${c.actual}名（不足）` });
+    }
+  });
+
+  // ② 週40時間超過見込み／契約時間逸脱（モジュールD）・③ 有給消化遅れ（モジュールE）
+  staffOfFacility.forEach(s => {
+    const weeklyRemaining = calcWeeklyHoursRemaining(s);
+    if (weeklyRemaining < 0) {
+      warningItems.push({ cat: '週40時間超過', level: 'ng', text: `${s.name}：週40時間を${-weeklyRemaining}h超過（実績週${s.actualWeeklyHours}h）` });
+    } else if (weeklyRemaining <= 4) {
+      warningItems.push({ cat: '週40時間超過見込み', level: 'warn', text: `${s.name}：週40時間まで残り${weeklyRemaining}h（超過見込み）` });
+    }
+    if ((s.actualWeeklyHours || 0) > (s.contractHours || 0)) {
+      warningItems.push({ cat: '契約時間逸脱', level: 'warn', text: `${s.name}：契約週${s.contractHours}hを実績週${s.actualWeeklyHours}hが上回っています` });
+    }
+    const leave = calcPaidLeaveRisk(s);
+    if (leave.atRisk) {
+      warningItems.push({ cat: '有給消化遅れ', level: 'warn', text: `${s.name}：当年度取得${leave.taken}日（年5日消化義務まであと${leave.shortfall}日）` });
+    }
+  });
+
+  const ngCount = warningItems.filter(w => w.level === 'ng').length;
+  const warnCount = warningItems.filter(w => w.level === 'warn').length;
+
+  const rowsHtml = warningItems.map(w => `
+    <tr>
+      <td>${w.cat}</td>
+      <td class="${w.level === 'ng' ? 'result-ng' : 'result-warn'}" style="border-radius:0;">${w.level === 'ng' ? '🔴' : '⚠'} ${w.text}</td>
+    </tr>`).join('');
+
+  area.innerHTML = `
+    <div class="section">
+      <div class="section-title">${facility.name} — 警告一覧（重大${ngCount}件／注意${warnCount}件）</div>
+      <div class="note">モジュールB（法定基準チェック）・D（契約時間管理）・E（有給管理）の出力をそのまま警告条件として集約表示しています。個別の計算根拠は各タブ（法定基準チェック／契約時間・有給管理）を参照してください。</div>
+      ${warningItems.length ? `
+      <table class="calc-table">
+        <tr><th>種別</th><th>内容</th></tr>
+        ${rowsHtml}
+      </table>` : `<div class="result-box result-ok">✅ 現在、警告対象はありません</div>`}
     </div>
   `;
 }
