@@ -171,6 +171,7 @@ select option{background:var(--card);}
     <button class="tab-btn active" onclick="showTab('standards')" id="tabBtn-standards">📋 運用標準書</button>
     <button class="tab-btn" onclick="showTab('items')" id="tabBtn-items">📦 品目管理・ABC分析</button>
     <button class="tab-btn" onclick="showTab('stock')" id="tabBtn-stock">🔄 在庫管理（2ビン・カンバン）</button>
+    <button class="tab-btn" onclick="showTab('sales')" id="tabBtn-sales">🎯 営業提案診断（施設向け軽量版）</button>
   </nav>
 
   <!-- 運用標準書（B-1） -->
@@ -276,6 +277,34 @@ select option{background:var(--card);}
 
     <div id="stockList"></div>
   </div>
+
+  <!-- 営業提案診断（F-1〜F-3・響・施設向け軽量版） -->
+  <div class="tab-panel" id="tab-sales">
+    <div class="module-title">🎯 営業提案診断（施設向け軽量版）</div>
+    <div class="module-desc">弦（`yuzuru_map.html`）で見つけた見込み先の情報（判定根拠・出典・定員数等）を入力すると、氷山モデルの型（①事実→②仮説→③アプローチ文言）でアプローチ文言の下書きを生成します。<b>このタブのデータ（<code>hibiki_facility_{id}</code>）は運用標準書タブのデータとは別の器として保存されます。</b></div>
+
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:16px;">
+      <div class="module-title" style="font-size:.85rem;">F-2：弦からの入力データ</div>
+      <div class="form-group"><label>判定根拠（弦の reason・自由記述）</label><textarea id="sl-reason" placeholder="例：定員750名（通所介護の候補内での定員規模：上位）"></textarea></div>
+      <div class="form-group"><label>出典・注記（弦の sourceNote・自由記述）</label><input type="text" id="sl-sourceNote" placeholder="例：新規指定分のみ（令和3年度）"></div>
+      <div class="form-row3">
+        <div class="form-group"><label>定員数</label><input type="number" id="sl-capacity" placeholder="例：750"></div>
+        <div class="form-group"><label>施設種別</label><input type="text" id="sl-facilityType" placeholder="例：通所介護"></div>
+        <div class="form-group"><label>スコアランク</label>
+          <select id="sl-rank"><option value="">─ 選択 ─</option><option value="A">A</option><option value="B">B</option><option value="C">C</option></select>
+        </div>
+      </div>
+      <button class="hdr-btn" onclick="saveSalesInput()">💾 入力データを保存</button>
+      <span id="sales-save-msg" style="margin-left:10px;font-size:0.78rem;color:var(--accent);"></span>
+    </div>
+
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;">
+      <div class="module-title" style="font-size:.85rem;">F-3：アプローチ文言生成（氷山モデルの型）</div>
+      <div class="module-desc">①観察された事実→②隠れた課題の仮説→③アプローチ文言、という型で生成します（個人向けICF判定ルールの転用ではありません）。</div>
+      <button class="hdr-btn" style="background:rgba(129,199,132,.15);border-color:var(--accent);color:var(--accent);" id="sl-generate-btn" onclick="generateSalesApproach()">✨ アプローチ文言を生成</button>
+      <div id="sl-approach-output" style="margin-top:12px;"></div>
+    </div>
+  </div>
 </div>
 
 <!-- カンバンラベル印刷専用シート -->
@@ -377,6 +406,7 @@ function openFacility(id) {
   renderStandards();
   renderItems();
   renderStock();
+  loadSalesForm();
 }
 
 function goList() {
@@ -873,6 +903,152 @@ function printAllKanbanLabels() {
   sheet.classList.add('visible');
   window.print();
   sheet.classList.remove('visible');
+}
+
+// ═══════════════════════════════════════════════
+//  F-1〜F-3：営業提案診断（響・施設向け軽量版）
+//  設計：06_イノベーション/響_施設向け軽量版_デバッグ_20260707.md
+//  F-1：hibiki_facility_{id}は既存のhibiki_ops_facility_{id}（運用実務）とは別の器
+// ═══════════════════════════════════════════════
+const STORE_PREFIX_SALES = 'hibiki_facility_';
+
+function loadSalesData(id) {
+  const raw = localStorage.getItem(STORE_PREFIX_SALES + id);
+  return raw ? JSON.parse(raw) : { facilityId: id, reason: '', sourceNote: '', capacity: '', facilityType: '', rank: '', approach: null, updatedAt: '' };
+}
+function saveSalesDataObj(obj) {
+  obj.updatedAt = new Date().toISOString();
+  localStorage.setItem(STORE_PREFIX_SALES + obj.facilityId, JSON.stringify(obj));
+}
+
+function loadSalesForm() {
+  if (!currentFacilityId) return;
+  const d = loadSalesData(currentFacilityId);
+  document.getElementById('sl-reason').value = d.reason || '';
+  document.getElementById('sl-sourceNote').value = d.sourceNote || '';
+  document.getElementById('sl-capacity').value = d.capacity || '';
+  document.getElementById('sl-facilityType').value = d.facilityType || '';
+  document.getElementById('sl-rank').value = d.rank || '';
+  renderSalesApproachOutput(d.approach);
+}
+
+function saveSalesInput() {
+  if (!currentFacilityId) return;
+  const d = loadSalesData(currentFacilityId);
+  d.reason = document.getElementById('sl-reason').value.trim();
+  d.sourceNote = document.getElementById('sl-sourceNote').value.trim();
+  d.capacity = document.getElementById('sl-capacity').value.trim();
+  d.facilityType = document.getElementById('sl-facilityType').value.trim();
+  d.rank = document.getElementById('sl-rank').value;
+  saveSalesDataObj(d);
+  const msg = document.getElementById('sales-save-msg');
+  msg.textContent = '✅ 保存しました';
+  setTimeout(() => { msg.textContent = ''; }, 3000);
+}
+
+// F-3：①観察された事実→②隠れた課題の仮説→③アプローチ文言（氷山モデルの型の転用。ICF判定ルール自体の転用ではない）
+async function generateSalesApproach() {
+  if (!currentFacilityId) return;
+  const d = loadSalesData(currentFacilityId);
+  if (!d.reason && !d.sourceNote && !d.capacity && !d.facilityType) {
+    alert('先にF-2の入力データを保存してください。');
+    return;
+  }
+  const btn = document.getElementById('sl-generate-btn');
+  btn.disabled = true;
+  const outBox = document.getElementById('sl-approach-output');
+  outBox.innerHTML = '<div style="font-size:.78rem;color:var(--sub);">生成中…</div>';
+
+  const system = `あなたは福祉・介護施設への営業提案を支援する専門家です。「氷山モデル」の型（①観察された事実→②隠れた課題の仮説→③アプローチ文言）で、施設向けの営業アプローチ文言を作成します。
+これは個人（利用者）向けのICF判定ルールの転用ではなく、氷山モデルの「型」のみを施設向けに再構成したものです。
+断定的な決めつけは避け、あくまで仮説・観察に基づく丁寧な言葉で作成してください。
+必ず以下のJSON形式のみで返答してください：
+{"fact":"観察された事実（1〜2文）","hypothesis":"隠れた課題の仮説（1〜2文）","approach":"アプローチ文言（2〜3文・丁寧語）"}`;
+
+  const userContent = `施設情報：
+種別：${d.facilityType || '不明'}
+定員：${d.capacity || '不明'}
+スコアランク：${d.rank || '不明'}
+判定根拠（弦のreason）：${d.reason || 'なし'}
+出典・注記（弦のsourceNote）：${d.sourceNote || 'なし'}
+
+上記の情報から、氷山モデルの型（事実→仮説→アプローチ文言）で営業提案の下書きを作成してください。`;
+
+  let raw = '';
+  try {
+    await callWorkerStream(system, userContent, chunk => { raw += chunk; });
+    const json = JSON.parse(raw.match(/\{[\s\S]*\}/)?.[0] || '{}');
+    if (!json.fact || !json.hypothesis || !json.approach) throw new Error('生成結果の形式が不正です');
+    d.approach = { fact: json.fact, hypothesis: json.hypothesis, approach: json.approach, createdAt: new Date().toISOString() };
+    saveSalesDataObj(d);
+    renderSalesApproachOutput(d.approach);
+  } catch (e) {
+    outBox.innerHTML = `<div style="font-size:.78rem;color:var(--danger);">生成に失敗しました：${esc(e.message)}</div>`;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function renderSalesApproachOutput(approach) {
+  const outBox = document.getElementById('sl-approach-output');
+  if (!approach) { outBox.innerHTML = '<div style="font-size:.78rem;color:var(--sub);">まだ生成されていません。</div>'; return; }
+  outBox.innerHTML = `
+    <div class="standard-field"><b>①観察された事実</b>${esc(approach.fact)}</div>
+    <div class="standard-field"><b>②隠れた課題の仮説</b>${esc(approach.hypothesis)}</div>
+    <div class="standard-field"><b>③アプローチ文言</b><div style="white-space:pre-wrap;margin-top:2px;">${esc(approach.approach)}</div></div>
+  `;
+}
+
+// ═══════════════════════════════════════════════
+//  Worker AI呼び出し共通（hibiki_v2.htmlと同一実装・同一バックエンド）
+// ═══════════════════════════════════════════════
+const WORKER_URL = 'https://hibiki-worker.fusion-partners-office.workers.dev';
+
+function getDemoId() {
+  let id = localStorage.getItem('hibiki_v2_demo_id');
+  if (!id) {
+    id = 'fp_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8);
+    localStorage.setItem('hibiki_v2_demo_id', id);
+  }
+  return id;
+}
+
+async function callWorkerStream(system, userContent, onChunk) {
+  const res = await fetch(WORKER_URL + '/analyze', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      mode: 'demo',
+      fingerprint: getDemoId(),
+      system,
+      messages: [{ role: 'user', content: userContent }],
+      maxTokens: 1500,
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `エラー (${res.status})`);
+  }
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = '';
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += decoder.decode(value, { stream: true });
+    const lines = buf.split('\n');
+    buf = lines.pop();
+    for (const line of lines) {
+      if (!line.startsWith('data:')) continue;
+      const data = line.slice(5).trim();
+      if (data === '[DONE]') return;
+      try {
+        const j = JSON.parse(data);
+        const text = j?.delta?.text || j?.choices?.[0]?.delta?.content || '';
+        if (text) onChunk(text);
+      } catch {}
+    }
+  }
 }
 
 // ═══════════════════════════════════════════════
