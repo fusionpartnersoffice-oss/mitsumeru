@@ -475,6 +475,7 @@ function submitStandardForm() {
   if (!title) { alert('タイトルを入力してください。'); return; }
   currentFacility.modules.standards = currentFacility.modules.standards || [];
   const editId = document.getElementById('standardForm').dataset.editId;
+  const prev = editId ? currentFacility.modules.standards.find(x => x.id === editId) : null;
   const entry = {
     id: editId || ('std' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6)),
     title,
@@ -485,8 +486,11 @@ function submitStandardForm() {
     notes: document.getElementById('st-notes').value.trim(),
     references: document.getElementById('st-references').value.trim(),
     personRefs: [...standardFormPersonRefs],
-    createdAt: editId ? (currentFacility.modules.standards.find(x => x.id === editId)?.createdAt || new Date().toISOString()) : new Date().toISOString(),
+    createdAt: prev?.createdAt || new Date().toISOString(),
     updatedAt: new Date().toISOString(),
+    // B-2：編集時も5Sゲートの進捗は引き継ぐ（内容編集で進捗を消さない）
+    phase5s: prev?.phase5s || null,
+    phase5sHistory: prev?.phase5sHistory || [],
   };
   const idx = currentFacility.modules.standards.findIndex(x => x.id === editId);
   if (idx >= 0) currentFacility.modules.standards[idx] = entry; else currentFacility.modules.standards.push(entry);
@@ -517,12 +521,58 @@ function renderStandards() {
       <div class="standard-field"><b>⑤留意事項</b>${esc(s.notes || '—')}</div>
       <div class="standard-field"><b>⑥参考文献・引用</b>${esc(s.references || '—')}</div>
       ${(s.personRefs && s.personRefs.length) ? `<div class="standard-field"><b>個人ルール参照</b>${s.personRefs.map(id => `<span class="person-ref-chip">${esc(lookupPersonAlias(id) || `未検出・ID:${id}`)}</span>`).join('')}</div>` : ''}
+      ${render5sGateBlock(s)}
       <div style="margin-top:8px;display:flex;gap:8px;">
         <button class="hdr-btn" onclick="showStandardForm('${s.id}')">編集</button>
         <button class="del-btn" onclick="deleteStandard('${s.id}')">✕ 削除</button>
       </div>
     </div>
   `).join('');
+}
+
+// ═══════════════════════════════════════════════
+//  B-2：5S順序ゲート（響②運用支援系Phase3）
+//  設計：06_イノベーション/響_運用支援系_モジュール分解_デバッグ_v2_20260704.md §1モジュールB
+//  「整理→整頓→清掃→清潔→躾」の順番でしか進められない。躾到達で「運用中」ステータス
+// ═══════════════════════════════════════════════
+const FIVE_S_STAGES = ['整理', '整頓', '清掃', '清潔', '躾'];
+
+function get5sStageIndex(s) {
+  const cur = s.phase5s || '';
+  const idx = FIVE_S_STAGES.indexOf(cur);
+  return idx; // -1 = 未着手
+}
+
+function render5sGateBlock(s) {
+  const idx = get5sStageIndex(s);
+  const isDone = idx === FIVE_S_STAGES.length - 1;
+  const nextStage = idx + 1 < FIVE_S_STAGES.length ? FIVE_S_STAGES[idx + 1] : null;
+  const stepsHTML = FIVE_S_STAGES.map((label, i) => {
+    const state = i <= idx ? 'done' : (i === idx + 1 ? 'next' : 'locked');
+    const color = state === 'done' ? 'var(--accent)' : state === 'next' ? '#ffb74d' : 'var(--sub)';
+    return `<span style="display:inline-flex;align-items:center;gap:2px;font-size:.7rem;color:${color};">${state === 'done' ? '✅' : state === 'next' ? '⏳' : '○'}${esc(label)}</span>`;
+  }).join('<span style="color:var(--border);margin:0 3px;">→</span>');
+  return `
+    <div class="standard-field" style="margin-top:8px;border-top:1px solid var(--border);padding-top:8px;">
+      <b>5S順序ゲート</b>
+      <div style="margin:6px 0;display:flex;flex-wrap:wrap;align-items:center;gap:2px;">${stepsHTML}</div>
+      <div style="font-size:.74rem;margin-top:4px;">
+        ステータス：${isDone ? '<span style="color:var(--accent);font-weight:700;">🟢 運用中（躾フェーズ到達）</span>' : `<span style="color:#ffb74d;">🟡 準備中（現在：${idx >= 0 ? esc(FIVE_S_STAGES[idx]) : '未着手'}）</span>`}
+      </div>
+      ${nextStage ? `<button class="hdr-btn" style="font-size:.72rem;padding:4px 10px;margin-top:6px;" onclick="advance5sStage('${s.id}')">次のフェーズへ（${esc(nextStage)}）</button>` : ''}
+    </div>`;
+}
+
+function advance5sStage(id) {
+  const s = (currentFacility.modules.standards || []).find(x => x.id === id);
+  if (!s) return;
+  const idx = get5sStageIndex(s);
+  if (idx + 1 >= FIVE_S_STAGES.length) return;
+  s.phase5s = FIVE_S_STAGES[idx + 1];
+  s.phase5sHistory = s.phase5sHistory || [];
+  s.phase5sHistory.push({ phase: s.phase5s, at: new Date().toISOString() });
+  saveCurrentFacility();
+  renderStandards();
 }
 
 // ═══════════════════════════════════════════════

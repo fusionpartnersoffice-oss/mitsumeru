@@ -1410,9 +1410,65 @@ function renderProcedure() {
       <div class="procedure-card-source">出典：${esc(p.domainLabel)}／${esc(p.cellLabel)}（${esc(p.sourceText)}）</div>
       ${(p.keywords || []).map(k => `<div class="procedure-keyword-row"><span class="procedure-keyword">${esc(k.keyword)}</span><span class="procedure-keyword-desc">${esc(k.desc)}</span></div>`).join('')}
       <div class="procedure-card-conclusion"><b>結論：</b>${esc(p.conclusion)}</div>
+      ${renderReadCheckBlock(p)}
       <div style="margin-top:8px;"><button class="del-btn" onclick="deleteProcedure('${p.cellKey}')">✕ 削除</button></div>
     </div>
   `).join('');
+}
+
+// ═══════════════════════════════════════════════
+//  A-2：読了チェック機能（響②運用支援系Phase3）
+//  設計：06_イノベーション/響_運用支援系_モジュール分解_デバッグ_v2_20260704.md §1モジュールA
+//  対象支援員（targetStaff）はカードごとに手動でタグ登録し、読了（readBy）と差分を取って未読了者を出す
+// ═══════════════════════════════════════════════
+function renderReadCheckBlock(p) {
+  const targetStaff = p.targetStaff || [];
+  const readBy = p.readBy || [];
+  const readNames = readBy.map(r => r.name);
+  const unread = targetStaff.filter(name => !readNames.includes(name));
+  return `
+    <div class="procedure-readcheck" style="margin-top:10px;border-top:1px solid var(--border);padding-top:8px;">
+      <div style="font-size:.72rem;color:var(--sub);margin-bottom:4px;">📖 読了チェック（対象支援員：${targetStaff.length}名）</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;">
+        <input type="text" id="rc-newstaff-${p.cellKey}" placeholder="支援員名を追加" style="font-size:.75rem;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);width:120px;">
+        <button class="hdr-btn" style="font-size:.7rem;padding:3px 8px;" onclick="addTargetStaff('${p.cellKey}')">＋ 対象追加</button>
+      </div>
+      ${targetStaff.length ? `<div style="font-size:.74rem;color:var(--accent);margin-bottom:2px;">✅ 読了済み（${readNames.length}名）：${readNames.join('、') || '—'}</div>
+      <div style="font-size:.74rem;color:${unread.length ? '#ff8a65' : 'var(--sub)'};margin-bottom:6px;">${unread.length ? `⚠️ 未読了（${unread.length}名）：${unread.join('、')}` : '全員読了済みです'}</div>` : ''}
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <select id="rc-reader-${p.cellKey}" style="font-size:.75rem;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);">
+          ${unread.length ? unread.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('') : '<option value="">対象支援員なし</option>'}
+        </select>
+        <button class="ai-btn" style="font-size:.7rem;padding:4px 10px;" ${unread.length ? '' : 'disabled'} onclick="markProcedureRead('${p.cellKey}')">✔ 読了にする</button>
+      </div>
+    </div>`;
+}
+
+function addTargetStaff(cellKey) {
+  const input = document.getElementById('rc-newstaff-' + cellKey);
+  const name = (input.value || '').trim();
+  if (!name) return;
+  const p = (currentData.modules.procedures || []).find(x => x.cellKey === cellKey);
+  if (!p) return;
+  p.targetStaff = p.targetStaff || [];
+  if (!p.targetStaff.includes(name)) p.targetStaff.push(name);
+  input.value = '';
+  saveCurrentPerson();
+  renderProcedure();
+}
+
+function markProcedureRead(cellKey) {
+  const select = document.getElementById('rc-reader-' + cellKey);
+  const name = select.value;
+  if (!name) return;
+  const p = (currentData.modules.procedures || []).find(x => x.cellKey === cellKey);
+  if (!p) return;
+  p.readBy = p.readBy || [];
+  if (!p.readBy.some(r => r.name === name)) {
+    p.readBy.push({ name, at: new Date().toISOString() });
+  }
+  saveCurrentPerson();
+  renderProcedure();
 }
 
 async function generateProcedure(cellKey) {
@@ -1450,6 +1506,7 @@ keywordsは3〜5組にしてください。`;
 function saveProcedure(target, json) {
   currentData.modules.procedures = currentData.modules.procedures || [];
   const idx = currentData.modules.procedures.findIndex(p => p.cellKey === target.cellKey);
+  const prev = idx >= 0 ? currentData.modules.procedures[idx] : null;
   const entry = {
     cellKey: target.cellKey,
     domainLabel: target.domainLabel,
@@ -1458,7 +1515,10 @@ function saveProcedure(target, json) {
     summary: json.summary,
     keywords: (json.keywords || []).slice(0, 5),
     conclusion: json.conclusion || '',
-    createdAt: new Date().toISOString(),
+    createdAt: prev?.createdAt || new Date().toISOString(),
+    // A-2：再生成時も読了チェックの登録・記録は引き継ぐ（内容が変わっても読了実績を消さない）
+    targetStaff: prev?.targetStaff || [],
+    readBy: prev?.readBy || [],
   };
   if (idx >= 0) currentData.modules.procedures[idx] = entry; else currentData.modules.procedures.push(entry);
   saveCurrentPerson();
