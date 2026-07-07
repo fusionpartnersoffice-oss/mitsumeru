@@ -6,7 +6,6 @@
 <title>FusionOS — 5つのシステム</title>
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="apple-touch-icon" href="favicon.png">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 
@@ -139,14 +138,7 @@ html,body{
   background:var(--bg2);
   box-shadow:var(--shadow);
   border-left:3px solid var(--gold3);
-  text-decoration:none;
   color:inherit;
-  transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;
-}
-.card:hover{
-  transform:translateY(-3px);
-  box-shadow:0 10px 28px rgba(11,25,41,.14);
-  border-left-color:var(--navy);
 }
 .card.span2{grid-column:1 / -1;justify-content:center;max-width:520px;margin:0 auto;width:100%;}
 
@@ -192,51 +184,6 @@ html,body{
   color:var(--dim);
   line-height:1.85;
 }
-.card-go{
-  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
-  font-size:12.5px;
-  font-weight:600;
-  letter-spacing:1px;
-  color:#fff;
-  background:var(--navy);
-  padding:7px 16px;
-  border-radius:20px;
-  margin-top:14px;
-  display:inline-flex;
-  align-items:center;
-  gap:6px;
-  transition:background .18s ease, transform .18s ease;
-}
-.card:hover .card-go{
-  background:var(--gold2);
-  transform:translateX(2px);
-}
-
-/* QR */
-.qr-wrap{
-  flex:0 0 auto;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  gap:7px;
-}
-.qr{
-  width:104px;height:104px;
-  padding:8px;
-  background:#fff;
-  border:1px solid var(--border);
-  border-radius:5px;
-  display:flex;align-items:center;justify-content:center;
-}
-.qr img,.qr canvas{display:block;width:88px !important;height:88px !important;}
-.qr-cap{
-  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
-  font-size:8.5px;
-  letter-spacing:1.5px;
-  color:var(--dim2);
-  text-transform:uppercase;
-}
-
 /* ── FOOTER ── */
 .foot{
   margin-top:52px;
@@ -266,13 +213,10 @@ html,body{
   .grid{grid-template-columns:1fr;}
   .card.span2{max-width:none;}
   .card{gap:16px;padding:22px 20px;}
-  .qr{width:92px;height:92px;}
-  .qr img,.qr canvas{width:76px !important;height:76px !important;}
 }
 @media(max-width:400px){
   .card{flex-direction:column;text-align:center;}
   .card-name{justify-content:center;}
-  .card-go{justify-content:center;}
 }
 
 </style>
@@ -297,7 +241,7 @@ html,body{
   <div class="grid" id="grid">
 
     <!-- 響 -->
-    <a class="card" href="hibiki_hub.html" data-url="hibiki_hub.html">
+    <div class="card">
       <div class="card-body">
         <div class="card-num">01 ／ 話す</div>
         <div class="card-name">
@@ -306,16 +250,11 @@ html,body{
         </div>
         <div class="card-role">現場の声を拾う「入口」</div>
         <div class="card-desc">壁打ち・アセスメントを構造化。氷山モデルで根本原因を特定する。</div>
-        <span class="card-go">開く →</span>
       </div>
-      <div class="qr-wrap">
-        <div class="qr" data-qr="hibiki_hub.html"></div>
-        <span class="qr-cap">Scan</span>
-      </div>
-    </a>
+    </div>
 
     <!-- 凪 -->
-    <a class="card" href="nagi_hub.html" data-url="nagi_hub.html">
+    <div class="card">
       <div class="card-body">
         <div class="card-num">02 ／ 見る</div>
         <div class="card-name">
@@ -324,16 +263,11 @@ html,body{
         </div>
         <div class="card-role">組織を診る「羅針盤」</div>
         <div class="card-desc">MQ会計・KSAで、収益とチームを数字で同時に可視化・診断する。</div>
-        <span class="card-go">開く →</span>
       </div>
-      <div class="qr-wrap">
-        <div class="qr" data-qr="nagi_hub.html"></div>
-        <span class="qr-cap">Scan</span>
-      </div>
-    </a>
+    </div>
 
     <!-- 奏 -->
-    <a class="card" href="kanade_hub.html" data-url="kanade_hub.html">
+    <div class="card">
       <div class="card-body">
         <div class="card-num">03 ／ 組む</div>
         <div class="card-name">
@@ -342,16 +276,11 @@ html,body{
         </div>
         <div class="card-role">適材適所の「チームビルディング」</div>
         <div class="card-desc">エゴグラム・LSRPで人材を見極め、最適なチーム配置を設計する。</div>
-        <span class="card-go">開く →</span>
       </div>
-      <div class="qr-wrap">
-        <div class="qr" data-qr="kanade_hub.html"></div>
-        <span class="qr-cap">Scan</span>
-      </div>
-    </a>
+    </div>
 
     <!-- 弦 -->
-    <a class="card" href="yuzuru_hub.html" data-url="yuzuru_hub.html">
+    <div class="card">
       <div class="card-body">
         <div class="card-num">04 ／ 売る</div>
         <div class="card-name">
@@ -360,16 +289,11 @@ html,body{
         </div>
         <div class="card-role">地域連携と「自動営業」</div>
         <div class="card-desc">施設データから営業先リストとマップを自動生成して届ける。</div>
-        <span class="card-go">開く →</span>
       </div>
-      <div class="qr-wrap">
-        <div class="qr" data-qr="yuzuru_hub.html"></div>
-        <span class="qr-cap">Scan</span>
-      </div>
-    </a>
+    </div>
 
     <!-- ミツメル -->
-    <a class="card span2" href="mitsumeru_hub.html" data-url="mitsumeru_hub.html">
+    <div class="card span2">
       <div class="card-body">
         <div class="card-num">05 ／ 折れない</div>
         <div class="card-name">
@@ -378,13 +302,8 @@ html,body{
         </div>
         <div class="card-role">管理職の「耐久設計」</div>
         <div class="card-desc">日次HP/MP監査・翌日戦略を一元化。仕組みを動かす人を守る。</div>
-        <span class="card-go">開く →</span>
       </div>
-      <div class="qr-wrap">
-        <div class="qr" data-qr="mitsumeru_hub.html"></div>
-        <span class="qr-cap">Scan</span>
-      </div>
-    </a>
+    </div>
 
   </div>
 
@@ -401,35 +320,5 @@ html,body{
 
 </div><!-- /wrap -->
 
-<script>
-(function(){
-  // 公開ベースURL（GitHub Pages）。QRには絶対URLを埋め込む。
-  var BASE = 'https://fusionpartnersoffice-oss.github.io/mitsumeru/';
-
-  function makeQR(el, path){
-    var url = BASE + path;
-    if (typeof QRCode === 'function') {
-      new QRCode(el, {
-        text: url,
-        width: 88,
-        height: 88,
-        colorDark: '#0b1929',
-        colorLight: '#ffffff',
-        correctLevel: QRCode.CorrectLevel.M
-      });
-    } else {
-      // ライブラリが読めなかった場合のフォールバック（外部API）
-      var img = document.createElement('img');
-      img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=88x88&margin=0&data=' + encodeURIComponent(url);
-      img.alt = 'QR: ' + url;
-      el.appendChild(img);
-    }
-  }
-
-  document.querySelectorAll('.qr').forEach(function(el){
-    makeQR(el, el.getAttribute('data-qr'));
-  });
-})();
-</script>
 </body>
 </html>
