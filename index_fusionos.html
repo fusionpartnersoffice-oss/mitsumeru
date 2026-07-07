@@ -139,6 +139,13 @@ html,body{
   box-shadow:var(--shadow);
   border-left:3px solid var(--gold3);
   color:inherit;
+  text-decoration:none;
+  transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+.card:hover{
+  transform:translateY(-3px);
+  box-shadow:0 10px 28px rgba(11,25,41,.14);
+  border-left-color:var(--navy);
 }
 .card.span2{grid-column:1 / -1;justify-content:center;max-width:520px;margin:0 auto;width:100%;}
 
@@ -184,6 +191,17 @@ html,body{
   color:var(--dim);
   line-height:1.85;
 }
+.story-link{
+  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
+  font-size:13px;
+  letter-spacing:.5px;
+  color:var(--gold2);
+  text-decoration:none;
+  border-bottom:1px solid var(--gold3);
+  padding-bottom:2px;
+  transition:color .18s ease;
+}
+.story-link:hover{color:var(--navy);}
 /* ── FOOTER ── */
 .foot{
   margin-top:52px;
@@ -241,7 +259,7 @@ html,body{
   <div class="grid" id="grid">
 
     <!-- 響 -->
-    <div class="card">
+    <a class="card" href="index_brand.html#ensemble-hibiki">
       <div class="card-body">
         <div class="card-num">01 ／ 話す</div>
         <div class="card-name">
@@ -251,10 +269,10 @@ html,body{
         <div class="card-role">現場の声を拾う「入口」</div>
         <div class="card-desc">壁打ち・アセスメントを構造化。氷山モデルで根本原因を特定する（hibiki_v2）。</div>
       </div>
-    </div>
+    </a>
 
     <!-- 凪 -->
-    <div class="card">
+    <a class="card" href="index_brand.html#ensemble-nagi">
       <div class="card-body">
         <div class="card-num">02 ／ 見る</div>
         <div class="card-name">
@@ -264,10 +282,10 @@ html,body{
         <div class="card-role">組織を診る「羅針盤」</div>
         <div class="card-desc">MQ会計・KSAで、収益とチームを数字で同時に可視化・診断する（nagi_system）。</div>
       </div>
-    </div>
+    </a>
 
     <!-- 奏 -->
-    <div class="card">
+    <a class="card" href="index_brand.html#ensemble-kanade">
       <div class="card-body">
         <div class="card-num">03 ／ 組む</div>
         <div class="card-name">
@@ -277,10 +295,10 @@ html,body{
         <div class="card-role">適材適所の「チームビルディング」</div>
         <div class="card-desc">エゴグラム・LSRPで人材を見極め、最適なチーム配置を設計する（kanade_app）。</div>
       </div>
-    </div>
+    </a>
 
     <!-- 弦 -->
-    <div class="card">
+    <a class="card" href="index_brand.html#ensemble-yuzuru">
       <div class="card-body">
         <div class="card-num">04 ／ 売る</div>
         <div class="card-name">
@@ -290,10 +308,10 @@ html,body{
         <div class="card-role">地域連携と「自動営業」</div>
         <div class="card-desc">施設データから営業先リストとマップを自動生成して届ける（yuzuru_map）。</div>
       </div>
-    </div>
+    </a>
 
     <!-- ミツメル -->
-    <div class="card span2">
+    <a class="card span2" href="index_brand.html#ensemble-mitsumeru">
       <div class="card-body">
         <div class="card-num">05 ／ 折れない</div>
         <div class="card-name">
@@ -303,8 +321,13 @@ html,body{
         <div class="card-role">管理職の「耐久設計」</div>
         <div class="card-desc">日次HP/MP監査・翌日戦略を一元化。仕組みを動かす人を守る（mitsumeru）。</div>
       </div>
-    </div>
+    </a>
 
+  </div>
+
+  <!-- 物語ページへの導線 -->
+  <div style="text-align:center;margin-top:36px;">
+    <a href="index_brand.html" class="story-link">FusionOSの物語を読む →</a>
   </div>
 
   <!-- FOOTER -->
