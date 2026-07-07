@@ -9,75 +9,216 @@
 <meta name="robots" content="noindex, nofollow">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-body{
-  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
+:root{
+  --bg:#F0EDE8; --bg2:#FAF8F4; --navy:#0b1929; --navy2:#1c3248;
+  --gold:#7d6428; --gold2:#9e7f34; --gold3:#c9a850;
+  --text:#1a2535; --dim:#536070; --dim2:#8a98a8; --border:#d8d2c8;
+  --shadow:0 2px 12px rgba(0,0,0,.07);
+}
+html,body{background:var(--bg);font-family:'Hiragino Mincho ProN','Yu Mincho','Georgia',serif;color:var(--text);-webkit-font-smoothing:antialiased;min-height:100%;}
+.wrap{max-width:920px;margin:0 auto;padding:44px 24px 72px;}
+.head{margin-bottom:36px;}
+.eyebrow{font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;font-size:11px;letter-spacing:4px;text-transform:uppercase;color:var(--gold2);margin-bottom:10px;font-weight:500;}
+.h1{font-size:clamp(24px,3.6vw,32px);font-weight:300;letter-spacing:-.3px;color:var(--navy);}
+.sub{font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;font-size:12.5px;color:var(--dim);margin-top:10px;line-height:1.8;}
+
+.section{
+  margin-top:26px;
+  border-radius:10px;
+  padding:20px 22px 22px;
+  border:1px solid var(--border);
+}
+.section-title{
+  display:flex;align-items:baseline;gap:10px;margin-bottom:14px;
+}
+.section-jp{font-size:20px;font-weight:400;color:var(--navy);}
+.section-en{font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;font-size:10.5px;letter-spacing:2px;color:var(--gold2);text-transform:uppercase;}
+
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+.card{
+  display:flex;flex-direction:column;gap:4px;
+  padding:14px 16px;border-radius:7px;
   background:#fff;
-  color:#1a2535;
-  max-width:640px;
-  margin:0 auto;
-  padding:32px 20px 60px;
-  line-height:1.6;
+  text-decoration:none;color:inherit;
+  border:1px solid var(--border);
+  border-left:4px solid var(--gold3);
+  box-shadow:var(--shadow);
+  transition:transform .14s ease, box-shadow .14s ease, border-left-color .14s ease;
 }
-h1{font-size:20px;font-weight:700;margin-bottom:4px;}
-.sub{font-size:12.5px;color:#666;margin-bottom:28px;}
-h2{
-  font-size:14px;font-weight:700;margin-top:28px;margin-bottom:8px;
-  padding-bottom:4px;border-bottom:1px solid #ddd;
+.card:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(11,25,41,.15);border-left-color:var(--navy);}
+.card-file{
+  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
+  font-size:13.5px;font-weight:700;color:var(--navy);letter-spacing:.2px;
 }
-ul{list-style:none;}
-li{padding:6px 0;font-size:14px;}
-a{color:#0b5fff;text-decoration:none;}
-a:hover{text-decoration:underline;}
-.file{font-family:monospace;font-size:12.5px;color:#333;}
-.desc{color:#666;font-size:12.5px;}
+.card-desc{font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;font-size:11.5px;color:var(--dim);line-height:1.6;}
+.card-go{
+  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
+  font-size:10px;letter-spacing:1px;color:var(--gold2);margin-top:2px;
+}
+
+/* システムごとの色分け（背景トーン＋左帯） */
+.sec-hibiki{background:#FBF6EC;}
+.sec-hibiki .card{border-left-color:#c9a850;}
+.sec-nagi{background:#EFF2F6;}
+.sec-nagi .card{border-left-color:#1c3248;}
+.sec-nagi .card:hover{border-left-color:var(--navy);}
+.sec-kanade{background:#FBEFEC;}
+.sec-kanade .card{border-left-color:#b06a52;}
+.sec-yuzuru{background:#EEF4F0;}
+.sec-yuzuru .card{border-left-color:#4c7a63;}
+.sec-mitsumeru{background:#F5F0E4;}
+.sec-mitsumeru .card{border-left-color:#9e7f34;}
+.sec-other{background:#F1F1EF;}
+.sec-other .card{border-left-color:var(--dim2);}
+
+@media(max-width:640px){.grid{grid-template-columns:1fr;}}
+
+.foot{margin-top:36px;text-align:center;border-top:1px solid var(--border);padding-top:20px;}
+.foot-contact{font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;font-size:11px;color:var(--dim);letter-spacing:.5px;}
 </style>
 </head>
 <body>
-<h1>FusionOS 全ツール・実務インデックス</h1>
-<div class="sub">柴山さん専用。装飾なし・実在する全ツールへの直接リンクのみ。</div>
+<div class="wrap">
+  <header class="head">
+    <div class="eyebrow">代表専用・実務インデックス</div>
+    <h1 class="h1">FusionOS 全ツール・実務インデックス</h1>
+    <div class="sub">全ツールへ漏れなく移動するための一覧です。カードをクリックしてすぐに開けます。</div>
+  </header>
 
-<h2>響 Hibiki</h2>
-<ul>
-  <li><a href="./hibiki_v2.html">hibiki_v2.html</a> — <span class="desc">利用者支援系（アセスメント・目標・支援計画・読了チェック）</span></li>
-  <li><a href="./hibiki_ops.html">hibiki_ops.html</a> — <span class="desc">運用支援系（運用標準書・在庫管理）＋施設向け軽量版（営業提案診断）</span></li>
-</ul>
+  <section class="section sec-hibiki">
+    <div class="section-title"><span class="section-jp">響</span><span class="section-en">Hibiki</span></div>
+    <div class="grid">
+      <a class="card" href="./hibiki_v2.html">
+        <div class="card-file">hibiki_v2.html</div>
+        <div class="card-desc">利用者支援系（アセスメント・目標・支援計画・読了チェック）</div>
+        <div class="card-go">開く →</div>
+      </a>
+      <a class="card" href="./hibiki_ops.html">
+        <div class="card-file">hibiki_ops.html</div>
+        <div class="card-desc">運用支援系（運用標準書・在庫管理）＋施設向け軽量版（営業提案診断）</div>
+        <div class="card-go">開く →</div>
+      </a>
+    </div>
+  </section>
 
-<h2>凪 Nagi</h2>
-<ul>
-  <li><a href="./nagi_system.html">nagi_system.html</a> — <span class="desc">経営羅針盤（ハブ・法人全体ダッシュボード）</span></li>
-  <li><a href="./nagi_mq.html">nagi_mq.html</a> — <span class="desc">軸A：MQ会計・資金データ</span></li>
-  <li><a href="./nagi_pipe.html">nagi_pipe.html</a> — <span class="desc">軸B：営業パイプライン</span></li>
-  <li><a href="./nagi_team.html">nagi_team.html</a> — <span class="desc">軸C：チーム評価（RC/LSRP）</span></li>
-  <li><a href="./nagi_staff.html">nagi_staff.html</a> — <span class="desc">軸D：スタッフ性質（エゴグラム・LSRP個人データ）</span></li>
-  <li><a href="./nagi_psychsafety.html">nagi_psychsafety.html</a> — <span class="desc">軸E：心理的安全性診断</span></li>
-  <li><a href="./ta_scan.html">ta_scan.html</a> — <span class="desc">チームアセスメント</span></li>
-  <li><a href="./pm_scan.html">pm_scan.html</a> — <span class="desc">PM理論リーダーシップ診断</span></li>
-</ul>
+  <section class="section sec-nagi">
+    <div class="section-title"><span class="section-jp">凪</span><span class="section-en">Nagi</span></div>
+    <div class="grid">
+      <a class="card" href="./nagi_system.html">
+        <div class="card-file">nagi_system.html</div>
+        <div class="card-desc">経営羅針盤（ハブ・法人全体ダッシュボード）</div>
+        <div class="card-go">開く →</div>
+      </a>
+      <a class="card" href="./nagi_mq.html">
+        <div class="card-file">nagi_mq.html</div>
+        <div class="card-desc">軸A：MQ会計・資金データ</div>
+        <div class="card-go">開く →</div>
+      </a>
+      <a class="card" href="./nagi_pipe.html">
+        <div class="card-file">nagi_pipe.html</div>
+        <div class="card-desc">軸B：営業パイプライン</div>
+        <div class="card-go">開く →</div>
+      </a>
+      <a class="card" href="./nagi_team.html">
+        <div class="card-file">nagi_team.html</div>
+        <div class="card-desc">軸C：チーム評価（RC/LSRP）</div>
+        <div class="card-go">開く →</div>
+      </a>
+      <a class="card" href="./nagi_staff.html">
+        <div class="card-file">nagi_staff.html</div>
+        <div class="card-desc">軸D：スタッフ性質（エゴグラム・LSRP個人データ）</div>
+        <div class="card-go">開く →</div>
+      </a>
+      <a class="card" href="./nagi_psychsafety.html">
+        <div class="card-file">nagi_psychsafety.html</div>
+        <div class="card-desc">軸E：心理的安全性診断</div>
+        <div class="card-go">開く →</div>
+      </a>
+      <a class="card" href="./ta_scan.html">
+        <div class="card-file">ta_scan.html</div>
+        <div class="card-desc">チームアセスメント</div>
+        <div class="card-go">開く →</div>
+      </a>
+      <a class="card" href="./pm_scan.html">
+        <div class="card-file">pm_scan.html</div>
+        <div class="card-desc">PM理論リーダーシップ診断</div>
+        <div class="card-go">開く →</div>
+      </a>
+    </div>
+  </section>
 
-<h2>奏 Kanade</h2>
-<ul>
-  <li><a href="./kanade_app.html">kanade_app.html</a> — <span class="desc">エゴグラム・LSRP診断（適材適所）</span></li>
-  <li><a href="./kanade_shift.html">kanade_shift.html</a> — <span class="desc">勤務表自動作成（シフト・契約時間・有給・警告一覧）</span></li>
-  <li><a href="./kanade_growth.html">kanade_growth.html</a> — <span class="desc">1on1・育成サポート（GROW・OJT・SBI）</span></li>
-  <li><a href="./kanade_pulse.html">kanade_pulse.html</a> — <span class="desc">パルスサーベイ・離職アラート</span></li>
-</ul>
+  <section class="section sec-kanade">
+    <div class="section-title"><span class="section-jp">奏</span><span class="section-en">Kanade</span></div>
+    <div class="grid">
+      <a class="card" href="./kanade_app.html">
+        <div class="card-file">kanade_app.html</div>
+        <div class="card-desc">エゴグラム・LSRP診断（適材適所）</div>
+        <div class="card-go">開く →</div>
+      </a>
+      <a class="card" href="./kanade_shift.html">
+        <div class="card-file">kanade_shift.html</div>
+        <div class="card-desc">勤務表自動作成（シフト・契約時間・有給・警告一覧）</div>
+        <div class="card-go">開く →</div>
+      </a>
+      <a class="card" href="./kanade_growth.html">
+        <div class="card-file">kanade_growth.html</div>
+        <div class="card-desc">1on1・育成サポート（GROW・OJT・SBI）</div>
+        <div class="card-go">開く →</div>
+      </a>
+      <a class="card" href="./kanade_pulse.html">
+        <div class="card-file">kanade_pulse.html</div>
+        <div class="card-desc">パルスサーベイ・離職アラート</div>
+        <div class="card-go">開く →</div>
+      </a>
+    </div>
+  </section>
 
-<h2>弦 Yuzuru</h2>
-<ul>
-  <li><a href="./yuzuru_map.html">yuzuru_map.html</a> — <span class="desc">商圏マップ（東海3県・実データ・営業リスト）</span></li>
-</ul>
+  <section class="section sec-yuzuru">
+    <div class="section-title"><span class="section-jp">弦</span><span class="section-en">Yuzuru</span></div>
+    <div class="grid">
+      <a class="card" href="./yuzuru_map.html">
+        <div class="card-file">yuzuru_map.html</div>
+        <div class="card-desc">商圏マップ（東海3県・実データ・営業リスト）</div>
+        <div class="card-go">開く →</div>
+      </a>
+    </div>
+  </section>
 
-<h2>ミツメル Mitsumeru</h2>
-<ul>
-  <li><a href="./mitsumeru_app.html">mitsumeru_app.html</a> — <span class="desc">本体（日次ジャーナリング・翌日戦略）</span></li>
-  <li><a href="./mitsumeru_lite.html">mitsumeru_lite.html</a> — <span class="desc">商品版（ページ内の「⚡ 3min」ボタンから3minエマージェンシーモードを起動）</span></li>
-  <li><a href="./mitsumeru_private.html">mitsumeru_private.html</a> — <span class="desc">柴山靖章専用版</span></li>
-</ul>
+  <section class="section sec-mitsumeru">
+    <div class="section-title"><span class="section-jp">ミツメル</span><span class="section-en">Mitsumeru</span></div>
+    <div class="grid">
+      <a class="card" href="./mitsumeru_app.html">
+        <div class="card-file">mitsumeru_app.html</div>
+        <div class="card-desc">本体（日次ジャーナリング・翌日戦略）</div>
+        <div class="card-go">開く →</div>
+      </a>
+      <a class="card" href="./mitsumeru_lite.html">
+        <div class="card-file">mitsumeru_lite.html</div>
+        <div class="card-desc">商品版（ページ内の「⚡ 3min」ボタンから3minエマージェンシーモードを起動）</div>
+        <div class="card-go">開く →</div>
+      </a>
+      <a class="card" href="./mitsumeru_private.html">
+        <div class="card-file">mitsumeru_private.html</div>
+        <div class="card-desc">柴山靖章専用版</div>
+        <div class="card-go">開く →</div>
+      </a>
+    </div>
+  </section>
 
-<h2>その他</h2>
-<ul>
-  <li><a href="./naze_naze.html">naze_naze.html</a> — <span class="desc">なぜなぜ分析</span></li>
-</ul>
+  <section class="section sec-other">
+    <div class="section-title"><span class="section-jp">その他</span></div>
+    <div class="grid">
+      <a class="card" href="./naze_naze.html">
+        <div class="card-file">naze_naze.html</div>
+        <div class="card-desc">なぜなぜ分析</div>
+        <div class="card-go">開く →</div>
+      </a>
+    </div>
+  </section>
 
+  <footer class="foot">
+    <div class="foot-contact">Fusion Partners　｜　代表専用ページ（検索エンジン非公開）</div>
+  </footer>
+</div>
 </body>
 </html>
