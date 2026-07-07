@@ -275,110 +275,6 @@ html,body{
   .card-go{justify-content:center;}
 }
 
-/* ── PRICING ── */
-.pricing{
-  margin-top:48px;
-}
-.price-head{
-  text-align:center;
-  margin-bottom:26px;
-}
-.price-eyebrow{
-  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
-  font-size:11px;
-  letter-spacing:4px;
-  text-transform:uppercase;
-  color:var(--gold2);
-  margin-bottom:12px;
-}
-.price-title{
-  font-size:clamp(24px,3.4vw,36px);
-  font-weight:200;
-  color:var(--navy);
-  letter-spacing:-.5px;
-}
-.price-lead{
-  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
-  font-size:clamp(12px,1.4vw,14px);
-  color:var(--dim);
-  line-height:1.9;
-  margin-top:12px;
-}
-.price-grid{
-  display:grid;
-  grid-template-columns:repeat(2,1fr);
-  gap:14px;
-  max-width:620px;
-  margin:0 auto;
-}
-.price-card{
-  border:1px solid var(--border);
-  border-radius:6px;
-  background:var(--bg2);
-  box-shadow:var(--shadow);
-  padding:24px 20px;
-  text-align:center;
-  border-top:3px solid var(--gold3);
-  display:flex;
-  flex-direction:column;
-}
-.price-card.feature{
-  border-top-color:var(--navy);
-  background:#fff;
-}
-.price-tier{
-  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
-  font-size:13px;
-  font-weight:600;
-  letter-spacing:2px;
-  color:var(--navy);
-  text-transform:uppercase;
-  margin-bottom:14px;
-}
-.price-amount{
-  font-size:clamp(28px,3.6vw,38px);
-  font-weight:200;
-  color:var(--navy);
-  letter-spacing:-1px;
-  line-height:1;
-}
-.price-amount small{
-  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
-  font-size:12px;
-  font-weight:400;
-  color:var(--dim);
-  letter-spacing:0;
-  margin-left:3px;
-}
-.price-catch{
-  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
-  font-size:12.5px;
-  color:var(--gold2);
-  font-weight:600;
-  margin:14px 0 8px;
-  line-height:1.5;
-}
-.price-desc{
-  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
-  font-size:11.5px;
-  color:var(--dim);
-  line-height:1.8;
-  margin-top:auto;
-}
-.price-note{
-  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
-  font-size:10.5px;
-  color:var(--dim2);
-  text-align:center;
-  margin-top:16px;
-  letter-spacing:.3px;
-}
-@media(max-width:760px){
-  .price-grid{grid-template-columns:repeat(2,1fr);}
-}
-@media(max-width:400px){
-  .price-grid{grid-template-columns:1fr;}
-}
 </style>
 </head>
 <body>
@@ -491,25 +387,6 @@ html,body{
     </a>
 
   </div>
-
-  <!-- PRICING -->
-  <section class="pricing">
-    <div class="price-head">
-      <div class="price-eyebrow">Pricing — ミツメルのみ</div>
-      <div class="price-title">ミツメル、伴走の深さで選べる。</div>
-      <div class="price-lead">
-        5つのシステムのうち、単体でご契約いただけるのは現在ミツメルのみです。まずは無料で、AIの伴走を。
-      </div>
-    </div>
-    <div class="price-grid" style="grid-template-columns:1fr;max-width:320px;">
-      <div class="price-card feature">
-        <div class="price-tier">Lite</div>
-        <div class="price-amount">¥980<small>/月</small></div>
-        <div class="price-catch">崩れる前に気づく、朝の一言</div>
-        <div class="price-desc">無料お試し5回 → 月30回まで ¥980/月。HP/MPで状態を数値化し、AIが「あなただけの一言」と今日やる3つを届ける。</div>
-      </div>
-    </div>
-  </section>
 
   <!-- FOOTER -->
   <footer class="foot">
