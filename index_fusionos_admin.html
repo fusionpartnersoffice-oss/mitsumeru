@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FusionOS 全ツール一覧（代表専用） | Fusion Partners</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="favicon.png">
+<meta name="robots" content="noindex, nofollow">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#F0EDE8; --bg2:#FAF8F4; --navy:#0b1929; --navy2:#1c3248;
+  --gold:#7d6428; --gold2:#9e7f34; --gold3:#c9a850;
+  --text:#1a2535; --dim:#536070; --dim2:#8a98a8; --border:#d8d2c8;
+  --shadow:0 2px 16px rgba(0,0,0,.06);
+}
+html,body{background:var(--bg);font-family:'Hiragino Mincho ProN','Yu Mincho','Georgia',serif;color:var(--text);-webkit-font-smoothing:antialiased;min-height:100%;}
+.wrap{max-width:900px;margin:0 auto;padding:48px 28px 72px;}
+.back{font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;font-size:12px;color:var(--dim);text-decoration:none;letter-spacing:.5px;display:inline-block;margin-bottom:24px;}
+.back:hover{color:var(--gold2);}
+.head{margin-bottom:32px;}
+.eyebrow{font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;font-size:11px;letter-spacing:4px;text-transform:uppercase;color:var(--gold2);margin-bottom:12px;font-weight:500;}
+.h1{font-size:clamp(26px,4vw,36px);font-weight:300;letter-spacing:-.5px;line-height:1.25;color:var(--navy);}
+.notice{
+  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;font-size:12px;color:var(--dim);
+  line-height:1.9;margin-top:16px;padding:14px 18px;background:var(--bg2);border-left:3px solid var(--gold3);border-radius:4px;
+}
+.section{margin-top:36px;}
+.section-title{
+  font-size:clamp(18px,2.4vw,22px);font-weight:400;color:var(--navy);margin-bottom:4px;
+  display:flex;align-items:baseline;gap:10px;
+}
+.section-en{font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;font-size:10px;letter-spacing:2px;color:var(--gold2);text-transform:uppercase;}
+.section-rule{width:100%;height:1px;background:var(--border);margin:10px 0 16px;}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+.card{
+  display:block;padding:15px 18px;border:1px solid var(--border);border-radius:5px;
+  background:var(--bg2);text-decoration:none;color:inherit;border-left:3px solid var(--gold3);
+  transition:transform .15s ease,box-shadow .15s ease;
+}
+.card:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(11,25,41,.10);}
+.card.draft{border-left-color:var(--dim2);opacity:.85;}
+.card-file{font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;font-size:11px;color:var(--gold2);letter-spacing:.5px;margin-bottom:4px;}
+.card-name{font-size:14.5px;color:var(--navy);font-weight:600;margin-bottom:3px;font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;}
+.card-desc{font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;font-size:11.5px;color:var(--dim);line-height:1.6;}
+.tag{
+  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;font-size:9px;letter-spacing:1px;
+  color:#fff;background:var(--dim2);padding:1px 6px;border-radius:3px;margin-left:6px;vertical-align:middle;
+}
+.foot{margin-top:48px;text-align:center;border-top:1px solid var(--border);padding-top:20px;}
+.foot-contact{font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;font-size:11px;color:var(--dim);letter-spacing:.5px;line-height:1.9;}
+@media(max-width:640px){.grid{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="./index_fusionos.html">← クライアント向け表示へ戻る</a>
+  <header class="head">
+    <div class="eyebrow">代表専用・内部確認用</div>
+    <h1 class="h1">FusionOS 全ツール一覧</h1>
+    <div class="notice">
+      クライアント公開版（<a href="./index_fusionos.html" style="color:var(--gold2);">index_fusionos.html</a>）には出さない管理系・実験系・下書き系ツールも含む、制限なしの一覧です。<br>
+      サンプル/LP用の軽量診断・下書きファイルは薄い印（グレー枠・タグ表示）で区別しています。
+    </div>
+  </header>
+
+  <!-- 響 -->
+  <section class="section">
+    <div class="section-title">響 <span class="section-en">Hibiki</span></div>
+    <div class="section-rule"></div>
+    <div class="grid">
+      <a class="card" href="./hibiki_v2.html"><div class="card-file">hibiki_v2.html</div><div class="card-name">利用者支援系（最新版）</div><div class="card-desc">アセスメント・目標・支援計画・読了チェック</div></a>
+      <a class="card" href="./hibiki_ops.html"><div class="card-file">hibiki_ops.html</div><div class="card-name">運用支援系＋施設向け軽量版</div><div class="card-desc">運用標準書・5S管理・在庫管理・営業提案診断</div></a>
+      <a class="card" href="./hibiki_hub.html"><div class="card-file">hibiki_hub.html</div><div class="card-name">響サブ入口ページ</div><div class="card-desc">v2・opsへの導線（クライアント公開版と共通）</div></a>
+      <a class="card" href="./hibiki_kaigo.html"><div class="card-file">hibiki_kaigo.html</div><div class="card-name">高齢福祉版<span class="tag">業態特化</span></div><div class="card-desc">現状どこからもリンクされていない独立版。位置づけ未確認</div></a>
+      <a class="card" href="./hibiki_shogai.html"><div class="card-file">hibiki_shogai.html</div><div class="card-name">障がい福祉版<span class="tag">業態特化</span></div><div class="card-desc">現状どこからもリンクされていない独立版。位置づけ未確認</div></a>
+      <a class="card" href="./hibiki.html"><div class="card-file">hibiki.html</div><div class="card-name">旧版<span class="tag">旧版</span></div><div class="card-desc">hibiki_v2.htmlへ移行済み。参照用に残置</div></a>
+      <a class="card" href="./naze_naze.html"><div class="card-file">naze_naze.html</div><div class="card-name">なぜなぜ分析<span class="tag">単体ツール</span></div><div class="card-desc">どのハブからもリンクされていない単体診断</div></a>
+      <a class="card" href="./ta_scan.html"><div class="card-file">ta_scan.html</div><div class="card-name">チームアセスメント</div><div class="card-desc">nagi_system.htmlからリンク済み（凪羅針盤の一部）</div></a>
+      <a class="card" href="./pm_scan.html"><div class="card-file">pm_scan.html</div><div class="card-name">PM理論リーダーシップ診断</div><div class="card-desc">nagi_system.htmlからリンク済み（凪羅針盤の一部）</div></a>
+    </div>
+  </section>
+
+  <!-- 凪 -->
+  <section class="section">
+    <div class="section-title">凪 <span class="section-en">Nagi</span></div>
+    <div class="section-rule"></div>
+    <div class="grid">
+      <a class="card" href="./nagi_system.html"><div class="card-file">nagi_system.html</div><div class="card-name">経営羅針盤（ハブ）</div><div class="card-desc">法人全体ダッシュボード・全軸への導線を内包</div></a>
+      <a class="card" href="./nagi_mq.html"><div class="card-file">nagi_mq.html</div><div class="card-name">軸A：MQ会計・資金モジュール</div><div class="card-desc">財務データ入力・AI補足コメント</div></a>
+      <a class="card" href="./nagi_pipe.html"><div class="card-file">nagi_pipe.html</div><div class="card-name">軸B：営業パイプライン</div><div class="card-desc">NDB動線・AI補足コメント</div></a>
+      <a class="card" href="./nagi_team.html"><div class="card-file">nagi_team.html</div><div class="card-name">軸C：チーム評価</div><div class="card-desc">RC/LSRPサマリー・AI補足コメント</div></a>
+      <a class="card" href="./nagi_staff.html"><div class="card-file">nagi_staff.html</div><div class="card-name">軸D：スタッフ性質</div><div class="card-desc">エゴグラム・LSRP個人データ（法務確認事項あり）</div></a>
+      <a class="card" href="./nagi_psychsafety.html"><div class="card-file">nagi_psychsafety.html</div><div class="card-name">軸E：心理的安全性診断（C-5）</div><div class="card-desc">エドモンドソン7問・クラーク4段階判定</div></a>
+      <a class="card draft" href="./nagi_mini_sample.html"><div class="card-file">nagi_mini_sample.html</div><div class="card-name">組織の健康ミニ診断<span class="tag">サンプル</span></div><div class="card-desc">LP/note埋め込み用の軽量サンプル診断</div></a>
+    </div>
+  </section>
+
+  <!-- 奏 -->
+  <section class="section">
+    <div class="section-title">奏 <span class="section-en">Kanade</span></div>
+    <div class="section-rule"></div>
+    <div class="grid">
+      <a class="card" href="./kanade_hub.html"><div class="card-file">kanade_hub.html</div><div class="card-name">奏サブ入口ページ</div><div class="card-desc">4ツールへの導線（クライアント公開版と共通）</div></a>
+      <a class="card" href="./kanade_app.html"><div class="card-file">kanade_app.html</div><div class="card-name">エゴグラム・LSRP診断</div><div class="card-desc">適材適所・チーム配置設計の本体</div></a>
+      <a class="card" href="./kanade_shift.html"><div class="card-file">kanade_shift.html</div><div class="card-name">勤務表自動作成ツール</div><div class="card-desc">シフト・契約時間・有給・法定基準・警告一覧</div></a>
+      <a class="card" href="./kanade_growth.html"><div class="card-file">kanade_growth.html</div><div class="card-name">1on1・育成サポート</div><div class="card-desc">GROWモデル・OJT計画・SBIフィードバック</div></a>
+      <a class="card" href="./kanade_pulse.html"><div class="card-file">kanade_pulse.html</div><div class="card-name">パルスサーベイ</div><div class="card-desc">離職アラート・定期サーベイ</div></a>
+      <a class="card draft" href="./kanade_mini_sample.html"><div class="card-file">kanade_mini_sample.html</div><div class="card-name">適性ミニ診断<span class="tag">サンプル</span></div><div class="card-desc">LP/note埋め込み用の軽量サンプル診断</div></a>
+    </div>
+  </section>
+
+  <!-- 弦 -->
+  <section class="section">
+    <div class="section-title">弦 <span class="section-en">Yuzuru</span></div>
+    <div class="section-rule"></div>
+    <div class="grid">
+      <a class="card" href="./yuzuru_hub.html"><div class="card-file">yuzuru_hub.html</div><div class="card-name">弦サブ入口ページ</div><div class="card-desc">商圏マップへの導線（クライアント公開版と共通）</div></a>
+      <a class="card" href="./yuzuru_map.html"><div class="card-file">yuzuru_map.html</div><div class="card-name">商圏マップ（東海3県・実データ）</div><div class="card-desc">営業リスト・地図フィルタ・紹介元管理</div></a>
+    </div>
+  </section>
+
+  <!-- ミツメル -->
+  <section class="section">
+    <div class="section-title">ミツメル <span class="section-en">Mitsumeru</span></div>
+    <div class="section-rule"></div>
+    <div class="grid">
+      <a class="card" href="./mitsumeru_hub.html"><div class="card-file">mitsumeru_hub.html</div><div class="card-name">ミツメルサブ入口ページ</div><div class="card-desc">本体・Liteへの導線（クライアント公開版と共通）</div></a>
+      <a class="card" href="./mitsumeru_app.html"><div class="card-file">mitsumeru_app.html</div><div class="card-name">本体（v8）</div><div class="card-desc">日次ジャーナリング・翌日戦略の中核ツール</div></a>
+      <a class="card" href="./mitsumeru_private.html"><div class="card-file">mitsumeru_private.html</div><div class="card-name">柴山靖章専用版<span class="tag">個人専用</span></div><div class="card-desc">柴山さん個人のPRIVATE版</div></a>
+      <a class="card" href="./mitsumeru_lite.html"><div class="card-file">mitsumeru_lite.html</div><div class="card-name">商品版（Lite）</div><div class="card-desc">機能を絞った一般ユーザー向け商品版</div></a>
+      <a class="card" href="./mitsumeru_lite_lp.html"><div class="card-file">mitsumeru_lite_lp.html</div><div class="card-name">Lite ランディングページ</div><div class="card-desc">商品版の販売用LP</div></a>
+      <a class="card" href="./mitsumeru_scan.html"><div class="card-file">mitsumeru_scan.html</div><div class="card-name">ミツメルスキャン</div><div class="card-desc">mitsumeru_app.htmlからリンク済み</div></a>
+      <a class="card" href="./mitsumeru_tekisei_check.html"><div class="card-file">mitsumeru_tekisei_check.html</div><div class="card-name">適性チェック</div><div class="card-desc">mitsumeru_app.htmlからリンク済み</div></a>
+      <a class="card draft" href="./mitsumeru_mini_sample.html"><div class="card-file">mitsumeru_mini_sample.html</div><div class="card-name">今日の自分30秒チェック<span class="tag">サンプル</span></div><div class="card-desc">LP/note埋め込み用の軽量サンプル診断</div></a>
+      <a class="card" href="./mitsumeru_privacy.html"><div class="card-file">mitsumeru_privacy.html</div><div class="card-name">プライバシーポリシー</div><div class="card-desc">規約系ページ</div></a>
+      <a class="card" href="./mitsumeru_terms.html"><div class="card-file">mitsumeru_terms.html</div><div class="card-name">利用規約</div><div class="card-desc">規約系ページ</div></a>
+    </div>
+  </section>
+
+  <!-- その他 -->
+  <section class="section">
+    <div class="section-title">その他・未整理</div>
+    <div class="section-rule"></div>
+    <div class="grid">
+      <a class="card" href="./index_fusionos.html"><div class="card-file">index_fusionos.html</div><div class="card-name">クライアント公開版トップ</div><div class="card-desc">5システムのQRコード付き入口ページ</div></a>
+      <a class="card draft" href="./fusionos_map.html"><div class="card-file">fusionos_map.html</div><div class="card-name">FusionOS全体像<span class="tag">旧版の可能性</span></div><div class="card-desc">index_fusionos.htmlと類似構成。どこからもリンクされておらず位置づけ未確認</div></a>
+      <a class="card" href="./company_profile.html"><div class="card-file">company_profile.html</div><div class="card-name">会社紹介ページ</div><div class="card-desc">note等の外部発信からリンクされる想定</div></a>
+      <a class="card draft" href="./index.html"><div class="card-file">index.html</div><div class="card-name">3minエマージェンシー<span class="tag">別プロジェクト</span></div><div class="card-desc">FusionOS本体とは別の企画・イノベーション系ツールの可能性。詳細未確認</div></a>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <div class="foot-contact">Fusion Partners　｜　代表専用ページ（検索エンジン非公開）</div>
+  </footer>
+</div>
+</body>
+</html>
