@@ -9,40 +9,39 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{
-  --bg:#F0EDE8; --bg2:#FAF8F4; --navy:#0b1929; --navy2:#1c3248;
-  --gold:#7d6428; --gold2:#9e7f34; --gold3:#c9a850;
-  --text:#1a2535; --dim:#536070; --dim2:#8a98a8; --border:#d8d2c8;
-  --shadow:0 2px 16px rgba(0,0,0,.06);
+  --bg:#eef1f4; --panel:#ffffff; --navy:#0b1929; --navy2:#1c3248;
+  --text:#1a2535; --dim:#5b6b7a; --dim2:#8a98a8; --border:#dde3e8;
 }
-html,body{background:var(--bg);font-family:'Hiragino Mincho ProN','Yu Mincho','Georgia',serif;color:var(--text);-webkit-font-smoothing:antialiased;min-height:100%;}
-.wrap{max-width:760px;margin:0 auto;padding:56px 28px 72px;}
-.back{font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;font-size:12px;color:var(--dim);text-decoration:none;letter-spacing:.5px;display:inline-block;margin-bottom:28px;}
-.back:hover{color:var(--gold2);}
-.head{margin-bottom:40px;}
-.eyebrow{font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;font-size:11px;letter-spacing:4px;text-transform:uppercase;color:var(--gold2);margin-bottom:12px;font-weight:500;}
-.h1{font-size:clamp(30px,5vw,44px);font-weight:300;letter-spacing:-.5px;line-height:1.2;color:var(--navy);}
-.h1 .jp{font-weight:400;}
-.tagline{font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;font-size:13px;color:var(--dim);line-height:1.9;margin-top:14px;}
-.rule{width:32px;height:2px;background:var(--gold3);margin:20px 0;}
-.list{display:flex;flex-direction:column;gap:14px;}
-.card{display:block;padding:22px 24px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);box-shadow:var(--shadow);border-left:3px solid var(--gold3);text-decoration:none;color:inherit;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;}
-.card:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(11,25,41,.12);border-left-color:var(--navy);}
-.card-badge{font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;font-size:9.5px;letter-spacing:2px;color:var(--gold2);text-transform:uppercase;margin-bottom:6px;}
-.card-name{font-size:clamp(17px,2.4vw,20px);font-weight:400;color:var(--navy);margin-bottom:6px;}
-.card-desc{font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;font-size:12.5px;color:var(--dim);line-height:1.75;}
-.card-go{font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;font-size:12.5px;font-weight:600;letter-spacing:1px;color:#fff;background:var(--navy);padding:7px 16px;border-radius:20px;margin-top:14px;display:inline-flex;align-items:center;gap:6px;transition:background .18s ease;}
-.card:hover .card-go{background:var(--gold2);}
-.foot{margin-top:52px;text-align:center;border-top:1px solid var(--border);padding-top:24px;}
-.foot-contact{font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;font-size:11px;color:var(--dim);letter-spacing:.5px;line-height:1.9;}
+html,body{background:var(--bg);font-family:'Hiragino Kaku Gothic Pro','Meiryo','Yu Gothic',sans-serif;color:var(--text);-webkit-font-smoothing:antialiased;min-height:100%;font-size:14px;}
+.topbar{position:sticky;top:0;z-index:20;background:var(--navy);color:#fff;padding:11px 20px;display:flex;align-items:center;justify-content:space-between;}
+.topbar-brand{color:#fff;text-decoration:none;font-weight:700;font-size:13px;letter-spacing:.5px;display:flex;align-items:center;gap:7px;}
+.topbar-back{color:#8fa3b8;text-decoration:none;font-size:11.5px;}
+.topbar-back:hover{color:#fff;}
+.wrap{max-width:780px;margin:0 auto;padding:28px 24px 64px;}
+.head{margin-bottom:22px;padding-bottom:16px;border-bottom:1px solid var(--border);}
+.eyebrow{font-size:10.5px;letter-spacing:2px;text-transform:uppercase;color:var(--dim2);margin-bottom:6px;font-weight:600;}
+.h1{font-size:20px;font-weight:700;letter-spacing:-.2px;color:var(--navy);}
+.tagline{font-size:12px;color:var(--dim);margin-top:6px;line-height:1.7;}
+.list{display:flex;flex-direction:column;gap:10px;}
+.card{display:block;padding:16px 18px;border:1px solid var(--border);border-radius:5px;background:var(--panel);border-left:3px solid var(--navy2);text-decoration:none;color:inherit;transition:border-left-color .12s ease,background .12s ease;}
+.card:hover{border-left-color:var(--navy);background:#fff;}
+.card-badge{font-size:9.5px;letter-spacing:1.5px;color:var(--dim2);text-transform:uppercase;margin-bottom:5px;font-weight:600;}
+.card-name{font-size:15px;font-weight:700;color:var(--navy);margin-bottom:4px;}
+.card-desc{font-size:11.5px;color:var(--dim);line-height:1.6;}
+.card-go{font-size:10.5px;font-weight:700;letter-spacing:.5px;color:var(--navy);margin-top:8px;display:inline-block;}
+.foot{margin-top:28px;text-align:center;border-top:1px solid var(--border);padding-top:16px;}
+.foot-contact{font-size:10.5px;color:var(--dim2);letter-spacing:.3px;}
 </style>
 </head>
 <body>
+<div class="topbar">
+  <span class="topbar-brand">🧭 FusionOS</span>
+  <a class="topbar-back" href="./index_full.html">← ホームへ</a>
+</div>
 <div class="wrap">
-  <a class="back" href="./index_fusionos.html">← FusionOS 全体へ戻る</a>
   <header class="head">
     <div class="eyebrow">Fusion OS — 02／見る</div>
-    <h1 class="h1"><span class="jp">凪</span> Nagi</h1>
-    <div class="rule"></div>
+    <h1 class="h1">凪 Nagi</h1>
     <div class="tagline">組織を診る「羅針盤」。MQ会計・営業・チーム・スタッフ・心理的安全性を、数字と対話の両面から可視化する。</div>
   </header>
 
