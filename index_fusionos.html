@@ -194,13 +194,22 @@ html,body{
 }
 .card-go{
   font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
-  font-size:10px;
-  letter-spacing:1.5px;
-  color:var(--gold2);
-  margin-top:10px;
+  font-size:12.5px;
+  font-weight:600;
+  letter-spacing:1px;
+  color:#fff;
+  background:var(--navy);
+  padding:7px 16px;
+  border-radius:20px;
+  margin-top:14px;
   display:inline-flex;
   align-items:center;
-  gap:5px;
+  gap:6px;
+  transition:background .18s ease, transform .18s ease;
+}
+.card:hover .card-go{
+  background:var(--gold2);
+  transform:translateX(2px);
 }
 
 /* QR */
@@ -410,7 +419,7 @@ html,body{
     </a>
 
     <!-- 凪 -->
-    <a class="card" href="nagi_system.html" data-url="nagi_system.html">
+    <a class="card" href="nagi_hub.html" data-url="nagi_hub.html">
       <div class="card-body">
         <div class="card-num">02 ／ 見る</div>
         <div class="card-name">
@@ -422,7 +431,7 @@ html,body{
         <span class="card-go">開く →</span>
       </div>
       <div class="qr-wrap">
-        <div class="qr" data-qr="nagi_system.html"></div>
+        <div class="qr" data-qr="nagi_hub.html"></div>
         <span class="qr-cap">Scan</span>
       </div>
     </a>
@@ -486,10 +495,10 @@ html,body{
   <!-- PRICING -->
   <section class="pricing">
     <div class="price-head">
-      <div class="price-eyebrow">Pricing — ミツメル</div>
-      <div class="price-title">伴走の深さで、選べる。</div>
+      <div class="price-eyebrow">Pricing — ミツメルのみ</div>
+      <div class="price-title">ミツメル、伴走の深さで選べる。</div>
       <div class="price-lead">
-        まずは無料で、AIの伴走を。続けたくなったらStandardへ。
+        5つのシステムのうち、単体でご契約いただけるのは現在ミツメルのみです。まずは無料で、AIの伴走を。続けたくなったらStandardへ。
       </div>
     </div>
     <div class="price-grid">
