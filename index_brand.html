@@ -178,27 +178,20 @@ section{
   line-height:1.9;
   color:var(--dim);
 }
-.tool-list{
-  margin-top:14px;
-  padding-left:16px;
-  border-left:2px solid var(--border);
-}
-.tool-item{
-  margin-bottom:10px;
-}
-.tool-item:last-child{margin-bottom:0;}
-.tool-name{
+.system-more{
+  display:block;
+  margin-top:12px;
   font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
-  font-size:11px;
+  font-size:12px;
   letter-spacing:.5px;
   color:var(--gold2);
-  font-weight:600;
+  text-decoration:none;
+  border-bottom:1px solid var(--gold3);
+  padding-bottom:1px;
+  display:inline-block;
+  transition:color .18s ease;
 }
-.tool-desc{
-  font-size:12.5px;
-  line-height:1.7;
-  color:var(--dim2);
-}
+.system-more:hover{color:var(--navy);}
 
 /* ── VALUES ── */
 .value{
@@ -317,14 +310,7 @@ section{
       </div>
       <div class="system-desc sans">
         施設職員の心理的安全性と、利用者の不便を解消するための、凪いだ海のような羅針盤。経営羅針盤（nagi_system）を中心に、MQ会計・チーム評価などのツール群で構成される。
-        <div class="tool-list">
-          <div class="tool-item"><span class="tool-name">nagi_system</span><div class="tool-desc">経営羅針盤。全体の状態を一目で見渡すハブ画面。</div></div>
-          <div class="tool-item"><span class="tool-name">nagi_mq</span><div class="tool-desc">MQ会計。収益構造を数字で可視化。</div></div>
-          <div class="tool-item"><span class="tool-name">nagi_pipe</span><div class="tool-desc">営業パイプライン。案件の進捗を管理。</div></div>
-          <div class="tool-item"><span class="tool-name">nagi_team</span><div class="tool-desc">チーム評価。組織の状態を診る。</div></div>
-          <div class="tool-item"><span class="tool-name">nagi_staff</span><div class="tool-desc">スタッフ性質。個々の職員の傾向を記録。</div></div>
-          <div class="tool-item"><span class="tool-name">nagi_psychsafety</span><div class="tool-desc">心理的安全性診断。組織全体の安全性を測る。</div></div>
-        </div>
+        <a class="system-more sans" href="brand_nagi.html">凪のツールを詳しく見る →</a>
       </div>
     </div>
 
@@ -335,12 +321,7 @@ section{
       </div>
       <div class="system-desc sans">
         サービス内容に応じて負担を可視化し、管理者と従業員がアンサンブルできる育成・管理の仕組み。適性診断（kanade_app）を起点に、勤務表・1on1育成・コンディション把握のツールが連なる。
-        <div class="tool-list">
-          <div class="tool-item"><span class="tool-name">kanade_app</span><div class="tool-desc">エゴグラム・LSRP診断。人材の特性を見極める。</div></div>
-          <div class="tool-item"><span class="tool-name">kanade_shift</span><div class="tool-desc">勤務表自動作成。シフト・契約時間・有給を管理。</div></div>
-          <div class="tool-item"><span class="tool-name">kanade_growth</span><div class="tool-desc">1on1・育成サポート。GROWモデルで育成を記録。</div></div>
-          <div class="tool-item"><span class="tool-name">kanade_pulse</span><div class="tool-desc">パルスサーベイ。日々のコンディションを察知。</div></div>
-        </div>
+        <a class="system-more sans" href="brand_kanade.html">奏のツールを詳しく見る →</a>
       </div>
     </div>
 
@@ -351,10 +332,7 @@ section{
       </div>
       <div class="system-desc sans">
         利用者の課題を起点に支援を組み立て、現場の知見を「強み」として蓄積し、影響力に変えていく仕組み。アセスメント・支援計画（hibiki_v2）と、運用標準書づくり（hibiki_ops）の両輪で構成される。
-        <div class="tool-list">
-          <div class="tool-item"><span class="tool-name">hibiki_v2</span><div class="tool-desc">アセスメント・支援計画。利用者の課題を構造化。</div></div>
-          <div class="tool-item"><span class="tool-name">hibiki_ops</span><div class="tool-desc">運用標準書・在庫管理。現場の運用を仕組み化。</div></div>
-        </div>
+        <a class="system-more sans" href="brand_hibiki.html">響のツールを詳しく見る →</a>
       </div>
     </div>
 
@@ -365,9 +343,7 @@ section{
       </div>
       <div class="system-desc sans">
         点在するサービスと、点在する地域をつなぐ、営業・連携の仕組み。商圏マップ（yuzuru_map）が、営業先の発見から関係づくりまでを支える。
-        <div class="tool-list">
-          <div class="tool-item"><span class="tool-name">yuzuru_map</span><div class="tool-desc">商圏マップ。営業先の発見と関係構築を支える。</div></div>
-        </div>
+        <a class="system-more sans" href="brand_yuzuru.html">弦のツールを詳しく見る →</a>
       </div>
     </div>
 
@@ -381,10 +357,7 @@ section{
         <p style="margin-bottom:.9em;">私はこれまで、何人ものバーンアウトした人を見てきました。何もかもが、動かなくなっていく人を。</p>
         <p style="margin-bottom:.9em;">そこから戻ってこられる人に共通していたのは、AIとの対話——日々の記録でした。</p>
         <p>同じように動けなくなる誰かのために、これは生まれています。日次ジャーナリング（mitsumeru）と、その商品版であるミツメルLiteで届けている。</p>
-        <div class="tool-list">
-          <div class="tool-item"><span class="tool-name">mitsumeru_app</span><div class="tool-desc">本体。日次ジャーナリングと翌日戦略。</div></div>
-          <div class="tool-item"><span class="tool-name">mitsumeru_lite</span><div class="tool-desc">商品版。一般ユーザー向けに機能を絞った版。</div></div>
-        </div>
+        <a class="system-more sans" href="brand_mitsumeru.html">ミツメルのツールを詳しく見る →</a>
       </div>
     </div>
   </section>
