@@ -58,17 +58,18 @@ html,body{background:var(--bg);font-family:'Hiragino Mincho ProN','Yu Mincho','G
   font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
   font-size:11px;letter-spacing:2px;color:var(--gold2);text-transform:uppercase;margin-bottom:14px;
 }
-.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;}
 .card{
-  display:flex;flex-direction:column;gap:4px;padding:14px 16px;border-radius:7px;
+  display:flex;flex-direction:column;gap:5px;padding:20px 20px;border-radius:8px;
   background:var(--bg2);text-decoration:none;color:inherit;
-  border:1px solid var(--border);border-left:4px solid var(--gold3);
+  border:1px solid var(--border);border-left:5px solid var(--gold3);
   transition:transform .14s ease, box-shadow .14s ease, border-left-color .14s ease;
 }
 .card:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(11,25,41,.14);border-left-color:var(--navy);}
-.card-file{font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;font-size:13.5px;font-weight:700;color:var(--navy);}
-.card-desc{font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;font-size:11.5px;color:var(--dim);line-height:1.6;}
-.card-go{font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;font-size:10px;letter-spacing:1px;color:var(--gold2);margin-top:2px;}
+.card-name{font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;font-size:19px;font-weight:700;color:var(--navy);line-height:1.35;}
+.card-file{font-family:monospace;font-size:10.5px;color:var(--dim2);letter-spacing:.2px;}
+.card-desc{font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;font-size:12px;color:var(--dim);line-height:1.6;}
+.card-go{font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;font-size:10.5px;letter-spacing:1px;color:var(--gold2);margin-top:4px;font-weight:600;}
 .empty-hint{font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;font-size:12px;color:var(--dim2);text-align:center;padding:24px 0;}
 
 .foot{margin-top:40px;text-align:center;border-top:1px solid var(--border);padding-top:20px;}
@@ -129,39 +130,120 @@ html,body{background:var(--bg);font-family:'Hiragino Mincho ProN','Yu Mincho','G
   <div class="expand" id="exp-hibiki">
     <div class="expand-title">響 Hibiki — ツール一覧</div>
     <div class="grid">
-      <a class="card" href="./hibiki_v2.html"><div class="card-file">hibiki_v2.html</div><div class="card-desc">利用者支援系（アセスメント・目標・支援計画・読了チェック）</div><div class="card-go">開く →</div></a>
-      <a class="card" href="./hibiki_ops.html"><div class="card-file">hibiki_ops.html</div><div class="card-desc">運用支援系（運用標準書・在庫管理）＋施設向け軽量版（営業提案診断）</div><div class="card-go">開く →</div></a>
+      <a class="card" href="./hibiki_v2.html">
+        <div class="card-name">アセスメント・支援計画</div>
+        <div class="card-file">hibiki_v2.html</div>
+        <div class="card-desc">利用者支援系（目標設定・支援計画・読了チェック）</div>
+        <div class="card-go">開く →</div>
+      </a>
+      <a class="card" href="./hibiki_ops.html">
+        <div class="card-name">運用標準書・在庫管理</div>
+        <div class="card-file">hibiki_ops.html</div>
+        <div class="card-desc">運用支援系＋施設向け軽量版（営業提案診断）</div>
+        <div class="card-go">開く →</div>
+      </a>
+      <a class="card" href="./naze_naze.html">
+        <div class="card-name">なぜなぜ分析</div>
+        <div class="card-file">naze_naze.html</div>
+        <div class="card-desc">根本原因を掘り下げる思考法。アセスメント・支援計画・運用標準づくりの土台になる考え方</div>
+        <div class="card-go">開く →</div>
+      </a>
     </div>
   </div>
 
   <div class="expand" id="exp-nagi">
     <div class="expand-title">凪 Nagi — ツール一覧</div>
     <div class="grid">
-      <a class="card" href="./nagi_system.html"><div class="card-file">nagi_system.html</div><div class="card-desc">経営羅針盤（ハブ・法人全体ダッシュボード）</div><div class="card-go">開く →</div></a>
-      <a class="card" href="./nagi_mq.html"><div class="card-file">nagi_mq.html</div><div class="card-desc">軸A：MQ会計・資金データ</div><div class="card-go">開く →</div></a>
-      <a class="card" href="./nagi_pipe.html"><div class="card-file">nagi_pipe.html</div><div class="card-desc">軸B：営業パイプライン</div><div class="card-go">開く →</div></a>
-      <a class="card" href="./nagi_team.html"><div class="card-file">nagi_team.html</div><div class="card-desc">軸C：チーム評価（RC/LSRP）</div><div class="card-go">開く →</div></a>
-      <a class="card" href="./nagi_staff.html"><div class="card-file">nagi_staff.html</div><div class="card-desc">軸D：スタッフ性質（エゴグラム・LSRP個人データ）</div><div class="card-go">開く →</div></a>
-      <a class="card" href="./nagi_psychsafety.html"><div class="card-file">nagi_psychsafety.html</div><div class="card-desc">軸E：心理的安全性診断</div><div class="card-go">開く →</div></a>
-      <a class="card" href="./ta_scan.html"><div class="card-file">ta_scan.html</div><div class="card-desc">チームアセスメント</div><div class="card-go">開く →</div></a>
-      <a class="card" href="./pm_scan.html"><div class="card-file">pm_scan.html</div><div class="card-desc">PM理論リーダーシップ診断</div><div class="card-go">開く →</div></a>
+      <a class="card" href="./nagi_system.html">
+        <div class="card-name">経営羅針盤</div>
+        <div class="card-file">nagi_system.html</div>
+        <div class="card-desc">ハブ・法人全体ダッシュボード</div>
+        <div class="card-go">開く →</div>
+      </a>
+      <a class="card" href="./nagi_mq.html">
+        <div class="card-name">MQ会計・資金データ</div>
+        <div class="card-file">nagi_mq.html</div>
+        <div class="card-desc">軸A：財務データ入力・AI補足コメント</div>
+        <div class="card-go">開く →</div>
+      </a>
+      <a class="card" href="./nagi_pipe.html">
+        <div class="card-name">営業パイプライン</div>
+        <div class="card-file">nagi_pipe.html</div>
+        <div class="card-desc">軸B：NDB動線・AI補足コメント</div>
+        <div class="card-go">開く →</div>
+      </a>
+      <a class="card" href="./nagi_team.html">
+        <div class="card-name">チーム評価</div>
+        <div class="card-file">nagi_team.html</div>
+        <div class="card-desc">軸C：RC/LSRPサマリー・AI補足コメント</div>
+        <div class="card-go">開く →</div>
+      </a>
+      <a class="card" href="./nagi_staff.html">
+        <div class="card-name">スタッフ性質</div>
+        <div class="card-file">nagi_staff.html</div>
+        <div class="card-desc">軸D：エゴグラム・LSRP個人データ</div>
+        <div class="card-go">開く →</div>
+      </a>
+      <a class="card" href="./nagi_psychsafety.html">
+        <div class="card-name">心理的安全性診断</div>
+        <div class="card-file">nagi_psychsafety.html</div>
+        <div class="card-desc">軸E：エドモンドソン7問・クラーク4段階判定</div>
+        <div class="card-go">開く →</div>
+      </a>
+      <a class="card" href="./ta_scan.html">
+        <div class="card-name">チームアセスメント</div>
+        <div class="card-file">ta_scan.html</div>
+        <div class="card-desc">TAマップ診断</div>
+        <div class="card-go">開く →</div>
+      </a>
+      <a class="card" href="./pm_scan.html">
+        <div class="card-name">PM理論診断</div>
+        <div class="card-file">pm_scan.html</div>
+        <div class="card-desc">PM理論リーダーシップ診断</div>
+        <div class="card-go">開く →</div>
+      </a>
     </div>
   </div>
 
   <div class="expand" id="exp-kanade">
     <div class="expand-title">奏 Kanade — ツール一覧</div>
     <div class="grid">
-      <a class="card" href="./kanade_app.html"><div class="card-file">kanade_app.html</div><div class="card-desc">エゴグラム・LSRP診断（適材適所）</div><div class="card-go">開く →</div></a>
-      <a class="card" href="./kanade_shift.html"><div class="card-file">kanade_shift.html</div><div class="card-desc">勤務表自動作成（シフト・契約時間・有給・警告一覧）</div><div class="card-go">開く →</div></a>
-      <a class="card" href="./kanade_growth.html"><div class="card-file">kanade_growth.html</div><div class="card-desc">1on1・育成サポート（GROW・OJT・SBI）</div><div class="card-go">開く →</div></a>
-      <a class="card" href="./kanade_pulse.html"><div class="card-file">kanade_pulse.html</div><div class="card-desc">パルスサーベイ・離職アラート</div><div class="card-go">開く →</div></a>
+      <a class="card" href="./kanade_app.html">
+        <div class="card-name">エゴグラム・LSRP診断</div>
+        <div class="card-file">kanade_app.html</div>
+        <div class="card-desc">適材適所・チーム配置設計</div>
+        <div class="card-go">開く →</div>
+      </a>
+      <a class="card" href="./kanade_shift.html">
+        <div class="card-name">勤務表自動作成</div>
+        <div class="card-file">kanade_shift.html</div>
+        <div class="card-desc">シフト・契約時間・有給・警告一覧</div>
+        <div class="card-go">開く →</div>
+      </a>
+      <a class="card" href="./kanade_growth.html">
+        <div class="card-name">1on1・育成サポート</div>
+        <div class="card-file">kanade_growth.html</div>
+        <div class="card-desc">GROWモデル・OJT計画・SBIフィードバック</div>
+        <div class="card-go">開く →</div>
+      </a>
+      <a class="card" href="./kanade_pulse.html">
+        <div class="card-name">パルスサーベイ</div>
+        <div class="card-file">kanade_pulse.html</div>
+        <div class="card-desc">離職アラート・定期サーベイ</div>
+        <div class="card-go">開く →</div>
+      </a>
     </div>
   </div>
 
   <div class="expand" id="exp-yuzuru">
     <div class="expand-title">弦 Yuzuru — ツール一覧</div>
     <div class="grid">
-      <a class="card" href="./yuzuru_map.html"><div class="card-file">yuzuru_map.html</div><div class="card-desc">商圏マップ（東海3県・実データ・営業リスト）</div><div class="card-go">開く →</div></a>
+      <a class="card" href="./yuzuru_map.html">
+        <div class="card-name">商圏マップ</div>
+        <div class="card-file">yuzuru_map.html</div>
+        <div class="card-desc">東海3県・実データ・営業リスト</div>
+        <div class="card-go">開く →</div>
+      </a>
     </div>
     <div class="empty-hint">※ 現時点で弦は本ツール1本のみです</div>
   </div>
@@ -169,17 +251,30 @@ html,body{background:var(--bg);font-family:'Hiragino Mincho ProN','Yu Mincho','G
   <div class="expand" id="exp-mitsumeru">
     <div class="expand-title">ミツメル Mitsumeru — ツール一覧</div>
     <div class="grid">
-      <a class="card" href="./mitsumeru_app.html"><div class="card-file">mitsumeru_app.html</div><div class="card-desc">本体（日次ジャーナリング・翌日戦略）</div><div class="card-go">開く →</div></a>
-      <a class="card" href="./mitsumeru_lite.html"><div class="card-file">mitsumeru_lite.html</div><div class="card-desc">商品版（ページ内の「⚡ 3min」ボタンから3minエマージェンシーモードを起動）</div><div class="card-go">開く →</div></a>
-      <a class="card" href="./mitsumeru_private.html"><div class="card-file">mitsumeru_private.html</div><div class="card-desc">柴山靖章専用版</div><div class="card-go">開く →</div></a>
-    </div>
-  </div>
-
-  <!-- なぜなぜ分析：システム横断・単体ツールのため常時表示の別枠に -->
-  <div class="expand open" style="margin-top:22px;">
-    <div class="expand-title">その他</div>
-    <div class="grid">
-      <a class="card" href="./naze_naze.html"><div class="card-file">naze_naze.html</div><div class="card-desc">なぜなぜ分析</div><div class="card-go">開く →</div></a>
+      <a class="card" href="./mitsumeru_app.html">
+        <div class="card-name">日次ジャーナリング・翌日戦略</div>
+        <div class="card-file">mitsumeru_app.html</div>
+        <div class="card-desc">本体</div>
+        <div class="card-go">開く →</div>
+      </a>
+      <a class="card" href="./mitsumeru_lite.html">
+        <div class="card-name">ミツメル Lite</div>
+        <div class="card-file">mitsumeru_lite.html</div>
+        <div class="card-desc">商品版（一般ユーザー向け）</div>
+        <div class="card-go">開く →</div>
+      </a>
+      <a class="card" href="./mitsumeru_lite.html">
+        <div class="card-name">3minエマージェンシー</div>
+        <div class="card-file">mitsumeru_lite.html（⚡3minモード）</div>
+        <div class="card-desc">3分でできる緊急時の心の応急処置</div>
+        <div class="card-go">開く →</div>
+      </a>
+      <a class="card" href="./mitsumeru_private.html">
+        <div class="card-name">柴山靖章専用版</div>
+        <div class="card-file">mitsumeru_private.html</div>
+        <div class="card-desc">柴山さん個人のPRIVATE版</div>
+        <div class="card-go">開く →</div>
+      </a>
     </div>
   </div>
 
