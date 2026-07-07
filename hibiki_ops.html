@@ -87,40 +87,7 @@ select option{background:var(--card);}
 .person-ref-chip{display:inline-flex;align-items:center;gap:5px;background:rgba(129,199,132,.15);border:1px solid var(--accent);color:var(--accent);border-radius:14px;padding:2px 10px;font-size:.72rem;margin:2px 4px 2px 0;}
 .person-ref-chip button{background:none;border:none;color:var(--accent);cursor:pointer;font-size:.7rem;}
 
-/* ── 品目管理・ABC分析（C-1） ── */
-.item-table{width:100%;border-collapse:collapse;font-size:.8rem;margin-top:10px;}
-.item-table th{background:var(--surface);color:var(--sub);text-align:left;padding:7px 8px;border-bottom:1px solid var(--border);font-weight:700;font-size:.72rem;}
-.item-table td{padding:7px 8px;border-bottom:1px solid var(--border);}
-.abc-badge{display:inline-block;font-size:.7rem;font-weight:700;padding:2px 9px;border-radius:10px;}
-.abc-a{background:rgba(239,83,80,.2);color:#ef9a9a;}
-.abc-b{background:rgba(255,183,77,.2);color:var(--accent3);}
-.abc-c{background:rgba(100,181,246,.2);color:#64b5f6;}
 
-/* ── 在庫管理：2ビン方式（C-2）・カンバンラベル（C-4） ── */
-.stock-alert{background:rgba(239,83,80,.12);border:1px solid var(--danger);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:.82rem;color:#ef9a9a;}
-.stock-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:10px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
-.stock-card-name{font-weight:700;font-size:.85rem;flex:1;min-width:140px;}
-.stock-card-meta{font-size:.7rem;color:var(--sub);}
-.bin-badge{display:inline-block;font-size:.72rem;font-weight:700;padding:3px 10px;border-radius:12px;}
-.bin-a{background:rgba(100,181,246,.2);color:#64b5f6;}
-.bin-b{background:rgba(206,147,216,.2);color:var(--accent2);}
-.bin-order-needed{background:rgba(239,83,80,.25);color:#ef9a9a;}
-.stock-actions{display:flex;gap:6px;flex-wrap:wrap;}
-.stock-actions button{font-size:.72rem;padding:5px 10px;}
-
-#kanbanPrintSheet{display:none;background:#fff;color:#222;font-family:'Hiragino Kaku Gothic Pro','Meiryo',sans-serif;padding:16px;}
-#kanbanPrintSheet.visible{display:block;}
-.kanban-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
-.kanban-label{border:3px solid #333;border-radius:8px;padding:16px;page-break-inside:avoid;}
-.kanban-label-title{font-size:1.3rem;font-weight:900;margin-bottom:10px;border-bottom:2px solid #333;padding-bottom:6px;}
-.kanban-label-row{font-size:.9rem;margin-bottom:6px;}
-.kanban-label-row b{display:inline-block;width:90px;color:#555;}
-.kanban-label-footer{margin-top:8px;font-size:.7rem;color:#888;text-align:right;}
-
-@media print{
-  body > *:not(#kanbanPrintSheet){display:none !important;}
-  #kanbanPrintSheet{display:block !important;padding:0;}
-}
 </style>
 </head>
 <body>
@@ -130,7 +97,7 @@ select option{background:var(--card);}
   <div class="gate-box">
     <div class="gate-title">⚙️ 響② 運用支援系 ご利用前の確認</div>
     <div class="gate-body">
-      本ツールでは、施設単位の運用標準書・品目在庫データを入力・管理します。<br><br>
+      本ツールでは、施設単位の運用標準書を入力・管理します（品目・在庫管理は<a href="./hibiki_inventory.html" target="_blank" style="color:var(--accent);">hibiki_inventory.html</a>に移行しました）。<br><br>
       <strong>入力したデータについて：</strong><br>
       ・お使いの端末（ブラウザ）内にのみ保存されます<br>
       ・外部サーバーには送信されません<br>
@@ -169,15 +136,13 @@ select option{background:var(--card);}
 <div class="phase" id="phaseEdit">
   <nav class="tab-nav" id="tabNav">
     <button class="tab-btn active" onclick="showTab('standards')" id="tabBtn-standards">📋 運用標準書</button>
-    <button class="tab-btn" onclick="showTab('items')" id="tabBtn-items">📦 品目管理・ABC分析</button>
-    <button class="tab-btn" onclick="showTab('stock')" id="tabBtn-stock">🔄 在庫管理（2ビン・カンバン）</button>
     <button class="tab-btn" onclick="showTab('sales')" id="tabBtn-sales">🎯 営業提案診断（施設向け軽量版）</button>
   </nav>
 
   <!-- 運用標準書（B-1） -->
   <div class="tab-panel active" id="tab-standards">
     <div class="module-title">📋 運用標準書</div>
-    <div class="module-desc">目的・運用時期・完了ゴール・運用手順書・留意事項・参考文献の6項目で作成します。個別の利用者ルールがあれば参照ポインタを追加できます。</div>
+    <div class="module-desc">目的・運用時期・完了ゴール・運用手順書・留意事項・参考文献の6項目で作成します。個別の利用者ルールがあれば参照ポインタを追加できます。品目・在庫管理（品目登録・ABC分析・2ビン方式・カンバンラベル）は<a href="./hibiki_inventory.html" target="_blank" style="color:var(--accent);">hibiki_inventory.html</a>に移行しました。</div>
     <button class="hdr-btn" style="background:rgba(129,199,132,.15);border-color:var(--accent);color:var(--accent);margin-bottom:14px;" onclick="showStandardForm()">＋ 新規標準書作成</button>
 
     <div id="standardForm" style="display:none;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:16px;">
@@ -205,77 +170,6 @@ select option{background:var(--card);}
     </div>
 
     <div id="standardList"></div>
-  </div>
-
-  <!-- 品目管理・ABC分析（C-1） -->
-  <div class="tab-panel" id="tab-items">
-    <div class="module-title">📦 品目管理・ABC分析</div>
-    <div class="module-desc">品目を登録すると、年間コスト・使用頻度・利用者安全リスクからABCランクを自動判定します（Aランク＝発注点計算方式向き、Cランク＝2ビン方式向き）。</div>
-    <button class="hdr-btn" style="background:rgba(129,199,132,.15);border-color:var(--accent);color:var(--accent);margin-bottom:14px;" onclick="showItemForm()">＋ 品目を登録</button>
-
-    <div id="itemForm" style="display:none;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:16px;">
-      <div class="form-row">
-        <div class="form-group"><label>品目名</label><input type="text" id="it-name" placeholder="例：紙おむつ（Mサイズ）"></div>
-        <div class="form-group" style="flex:0 0 140px"><label>カテゴリ</label>
-          <select id="it-category">
-            <option value="食材">食材</option>
-            <option value="日用品">日用品</option>
-            <option value="衛生用品">衛生用品</option>
-            <option value="その他">その他</option>
-          </select>
-        </div>
-        <div class="form-group" style="flex:0 0 100px"><label>単位</label><input type="text" id="it-unit" placeholder="例：個・箱"></div>
-      </div>
-      <div class="form-row">
-        <div class="form-group"><label>使用頻度</label>
-          <select id="it-usage">
-            <option value="毎日">毎日</option>
-            <option value="週数回">週数回</option>
-            <option value="週1回">週1回</option>
-            <option value="月数回">月数回</option>
-            <option value="安定供給">安定供給</option>
-          </select>
-        </div>
-        <div class="form-group"><label>日次消費量（目安）</label><input type="number" id="it-daily" placeholder="例：5" min="0" step="0.1"></div>
-        <div class="form-group"><label>リードタイム（日）</label><input type="number" id="it-leadtime" placeholder="例：3" min="0"></div>
-      </div>
-      <div class="form-row">
-        <div class="form-group"><label>発注先</label><input type="text" id="it-supplier" placeholder="例：〇〇卸業者"></div>
-        <div class="form-group"><label>単価（円）</label><input type="number" id="it-price" placeholder="例：120" min="0" step="1"></div>
-        <div class="form-group" style="flex:0 0 120px"><label>利用者安全リスク</label>
-          <select id="it-risk">
-            <option value="高">高</option>
-            <option value="中">中</option>
-            <option value="低">低</option>
-          </select>
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group"><label>発注ロット数</label><input type="number" id="it-lotsize" placeholder="例：1" min="0"></div>
-        <div class="form-group"><label>安全在庫数</label><input type="number" id="it-safetystock" placeholder="例：10" min="0"></div>
-      </div>
-      <div style="display:flex;gap:8px;margin-top:10px;">
-        <button class="save-btn" onclick="submitItemForm()">登録する</button>
-        <button class="hdr-btn" onclick="hideItemForm()">キャンセル</button>
-      </div>
-    </div>
-
-    <button class="hdr-btn" onclick="exportItemsCSV()">📥 品目リストをCSVで出力</button>
-    <div id="itemTableWrap"></div>
-  </div>
-
-  <!-- 在庫管理：2ビン方式（C-2）・カンバンラベル発行（C-4） -->
-  <div class="tab-panel" id="tab-stock">
-    <div class="module-title">🔄 在庫管理（2ビン方式・カンバンラベル）</div>
-    <div class="module-desc">品目管理タブで登録した品目を対象に、2ビン方式（目視による在庫管理・計算式より目視を主軸）とカンバンラベル発行を行います。特にCランク品（安定供給・低単価消耗品）向けです。</div>
-
-    <div id="stockOrderAlert"></div>
-
-    <div style="display:flex;gap:8px;margin-bottom:14px;">
-      <button class="hdr-btn" onclick="printAllKanbanLabels()">🏷️ 全品目のカンバンラベルをまとめて発行</button>
-    </div>
-
-    <div id="stockList"></div>
   </div>
 
   <!-- 営業提案診断（F-1〜F-3・響・施設向け軽量版） -->
@@ -307,9 +201,6 @@ select option{background:var(--card);}
   </div>
 </div>
 
-<!-- カンバンラベル印刷専用シート -->
-<div id="kanbanPrintSheet"></div>
-
 <script>
 // ═══════════════════════════════════════════════
 //  部品0：土台・データ管理（施設単位）
@@ -336,7 +227,7 @@ function newFacilityData(name) {
   return {
     id: 'fac' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
     meta: { name: name || '新しい施設', createdAt: new Date().toISOString(), updatedAt: '' },
-    modules: { standards: [], items: [] },
+    modules: { standards: [] },
   };
 }
 
@@ -404,8 +295,6 @@ function openFacility(id) {
   showPhase('phaseEdit');
   showTab('standards');
   renderStandards();
-  renderItems();
-  renderStock();
   loadSalesForm();
 }
 
@@ -603,306 +492,6 @@ function advance5sStage(id) {
   s.phase5sHistory.push({ phase: s.phase5s, at: new Date().toISOString() });
   saveCurrentFacility();
   renderStandards();
-}
-
-// ═══════════════════════════════════════════════
-//  C-1：品目登録・ABC分析
-// ═══════════════════════════════════════════════
-function showItemForm() {
-  ['it-name','it-unit','it-daily','it-leadtime','it-supplier','it-price','it-lotsize','it-safetystock'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('it-category').value = '食材';
-  document.getElementById('it-usage').value = '毎日';
-  document.getElementById('it-risk').value = '中';
-  document.getElementById('itemForm').style.display = '';
-}
-function hideItemForm() {
-  document.getElementById('itemForm').style.display = 'none';
-}
-function submitItemForm() {
-  const itemName = document.getElementById('it-name').value.trim();
-  if (!itemName) { alert('品目名を入力してください。'); return; }
-  currentFacility.modules.items = currentFacility.modules.items || [];
-  const entry = {
-    itemId: 'item' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-    itemName,
-    category: document.getElementById('it-category').value,
-    unit: document.getElementById('it-unit').value.trim(),
-    usageFrequency: document.getElementById('it-usage').value,
-    dailyConsumption: parseFloat(document.getElementById('it-daily').value) || 0,
-    leadTime: parseFloat(document.getElementById('it-leadtime').value) || 0,
-    supplier: document.getElementById('it-supplier').value.trim(),
-    unitPrice: parseFloat(document.getElementById('it-price').value) || 0,
-    riskLevel: document.getElementById('it-risk').value,
-    lotSize: parseFloat(document.getElementById('it-lotsize').value) || 0,
-    safetyStock: parseFloat(document.getElementById('it-safetystock').value) || 0,
-    createdAt: new Date().toISOString(),
-    twoBinEnabled: false,
-    activeBin: 'A',
-    needsOrder: false,
-    binSwitchedAt: null,
-    binCapacity: 0,
-    kanbanCode: '',
-    kanbanPhotoDataUrl: '',
-  };
-  currentFacility.modules.items.push(entry);
-  saveCurrentFacility();
-  hideItemForm();
-  renderItems();
-  renderStock();
-}
-function deleteItem(itemId) {
-  if (!confirm('この品目を削除しますか？')) return;
-  currentFacility.modules.items = (currentFacility.modules.items || []).filter(x => x.itemId !== itemId);
-  saveCurrentFacility();
-  renderItems();
-  renderStock();
-}
-
-// ABC分析：年間コスト（日次消費量×365×単価）のパレート順位＋リスク・頻度による上書き
-function computeAbcRanks(items) {
-  const withCost = items.map(it => ({
-    ...it,
-    annualCost: (parseFloat(it.dailyConsumption) || 0) * 365 * (parseFloat(it.unitPrice) || 0),
-  }));
-  const sorted = [...withCost].sort((a, b) => b.annualCost - a.annualCost);
-  const n = sorted.length;
-  const rankByCost = {};
-  sorted.forEach((it, i) => {
-    const pct = n ? (i + 1) / n : 1;
-    rankByCost[it.itemId] = pct <= 0.2 ? 'A' : (pct <= 0.5 ? 'B' : 'C');
-  });
-  return withCost.map(it => {
-    let rank = rankByCost[it.itemId] || 'C';
-    if (it.riskLevel === '高' && it.usageFrequency === '毎日') rank = 'A';
-    else if (rank !== 'A' && it.riskLevel === '中' && (it.usageFrequency === '毎日' || it.usageFrequency === '週数回')) rank = 'B';
-    return { ...it, rank };
-  });
-}
-
-function renderItems() {
-  const wrap = document.getElementById('itemTableWrap');
-  const items = currentFacility.modules.items || [];
-  if (!items.length) {
-    wrap.innerHTML = '<div style="font-size:.8rem;color:var(--sub);margin-top:10px;">まだ品目が登録されていません。</div>';
-    return;
-  }
-  const ranked = computeAbcRanks(items).sort((a, b) => (a.rank > b.rank ? 1 : a.rank < b.rank ? -1 : b.annualCost - a.annualCost));
-  const badgeCls = { A: 'abc-a', B: 'abc-b', C: 'abc-c' };
-  wrap.innerHTML = `<table class="item-table">
-    <tr><th>品目名</th><th>カテゴリ</th><th>使用頻度</th><th>リスク</th><th>年間コスト</th><th>ABCランク</th><th></th></tr>
-    ${ranked.map(it => `<tr>
-      <td>${esc(it.itemName)}</td>
-      <td>${esc(it.category)}</td>
-      <td>${esc(it.usageFrequency)}</td>
-      <td>${esc(it.riskLevel)}</td>
-      <td>${Math.round(it.annualCost).toLocaleString()}円</td>
-      <td><span class="abc-badge ${badgeCls[it.rank]}">${it.rank}</span></td>
-      <td><button class="del-btn" onclick="deleteItem('${it.itemId}')">✕</button></td>
-    </tr>`).join('')}
-  </table>`;
-}
-
-function exportItemsCSV() {
-  const items = currentFacility.modules.items || [];
-  const ranked = computeAbcRanks(items);
-  const cols = ['品目名','カテゴリ','単位','使用頻度','日次消費量','リードタイム(日)','発注先','単価(円)','年間コスト(円)','リスク','ABCランク','発注ロット数','安全在庫数'];
-  const rows = ranked.map(it => [
-    it.itemName, it.category, it.unit, it.usageFrequency, it.dailyConsumption, it.leadTime,
-    it.supplier, it.unitPrice, Math.round(it.annualCost), it.riskLevel, it.rank, it.lotSize, it.safetyStock,
-  ].map(v => `"${String(v ?? '').replace(/"/g,'""')}"`).join(','));
-  const csv = '﻿' + cols.join(',') + '\n' + rows.join('\n');
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8'}));
-  a.download = `響②品目リスト_${currentFacility.meta.name}_${new Date().toISOString().slice(0,10).replace(/-/g,'')}.csv`;
-  a.click();
-}
-
-// ═══════════════════════════════════════════════
-//  C-2：2ビン方式（目視在庫管理）
-// ═══════════════════════════════════════════════
-function getItemById(itemId) {
-  return (currentFacility.modules.items || []).find(it => it.itemId === itemId) || null;
-}
-
-function toggleTwoBin(itemId, enabled) {
-  const item = getItemById(itemId);
-  if (!item) return;
-  item.twoBinEnabled = enabled;
-  if (enabled) {
-    item.activeBin = item.activeBin || 'A';
-    item.needsOrder = item.needsOrder || false;
-  }
-  saveCurrentFacility();
-  renderStock();
-}
-
-// ビン容量（目安値）：複雑な自動計算式は使わず目視運用を主軸とする設計のため、
-// 「リードタイム中消費量」を参考値として自動計算する補助ボタンのみ提供し、手動での上書きも可能にする
-function updateBinCapacity(itemId, value) {
-  const item = getItemById(itemId);
-  if (!item) return;
-  item.binCapacity = parseFloat(value) || 0;
-  saveCurrentFacility();
-}
-function autoCalcBinCapacity(itemId) {
-  const item = getItemById(itemId);
-  if (!item) return;
-  item.binCapacity = Math.ceil((parseFloat(item.dailyConsumption) || 0) * (parseFloat(item.leadTime) || 0));
-  saveCurrentFacility();
-  renderStock();
-}
-
-// 使用中のビンが空になったら押す＝ビン切替＋発注要フラグを立てる（計算式より目視を主軸とする設計）
-function switchBin(itemId) {
-  const item = getItemById(itemId);
-  if (!item) return;
-  item.activeBin = item.activeBin === 'A' ? 'B' : 'A';
-  item.needsOrder = true;
-  item.binSwitchedAt = new Date().toISOString();
-  saveCurrentFacility();
-  renderStock();
-}
-
-// 発注が届いてビンを補充完了したら押す＝発注要フラグを解除
-function completeOrder(itemId) {
-  const item = getItemById(itemId);
-  if (!item) return;
-  item.needsOrder = false;
-  saveCurrentFacility();
-  renderStock();
-}
-
-// 発注コード（QR/バーコード代替の手動入力欄。実際のQR/バーコード生成は行わず、枠+手動入力欄で足りるとする設計）
-function updateKanbanCode(itemId, value) {
-  const item = getItemById(itemId);
-  if (!item) return;
-  item.kanbanCode = value.trim();
-  saveCurrentFacility();
-}
-
-// ラベル用写真添付欄（任意）：ファイルをdata URLとして読み込み保存
-function uploadKanbanPhoto(itemId, inputEl) {
-  const file = inputEl.files && inputEl.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = () => {
-    const item = getItemById(itemId);
-    if (!item) return;
-    item.kanbanPhotoDataUrl = reader.result;
-    saveCurrentFacility();
-    renderStock();
-  };
-  reader.readAsDataURL(file);
-}
-function clearKanbanPhoto(itemId) {
-  const item = getItemById(itemId);
-  if (!item) return;
-  item.kanbanPhotoDataUrl = '';
-  saveCurrentFacility();
-  renderStock();
-}
-
-function renderStock() {
-  const items = currentFacility.modules.items || [];
-  const alertBox = document.getElementById('stockOrderAlert');
-  const needsOrderItems = items.filter(it => it.twoBinEnabled && it.needsOrder);
-  if (needsOrderItems.length) {
-    alertBox.innerHTML = `<div class="stock-alert">🚨 発注が必要な品目：${needsOrderItems.map(it => esc(it.itemName)).join('、')}</div>`;
-  } else {
-    alertBox.innerHTML = '';
-  }
-
-  const list = document.getElementById('stockList');
-  if (!items.length) {
-    list.innerHTML = '<div style="font-size:.8rem;color:var(--sub);">品目管理タブでまず品目を登録してください。</div>';
-    return;
-  }
-  list.innerHTML = items.map(it => {
-    const binBadge = it.twoBinEnabled
-      ? (it.needsOrder
-          ? `<span class="bin-badge bin-order-needed">🚨発注要（ビン${it.activeBin}使用中）</span>`
-          : `<span class="bin-badge ${it.activeBin === 'A' ? 'bin-a' : 'bin-b'}">ビン${it.activeBin}使用中</span>`)
-      : '<span class="stock-card-meta">2ビン管理：未使用</span>';
-    const photoThumb = it.kanbanPhotoDataUrl
-      ? `<img src="${it.kanbanPhotoDataUrl}" style="width:32px;height:32px;object-fit:cover;border-radius:4px;border:1px solid var(--border);">`
-      : '';
-    return `<div class="stock-card" style="align-items:flex-start;flex-direction:column;">
-      <div style="display:flex;align-items:center;gap:12px;width:100%;flex-wrap:wrap;">
-        <div class="stock-card-name">${esc(it.itemName)}<div class="stock-card-meta">${esc(it.category)}／発注先：${esc(it.supplier || '—')}</div></div>
-        ${binBadge}
-      </div>
-      <div class="stock-actions" style="margin-top:8px;">
-        <label style="font-size:.72rem;color:var(--sub);display:flex;align-items:center;gap:4px;">
-          <input type="checkbox" ${it.twoBinEnabled ? 'checked' : ''} onchange="toggleTwoBin('${it.itemId}', this.checked)"> 2ビン運用
-        </label>
-        ${it.twoBinEnabled ? `
-          <span style="font-size:.72rem;color:var(--sub);display:flex;align-items:center;gap:4px;">
-            ビン容量（目安）：<input type="number" min="0" step="1" value="${it.binCapacity || 0}" style="width:70px;padding:3px 6px;" onchange="updateBinCapacity('${it.itemId}', this.value)">${esc(it.unit || '')}
-            <button class="hdr-btn" style="padding:3px 8px;" onclick="autoCalcBinCapacity('${it.itemId}')">自動計算（リードタイム×日次消費量）</button>
-          </span>
-          <button class="hdr-btn" onclick="switchBin('${it.itemId}')">ビンが空になった（切替）</button>
-        ` : ''}
-        ${it.twoBinEnabled && it.needsOrder ? `<button class="hdr-btn" style="border-color:var(--accent);color:var(--accent);" onclick="completeOrder('${it.itemId}')">発注完了（補充済み）</button>` : ''}
-      </div>
-      <div class="stock-actions" style="margin-top:8px;border-top:1px solid var(--border);padding-top:8px;width:100%;">
-        <span style="font-size:.72rem;color:var(--sub);display:flex;align-items:center;gap:4px;">
-          発注コード（QR/バーコード代替）：<input type="text" value="${esc(it.kanbanCode || '')}" placeholder="例：手入力の管理番号" style="width:140px;padding:3px 6px;" onchange="updateKanbanCode('${it.itemId}', this.value)">
-        </span>
-        <span style="font-size:.72rem;color:var(--sub);display:flex;align-items:center;gap:4px;">
-          ラベル用写真：${photoThumb}<input type="file" accept="image/*" style="width:120px;font-size:.68rem;" onchange="uploadKanbanPhoto('${it.itemId}', this)">
-          ${it.kanbanPhotoDataUrl ? `<button class="hdr-btn" style="padding:3px 8px;" onclick="clearKanbanPhoto('${it.itemId}')">削除</button>` : ''}
-        </span>
-        <button class="hdr-btn" onclick="printKanbanLabel('${it.itemId}')">🏷️ カンバンラベル発行</button>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-// ═══════════════════════════════════════════════
-//  C-4：カンバンラベル発行
-// ═══════════════════════════════════════════════
-function buildKanbanLabelHtml(it) {
-  const today = fmtDate(new Date().toISOString());
-  const photoBox = it.kanbanPhotoDataUrl
-    ? `<img src="${it.kanbanPhotoDataUrl}" style="width:100%;max-height:110px;object-fit:cover;border:1px solid #999;border-radius:4px;">`
-    : `<div style="border:1px dashed #999;border-radius:4px;height:70px;display:flex;align-items:center;justify-content:center;color:#999;font-size:.75rem;">写真：未添付</div>`;
-  const codeBox = it.kanbanCode
-    ? `<div style="border:2px solid #333;border-radius:4px;padding:8px;text-align:center;font-size:1rem;font-weight:700;letter-spacing:.05em;">${esc(it.kanbanCode)}</div>`
-    : `<div style="border:1px dashed #999;border-radius:4px;padding:8px;text-align:center;color:#999;font-size:.75rem;">QR/バーコード：未設定（手動記入欄）</div>`;
-  return `<div class="kanban-label">
-    <div class="kanban-label-title">${esc(it.itemName)}</div>
-    <div class="kanban-label-row"><b>カテゴリ</b>${esc(it.category)}</div>
-    <div class="kanban-label-row"><b>発注ロット数</b>${esc(it.lotSize)}${esc(it.unit || '')}</div>
-    <div class="kanban-label-row"><b>安全在庫数</b>${esc(it.safetyStock)}${esc(it.unit || '')}</div>
-    <div class="kanban-label-row"><b>発注先</b>${esc(it.supplier || '—')}</div>
-    <div class="kanban-label-row"><b>リードタイム</b>${esc(it.leadTime)}日</div>
-    ${it.twoBinEnabled ? `<div class="kanban-label-row"><b>ビン容量目安</b>${esc(it.binCapacity || 0)}${esc(it.unit || '')}</div>` : ''}
-    <div class="kanban-label-row"><b>写真添付欄</b></div>
-    ${photoBox}
-    <div class="kanban-label-row" style="margin-top:8px;"><b>発注報告コード</b></div>
-    ${codeBox}
-    <div class="kanban-label-footer">響②運用支援系 ／ ${esc(currentFacility.meta.name)} ／ 発行日：${today}</div>
-  </div>`;
-}
-
-function printKanbanLabel(itemId) {
-  const item = getItemById(itemId);
-  if (!item) return;
-  const sheet = document.getElementById('kanbanPrintSheet');
-  sheet.innerHTML = `<div class="kanban-grid">${buildKanbanLabelHtml(item)}</div>`;
-  sheet.classList.add('visible');
-  window.print();
-  sheet.classList.remove('visible');
-}
-
-function printAllKanbanLabels() {
-  const items = currentFacility.modules.items || [];
-  if (!items.length) { alert('品目が登録されていません。'); return; }
-  const sheet = document.getElementById('kanbanPrintSheet');
-  sheet.innerHTML = `<div class="kanban-grid">${items.map(buildKanbanLabelHtml).join('')}</div>`;
-  sheet.classList.add('visible');
-  window.print();
-  sheet.classList.remove('visible');
 }
 
 // ═══════════════════════════════════════════════

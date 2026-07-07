@@ -293,10 +293,8 @@ select option{background:var(--card);}
     <button class="tab-btn" onclick="showTab('attributes')" id="tabBtn-attributes">📎 その他属性</button>
     <button class="tab-btn" onclick="showTab('icf')" id="tabBtn-icf">🧩 ICF</button>
     <button class="tab-btn" onclick="showTab('iceberg')" id="tabBtn-iceberg">🏔 氷山</button>
-    <button class="tab-btn" onclick="showTab('procedure')" id="tabBtn-procedure">🗣 支援手順書</button>
-    <button class="tab-btn" onclick="showTab('goal')" id="tabBtn-goal">🎯 課題・目標</button>
-    <button class="tab-btn" onclick="showTab('plan')" id="tabBtn-plan">📋 支援計画</button>
     <button class="tab-btn" onclick="showTab('output')" id="tabBtn-output">📄 出力・印刷</button>
+    <span style="align-self:center;font-size:.72rem;color:var(--sub);white-space:nowrap;padding:0 8px;">支援手順書→<a href="./hibiki_procedure.html" target="_blank" style="color:var(--accent);">hibiki_procedure.html</a>／支援計画→<a href="./hibiki_plan.html" target="_blank" style="color:var(--accent);">hibiki_plan.html</a></span>
   </nav>
 
   <!-- 基本情報 -->
@@ -604,128 +602,6 @@ select option{background:var(--card);}
     </div>
   </div>
 
-  <!-- 支援手順書（A-1） -->
-  <div class="tab-panel" id="tab-procedure">
-    <div class="module-title">🗣 支援手順書</div>
-    <div class="module-desc">ICFの🔴リスク項目から、ほうれんそうメモ形式（概要20字要約→キーワード3〜5組→結論1点）で支援手順書を生成します。1つのリスク項目につき1件生成できます。</div>
-    <div id="procedureCandidates"></div>
-    <div style="margin-top:18px;">
-      <div class="attr-section-title" style="border-bottom:1px solid var(--border);padding-bottom:6px;margin-bottom:10px;">📑 生成済みの支援手順書</div>
-      <div id="procedureList"></div>
-    </div>
-  </div>
-
-  <!-- 課題・目標 -->
-  <div class="tab-panel" id="tab-goal">
-    <div class="module-title">🎯 課題・目標設定</div>
-    <div class="module-desc">氷山・ICFの分析をもとに課題を抽出し、長期目標・短期目標を設定します。AIは候補を提案するだけです。最終判断はあなたが行ってください。</div>
-    <button class="ai-btn" id="goalAiBtn" onclick="generateGoals()">✨ AIで課題候補を生成</button>
-    <span class="ai-status" id="goalStatus"></span>
-    <div id="goalCandidates" style="margin-top:14px;"></div>
-    <div id="goalForm" style="display:none;margin-top:16px;">
-      <div class="attr-section">
-        <div class="attr-section-title">📌 選択した課題（編集可）</div>
-        <div class="form-group">
-          <label>優先課題（支援に際しての課題）</label>
-          <textarea id="g-issue" placeholder="課題を記入してください" style="min-height:80px;"></textarea>
-        </div>
-      </div>
-      <div class="attr-section">
-        <div class="attr-section-title">🏁 目標設定</div>
-        <div class="form-group">
-          <label>長期目標（6ヶ月〜1年）</label>
-          <textarea id="g-long" placeholder="例：自宅での生活を継続し、家族との時間を楽しめる状態を維持する"></textarea>
-        </div>
-        <div class="form-group">
-          <label>短期目標（1〜3ヶ月）</label>
-          <textarea id="g-short" placeholder="例：転倒リスクを下げるため、住環境整備と歩行訓練を週2回継続する"></textarea>
-        </div>
-        <div class="form-group">
-          <label>本人の意向・希望（今の願い）</label>
-          <textarea id="g-wish" placeholder="例：「もう少し外に出たい」「家族に迷惑をかけたくない」"></textarea>
-        </div>
-      </div>
-      <div class="attr-section">
-        <div class="attr-section-title">🗺 支援方針（本人と周りを知るための地図）</div>
-        <div class="form-group">
-          <label>社会での活動・参加イメージ</label>
-          <textarea id="g-participation" placeholder="氷山モデルのストレングスポイントを参考に記入してください"></textarea>
-        </div>
-        <div class="form-group">
-          <label>支援方針</label>
-          <textarea id="g-policy" placeholder="上記の課題・活動参加イメージを踏まえた支援方針を記入してください"></textarea>
-        </div>
-        <div class="form-group">
-          <label>本人の将来の夢・願い</label>
-          <textarea id="g-dream" placeholder="例：「いつかまた仕事に就きたい」"></textarea>
-        </div>
-        <div class="form-group">
-          <label>家族の今の願い・希望</label>
-          <textarea id="g-familywish" placeholder="例：「本人らしく穏やかに過ごしてほしい」"></textarea>
-        </div>
-      </div>
-    </div>
-    <div style="display:flex;align-items:center;margin-top:8px;">
-      <button class="save-btn" onclick="saveGoal()">保存する</button>
-      <span class="save-msg" id="save-msg-goal">✓ 保存しました</span>
-    </div>
-  </div>
-
-  <!-- 支援計画・フォロー -->
-  <div class="tab-panel" id="tab-plan">
-    <div class="module-title">📋 支援計画・フォローアップ</div>
-    <div class="module-desc">課題・目標をもとに具体的な支援内容を記入します。AIが支援計画の下書きを生成します。</div>
-    <button class="ai-btn" id="planAiBtn" onclick="generatePlan()">✨ AIで支援計画の下書き生成</button>
-    <span class="ai-status" id="planStatus"></span>
-
-    <div style="margin-top:18px;">
-      <div class="attr-section">
-        <div class="attr-section-title">🛠 具体的支援内容</div>
-        <div id="planActions"></div>
-        <button class="add-row-btn" onclick="addPlanAction()">＋ 支援項目を追加する</button>
-      </div>
-
-      <div class="attr-section">
-        <div class="attr-section-title">💬 本人・家族の意向</div>
-        <div class="form-group">
-          <label>本人の意向</label>
-          <textarea id="pl-wish-self" placeholder="例：「自分でできることは自分でやりたい」"></textarea>
-        </div>
-        <div class="form-group">
-          <label>家族の意向</label>
-          <textarea id="pl-wish-family" placeholder="例：「転倒だけは防いでほしい」"></textarea>
-        </div>
-        <div class="form-group">
-          <label>満足度・モニタリング所見（更新時に記入）</label>
-          <textarea id="pl-monitor" placeholder="例：週1回訪問時に本人・家族から聞き取り。転倒0件継続中。"></textarea>
-        </div>
-      </div>
-
-      <div class="attr-section">
-        <div class="attr-section-title">🔄 評価・見直し</div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>次回評価時期</label>
-            <input type="date" id="pl-next-date">
-          </div>
-          <div class="form-group">
-            <label>評価方法</label>
-            <input type="text" id="pl-eval-method" placeholder="例：担当者会議・訪問時聞き取り">
-          </div>
-        </div>
-        <div class="form-group">
-          <label>見直しの視点・備考</label>
-          <textarea id="pl-review-note" placeholder="例：住環境整備完了後に歩行状態を再評価する"></textarea>
-        </div>
-      </div>
-    </div>
-
-    <div style="display:flex;align-items:center;margin-top:8px;">
-      <button class="save-btn" onclick="savePlan()">保存する</button>
-      <span class="save-msg" id="save-msg-plan">✓ 保存しました</span>
-    </div>
-  </div>
-
   <!-- 出力・印刷 -->
   <div class="tab-panel" id="tab-output">
     <div class="module-title">📄 出力・印刷</div>
@@ -859,9 +735,6 @@ function openPerson(id) {
   renderAttributes();
   renderIcf();
   renderIceberg();
-  renderProcedure();
-  renderGoal();
-  renderPlan();
 }
 
 function goList() {
@@ -1364,269 +1237,6 @@ function saveIceberg() {
 }
 
 // ═══════════════════════════════════════════════
-//  A-1：支援手順書（響②運用支援系・Phase1）
-// ═══════════════════════════════════════════════
-function getRedCellsWithKeys() {
-  const icf = currentData?.modules?.icf || {};
-  const reds = [];
-  ICF_DOMAINS.forEach(dom => {
-    const domData = icf[dom.id] || {};
-    dom.cells.forEach((label, ci) => {
-      const cd = domData[`c${ci}`] || {};
-      if (cd.tri === 'red' && cd.text) {
-        reds.push({ domainId: dom.id, domainLabel: dom.label, cellKey: `${dom.id}_c${ci}`, cellLabel: label, text: cd.text });
-      }
-    });
-  });
-  return reds;
-}
-
-function renderProcedure() {
-  if (!currentData) return;
-  const reds = getRedCellsWithKeys();
-  const procedures = currentData.modules.procedures || [];
-
-  const candContainer = document.getElementById('procedureCandidates');
-  if (!reds.length) {
-    candContainer.innerHTML = '<div style="font-size:.78rem;color:var(--sub);">ICFタブで🔴リスクのセルを入力すると、ここに生成候補が表示されます。</div>';
-  } else {
-    candContainer.innerHTML = reds.map(r => {
-      const existing = procedures.some(p => p.cellKey === r.cellKey);
-      return `<div class="procedure-candidate">
-        <div class="procedure-candidate-text">${esc(r.domainLabel)}／${esc(r.cellLabel)}<small>${esc(r.text)}</small></div>
-        <button class="ai-btn" onclick="generateProcedure('${r.cellKey}')" id="procBtn-${r.cellKey}">${existing ? '✨ 再生成' : '✨ 手順書を生成'}</button>
-      </div>`;
-    }).join('');
-  }
-
-  const list = document.getElementById('procedureList');
-  if (!procedures.length) {
-    list.innerHTML = '<div style="font-size:.78rem;color:var(--sub);">まだ生成された支援手順書はありません。</div>';
-    return;
-  }
-  list.innerHTML = procedures.map(p => `
-    <div class="procedure-card">
-      <div class="procedure-card-summary">📝 ${esc(p.summary)}</div>
-      <div class="procedure-card-source">出典：${esc(p.domainLabel)}／${esc(p.cellLabel)}（${esc(p.sourceText)}）</div>
-      ${(p.keywords || []).map(k => `<div class="procedure-keyword-row"><span class="procedure-keyword">${esc(k.keyword)}</span><span class="procedure-keyword-desc">${esc(k.desc)}</span></div>`).join('')}
-      <div class="procedure-card-conclusion"><b>結論：</b>${esc(p.conclusion)}</div>
-      ${renderReadCheckBlock(p)}
-      <div style="margin-top:8px;"><button class="del-btn" onclick="deleteProcedure('${p.cellKey}')">✕ 削除</button></div>
-    </div>
-  `).join('');
-}
-
-// ═══════════════════════════════════════════════
-//  A-2：読了チェック機能（響②運用支援系Phase3）
-//  設計：06_イノベーション/響_運用支援系_モジュール分解_デバッグ_v2_20260704.md §1モジュールA
-//  対象支援員（targetStaff）はカードごとに手動でタグ登録し、読了（readBy）と差分を取って未読了者を出す
-// ═══════════════════════════════════════════════
-function renderReadCheckBlock(p) {
-  const targetStaff = p.targetStaff || [];
-  const readBy = p.readBy || [];
-  const readNames = readBy.map(r => r.name);
-  const unread = targetStaff.filter(name => !readNames.includes(name));
-  return `
-    <div class="procedure-readcheck" style="margin-top:10px;border-top:1px solid var(--border);padding-top:8px;">
-      <div style="font-size:.72rem;color:var(--sub);margin-bottom:4px;">📖 読了チェック（対象支援員：${targetStaff.length}名）</div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;">
-        <input type="text" id="rc-newstaff-${p.cellKey}" placeholder="支援員名を追加" style="font-size:.75rem;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);width:120px;">
-        <button class="hdr-btn" style="font-size:.7rem;padding:3px 8px;" onclick="addTargetStaff('${p.cellKey}')">＋ 対象追加</button>
-      </div>
-      ${targetStaff.length ? `<div style="font-size:.74rem;color:var(--accent);margin-bottom:2px;">✅ 読了済み（${readNames.length}名）：${readNames.join('、') || '—'}</div>
-      <div style="font-size:.74rem;color:${unread.length ? '#ff8a65' : 'var(--sub)'};margin-bottom:6px;">${unread.length ? `⚠️ 未読了（${unread.length}名）：${unread.join('、')}` : '全員読了済みです'}</div>` : ''}
-      <div style="display:flex;gap:6px;flex-wrap:wrap;">
-        <select id="rc-reader-${p.cellKey}" style="font-size:.75rem;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);">
-          ${unread.length ? unread.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('') : '<option value="">対象支援員なし</option>'}
-        </select>
-        <button class="ai-btn" style="font-size:.7rem;padding:4px 10px;" ${unread.length ? '' : 'disabled'} onclick="markProcedureRead('${p.cellKey}')">✔ 読了にする</button>
-      </div>
-    </div>`;
-}
-
-function addTargetStaff(cellKey) {
-  const input = document.getElementById('rc-newstaff-' + cellKey);
-  const name = (input.value || '').trim();
-  if (!name) return;
-  const p = (currentData.modules.procedures || []).find(x => x.cellKey === cellKey);
-  if (!p) return;
-  p.targetStaff = p.targetStaff || [];
-  if (!p.targetStaff.includes(name)) p.targetStaff.push(name);
-  input.value = '';
-  saveCurrentPerson();
-  renderProcedure();
-}
-
-function markProcedureRead(cellKey) {
-  const select = document.getElementById('rc-reader-' + cellKey);
-  const name = select.value;
-  if (!name) return;
-  const p = (currentData.modules.procedures || []).find(x => x.cellKey === cellKey);
-  if (!p) return;
-  p.readBy = p.readBy || [];
-  if (!p.readBy.some(r => r.name === name)) {
-    p.readBy.push({ name, at: new Date().toISOString() });
-  }
-  saveCurrentPerson();
-  renderProcedure();
-}
-
-async function generateProcedure(cellKey) {
-  const target = getRedCellsWithKeys().find(r => r.cellKey === cellKey);
-  if (!target) { alert('対象のICF項目が見つかりません（画面を再読み込みしてください）'); return; }
-  const btn = document.getElementById('procBtn-' + cellKey);
-  if (btn) { btn.disabled = true; btn.textContent = '生成中…'; }
-
-  const b = currentData.modules.basic || {};
-  const system = `あなたは福祉・介護の現場支援手順書を作成する専門家です。「ほうれんそうメモ」形式（概要→キーワード→結論）で、1つのリスク項目に対する具体的な支援手順書を作成します。
-完璧を求めず、現場で実際に使える簡潔な内容にしてください。
-必ず以下のJSON形式のみで返答してください：
-{"summary":"20字程度の場面要約","keywords":[{"keyword":"キーワード","desc":"20字程度の説明"}],"conclusion":"最も外してはいけない結論を1文で"}
-keywordsは3〜5組にしてください。`;
-
-  const userContent = `利用者：${b.alias||'不明'}（${b.age||'—'}歳・${b.gender||'—'}）
-リスク項目：【${target.domainLabel}／${target.cellLabel}】${target.text}
-
-上記のリスク項目について、支援手順書（概要・キーワード3〜5組・結論）を作成してください。`;
-
-  let raw = '';
-  try {
-    await callWorkerStream(system, userContent, chunk => { raw += chunk; });
-    const json = JSON.parse(raw.match(/\{[\s\S]*\}/)?.[0] || '{}');
-    if (!json.summary || !json.keywords) throw new Error('生成結果の形式が不正です');
-    saveProcedure(target, json);
-  } catch(e) {
-    alert('生成に失敗しました：' + e.message);
-  } finally {
-    if (btn) { btn.disabled = false; }
-    renderProcedure();
-  }
-}
-
-function saveProcedure(target, json) {
-  currentData.modules.procedures = currentData.modules.procedures || [];
-  const idx = currentData.modules.procedures.findIndex(p => p.cellKey === target.cellKey);
-  const prev = idx >= 0 ? currentData.modules.procedures[idx] : null;
-  const entry = {
-    cellKey: target.cellKey,
-    domainLabel: target.domainLabel,
-    cellLabel: target.cellLabel,
-    sourceText: target.text,
-    summary: json.summary,
-    keywords: (json.keywords || []).slice(0, 5),
-    conclusion: json.conclusion || '',
-    createdAt: prev?.createdAt || new Date().toISOString(),
-    // A-2：再生成時も読了チェックの登録・記録は引き継ぐ（内容が変わっても読了実績を消さない）
-    targetStaff: prev?.targetStaff || [],
-    readBy: prev?.readBy || [],
-  };
-  if (idx >= 0) currentData.modules.procedures[idx] = entry; else currentData.modules.procedures.push(entry);
-  saveCurrentPerson();
-}
-
-function deleteProcedure(cellKey) {
-  if (!currentData?.modules?.procedures) return;
-  currentData.modules.procedures = currentData.modules.procedures.filter(p => p.cellKey !== cellKey);
-  saveCurrentPerson();
-  renderProcedure();
-}
-
-// ═══════════════════════════════════════════════
-//  部品6：課題・目標
-// ═══════════════════════════════════════════════
-function renderGoal() {
-  if (!currentData) return;
-  const g = currentData.modules.goal || {};
-  document.getElementById('g-issue').value = g.issue || '';
-  document.getElementById('g-long').value  = g.longTerm || '';
-  document.getElementById('g-short').value = g.shortTerm || '';
-  document.getElementById('g-wish').value  = g.wish || '';
-  document.getElementById('g-participation').value = g.participation || '';
-  document.getElementById('g-policy').value        = g.policy        || '';
-  document.getElementById('g-dream').value         = g.dream         || '';
-  document.getElementById('g-familywish').value    = g.familyWish    || '';
-  if (g.issue) document.getElementById('goalForm').style.display = '';
-}
-
-async function generateGoals() {
-  const ice = currentData?.modules?.iceberg || {};
-  const reds = getRedCells();
-  const b = currentData?.modules?.basic || {};
-  if (!reds.length && !Object.values(ice).some(v=>v)) {
-    alert('ICFまたは氷山モデルを先に入力してください。');
-    return;
-  }
-  const btn = document.getElementById('goalAiBtn');
-  const status = document.getElementById('goalStatus');
-  btn.disabled = true;
-  status.textContent = '生成中...';
-
-  const iceText = ICEBERG_LAYERS.filter(l=>ice[l.key]).map(l=>`${l.label}：${ice[l.key]}`).join('\n');
-  const redText = reds.map(r=>`【${r.cell}】${r.text}`).join('\n');
-
-  const system = `あなたは福祉・介護の専門家です。アセスメント結果をもとに優先課題の候補を3〜5点提案します。
-「〜が課題と考えられます」の形で書き、断定しないでください。
-必ず以下のJSON形式のみで返答してください：
-{"candidates":[{"title":"課題タイトル","body":"詳細説明（2〜3文）","priority":"高/中/低"}]}`;
-
-  const userContent = `利用者：${b.alias||'不明'}（${b.age||'—'}歳）
-${iceText ? '氷山モデル分析：\n' + iceText : ''}
-${redText ? 'ICFリスク項目：\n' + redText : ''}
-
-優先課題を3〜5点提案してください。`;
-
-  let raw = '';
-  try {
-    await callWorkerStream(system, userContent, chunk => { raw += chunk; });
-    const json = JSON.parse(raw.match(/\{[\s\S]*\}/)?.[0] || '{}');
-    renderGoalCandidates(json.candidates || []);
-    document.getElementById('goalForm').style.display = '';
-    status.textContent = '✓ 候補生成完了。課題を選んで編集してください。';
-  } catch(e) {
-    status.textContent = 'エラー: ' + e.message;
-  } finally {
-    btn.disabled = false;
-  }
-}
-
-function renderGoalCandidates(candidates) {
-  const container = document.getElementById('goalCandidates');
-  if (!candidates.length) { container.innerHTML = ''; return; }
-  container.innerHTML = '<div style="font-size:.76rem;color:var(--sub);margin-bottom:8px;">課題をクリックすると選択できます（複数選択可）</div>' +
-    candidates.map((c,i) => {
-      const priClass = c.priority==='高'?'pri-high':c.priority==='中'?'pri-med':'pri-low';
-      return `<div class="goal-candidate" onclick="selectCandidate(this,'${esc(c.title)}','${esc(c.body)}')">
-        <div class="goal-candidate-title">${esc(c.title)}<span class="goal-priority ${priClass}">${esc(c.priority||'')}</span></div>
-        <div class="goal-candidate-body">${esc(c.body)}</div>
-      </div>`;
-    }).join('');
-}
-
-function selectCandidate(el, title, body) {
-  el.classList.toggle('selected');
-  const selected = [...document.querySelectorAll('.goal-candidate.selected')]
-    .map(e => e.querySelector('.goal-candidate-title').childNodes[0].textContent.trim());
-  document.getElementById('g-issue').value = selected.join('\n');
-  document.getElementById('goalForm').style.display = '';
-}
-
-function saveGoal() {
-  if (!currentData) return;
-  currentData.modules.goal = {
-    issue:         document.getElementById('g-issue').value.trim(),
-    longTerm:      document.getElementById('g-long').value.trim(),
-    shortTerm:     document.getElementById('g-short').value.trim(),
-    wish:          document.getElementById('g-wish').value.trim(),
-    participation: document.getElementById('g-participation').value.trim(),
-    policy:        document.getElementById('g-policy').value.trim(),
-    dream:         document.getElementById('g-dream').value.trim(),
-    familyWish:    document.getElementById('g-familywish').value.trim(),
-  };
-  saveCurrentPerson();
-  flashSave('goal');
-}
-
-// ═══════════════════════════════════════════════
 //  部品8：出力・一枚化
 // ═══════════════════════════════════════════════
 function renderOutput() {
@@ -1636,10 +1246,29 @@ function renderOutput() {
   document.getElementById('printSheet').innerHTML = html;
 }
 
+// ── H1-PLAN（hibiki_plan.html）・H1-PROC（hibiki_procedure.html）を読み取り専用で参照 ──
+// 移行前の旧データ（data.modules.goal/plan/procedures）へのフォールバックも保持する
+function loadPlanReadonlyForOutput(personId, data) {
+  try {
+    const raw = localStorage.getItem('hibiki_plan_' + personId);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return { goal: data.modules.goal || {}, plan: data.modules.plan || {} };
+}
+function loadProcedureReadonlyForOutput(personId, data) {
+  try {
+    const raw = localStorage.getItem('hibiki_procedure_' + personId);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return { procedures: data.modules.procedures || [] };
+}
+
 function buildOutputHtml(data) {
   const b = data.modules.basic || {};
   const e = data.modules.emergency || [];
   const a = data.modules.attributes || {};
+  const planRef = loadPlanReadonlyForOutput(data.id, data);
+  const procRef = loadProcedureReadonlyForOutput(data.id, data);
   const today = fmtDate(new Date().toISOString());
 
   let html = `
@@ -1756,7 +1385,7 @@ function buildOutputHtml(data) {
   }
 
   // 支援手順書（A-1）
-  const procedures = data.modules.procedures || [];
+  const procedures = procRef.procedures || [];
   if (procedures.length) {
     html += `<div class="ps-section"><div class="ps-section-title">■ 支援手順書</div>`;
     procedures.forEach(p => {
@@ -1770,7 +1399,7 @@ function buildOutputHtml(data) {
   }
 
   // 課題・目標
-  const g = data.modules.goal || {};
+  const g = planRef.goal || {};
   if (g.issue || g.longTerm || g.shortTerm) {
     html += `<div class="ps-section"><div class="ps-section-title">■ 課題・目標設定</div><table class="ps-attr-table">`;
     if (g.issue)    html += `<tr><td>優先課題</td><td style="white-space:pre-wrap;">${esc(g.issue)}</td></tr>`;
@@ -1793,7 +1422,7 @@ function buildOutputHtml(data) {
   } else {
     html += `<div class="ps-section"><div class="ps-section-title">■ 支援方針（本人と周りを知るための地図）</div><div class="ps-placeholder">未入力（「課題・目標」タブから入力してください）</div></div>`;
   }
-  const pl = data.modules.plan || {};
+  const pl = planRef.plan || {};
   if (pl.actions?.length || pl.wishSelf || pl.nextDate) {
     html += `<div class="ps-section"><div class="ps-section-title">■ 支援計画・フォローアップ</div>`;
     if (pl.actions?.length) {
@@ -1946,115 +1575,6 @@ function fillSample() {
   // 全モジュールを自動保存
   saveBasic(); saveEmergency(); saveAttributes();
   alert('サンプルデータを読み込みました。各タブの内容を確認してください。');
-}
-
-// ═══════════════════════════════════════════════
-//  部品7：支援計画・フォロー
-// ═══════════════════════════════════════════════
-function renderPlan() {
-  if (!currentData) return;
-  const p = currentData.modules.plan || {};
-  document.getElementById('pl-wish-self').value    = p.wishSelf    || '';
-  document.getElementById('pl-wish-family').value  = p.wishFamily  || '';
-  document.getElementById('pl-monitor').value      = p.monitor     || '';
-  document.getElementById('pl-next-date').value    = p.nextDate    || '';
-  document.getElementById('pl-eval-method').value  = p.evalMethod  || '';
-  document.getElementById('pl-review-note').value  = p.reviewNote  || '';
-  renderPlanActions(p.actions || []);
-}
-
-function renderPlanActions(actions) {
-  const container = document.getElementById('planActions');
-  container.innerHTML = '';
-  (actions || []).forEach((a, i) => {
-    container.appendChild(buildPlanActionRow(a, i));
-  });
-}
-
-function buildPlanActionRow(a, i) {
-  const div = document.createElement('div');
-  div.className = 'plan-action-row';
-  div.innerHTML = `
-    <div class="plan-action-hdr">
-      <span class="plan-action-no">支援項目 ${i + 1}</span>
-      <button class="del-btn" onclick="this.closest('.plan-action-row').remove()">✕ 削除</button>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label>支援内容</label><input type="text" class="pa-content" value="${esc(a.content||'')}" placeholder="例：住環境整備（段差解消・照明追加）"></div>
-      <div class="form-group" style="flex:0 0 120px"><label>担当者</label><input type="text" class="pa-who" value="${esc(a.who||'')}" placeholder="例：PT・ヘルパー"></div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label>頻度・タイミング</label><input type="text" class="pa-freq" value="${esc(a.freq||'')}" placeholder="例：週2回・毎朝"></div>
-      <div class="form-group"><label>目安期間</label><input type="text" class="pa-period" value="${esc(a.period||'')}" placeholder="例：1ヶ月"></div>
-    </div>`;
-  return div;
-}
-
-function addPlanAction() {
-  const container = document.getElementById('planActions');
-  const i = container.children.length;
-  container.appendChild(buildPlanActionRow({}, i));
-}
-
-async function generatePlan() {
-  const g = currentData?.modules?.goal || {};
-  const ice = currentData?.modules?.iceberg || {};
-  if (!g.issue && !g.longTerm) {
-    alert('「課題・目標」タブで優先課題・目標を先に入力してください。');
-    return;
-  }
-  const btn = document.getElementById('planAiBtn');
-  const status = document.getElementById('planStatus');
-  btn.disabled = true;
-  status.textContent = '生成中...';
-
-  const system = `あなたは福祉・介護の専門家です。課題・目標をもとに具体的な支援計画（3〜5項目）の下書きを生成します。
-必ず以下のJSON形式のみで返答してください：
-{"actions":[{"content":"支援内容","who":"担当者","freq":"頻度","period":"期間"}]}`;
-
-  const userContent = `優先課題：${g.issue||'—'}
-長期目標：${g.longTerm||'—'}
-短期目標：${g.shortTerm||'—'}
-本人の意向：${g.wish||'—'}
-${ice.background ? '背景：' + ice.background : ''}
-
-具体的支援計画を3〜5項目提案してください。`;
-
-  let raw = '';
-  try {
-    await callWorkerStream(system, userContent, chunk => { raw += chunk; });
-    const json = JSON.parse(raw.match(/\{[\s\S]*\}/)?.[0] || '{}');
-    if (json.actions?.length) renderPlanActions(json.actions);
-    status.textContent = '✓ 下書き生成完了。内容を確認・修正してから保存してください。';
-  } catch(e) {
-    status.textContent = 'エラー: ' + e.message;
-  } finally {
-    btn.disabled = false;
-  }
-}
-
-function savePlan() {
-  if (!currentData) return;
-  const actions = [];
-  document.querySelectorAll('#planActions .plan-action-row').forEach(row => {
-    actions.push({
-      content: row.querySelector('.pa-content').value.trim(),
-      who:     row.querySelector('.pa-who').value.trim(),
-      freq:    row.querySelector('.pa-freq').value.trim(),
-      period:  row.querySelector('.pa-period').value.trim(),
-    });
-  });
-  currentData.modules.plan = {
-    actions,
-    wishSelf:   document.getElementById('pl-wish-self').value.trim(),
-    wishFamily: document.getElementById('pl-wish-family').value.trim(),
-    monitor:    document.getElementById('pl-monitor').value.trim(),
-    nextDate:   document.getElementById('pl-next-date').value,
-    evalMethod: document.getElementById('pl-eval-method').value.trim(),
-    reviewNote: document.getElementById('pl-review-note').value.trim(),
-  };
-  saveCurrentPerson();
-  flashSave('plan');
 }
 
 // ═══════════════════════════════════════════════

@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>響 支援計画（H1-PLAN） | Fusion Partners</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%2364b5f6'/><text x='16' y='24' font-size='20' text-anchor='middle'>📋</text></svg>">
+<style>
+:root {
+  --bg:#0f1923; --surface:#1a2634; --card:#223044;
+  --accent:#64b5f6; --accent2:#81c784; --accent3:#ce93d8;
+  --danger:#ef5350; --text:#e8eaf0; --sub:#8fa3b8;
+  --border:#2e4460; --radius:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Hiragino Kaku Gothic Pro','Meiryo',sans-serif;min-height:100vh;}
+
+.gate{position:fixed;inset:0;background:rgba(15,25,35,.97);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;}
+.gate.hidden{display:none;}
+.gate-box{max-width:500px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px 24px;}
+.gate-title{font-size:1.1rem;font-weight:700;color:var(--accent);margin-bottom:14px;}
+.gate-body{font-size:.83rem;color:var(--sub);line-height:1.8;margin-bottom:20px;}
+.gate-body strong{color:var(--text);}
+.gate-btn{width:100%;padding:12px;background:var(--accent);color:#001929;border:none;border-radius:var(--radius);font-size:.92rem;font-weight:700;cursor:pointer;font-family:inherit;}
+
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:9px 14px;display:flex;align-items:center;gap:8px;position:sticky;top:0;z-index:100;flex-wrap:wrap;}
+.hdr-logo{font-size:.98rem;font-weight:700;color:var(--accent);}
+.person-badge{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:3px 11px;font-size:.76rem;color:var(--sub);}
+.hdr-spacer{flex:1;}
+.hdr-btn{background:var(--card);border:1px solid var(--border);color:var(--sub);border-radius:6px;padding:5px 11px;font-size:.74rem;cursor:pointer;font-family:inherit;transition:all .15s;}
+.hdr-btn:hover{color:var(--text);border-color:var(--sub);}
+
+.phase{display:none;}.phase.active{display:block;}
+
+#phaseList{padding:24px 16px;}
+.p0-wrap{max-width:860px;margin:0 auto;}
+.p0-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;}
+.p0-title{font-size:1.05rem;font-weight:700;}
+.p0-desc{font-size:.78rem;color:var(--sub);margin-top:3px;line-height:1.6;}
+.person-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;}
+.person-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;cursor:pointer;transition:all .18s;}
+.person-card:hover{border-color:var(--accent);}
+.pc-alias{font-weight:700;font-size:.95rem;margin-bottom:4px;}
+.pc-date{font-size:.65rem;color:var(--sub);margin-top:2px;}
+.empty-state{text-align:center;padding:40px 20px;color:var(--sub);font-size:.88rem;line-height:1.7;}
+
+.tab-nav{display:flex;background:var(--surface);border-bottom:1px solid var(--border);padding:0 14px;overflow-x:auto;gap:2px;}
+.tab-btn{background:none;border:none;border-bottom:3px solid transparent;color:var(--sub);padding:12px 16px;font-size:.82rem;font-family:inherit;cursor:pointer;white-space:nowrap;transition:all .15s;}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);}
+.tab-btn:hover{color:var(--text);}
+.tab-panel{display:none;padding:20px 16px;max-width:760px;margin:0 auto;}
+.tab-panel.active{display:block;}
+
+.module-title{font-size:.95rem;font-weight:700;margin-bottom:4px;}
+.module-desc{font-size:.76rem;color:var(--sub);line-height:1.6;margin-bottom:18px;}
+.form-group{margin-bottom:14px;}
+.form-group label{font-size:.76rem;color:var(--sub);display:block;margin-bottom:5px;}
+.form-row{display:flex;gap:10px;flex-wrap:wrap;}
+.form-row .form-group{flex:1;min-width:140px;}
+input[type="text"],input[type="date"],textarea{
+  width:100%;background:var(--card);border:1px solid var(--border);border-radius:8px;
+  color:var(--text);padding:9px 12px;font-size:.86rem;outline:none;font-family:inherit;transition:border .15s;}
+input:focus,textarea:focus{border-color:var(--accent);}
+textarea{resize:vertical;min-height:68px;}
+
+.save-btn{background:var(--accent);color:#001929;border:none;border-radius:var(--radius);padding:11px 28px;font-size:.88rem;font-weight:700;cursor:pointer;font-family:inherit;margin-top:8px;}
+.save-btn:hover{opacity:.9;}
+.save-msg{font-size:.74rem;color:var(--accent2);margin-left:10px;opacity:0;transition:opacity .3s;}
+.save-msg.show{opacity:1;}
+.ai-btn{background:rgba(100,181,246,.15);border:1px solid var(--accent);color:var(--accent);border-radius:6px;padding:7px 16px;font-size:.78rem;cursor:pointer;font-family:inherit;transition:all .15s;display:inline-flex;align-items:center;gap:5px;}
+.ai-btn:hover{background:rgba(100,181,246,.25);}
+.ai-btn:disabled{opacity:.45;cursor:not-allowed;}
+.ai-status{font-size:.72rem;color:var(--sub);margin-left:10px;}
+.attr-section{margin-bottom:18px;}
+.attr-section-title{font-size:.8rem;font-weight:700;color:var(--accent3);margin-bottom:10px;padding-bottom:4px;border-bottom:1px solid var(--border);}
+.add-row-btn{background:none;border:1px dashed var(--border);border-radius:6px;color:var(--sub);padding:6px 12px;font-size:.76rem;cursor:pointer;font-family:inherit;width:100%;margin-top:4px;}
+.add-row-btn:hover{border-color:var(--sub);color:var(--text);}
+.del-btn{background:none;border:none;color:var(--danger);cursor:pointer;font-size:.78rem;padding:2px 6px;}
+.del-btn:hover{opacity:.7;}
+
+.goal-candidate{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px;cursor:pointer;transition:all .15s;}
+.goal-candidate:hover{border-color:var(--accent);}
+.goal-candidate.selected{background:rgba(100,181,246,.1);border-color:var(--accent);}
+.goal-candidate-title{font-size:.84rem;font-weight:700;margin-bottom:4px;}
+.goal-candidate-body{font-size:.76rem;color:var(--sub);line-height:1.6;}
+.goal-priority{font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:10px;margin-left:6px;}
+.pri-high{background:rgba(239,83,80,.2);color:#ef9a9a;}
+.pri-med{background:rgba(255,183,77,.2);color:#ffb74d;}
+.pri-low{background:rgba(129,199,132,.2);color:var(--accent2);}
+
+.plan-action-row{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px;}
+.plan-action-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.plan-action-no{font-size:.72rem;color:var(--sub);}
+
+.assess-ref-box{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:16px;font-size:.78rem;line-height:1.7;color:var(--sub);}
+.assess-ref-box b{color:var(--text);}
+</style>
+</head>
+<body>
+
+<!-- 同意ゲート -->
+<div class="gate" id="gate">
+  <div class="gate-box">
+    <div class="gate-title">📋 支援計画（H1-PLAN）ご利用前の確認</div>
+    <div class="gate-body">
+      本ツールでは、利用者の課題・目標・支援計画（ケアマネ・サビ管専用）を入力・管理します。<br><br>
+      <strong>入力したデータについて：</strong><br>
+      ・お使いの端末（ブラウザ）内にのみ保存されます<br>
+      ・外部サーバーには送信されません（AI機能を除く）<br><br>
+      <strong>アセスメント（hibiki_v2.html）との関係：</strong><br>
+      ・利用者一覧・アセスメント結果はアセスメント側のデータを読み取り専用で参照します。この画面からアセスメントを編集することはできません<br>
+      ・以前のバージョンで課題・目標／支援計画タブに入力していたデータは、初回に自動的にこちらへ引き継がれます<br><br>
+      <strong>AI機能について：</strong>入力内容の一部がClaudeのAPIに送信されます。個人を特定できる情報は仮名・イニシャルでご入力ください。<br><br>
+      上記をご確認のうえ、ご利用ください。
+    </div>
+    <button class="gate-btn" onclick="giveConsent()">確認しました・利用を開始する</button>
+  </div>
+</div>
+
+<!-- ヘッダー -->
+<header>
+  <span class="hdr-logo">📋 支援計画</span>
+  <span class="person-badge" id="personBadge">利用者未選択</span>
+  <span class="hdr-spacer"></span>
+  <a class="hdr-btn" href="./hibiki_v2.html" target="_blank">📋 アセスメントを開く</a>
+  <button class="hdr-btn" onclick="goList()">← 一覧</button>
+</header>
+
+<!-- Phase 0: 利用者一覧 -->
+<div class="phase active" id="phaseList">
+  <div style="padding:24px 16px;">
+    <div class="p0-wrap">
+      <div class="p0-header">
+        <div>
+          <div class="p0-title">利用者を選んでください</div>
+          <div class="p0-desc">支援計画を作成する利用者を選んでください（利用者の新規登録はhibiki_v2.htmlから行ってください）</div>
+        </div>
+      </div>
+      <div class="person-grid" id="personGrid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Phase 1: 支援計画編集 -->
+<div class="phase" id="phaseEdit">
+  <nav class="tab-nav" id="tabNav">
+    <button class="tab-btn active" onclick="showTab('goal')" id="tabBtn-goal">🎯 課題・目標</button>
+    <button class="tab-btn" onclick="showTab('plan')" id="tabBtn-plan">📋 支援計画</button>
+  </nav>
+
+  <!-- 課題・目標 -->
+  <div class="tab-panel active" id="tab-goal">
+    <div class="module-title">🎯 課題・目標設定</div>
+    <div class="module-desc">氷山・ICFの分析をもとに課題を抽出し、長期目標・短期目標を設定します。AIは候補を提案するだけです。最終判断はあなたが行ってください。</div>
+
+    <div class="assess-ref-box" id="assessRefBox"></div>
+
+    <button class="ai-btn" id="goalAiBtn" onclick="generateGoals()">✨ AIで課題候補を生成</button>
+    <span class="ai-status" id="goalStatus"></span>
+    <div id="goalCandidates" style="margin-top:14px;"></div>
+    <div id="goalForm" style="display:none;margin-top:16px;">
+      <div class="attr-section">
+        <div class="attr-section-title">📌 選択した課題（編集可）</div>
+        <div class="form-group">
+          <label>優先課題（支援に際しての課題）</label>
+          <textarea id="g-issue" placeholder="課題を記入してください" style="min-height:80px;"></textarea>
+        </div>
+      </div>
+      <div class="attr-section">
+        <div class="attr-section-title">🏁 目標設定</div>
+        <div class="form-group">
+          <label>長期目標（6ヶ月〜1年）</label>
+          <textarea id="g-long" placeholder="例：自宅での生活を継続し、家族との時間を楽しめる状態を維持する"></textarea>
+        </div>
+        <div class="form-group">
+          <label>短期目標（1〜3ヶ月）</label>
+          <textarea id="g-short" placeholder="例：転倒リスクを下げるため、住環境整備と歩行訓練を週2回継続する"></textarea>
+        </div>
+        <div class="form-group">
+          <label>本人の意向・希望（今の願い）</label>
+          <textarea id="g-wish" placeholder="例：「もう少し外に出たい」「家族に迷惑をかけたくない」"></textarea>
+        </div>
+      </div>
+      <div class="attr-section">
+        <div class="attr-section-title">🗺 支援方針（本人と周りを知るための地図）</div>
+        <div class="form-group">
+          <label>社会での活動・参加イメージ</label>
+          <textarea id="g-participation" placeholder="氷山モデルのストレングスポイントを参考に記入してください"></textarea>
+        </div>
+        <div class="form-group">
+          <label>支援方針</label>
+          <textarea id="g-policy" placeholder="上記の課題・活動参加イメージを踏まえた支援方針を記入してください"></textarea>
+        </div>
+        <div class="form-group">
+          <label>本人の将来の夢・願い</label>
+          <textarea id="g-dream" placeholder="例：「いつかまた仕事に就きたい」"></textarea>
+        </div>
+        <div class="form-group">
+          <label>家族の今の願い・希望</label>
+          <textarea id="g-familywish" placeholder="例：「本人らしく穏やかに過ごしてほしい」"></textarea>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;margin-top:8px;">
+      <button class="save-btn" onclick="saveGoal()">保存する</button>
+      <span class="save-msg" id="save-msg-goal">✓ 保存しました</span>
+    </div>
+  </div>
+
+  <!-- 支援計画・フォロー -->
+  <div class="tab-panel" id="tab-plan">
+    <div class="module-title">📋 支援計画・フォローアップ</div>
+    <div class="module-desc">課題・目標をもとに具体的な支援内容を記入します。AIが支援計画の下書きを生成します。</div>
+    <button class="ai-btn" id="planAiBtn" onclick="generatePlan()">✨ AIで支援計画の下書き生成</button>
+    <span class="ai-status" id="planStatus"></span>
+
+    <div style="margin-top:18px;">
+      <div class="attr-section">
+        <div class="attr-section-title">🛠 具体的支援内容</div>
+        <div id="planActions"></div>
+        <button class="add-row-btn" onclick="addPlanAction()">＋ 支援項目を追加する</button>
+      </div>
+
+      <div class="attr-section">
+        <div class="attr-section-title">💬 本人・家族の意向</div>
+        <div class="form-group">
+          <label>本人の意向</label>
+          <textarea id="pl-wish-self" placeholder="例：「自分でできることは自分でやりたい」"></textarea>
+        </div>
+        <div class="form-group">
+          <label>家族の意向</label>
+          <textarea id="pl-wish-family" placeholder="例：「転倒だけは防いでほしい」"></textarea>
+        </div>
+        <div class="form-group">
+          <label>満足度・モニタリング所見（更新時に記入）</label>
+          <textarea id="pl-monitor" placeholder="例：週1回訪問時に本人・家族から聞き取り。転倒0件継続中。"></textarea>
+        </div>
+      </div>
+
+      <div class="attr-section">
+        <div class="attr-section-title">🔄 評価・見直し</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>次回評価時期</label>
+            <input type="date" id="pl-next-date">
+          </div>
+          <div class="form-group">
+            <label>評価方法</label>
+            <input type="text" id="pl-eval-method" placeholder="例：担当者会議・訪問時聞き取り">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>見直しの視点・備考</label>
+          <textarea id="pl-review-note" placeholder="例：住環境整備完了後に歩行状態を再評価する"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;align-items:center;margin-top:8px;">
+      <button class="save-btn" onclick="savePlan()">保存する</button>
+      <span class="save-msg" id="save-msg-plan">✓ 保存しました</span>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+//  部品0：土台・データ管理（H1-PLAN・利用者単位・独立データ）
+//  設計：06_イノベーション/響_職種別モジュール分解_詳細設計_20260707.md §1
+// ═══════════════════════════════════════════════
+const STORE_PREFIX_PLAN = 'hibiki_plan_';
+const V2_INDEX_KEY = 'hibiki_v2_index';
+const V2_STORE_PREFIX = 'hibiki_v2_person_';
+const CONSENT_KEY_PLAN = 'hibiki_plan_consent';
+
+let currentPersonId = null;
+let currentPlanData = null;
+
+function giveConsent() {
+  localStorage.setItem(CONSENT_KEY_PLAN, '1');
+  document.getElementById('gate').classList.add('hidden');
+}
+function checkConsent() {
+  if (localStorage.getItem(CONSENT_KEY_PLAN) === '1') {
+    document.getElementById('gate').classList.add('hidden');
+  }
+}
+
+// ── H1-AS（hibiki_v2.html）側のデータを読み取り専用で参照 ──
+function getV2PersonIndex() {
+  try { return JSON.parse(localStorage.getItem(V2_INDEX_KEY) || '[]'); } catch { return []; }
+}
+function loadV2Person(personId) {
+  try {
+    const raw = localStorage.getItem(V2_STORE_PREFIX + personId);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+// ── H1-PLAN自身のデータ（読み書き） ──
+function loadPlanData(personId) {
+  const raw = localStorage.getItem(STORE_PREFIX_PLAN + personId);
+  if (raw) return JSON.parse(raw);
+  return migrateFromV2(personId);
+}
+function saveCurrentPlanData() {
+  if (!currentPlanData) return;
+  currentPlanData.updatedAt = new Date().toISOString();
+  localStorage.setItem(STORE_PREFIX_PLAN + currentPlanData.personId, JSON.stringify(currentPlanData));
+}
+function migrateFromV2(personId) {
+  const data = { personId, goal: {}, plan: {}, updatedAt: '' };
+  const v2 = loadV2Person(personId);
+  if (v2?.modules?.goal && Object.keys(v2.modules.goal).some(k => v2.modules.goal[k])) {
+    data.goal = v2.modules.goal;
+  }
+  if (v2?.modules?.plan && (v2.modules.plan.actions?.length || v2.modules.plan.wishSelf)) {
+    data.plan = v2.modules.plan;
+  }
+  return data;
+}
+
+// ═══════════════════════════════════════════════
+//  利用者一覧（H1-ASの登録データを読み取り専用で参照。新規登録はhibiki_v2.htmlで行う）
+// ═══════════════════════════════════════════════
+function renderPersonList() {
+  const grid = document.getElementById('personGrid');
+  const idx = getV2PersonIndex();
+  if (!idx.length) {
+    grid.innerHTML = '<div class="empty-state">利用者がまだ登録されていません。<br><a href="./hibiki_v2.html" target="_blank" style="color:var(--accent);">hibiki_v2.html</a>で利用者を登録してください。</div>';
+    return;
+  }
+  grid.innerHTML = idx.slice().reverse().map(p => `
+    <div class="person-card" onclick="openPerson('${p.id}')">
+      <div class="pc-alias">${esc(p.alias)}</div>
+      <div class="pc-date">${p.updatedAt ? '更新: ' + fmtDate(p.updatedAt) : '未保存'}</div>
+    </div>
+  `).join('');
+}
+
+function openPerson(id) {
+  const v2 = loadV2Person(id);
+  if (!v2) { alert('利用者データが見つかりません'); renderPersonList(); return; }
+  currentPersonId = id;
+  currentPlanData = loadPlanData(id);
+  document.getElementById('personBadge').textContent = v2.meta.alias;
+  showPhase('phaseEdit');
+  showTab('goal');
+  renderAssessRef();
+  renderGoal();
+  renderPlan();
+}
+
+function goList() {
+  currentPersonId = null; currentPlanData = null;
+  document.getElementById('personBadge').textContent = '利用者未選択';
+  renderPersonList();
+  showPhase('phaseList');
+}
+
+function showPhase(id) {
+  document.querySelectorAll('.phase').forEach(el => el.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function showTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  document.getElementById('tabBtn-' + name).classList.add('active');
+}
+
+// ═══════════════════════════════════════════════
+//  H1-AS（アセスメント）参照表示：ICF🔴🔵・氷山モデルの要約
+// ═══════════════════════════════════════════════
+const ICF_DOMAINS = [
+  {id:'disability',label:'① 障害等',cells:['欠損や皮膚疾患','聴力・視力','マヒや骨折','酸素・レスピ・気切','ストマ・カテーテル']},
+  {id:'disease',label:'② 疾患',cells:['主治医','人体図（マーク式）','義歯などのツール','服薬管理','診断名']},
+  {id:'adl',label:'③ ADL（自立度）',cells:['立ち上がり・移乗・移動','排泄','更衣・整容','入浴','食事・嚥下']},
+  {id:'iadl',label:'④ IADL・適応',cells:['炊事・食事準備','買物・金銭管理','コミュニケーション','掃除・洗濯','電話使用']},
+  {id:'mental',label:'⑤ 知的・精神',cells:['理解力','行動上課題','精神疾患・知的','対人スキル','精神症状']},
+  {id:'environment',label:'⑥ 周囲環境',cells:['自宅環境','家族との接触','外出頻度','コミュニティ参加','近所との交流']},
+  {id:'person',label:'⑦ 本人',cells:['性格','生い立ち','趣味','職業・就業可能性','嗜好等']},
+];
+const ICEBERG_LAYERS = [
+  { key: 'visible',    label: '① 目に見えるリスクと強み' },
+  { key: 'background', label: '② 背景' },
+  { key: 'action',     label: '③ 対応・注意事項' },
+];
+
+function getRedCells() {
+  const v2 = loadV2Person(currentPersonId);
+  const icf = v2?.modules?.icf || {};
+  const reds = [];
+  ICF_DOMAINS.forEach(dom => {
+    const domData = icf[dom.id] || {};
+    dom.cells.forEach((label, ci) => {
+      const cd = domData[`c${ci}`] || {};
+      if (cd.tri === 'red' && cd.text) reds.push({ domain: dom.label, cell: label, text: cd.text });
+    });
+  });
+  return reds;
+}
+
+function renderAssessRef() {
+  const box = document.getElementById('assessRefBox');
+  const v2 = loadV2Person(currentPersonId);
+  const ice = v2?.modules?.iceberg || {};
+  const reds = getRedCells();
+  const iceLines = ICEBERG_LAYERS.filter(l => ice[l.key]).map(l => `<b>${esc(l.label)}</b>：${esc(ice[l.key])}`).join('<br>');
+  if (!reds.length && !iceLines) {
+    box.innerHTML = '<span style="color:var(--sub);">📋 アセスメント（ICF・氷山モデル）はまだ入力されていません。hibiki_v2.htmlで先に入力すると、AI生成の参考になります。</span>';
+    return;
+  }
+  box.innerHTML = `<b>📋 参考：アセスメント結果（読み取り専用）</b><br>
+    ${reds.length ? '🔴 ICFリスク項目：' + reds.map(r=>esc(r.cell)).join('、') + '<br>' : ''}
+    ${iceLines}`;
+}
+
+// ═══════════════════════════════════════════════
+//  Worker AI呼び出し共通（hibiki_v2.htmlと同一実装・同一バックエンド）
+// ═══════════════════════════════════════════════
+const WORKER_URL = 'https://hibiki-worker.fusion-partners-office.workers.dev';
+
+function getDemoId() {
+  let id = localStorage.getItem('hibiki_v2_demo_id');
+  if (!id) {
+    id = 'fp_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8);
+    localStorage.setItem('hibiki_v2_demo_id', id);
+  }
+  return id;
+}
+
+async function callWorkerStream(system, userContent, onChunk) {
+  const res = await fetch(WORKER_URL + '/analyze', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      mode: 'demo',
+      fingerprint: getDemoId(),
+      system,
+      messages: [{ role: 'user', content: userContent }],
+      maxTokens: 1500,
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `エラー (${res.status})`);
+  }
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = '';
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += decoder.decode(value, { stream: true });
+    const lines = buf.split('\n');
+    buf = lines.pop();
+    for (const line of lines) {
+      if (!line.startsWith('data:')) continue;
+      const data = line.slice(5).trim();
+      if (data === '[DONE]') return;
+      try {
+        const j = JSON.parse(data);
+        const text = j?.delta?.text || j?.choices?.[0]?.delta?.content || '';
+        if (text) onChunk(text);
+      } catch {}
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════
+//  部品6：課題・目標
+// ═══════════════════════════════════════════════
+function renderGoal() {
+  if (!currentPlanData) return;
+  const g = currentPlanData.goal || {};
+  document.getElementById('g-issue').value = g.issue || '';
+  document.getElementById('g-long').value  = g.longTerm || '';
+  document.getElementById('g-short').value = g.shortTerm || '';
+  document.getElementById('g-wish').value  = g.wish || '';
+  document.getElementById('g-participation').value = g.participation || '';
+  document.getElementById('g-policy').value        = g.policy        || '';
+  document.getElementById('g-dream').value         = g.dream         || '';
+  document.getElementById('g-familywish').value    = g.familyWish    || '';
+  if (g.issue) document.getElementById('goalForm').style.display = '';
+}
+
+async function generateGoals() {
+  const v2 = loadV2Person(currentPersonId);
+  const ice = v2?.modules?.iceberg || {};
+  const reds = getRedCells();
+  const b = v2?.modules?.basic || {};
+  if (!reds.length && !Object.values(ice).some(v=>v)) {
+    alert('先にhibiki_v2.htmlでICFまたは氷山モデルを入力してください。');
+    return;
+  }
+  const btn = document.getElementById('goalAiBtn');
+  const status = document.getElementById('goalStatus');
+  btn.disabled = true;
+  status.textContent = '生成中...';
+
+  const iceText = ICEBERG_LAYERS.filter(l=>ice[l.key]).map(l=>`${l.label}：${ice[l.key]}`).join('\n');
+  const redText = reds.map(r=>`【${r.cell}】${r.text}`).join('\n');
+
+  const system = `あなたは福祉・介護の専門家です。アセスメント結果をもとに優先課題の候補を3〜5点提案します。
+「〜が課題と考えられます」の形で書き、断定しないでください。
+必ず以下のJSON形式のみで返答してください：
+{"candidates":[{"title":"課題タイトル","body":"詳細説明（2〜3文）","priority":"高/中/低"}]}`;
+
+  const userContent = `利用者：${b.alias||'不明'}（${b.age||'—'}歳）
+${iceText ? '氷山モデル分析：\n' + iceText : ''}
+${redText ? 'ICFリスク項目：\n' + redText : ''}
+
+優先課題を3〜5点提案してください。`;
+
+  let raw = '';
+  try {
+    await callWorkerStream(system, userContent, chunk => { raw += chunk; });
+    const json = JSON.parse(raw.match(/\{[\s\S]*\}/)?.[0] || '{}');
+    renderGoalCandidates(json.candidates || []);
+    document.getElementById('goalForm').style.display = '';
+    status.textContent = '✓ 候補生成完了。課題を選んで編集してください。';
+  } catch(e) {
+    status.textContent = 'エラー: ' + e.message;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function renderGoalCandidates(candidates) {
+  const container = document.getElementById('goalCandidates');
+  if (!candidates.length) { container.innerHTML = ''; return; }
+  container.innerHTML = '<div style="font-size:.76rem;color:var(--sub);margin-bottom:8px;">課題をクリックすると選択できます（複数選択可）</div>' +
+    candidates.map((c,i) => {
+      const priClass = c.priority==='高'?'pri-high':c.priority==='中'?'pri-med':'pri-low';
+      return `<div class="goal-candidate" onclick="selectCandidate(this,'${esc(c.title)}','${esc(c.body)}')">
+        <div class="goal-candidate-title">${esc(c.title)}<span class="goal-priority ${priClass}">${esc(c.priority||'')}</span></div>
+        <div class="goal-candidate-body">${esc(c.body)}</div>
+      </div>`;
+    }).join('');
+}
+
+function selectCandidate(el, title, body) {
+  el.classList.toggle('selected');
+  const selected = [...document.querySelectorAll('.goal-candidate.selected')]
+    .map(e => e.querySelector('.goal-candidate-title').childNodes[0].textContent.trim());
+  document.getElementById('g-issue').value = selected.join('\n');
+  document.getElementById('goalForm').style.display = '';
+}
+
+function saveGoal() {
+  if (!currentPlanData) return;
+  currentPlanData.goal = {
+    issue:         document.getElementById('g-issue').value.trim(),
+    longTerm:      document.getElementById('g-long').value.trim(),
+    shortTerm:     document.getElementById('g-short').value.trim(),
+    wish:          document.getElementById('g-wish').value.trim(),
+    participation: document.getElementById('g-participation').value.trim(),
+    policy:        document.getElementById('g-policy').value.trim(),
+    dream:         document.getElementById('g-dream').value.trim(),
+    familyWish:    document.getElementById('g-familywish').value.trim(),
+  };
+  saveCurrentPlanData();
+  flashSave('goal');
+}
+
+// ═══════════════════════════════════════════════
+//  部品7：支援計画・フォロー
+// ═══════════════════════════════════════════════
+function renderPlan() {
+  if (!currentPlanData) return;
+  const p = currentPlanData.plan || {};
+  document.getElementById('pl-wish-self').value    = p.wishSelf    || '';
+  document.getElementById('pl-wish-family').value  = p.wishFamily  || '';
+  document.getElementById('pl-monitor').value      = p.monitor     || '';
+  document.getElementById('pl-next-date').value    = p.nextDate    || '';
+  document.getElementById('pl-eval-method').value  = p.evalMethod  || '';
+  document.getElementById('pl-review-note').value  = p.reviewNote  || '';
+  renderPlanActions(p.actions || []);
+}
+
+function renderPlanActions(actions) {
+  const container = document.getElementById('planActions');
+  container.innerHTML = '';
+  (actions || []).forEach((a, i) => {
+    container.appendChild(buildPlanActionRow(a, i));
+  });
+}
+
+function buildPlanActionRow(a, i) {
+  const div = document.createElement('div');
+  div.className = 'plan-action-row';
+  div.innerHTML = `
+    <div class="plan-action-hdr">
+      <span class="plan-action-no">支援項目 ${i + 1}</span>
+      <button class="del-btn" onclick="this.closest('.plan-action-row').remove()">✕ 削除</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>支援内容</label><input type="text" class="pa-content" value="${esc(a.content||'')}" placeholder="例：住環境整備（段差解消・照明追加）"></div>
+      <div class="form-group" style="flex:0 0 120px"><label>担当者</label><input type="text" class="pa-who" value="${esc(a.who||'')}" placeholder="例：PT・ヘルパー"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>頻度・タイミング</label><input type="text" class="pa-freq" value="${esc(a.freq||'')}" placeholder="例：週2回・毎朝"></div>
+      <div class="form-group"><label>目安期間</label><input type="text" class="pa-period" value="${esc(a.period||'')}" placeholder="例：1ヶ月"></div>
+    </div>`;
+  return div;
+}
+
+function addPlanAction() {
+  const container = document.getElementById('planActions');
+  const i = container.children.length;
+  container.appendChild(buildPlanActionRow({}, i));
+}
+
+async function generatePlan() {
+  const g = currentPlanData?.goal || {};
+  const v2 = loadV2Person(currentPersonId);
+  const ice = v2?.modules?.iceberg || {};
+  if (!g.issue && !g.longTerm) {
+    alert('「課題・目標」タブで優先課題・目標を先に入力してください。');
+    return;
+  }
+  const btn = document.getElementById('planAiBtn');
+  const status = document.getElementById('planStatus');
+  btn.disabled = true;
+  status.textContent = '生成中...';
+
+  const system = `あなたは福祉・介護の専門家です。課題・目標をもとに具体的な支援計画（3〜5項目）の下書きを生成します。
+必ず以下のJSON形式のみで返答してください：
+{"actions":[{"content":"支援内容","who":"担当者","freq":"頻度","period":"期間"}]}`;
+
+  const userContent = `優先課題：${g.issue||'—'}
+長期目標：${g.longTerm||'—'}
+短期目標：${g.shortTerm||'—'}
+本人の意向：${g.wish||'—'}
+${ice.background ? '背景：' + ice.background : ''}
+
+具体的支援計画を3〜5項目提案してください。`;
+
+  let raw = '';
+  try {
+    await callWorkerStream(system, userContent, chunk => { raw += chunk; });
+    const json = JSON.parse(raw.match(/\{[\s\S]*\}/)?.[0] || '{}');
+    if (json.actions?.length) renderPlanActions(json.actions);
+    status.textContent = '✓ 下書き生成完了。内容を確認・修正してから保存してください。';
+  } catch(e) {
+    status.textContent = 'エラー: ' + e.message;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function savePlan() {
+  if (!currentPlanData) return;
+  const actions = [];
+  document.querySelectorAll('#planActions .plan-action-row').forEach(row => {
+    actions.push({
+      content: row.querySelector('.pa-content').value.trim(),
+      who:     row.querySelector('.pa-who').value.trim(),
+      freq:    row.querySelector('.pa-freq').value.trim(),
+      period:  row.querySelector('.pa-period').value.trim(),
+    });
+  });
+  currentPlanData.plan = {
+    actions,
+    wishSelf:   document.getElementById('pl-wish-self').value.trim(),
+    wishFamily: document.getElementById('pl-wish-family').value.trim(),
+    monitor:    document.getElementById('pl-monitor').value.trim(),
+    nextDate:   document.getElementById('pl-next-date').value,
+    evalMethod: document.getElementById('pl-eval-method').value.trim(),
+    reviewNote: document.getElementById('pl-review-note').value.trim(),
+  };
+  saveCurrentPlanData();
+  flashSave('plan');
+}
+
+// ═══════════════════════════════════════════════
+//  ユーティリティ
+// ═══════════════════════════════════════════════
+function esc(s) {
+  return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function fmtDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
+}
+function flashSave(module) {
+  const el = document.getElementById('save-msg-' + module);
+  if (!el) return;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2000);
+}
+
+// ═══════════════════════════════════════════════
+//  起動
+// ═══════════════════════════════════════════════
+checkConsent();
+renderPersonList();
+</script>
+</body>
+</html>
