@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>あなたの施設は、再建のどのフェーズ？ | Fusion Partners</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="favicon.png">
+<style>
+  :root{
+    --bg:#0f1923; --surface:#1a2634; --card:#223044;
+    --accent:#81c784; --accent2:#4fc3f7; --text:#e8eaf0; --sub:#8fa3b8;
+    --border:#2e4460; --radius:12px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:'Hiragino Kaku Gothic Pro','Meiryo',sans-serif;line-height:1.7;padding:0 0 60px;}
+  header{background:var(--surface);border-bottom:1px solid var(--border);padding:20px 20px;}
+  header h1{font-size:1.2rem;color:var(--accent);}
+  header p{font-size:.8rem;color:var(--sub);margin-top:6px;}
+  .wrap{max-width:680px;margin:0 auto;padding:20px;}
+  .lead{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:20px;font-size:.86rem;}
+  .lead b{color:var(--accent);}
+  .q{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px;}
+  .q .qt{font-size:.95rem;margin-bottom:12px;}
+  .q .qt span{color:var(--sub);font-size:.78rem;margin-right:6px;}
+  .opts{display:flex;flex-direction:column;gap:8px;}
+  .opts label{display:flex;align-items:center;gap:10px;font-size:.85rem;color:var(--text);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px 12px;cursor:pointer;transition:.15s;}
+  .opts input{width:16px;height:16px;flex-shrink:0;}
+  .opts label:has(input:checked){background:rgba(129,199,132,.15);border-color:var(--accent);color:var(--accent);font-weight:700;}
+
+  .email-gate{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-top:8px;display:none;}
+  .email-gate.show{display:block;}
+  .email-gate label{display:block;font-size:.82rem;color:var(--sub);margin-bottom:8px;}
+  .email-gate input{width:100%;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:12px;font-size:.9rem;outline:none;font-family:inherit;}
+  .email-gate input:focus{border-color:var(--accent);}
+  .email-note{font-size:.72rem;color:var(--sub);margin-top:8px;line-height:1.6;}
+
+  .btn{display:block;width:100%;background:var(--accent);color:#0f1923;border:none;border-radius:10px;padding:14px;font-size:1rem;font-weight:700;cursor:pointer;margin-top:14px;}
+  .btn:disabled{opacity:.4;cursor:not-allowed;}
+
+  #result{display:none;margin-top:24px;}
+  .phase-badge{display:inline-block;background:var(--accent);color:#0f1923;font-weight:700;font-size:.82rem;border-radius:20px;padding:4px 14px;margin-bottom:14px;}
+  .resultcard{background:var(--card);border:1px solid var(--accent);border-radius:var(--radius);padding:18px;margin-bottom:16px;}
+  .resultcard h2{color:var(--accent);font-size:1.1rem;margin-bottom:10px;}
+  .resultcard .desc{font-size:.88rem;}
+  .track{background:var(--surface);border-left:3px solid var(--accent2);border-radius:0 8px 8px 0;padding:12px 14px;font-size:.82rem;color:var(--sub);margin-top:14px;}
+  .cta{background:var(--surface);border:1px dashed var(--accent2);border-radius:var(--radius);padding:18px;text-align:center;margin-top:18px;}
+  .cta a{display:inline-block;background:var(--accent2);color:#0f1923;text-decoration:none;font-weight:700;border-radius:10px;padding:12px 26px;margin-top:10px;}
+  .foot{font-size:.72rem;color:var(--sub);text-align:center;margin-top:28px;}
+</style>
+</head>
+<body>
+<header>
+  <h1>あなたの施設は、再建のどのフェーズ？</h1>
+  <p>4問・3分・無料。答えると、今どこで詰まっているかが分かります。</p>
+</header>
+
+<div class="wrap">
+  <div class="lead">
+    各質問に、いちばん近いものを選んでください。<b>正解はありません。</b>素直に答えるほど、正しい診断が出ます。
+  </div>
+
+  <form id="quiz"></form>
+
+  <div class="email-gate" id="emailGate">
+    <label>結果を見るには、メールアドレスをご入力ください</label>
+    <input type="email" id="emailInput" placeholder="例：you@example.com" oninput="checkReady()">
+    <div class="email-note">※ ご入力いただいたメールアドレスは、診断結果のご案内以外の目的では使用しません。</div>
+  </div>
+
+  <button class="btn" id="submit" disabled onclick="showResult()">結果を見る</button>
+
+  <div id="result">
+    <div id="resultBody"></div>
+    <button class="btn" style="background:var(--card);color:var(--text);margin-top:14px;" onclick="location.reload()">もう一度診断する</button>
+  </div>
+
+  <p class="foot">Fusion Partners ／ 「背丈の低い人の生活を、その背丈のまま守る」</p>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+//  設問（設計書：06_イノベーション/無料ミニ診断ツール_企画設計_20260709.md §2）
+//  Q1→①MQ会計 / Q2→②情報の更地化 / Q3・Q4→③自走型チーム設計
+//  スコア：0=良好〜2=要対応。フェーズ間比較のため③はQ3・Q4の平均値とする
+// ═══════════════════════════════════════════════
+const QUESTIONS = [
+  { t: '施設の「利益」を、月ごとの数字で即答できますか？', phase: 1,
+    opts: [['即答できる', 0], ['だいたい分かる', 1], ['どんぶり勘定', 2]] },
+  { t: '「あの人にしか分からない対応」が、施設の中にどれくらいありますか？', phase: 2,
+    opts: [['ほぼない', 0], ['いくつかある', 1], ['かなり多い', 2]] },
+  { t: 'あなたが1週間施設を離れても、現場は問題なく回りますか？', phase: 3,
+    opts: [['問題なく回る', 0], ['少し不安', 1], ['回らないと思う', 2]] },
+  { t: '職員の離職・不満の兆候に、いつ気づきますか？', phase: 3,
+    opts: [['早い段階で気づく', 0], ['辞める直前に気づく', 1], ['辞めてから気づく', 2]] },
+];
+
+// 実績（一次資料HiNotes文字起こしで確認済みの事実のみ使用。金額不確定分は伏せる）
+const FACT_1 = '毎月90万円の赤字だった施設を、3ヶ月で黒字化させた';
+const FACT_2 = 'ゼロから施設を立ち上げ、6ヶ月で400万円の黒字を出した';
+
+const PHASE_INFO = {
+  1: {
+    label: '①MQ会計', badge: '①MQ会計',
+    title: 'あなたの施設は、現在【①MQ会計】のフェーズで詰まっている可能性が高いです。',
+    desc: 'どんぶり勘定のままでは、どこに手を打てば良いかが見えません。まずは数字で経営状態を正確に把握することが、次の一手を決める土台になります。',
+  },
+  2: {
+    label: '②情報の更地化', badge: '②情報の更地化',
+    title: 'あなたの施設は、現在【②情報の更地化】のフェーズで詰まっている可能性が高いです。',
+    desc: '数字は見えている。でも、現場のノウハウが特定の人の頭の中にしかない状態かもしれません。属人化した「暗黙知」を、誰でも分かる形に整理する必要があります。',
+  },
+  3: {
+    label: '③自走型チーム設計', badge: '③自走型チーム設計',
+    title: 'あなたの施設は、現在【③自走型チーム設計】のフェーズで詰まっている可能性が高いです。',
+    desc: '仕組みはあっても、トップが抜けると現場が止まってしまう状態かもしれません。チームが自分で回る設計にすることが、次のステージです。',
+  },
+};
+
+const form = document.getElementById('quiz');
+QUESTIONS.forEach((q, i) => {
+  const div = document.createElement('div');
+  div.className = 'q';
+  const opts = q.opts.map(([label, val]) =>
+    `<label><input type="radio" name="q${i}" value="${val}"><span>${label}</span></label>`
+  ).join('');
+  div.innerHTML = `<div class="qt"><span>Q${i + 1}</span>${q.t}</div><div class="opts">${opts}</div>`;
+  form.appendChild(div);
+});
+
+form.addEventListener('change', checkReady);
+
+function allAnswered() {
+  return QUESTIONS.every((_, i) => form.querySelector(`input[name="q${i}"]:checked`));
+}
+function checkReady() {
+  const answered = allAnswered();
+  document.getElementById('emailGate').classList.toggle('show', answered);
+  const email = document.getElementById('emailInput').value.trim();
+  const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  document.getElementById('submit').disabled = !(answered && validEmail);
+}
+
+function judgePhase() {
+  const scores = { 1: [], 2: [], 3: [] };
+  QUESTIONS.forEach((q, i) => {
+    const v = Number(form.querySelector(`input[name="q${i}"]:checked`).value);
+    scores[q.phase].push(v);
+  });
+  const avg = (arr) => arr.reduce((a, b) => a + b, 0) / arr.length;
+  const totals = { 1: avg(scores[1]), 2: avg(scores[2]), 3: avg(scores[3]) };
+  // 同点の場合は①→②→③の順で優先（より根本的なフェーズを優先表示）
+  let top = 1;
+  [1, 2, 3].forEach(p => { if (totals[p] > totals[top]) top = p; });
+  return top;
+}
+
+function showResult() {
+  const email = document.getElementById('emailInput').value.trim();
+  const phase = judgePhase();
+  const info = PHASE_INFO[phase];
+
+  // メール通知（送信済みの保証はできないため、結果表示は独立して行う）
+  const subject = encodeURIComponent('【診断結果】再建フェーズ診断：' + info.badge);
+  const body = encodeURIComponent(
+    '診断結果：' + info.badge + '\n' +
+    '回答者メールアドレス：' + email + '\n' +
+    '診断日時：' + new Date().toLocaleString('ja-JP')
+  );
+  try {
+    const a = document.createElement('a');
+    a.href = 'mailto:fusion.partners.office@gmail.com?subject=' + subject + '&body=' + body;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  } catch (e) {}
+
+  document.getElementById('resultBody').innerHTML = `
+    <div class="resultcard">
+      <span class="phase-badge">${info.badge}</span>
+      <h2>${info.title}</h2>
+      <div class="desc">${info.desc}</div>
+      <div class="track">
+        柴山靖章はこれまで、${FACT_1}実績、${FACT_2}実績があります。
+      </div>
+    </div>
+    <div class="cta">
+      <div>あなたの施設の状況を、もう少し詳しく聞いてみませんか？</div>
+      <a href="https://docs.google.com/forms/d/e/1FAIpQLSe-XyJT4_oZa84RRIr09oOUiBY7MTTnGmksuhs9VxWBoa9Bcg/viewform" target="_blank" rel="noopener">相談する（無料・1分）</a>
+    </div>
+  `;
+  document.getElementById('result').style.display = 'block';
+  document.getElementById('result').scrollIntoView({ behavior: 'smooth' });
+  document.getElementById('submit').style.display = 'none';
+}
+</script>
+</body>
+</html>
