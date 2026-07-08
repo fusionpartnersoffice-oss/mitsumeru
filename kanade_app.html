@@ -262,6 +262,19 @@
   </div>
 </div>
 
+<!-- 適性検査インポートモーダル -->
+<div id="aptitude-import-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:300;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--card);border-radius:12px;max-width:560px;width:100%;padding:24px;">
+    <div style="font-family:'Noto Serif JP',serif;font-size:16px;margin-bottom:12px;">📥 適性検査をインポート</div>
+    <p style="font-size:12px;color:var(--text3);margin-bottom:10px;">mitsumeru_tekisei_check.htmlの「📋 ミツメルにコピー」ボタンで取得したJSONをここに貼り付けてください。</p>
+    <textarea id="aptitude-import-json" rows="10" style="width:100%;font-size:11px;font-family:monospace;padding:10px;border:0.5px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);resize:vertical;" placeholder='{"egogram":{...},"enneagram":{...},"lsrp":{...}}'></textarea>
+    <div style="display:flex;gap:10px;margin-top:14px;">
+      <button class="btn btn-primary" onclick="importAptitudeResult()" style="flex:1;">フィールドに反映する</button>
+      <button class="btn btn-secondary" onclick="closeAptitudeImport()" style="flex:1;">キャンセル</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -499,6 +512,53 @@ function setLsrpConsent(checked) {
   save(); renderInterview();
 }
 
+// ---------- 適性検査インポート（mitsumeru_tekisei_check.htmlの出力を取り込む） ----------
+function openAptitudeImport() {
+  document.getElementById('aptitude-import-overlay').style.display = 'flex';
+}
+function closeAptitudeImport() {
+  document.getElementById('aptitude-import-overlay').style.display = 'none';
+  document.getElementById('aptitude-import-json').value = '';
+}
+function importAptitudeResult() {
+  const c = cur(); if (!c) { alert('先に候補者を選択してください。'); return; }
+  const raw = document.getElementById('aptitude-import-json').value.trim();
+  let data;
+  try { data = JSON.parse(raw); } catch(e) { alert('JSONの形式が正しくありません。'); return; }
+
+  let imported = [];
+  // エゴグラム：data.egogram.CP/NP/A/FC/AC
+  if (data.egogram) {
+    let egoImported = false;
+    ['CP','NP','A','FC','AC'].forEach(k => {
+      if (data.egogram[k] !== undefined) { c['ego'+k] = data.egogram[k]; egoImported = true; }
+    });
+    if (egoImported) imported.push('エゴグラム');
+  }
+  // エニアグラム：data.enneagram.top3[0]（第1位のみ反映。ウィングは手入力のまま）
+  if (data.enneagram && data.enneagram.top3 && data.enneagram.top3[0]) {
+    const top1 = data.enneagram.top3[0];
+    const num = (top1.type || '').replace(/^T/, '');
+    if (num) { c.ennea = 'タイプ' + num + (top1.name ? '（' + top1.name + '）' : ''); imported.push('エニアグラム'); }
+  }
+  // LSRP：本人同意（lsrpConsent）取得済みの場合のみ反映（運用規程No.001・法務確認済みの同意ゲートを迂回しない）
+  if (data.lsrp && (data.lsrp.primary !== undefined || data.lsrp.secondary !== undefined)) {
+    if (!c.lsrpConsent) {
+      alert('LSRPスコアも含まれていますが、本人同意が未取得のためLSRP欄への反映はスキップしました。\nエゴグラム・エニアグラムのみ反映します。同意取得後、再度インポートしてください。');
+    } else {
+      if (data.lsrp.primary !== undefined) c.lsrp1 = data.lsrp.primary;
+      if (data.lsrp.secondary !== undefined) c.lsrp2 = data.lsrp.secondary;
+      imported.push('LSRP');
+    }
+  }
+
+  if (!imported.length) { alert('反映できる項目が見つかりませんでした。'); return; }
+  save();
+  renderInterview();
+  alert('適性検査の結果（' + imported.join('・') + '）をフィールドに反映しました。内容を確認してください。');
+  closeAptitudeImport();
+}
+
 function updateLiveTotal() {
   const c = cur(); if (!c) return;
   const el = document.getElementById('live-total'); if (el) el.textContent = totalOf(c);
@@ -547,7 +607,10 @@ function renderInterview() {
   <div class="section">
     <div class="section-title">フェーズ1 ｜ 適性検査（事前・手入力）</div>
     <div class="note-box" style="margin-bottom:12px">
-      検査スコアは面接の「仮説」に使います。エゴグラム・エニアグラムは受検結果を手入力してください。
+      検査スコアは面接の「仮説」に使います。エゴグラム・エニアグラムは受検結果を手入力するか、下のボタンで適性検査（mitsumeru_tekisei_check.html）の結果を自動反映できます。
+    </div>
+    <div class="btn-row" style="margin-bottom:12px">
+      <button class="btn btn-secondary" onclick="openAptitudeImport()">📥 適性検査をインポート（JSONを貼り付け）</button>
     </div>
     <label>エゴグラム（5つの自我状態）</label>
     <div class="ego-grid" style="margin-bottom:12px">
