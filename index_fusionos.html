@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FusionOS — 5つのシステム</title>
+<title>FusionOS — 背丈の低い人の生活を、その背丈のまま守る</title>
+<meta name="description" content="Fusion Partners代表・柴山靖章が、25年の医療・福祉現場経験から作った仕組み、FusionOS。属人化のバグを、仕組みで解決する。">
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="apple-touch-icon" href="favicon.png">
 <style>
@@ -33,12 +34,11 @@ html,body{
 }
 
 .wrap{
-  max-width:1000px;
+  max-width:760px;
   margin:0 auto;
-  padding:56px 32px 80px;
+  padding:0 32px 96px;
   position:relative;
 }
-/* Navy top rule */
 .wrap::before{
   content:'';
   position:fixed;
@@ -48,7 +48,6 @@ html,body{
   opacity:.18;
   z-index:50;
 }
-/* Gold accent bar */
 .wrap::after{
   content:'';
   position:fixed;
@@ -59,289 +58,220 @@ html,body{
   z-index:50;
 }
 
-/* ── HEADER ── */
-.head{
+.sans{font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;}
+
+/* ── HERO ── */
+.hero{
+  min-height:88vh;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
   text-align:center;
-  margin-bottom:48px;
+  padding:64px 0 40px;
 }
-.head img{
-  height:clamp(110px,13vw,160px);width:auto;display:block;margin:0 auto 26px;
+.hero img{
+  height:clamp(72px,10vw,100px);width:auto;display:block;margin:0 auto 32px;
 }
 .eyebrow{
-  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
   font-size:11px;
   letter-spacing:4px;
   text-transform:uppercase;
   color:var(--gold2);
-  margin-bottom:14px;
+  margin-bottom:20px;
   font-weight:500;
 }
-.h1{
-  font-size:clamp(34px,5vw,56px);
-  font-weight:200;
-  letter-spacing:-.5px;
-  line-height:1.15;
+.mission{
+  font-size:clamp(28px,4.6vw,44px);
+  font-weight:300;
+  letter-spacing:.02em;
+  line-height:1.6;
   color:var(--navy);
-}
-.h1 .hatara{
-  font-weight:400;
-  color:var(--gold2);
-}
-.h1 .hatara small{
-  font-size:.42em;
-  font-weight:400;
-  letter-spacing:1px;
-  color:var(--gold2);
-  vertical-align:.18em;
+  max-width:14em;
 }
 .hero-sub{
-  font-family:'Hiragino Mincho ProN','Yu Mincho','Georgia',serif;
-  font-size:clamp(16px,2.2vw,24px);
-  font-weight:300;
-  color:var(--navy);
-  letter-spacing:.5px;
-  margin-top:16px;
-  line-height:1.6;
-}
-.hero-sub em{
-  font-style:normal;
-  border-bottom:2px solid var(--gold3);
-  padding-bottom:2px;
-}
-.rule{
-  width:36px;height:2px;
-  background:var(--gold3);
-  margin:20px auto;
-}
-.lead{
-  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
-  font-size:clamp(13px,1.5vw,15px);
+  font-size:clamp(14px,1.7vw,17px);
   color:var(--dim);
   line-height:2;
-  letter-spacing:.5px;
+  margin-top:32px;
+  letter-spacing:.3px;
 }
-
-/* ── GRID ── */
-.grid{
-  display:grid;
-  grid-template-columns:repeat(2,1fr);
-  gap:18px;
-}
-
-.card{
-  display:flex;
-  gap:22px;
-  align-items:center;
-  padding:26px 26px;
-  border:1px solid var(--border);
-  border-radius:6px;
-  background:var(--bg2);
-  box-shadow:var(--shadow);
-  border-left:3px solid var(--gold3);
-  color:inherit;
-  text-decoration:none;
-  transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;
-}
-.card:hover{
-  transform:translateY(-3px);
-  box-shadow:0 10px 28px rgba(11,25,41,.14);
-  border-left-color:var(--navy);
-}
-.card.span2{grid-column:1 / -1;justify-content:center;max-width:520px;margin:0 auto;width:100%;}
-
-.card-body{flex:1;min-width:0;}
-.card-num{
-  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
+.scroll-cue{
+  margin-top:56px;
   font-size:10px;
-  color:var(--gold2);
   letter-spacing:3px;
-  margin-bottom:8px;
+  color:var(--dim2);
+  text-transform:uppercase;
+  animation:bob 2.4s ease-in-out infinite;
 }
-.card-name{
-  display:flex;
-  align-items:baseline;
-  gap:10px;
-  margin-bottom:4px;
+@keyframes bob{
+  0%,100%{transform:translateY(0);opacity:.5;}
+  50%{transform:translateY(6px);opacity:1;}
 }
-.card-jp{
+
+/* ── SECTION ── */
+section{
+  padding:72px 0;
+  border-top:1px solid var(--border);
+}
+.sec-eyebrow{
+  font-size:11px;
+  letter-spacing:3px;
+  text-transform:uppercase;
+  color:var(--gold2);
+  margin-bottom:18px;
+  font-weight:500;
+}
+.sec-title{
   font-size:clamp(22px,3vw,30px);
   font-weight:300;
   color:var(--navy);
-  letter-spacing:.04em;
-  line-height:1.1;
-}
-.card-en{
-  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
-  font-size:11px;
-  letter-spacing:2px;
-  color:var(--gold2);
-  text-transform:uppercase;
-}
-.card-role{
-  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
-  font-size:13px;
-  color:var(--navy);
-  font-weight:600;
-  margin-bottom:7px;
   line-height:1.5;
+  margin-bottom:28px;
 }
-.card-desc{
-  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
-  font-size:12px;
+.sec-body{
+  font-size:clamp(15px,1.7vw,17px);
+  line-height:2.05;
+  color:var(--text);
+}
+.sec-body p{margin-bottom:1.4em;}
+.sec-body p:last-child{margin-bottom:0;}
+
+/* ── VALUES ── */
+.value{
+  padding:24px 0 24px 28px;
+  border-left:3px solid var(--gold3);
+  margin-bottom:22px;
+}
+.value:last-child{margin-bottom:0;}
+.value-title{
+  font-size:clamp(17px,2vw,20px);
+  font-weight:400;
+  color:var(--navy);
+  margin-bottom:10px;
+}
+.value-desc{
+  font-size:clamp(13.5px,1.5vw,15px);
+  line-height:1.9;
   color:var(--dim);
-  line-height:1.85;
 }
-.story-link{
-  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
-  font-size:13px;
-  letter-spacing:.5px;
-  color:var(--gold2);
+
+/* ── CTA ── */
+.cta{
+  text-align:center;
+  padding:56px 0 0;
+}
+.cta-lead{
+  font-size:clamp(15px,1.8vw,17px);
+  font-weight:300;
+  color:var(--navy);
+  margin-bottom:28px;
+  line-height:1.8;
+}
+.cta-btn{
+  display:inline-flex;
+  align-items:center;
+  gap:10px;
+  padding:18px 40px;
+  background:var(--navy);
+  color:#fff;
   text-decoration:none;
-  border-bottom:1px solid var(--gold3);
-  padding-bottom:2px;
-  transition:color .18s ease;
+  border-radius:4px;
+  font-size:14px;
+  letter-spacing:1px;
+  box-shadow:var(--shadow);
+  transition:transform .18s ease, box-shadow .18s ease, background .18s ease;
 }
-.story-link:hover{color:var(--navy);}
+.cta-btn:hover{
+  transform:translateY(-2px);
+  box-shadow:0 12px 30px rgba(11,25,41,.22);
+  background:var(--navy2);
+}
+.cta-btn .arrow{color:var(--gold3);}
+
 /* ── FOOTER ── */
 .foot{
-  margin-top:52px;
+  margin-top:56px;
   text-align:center;
   border-top:1px solid var(--border);
   padding-top:28px;
 }
-.foot-mission{
-  font-size:clamp(14px,1.7vw,18px);
-  font-weight:300;
-  color:var(--navy);
-  letter-spacing:.5px;
-  line-height:1.9;
-}
 .foot-contact{
-  font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
   font-size:11px;
   color:var(--dim);
   letter-spacing:.5px;
-  margin-top:14px;
   line-height:1.9;
 }
+.foot-admin{
+  margin-top:10px;
+}
+.foot-admin a{color:var(--dim2);text-decoration:none;font-size:11px;}
 
 /* ── RESPONSIVE ── */
-@media(max-width:760px){
-  .wrap{padding:44px 20px 64px;}
-  .grid{grid-template-columns:1fr;}
-  .card.span2{max-width:none;}
-  .card{gap:16px;padding:22px 20px;}
+@media(max-width:640px){
+  .wrap{padding:0 22px 72px;}
+  .hero{min-height:82vh;padding:48px 0 32px;}
+  section{padding:56px 0;}
 }
-@media(max-width:400px){
-  .card{flex-direction:column;text-align:center;}
-  .card-name{justify-content:center;}
-}
-
 </style>
 </head>
 <body>
 <div class="wrap">
 
-  <!-- HEADER -->
-  <header class="head">
+  <!-- ①ファーストビュー -->
+  <div class="hero">
     <img src="logo.png" alt="Fusion Partners">
-    <div class="eyebrow">Fusion OS — 5 Systems</div>
-    <h1 class="h1">FusionOS——<span class="hatara">傍楽<small>（ハタラク）</small></span>のOS</h1>
-    <div class="hero-sub"><em>「相談できる人が傍にいるみたいだ」</em></div>
-    <div class="rule"></div>
-    <div class="lead">
-      医療・福祉現場の「属人化のバグ」を、仕組みで解決する。<br>
-      5つのシステムが、それぞれの現場を支えます。
+    <div class="eyebrow sans">Fusion Partners</div>
+    <h1 class="mission">背丈の低い人の生活を、<br>その背丈のまま守る。</h1>
+    <div class="hero-sub sans">Fusion Partners は、医療・福祉現場のために生まれた仕組みです。</div>
+    <div class="scroll-cue sans">Scroll</div>
+  </div>
+
+  <!-- ②なぜ作ったか -->
+  <section>
+    <div class="sec-eyebrow sans">Why</div>
+    <h2 class="sec-title">なぜ、作ったか。</h2>
+    <div class="sec-body sans">
+      <p>25年、医療・福祉の現場に立ってきました。</p>
+      <p>どれほど優れた人がいても、その人がいなくなった瞬間に崩れる現場を、何度も見てきました。</p>
+      <p>属人化は、個人の力量の問題ではありません。仕組みの不在の問題です。</p>
+      <p>FusionOSは、その「仕組みの不在」を埋めるために設計されています。その答えが、5つのシステムというアンサンブルです。</p>
     </div>
-  </header>
+  </section>
 
-  <!-- GRID -->
-  <div class="grid" id="grid">
+  <!-- ③価値観 -->
+  <section>
+    <div class="sec-eyebrow sans">Values</div>
+    <h2 class="sec-title">大切にしていること。</h2>
 
-    <!-- 響 -->
-    <a class="card" href="index_brand.html#ensemble-hibiki">
-      <div class="card-body">
-        <div class="card-num">01 ／ 話す</div>
-        <div class="card-name">
-          <span class="card-jp">響</span>
-          <span class="card-en">Hibiki</span>
-        </div>
-        <div class="card-role">現場の声を拾う「入口」</div>
-        <div class="card-desc">壁打ち・アセスメントを構造化。氷山モデルで根本原因を特定する（hibiki_v2）。</div>
-      </div>
-    </a>
+    <div class="value">
+      <div class="value-title">他人は自分じゃない。</div>
+      <div class="value-desc sans">だから、アセスメントが必要です。仕組みが必要です。翻訳が必要です。</div>
+    </div>
 
-    <!-- 凪 -->
-    <a class="card" href="index_brand.html#ensemble-nagi">
-      <div class="card-body">
-        <div class="card-num">02 ／ 見る</div>
-        <div class="card-name">
-          <span class="card-jp">凪</span>
-          <span class="card-en">Nagi</span>
-        </div>
-        <div class="card-role">組織を診る「羅針盤」</div>
-        <div class="card-desc">MQ会計・KSAで、収益とチームを数字で同時に可視化・診断する（nagi_system）。</div>
-      </div>
-    </a>
+    <div class="value">
+      <div class="value-title">気づく仕組みがある。</div>
+      <div class="value-desc sans">事実と照らし合わせ、間違いを見つけて直す。これを毎日、実際に繰り返しています。</div>
+    </div>
 
-    <!-- 奏 -->
-    <a class="card" href="index_brand.html#ensemble-kanade">
-      <div class="card-body">
-        <div class="card-num">03 ／ 組む</div>
-        <div class="card-name">
-          <span class="card-jp">奏</span>
-          <span class="card-en">Kanade</span>
-        </div>
-        <div class="card-role">適材適所の「チームビルディング」</div>
-        <div class="card-desc">エゴグラム・LSRPで人材を見極め、最適なチーム配置を設計する（kanade_app）。</div>
-      </div>
-    </a>
-
-    <!-- 弦 -->
-    <a class="card" href="index_brand.html#ensemble-yuzuru">
-      <div class="card-body">
-        <div class="card-num">04 ／ 売る</div>
-        <div class="card-name">
-          <span class="card-jp">弦</span>
-          <span class="card-en">Yuzuru</span>
-        </div>
-        <div class="card-role">地域連携と「自動営業」</div>
-        <div class="card-desc">施設データから営業先リストとマップを自動生成して届ける（yuzuru_map）。</div>
-      </div>
-    </a>
-
-    <!-- ミツメル -->
-    <a class="card span2" href="index_brand.html#ensemble-mitsumeru">
-      <div class="card-body">
-        <div class="card-num">05 ／ 折れない</div>
-        <div class="card-name">
-          <span class="card-jp" style="font-size:clamp(20px,2.6vw,26px);">ミツメル</span>
-          <span class="card-en">Mitsumeru</span>
-        </div>
-        <div class="card-role">管理職の「耐久設計」</div>
-        <div class="card-desc">日次HP/MP監査・翌日戦略を一元化。仕組みを動かす人を守る（mitsumeru）。</div>
-      </div>
-    </a>
-
-  </div>
-
-  <!-- 物語ページへの導線 -->
-  <div style="text-align:center;margin-top:36px;">
-    <a href="index_brand.html" class="story-link">FusionOSの物語を読む →</a>
-  </div>
+    <div class="cta">
+      <div class="cta-lead sans">この価値観から、5つのシステムが生まれました。</div>
+      <a class="cta-btn sans" href="index_systems.html">
+        5つのシステムを見る <span class="arrow">→</span>
+      </a>
+    </div>
+  </section>
 
   <!-- FOOTER -->
   <footer class="foot">
-    <div class="foot-mission">「背丈の低い人の生活を、その背丈のまま守る。」</div>
-    <div class="foot-contact">
+    <div class="foot-contact sans">
       Fusion Partners　｜　fusion.partners.office@gmail.com　｜　note.com/fusion_os
     </div>
-    <div class="foot-contact" style="margin-top:10px;">
-      <a href="index_fusionos_admin.html" style="color:var(--dim2);text-decoration:none;">代表専用・全ツール一覧 →</a>
+    <div class="foot-contact foot-admin sans">
+      <a href="index_fusionos_admin.html">代表専用・全ツール一覧 →</a>
     </div>
   </footer>
 
 </div><!-- /wrap -->
-
 </body>
 </html>
