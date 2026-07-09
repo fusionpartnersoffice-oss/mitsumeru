@@ -170,22 +170,6 @@ function showResult() {
     body: JSON.stringify({ email, phase: String(phase), badge: info.badge, answers }),
   }).catch(() => {});
 
-  // メール通知（送信済みの保証はできないため、結果表示は独立して行う）
-  const subject = encodeURIComponent('【診断結果】再建フェーズ診断：' + info.badge);
-  const body = encodeURIComponent(
-    '診断結果：' + info.badge + '\n' +
-    '回答者メールアドレス：' + email + '\n' +
-    '診断日時：' + new Date().toLocaleString('ja-JP')
-  );
-  try {
-    const a = document.createElement('a');
-    a.href = 'mailto:fusion.partners.office@gmail.com?subject=' + subject + '&body=' + body;
-    a.style.display = 'none';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  } catch (e) {}
-
   document.getElementById('resultBody').innerHTML = `
     <div class="resultcard">
       <span class="phase-badge">${info.badge}</span>
@@ -197,7 +181,7 @@ function showResult() {
     </div>
     <div class="cta">
       <div>あなたの施設の状況を、もう少し詳しく聞いてみませんか？</div>
-      <a href="https://docs.google.com/forms/d/e/1FAIpQLSe-XyJT4_oZa84RRIr09oOUiBY7MTTnGmksuhs9VxWBoa9Bcg/viewform" target="_blank" rel="noopener">相談する（無料・1分）</a>
+      <a href="https://docs.google.com/forms/d/e/1FAIpQLSe-XyJT4_oZa84RRIr09oOUiBY7MTTnGmksuhs9VxWBoa9Bcg/viewform" target="_blank" rel="noopener">相談する（無料）</a>
     </div>
   `;
   document.getElementById('result').style.display = 'block';
