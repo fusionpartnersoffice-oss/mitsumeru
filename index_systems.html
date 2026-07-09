@@ -141,6 +141,38 @@ html,body{
 }
 .system-more:hover{color:var(--navy);}
 
+.diag-cta{
+  margin-top:56px;
+  padding:32px 28px;
+  text-align:center;
+  background:var(--bg2);
+  border:1px solid var(--border);
+  border-radius:6px;
+  border-left:3px solid var(--gold3);
+}
+.diag-lead{
+  font-size:clamp(14px,1.6vw,16px);
+  color:var(--navy);
+  font-weight:400;
+  margin-bottom:16px;
+  line-height:1.8;
+}
+.diag-btn{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:13px 30px;
+  background:var(--navy);
+  color:#fff;
+  text-decoration:none;
+  border-radius:4px;
+  font-size:13px;
+  letter-spacing:.5px;
+  transition:background .18s ease;
+}
+.diag-btn:hover{background:var(--navy2);}
+.diag-btn .arrow{color:var(--gold3);}
+
 .foot{
   margin-top:56px;
   text-align:center;
@@ -231,6 +263,13 @@ html,body{
       <p>同じように動けなくなる誰かのために、これは生まれています。日次ジャーナリング（mitsumeru）と、その商品版であるミツメルLiteで届けている。</p>
       <a class="system-more sans" href="brand_mitsumeru.html">ミツメルのツールを詳しく見る →</a>
     </div>
+  </div>
+
+  <div class="diag-cta">
+    <div class="diag-lead sans">5つのシステムより先に、まず自施設の状態を知りたい方へ。</div>
+    <a class="diag-btn sans" href="shindan_saiken.html">
+      1分で無料診断する <span class="arrow">→</span>
+    </a>
   </div>
 
   <footer class="foot">
