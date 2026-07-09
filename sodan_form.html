@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>無料相談のお申し込み | Fusion Partners</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="favicon.png">
+<style>
+  :root{
+    --bg:#0f1923; --surface:#1a2634; --card:#223044;
+    --accent:#81c784; --accent2:#4fc3f7; --text:#e8eaf0; --sub:#8fa3b8;
+    --border:#2e4460; --radius:12px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:'Hiragino Kaku Gothic Pro','Meiryo',sans-serif;line-height:1.7;padding:0 0 60px;}
+  header{background:var(--surface);border-bottom:1px solid var(--border);padding:20px 20px;}
+  header h1{font-size:1.2rem;color:var(--accent);}
+  header p{font-size:.8rem;color:var(--sub);margin-top:6px;}
+  .wrap{max-width:560px;margin:0 auto;padding:20px;}
+  .lead{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:20px;font-size:.86rem;}
+  .lead b{color:var(--accent);}
+
+  .field{margin-bottom:16px;}
+  .field label{display:block;font-size:.84rem;color:var(--sub);margin-bottom:8px;}
+  .field label .req{color:#ef9a9a;margin-left:4px;}
+  .field input,.field textarea{
+    width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;
+    color:var(--text);padding:12px;font-size:.9rem;outline:none;font-family:inherit;
+  }
+  .field input:focus,.field textarea:focus{border-color:var(--accent);}
+  .field textarea{resize:vertical;min-height:90px;}
+
+  .btn{display:block;width:100%;background:var(--accent);color:#0f1923;border:none;border-radius:10px;padding:14px;font-size:1rem;font-weight:700;cursor:pointer;margin-top:8px;}
+  .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .err{color:#ef9a9a;font-size:.78rem;margin-top:8px;display:none;}
+  .err.show{display:block;}
+
+  #done{display:none;margin-top:24px;}
+  .donecard{background:var(--card);border:1px solid var(--accent);border-radius:var(--radius);padding:20px;text-align:center;}
+  .donecard h2{color:var(--accent);font-size:1.05rem;margin-bottom:10px;}
+  .donecard p{font-size:.86rem;}
+  .foot{font-size:.72rem;color:var(--sub);text-align:center;margin-top:28px;}
+</style>
+</head>
+<body>
+<header>
+  <h1>無料相談のお申し込み</h1>
+  <p>1分で完了。まずは、お名前とお困りごとだけ教えてください。</p>
+</header>
+
+<div class="wrap">
+  <div class="lead">
+    詳しいお話（会社名・ご相談内容の詳細・面談希望日時など）は、この後の個別のご連絡で改めてお伺いします。<b>まずはこの3項目だけ</b>で大丈夫です。
+  </div>
+
+  <form id="sodanForm" onsubmit="return false;">
+    <div class="field">
+      <label>お名前<span class="req">必須</span></label>
+      <input type="text" id="f-name" placeholder="例：山田 太郎" oninput="checkReady()">
+    </div>
+    <div class="field">
+      <label>メールアドレス<span class="req">必須</span></label>
+      <input type="email" id="f-email" placeholder="例：you@example.com" oninput="checkReady()">
+    </div>
+    <div class="field">
+      <label>ひとことで、今のお困りごとを教えてください<span class="req">必須</span></label>
+      <textarea id="f-message" placeholder="例：現場の属人化が進んでいて、担当者が休むと回らない" oninput="checkReady()"></textarea>
+    </div>
+    <button class="btn" id="submitBtn" disabled onclick="submitForm()">送信する</button>
+    <div class="err" id="errBox"></div>
+  </form>
+
+  <div id="done">
+    <div class="donecard">
+      <h2>✓ 送信しました</h2>
+      <p>ありがとうございました。内容を確認のうえ、担当より折り返しご連絡いたします。</p>
+    </div>
+  </div>
+
+  <p class="foot">Fusion Partners ／ 「背丈の低い人の生活を、その背丈のまま守る」</p>
+</div>
+
+<script>
+const CONSULT_WORKER_URL = 'https://shindan-saiken-worker.fusion-partners-office.workers.dev/consult';
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function checkReady() {
+  const name = document.getElementById('f-name').value.trim();
+  const email = document.getElementById('f-email').value.trim();
+  const message = document.getElementById('f-message').value.trim();
+  const ready = name.length > 0 && EMAIL_RE.test(email) && message.length > 0;
+  document.getElementById('submitBtn').disabled = !ready;
+}
+
+async function submitForm() {
+  const name = document.getElementById('f-name').value.trim();
+  const email = document.getElementById('f-email').value.trim();
+  const message = document.getElementById('f-message').value.trim();
+  const btn = document.getElementById('submitBtn');
+  const errBox = document.getElementById('errBox');
+  errBox.classList.remove('show');
+  btn.disabled = true;
+  btn.textContent = '送信中…';
+
+  try {
+    const res = await fetch(CONSULT_WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, message }),
+    });
+    if (!res.ok) throw new Error('送信に失敗しました');
+    document.getElementById('sodanForm').style.display = 'none';
+    document.getElementById('done').style.display = 'block';
+    document.getElementById('done').scrollIntoView({ behavior: 'smooth' });
+  } catch (e) {
+    errBox.textContent = '送信に失敗しました。時間をおいて再度お試しいただくか、恐れ入りますが直接お問い合わせください。';
+    errBox.classList.add('show');
+    btn.disabled = false;
+    btn.textContent = '送信する';
+  }
+}
+</script>
+</body>
+</html>

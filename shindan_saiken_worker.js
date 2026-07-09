@@ -5,14 +5,16 @@
  * デプロイ: `npx wrangler deploy --config shindan_saiken_wrangler.toml`
  *
  * 【必要なSecrets】
- *   ADMIN_KEY … リード一覧取得（/leads）を保護する共有シークレット
+ *   ADMIN_KEY … リード一覧取得（/leads・/consults）を保護する共有シークレット
  *
  * 【KV namespace binding】
  *   バインディング変数名: SHINDAN_KV
  *
  * 【エンドポイント】
- *   POST /lead   … 診断結果＋メールアドレスをKVに永続保存（フォームからの送信専用）
- *   GET  /leads  … 保存済みリード一覧をJSONで返す（?key=ADMIN_KEYが必須）
+ *   POST /lead      … 診断結果＋メールアドレスをKVに永続保存（shindan_saiken.html専用）
+ *   GET  /leads     … 保存済み診断リード一覧をJSONで返す（?key=ADMIN_KEYが必須）
+ *   POST /consult   … 無料相談フォーム（sodan_form.html）の3項目をKVに永続保存
+ *   GET  /consults  … 保存済み相談申込み一覧をJSONで返す（?key=ADMIN_KEYが必須）
  */
 
 const CORS = {
@@ -43,6 +45,12 @@ export default {
     }
     if (url.pathname === '/leads' && request.method === 'GET') {
       return handleListLeads(request, env);
+    }
+    if (url.pathname === '/consult' && request.method === 'POST') {
+      return handleCreateConsult(request, env);
+    }
+    if (url.pathname === '/consults' && request.method === 'GET') {
+      return handleListConsults(request, env);
     }
     return jsonRes({ error: 'not found' }, 404);
   },
@@ -95,4 +103,52 @@ async function handleListLeads(request, env) {
   leads.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
   return jsonRes({ count: leads.length, leads });
+}
+
+// ===== POST /consult（無料相談フォーム：sodan_form.html） =====
+async function handleCreateConsult(request, env) {
+  let body;
+  try { body = await request.json(); }
+  catch { return jsonRes({ error: 'invalid JSON' }, 400); }
+
+  const name = String(body.name || '').trim().substring(0, 100);
+  const email = String(body.email || '').trim().substring(0, 200);
+  const message = String(body.message || '').trim().substring(0, 2000);
+
+  if (!name) return jsonRes({ error: 'お名前が必要です' }, 400);
+  if (!EMAIL_RE.test(email)) return jsonRes({ error: '有効なメールアドレスが必要です' }, 400);
+  if (!message) return jsonRes({ error: 'お困りごとの入力が必要です' }, 400);
+
+  const now = Date.now();
+  const key = 'consult_' + now + '_' + crypto.randomUUID().substring(0, 8);
+  const record = { name, email, message, createdAt: new Date(now).toISOString() };
+
+  await env.SHINDAN_KV.put(key, JSON.stringify(record));
+
+  return jsonRes({ ok: true });
+}
+
+// ===== GET /consults =====
+async function handleListConsults(request, env) {
+  const url = new URL(request.url);
+  const key = url.searchParams.get('key') || '';
+
+  if (!env.ADMIN_KEY || key !== env.ADMIN_KEY) {
+    return jsonRes({ error: 'unauthorized' }, 401);
+  }
+
+  const consults = [];
+  let cursor;
+  do {
+    const list = await env.SHINDAN_KV.list({ prefix: 'consult_', cursor });
+    for (const k of list.keys) {
+      const raw = await env.SHINDAN_KV.get(k.name);
+      if (raw) consults.push(JSON.parse(raw));
+    }
+    cursor = list.list_complete ? undefined : list.cursor;
+  } while (cursor);
+
+  consults.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  return jsonRes({ count: consults.length, consults });
 }
