@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>奏 適性ミニ診断（サンプル）| Fusion Partners</title>
+<style>
+  :root{
+    --bg:#0f1923; --surface:#1a2634; --card:#223044;
+    --accent:#81c784; --accent2:#4fc3f7; --text:#e8eaf0; --sub:#8fa3b8;
+    --border:#2e4460; --radius:12px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:'Hiragino Kaku Gothic Pro','Meiryo',sans-serif;line-height:1.6;padding:0 0 60px;}
+  header{background:var(--surface);border-bottom:1px solid var(--border);padding:16px 20px;}
+  header h1{font-size:1.15rem;color:var(--accent);}
+  header p{font-size:.78rem;color:var(--sub);margin-top:4px;}
+  .wrap{max-width:680px;margin:0 auto;padding:18px;}
+  .note{background:#2a1f0e;border:1px solid #6b5113;color:#ffd54f;border-radius:10px;padding:10px 12px;font-size:.8rem;margin-bottom:18px;}
+  .lead{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:18px;}
+  .lead b{color:var(--accent);}
+  .q{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px;}
+  .q .qt{font-size:.95rem;margin-bottom:10px;}
+  .q .qt span{color:var(--sub);font-size:.78rem;margin-right:6px;}
+  .opts{display:flex;gap:6px;flex-wrap:wrap;}
+  .opts label{flex:1;min-width:64px;text-align:center;font-size:.74rem;color:var(--sub);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 4px;cursor:pointer;transition:.15s;}
+  .opts input{display:none;}
+  .opts input:checked + span{color:#0f1923;}
+  .opts label:has(input:checked){background:var(--accent);color:#0f1923;border-color:var(--accent);font-weight:700;}
+  .btn{display:block;width:100%;background:var(--accent);color:#0f1923;border:none;border-radius:10px;padding:14px;font-size:1rem;font-weight:700;cursor:pointer;margin-top:8px;}
+  .btn:disabled{opacity:.4;cursor:not-allowed;}
+  #result{display:none;margin-top:22px;}
+  .bar-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+  .bar-row .lbl{width:96px;font-size:.82rem;color:var(--sub);flex-shrink:0;}
+  .bar-bg{flex:1;background:var(--card);border-radius:6px;height:22px;overflow:hidden;}
+  .bar-fill{height:100%;background:linear-gradient(90deg,var(--accent2),var(--accent));border-radius:6px;transition:width .6s;}
+  .bar-row .val{width:34px;text-align:right;font-size:.82rem;}
+  .typecard{background:var(--card);border:1px solid var(--accent);border-radius:var(--radius);padding:16px;margin:16px 0;}
+  .typecard h3{color:var(--accent);margin-bottom:6px;}
+  .cta{background:var(--surface);border:1px dashed var(--accent2);border-radius:var(--radius);padding:16px;text-align:center;margin-top:18px;}
+  .cta a{display:inline-block;background:var(--accent2);color:#0f1923;text-decoration:none;font-weight:700;border-radius:10px;padding:12px 22px;margin-top:10px;}
+  .foot{font-size:.72rem;color:var(--sub);text-align:center;margin-top:24px;}
+</style>
+</head>
+<body>
+<header>
+  <h1>奏 — 適性ミニ診断<span style="font-size:.7rem;color:var(--sub);">（サンプル）</span></h1>
+  <p>3分・登録不要。あなたの行動傾向（5タイプ）を見ます。</p>
+</header>
+
+<div class="wrap">
+  <div class="note">⚠️ これは仕組みの<b>サンプル（たたき台）</b>です。設問と解釈は仮で入れています。<b>正典のエゴグラム標準解釈マニュアルの設問・解釈に差し替える前提</b>です（中身は柴山さん監修で確定）。レゴブロック1個の「型」を見ていただくためのものです。</div>
+
+  <div class="lead">
+    各質問に、いちばん近いものを選んでください。<br>
+    <b>正解はありません。</b>素直に答えるほど、傾向が正しく出ます。
+  </div>
+
+  <form id="quiz"></form>
+  <button class="btn" id="submit" disabled>結果を見る</button>
+
+  <div id="result">
+    <h2 style="color:var(--accent);margin-bottom:14px;">あなたの傾向</h2>
+    <div id="bars"></div>
+    <div class="typecard" id="typecard"></div>
+    <div class="cta">
+      <div>この傾向を踏まえて、配置やチームづくりを一緒に考えませんか？</div>
+      <a href="https://docs.google.com/forms/d/e/1FAIpQLSe-XyJT4_oZa84RRIr09oOUiBY7MTTnGmksuhs9VxWBoa9Bcg/viewform" target="_blank" rel="noopener">相談する（無料・1分）</a>
+    </div>
+    <button class="btn" style="background:var(--card);color:var(--text);margin-top:14px;" onclick="location.reload()">もう一度</button>
+  </div>
+
+  <p class="foot">Fusion Partners ／ 奏（Kanade）｜ ※サンプル版・設問は要差し替え</p>
+</div>
+
+<script>
+// ===== サンプル設問（要・正典差し替え）=====
+// scale: CP=規範 NP=思いやり A=論理 FC=自由 AC=協調（エゴグラム5尺度のたたき台）
+const QUESTIONS = [
+  {t:"決めたルールは守るべきだと思う", s:"CP"},
+  {t:"物事の曖昧さや中途半端が気になる", s:"CP"},
+  {t:"よくないことは、はっきり指摘したくなる", s:"CP"},
+  {t:"困っている人を見ると放っておけない", s:"NP"},
+  {t:"人の世話をしたり励ましたりするのが好きだ", s:"NP"},
+  {t:"相手の気持ちを自分のことより優先しがちだ", s:"NP"},
+  {t:"物事は事実や数字で冷静に考えたい", s:"A"},
+  {t:"感情より、結論や効率を重視する", s:"A"},
+  {t:"動く前に計画や段取りを立てる", s:"A"},
+  {t:"思いついたらすぐ行動したくなる", s:"FC"},
+  {t:"楽しいこと・新しいことが好きだ", s:"FC"},
+  {t:"感情を素直に表に出すほうだ", s:"FC"},
+  {t:"場の空気を読んで人に合わせることが多い", s:"AC"},
+  {t:"自分の意見より、まわりを立てがちだ", s:"AC"},
+  {t:"頼まれごとを断るのが苦手だ", s:"AC"},
+];
+const OPTS = [["とても","4"],["やや","3"],["普通","2"],["あまり","1"],["いいえ","0"]];
+const SCALE_LABEL = {CP:"規範・責任感(CP)",NP:"思いやり(NP)",A:"論理・計画(A)",FC:"自由・好奇心(FC)",AC:"協調・順応(AC)"};
+// サンプル解釈（要差し替え）
+const TYPE_DESC = {
+  CP:{h:"規範・けん引タイプ",d:"責任感が強く、基準を守り抜く力があります。リーダーや品質管理で力を発揮します。"},
+  NP:{h:"育成・支援タイプ",d:"面倒見がよく、人を育て支えることに長けています。OJTや相談役で輝きます。"},
+  A:{h:"分析・設計タイプ",d:"冷静に事実で判断し、段取りを組むのが得意。企画・改善・数字の役割が向きます。"},
+  FC:{h:"発想・ムードメーカータイプ",d:"好奇心と行動力でチームに勢いを生みます。新規・対人・場づくりで活きます。"},
+  AC:{h:"協調・サポートタイプ",d:"周囲に合わせ、場を和らげる力があります。チーム連携や調整役で安定をもたらします。"},
+};
+
+const form = document.getElementById('quiz');
+QUESTIONS.forEach((q,i)=>{
+  const div=document.createElement('div');div.className='q';
+  let opts=OPTS.map(o=>`<label><input type="radio" name="q${i}" value="${o[1]}"><span>${o[0]}</span></label>`).join('');
+  div.innerHTML=`<div class="qt"><span>Q${i+1}</span>${q.t}</div><div class="opts">${opts}</div>`;
+  form.appendChild(div);
+});
+
+const submit=document.getElementById('submit');
+form.addEventListener('change',()=>{
+  const answered=QUESTIONS.every((_,i)=>form.querySelector(`input[name="q${i}"]:checked`));
+  submit.disabled=!answered;
+});
+
+submit.addEventListener('click',()=>{
+  const score={CP:0,NP:0,A:0,FC:0,AC:0};
+  QUESTIONS.forEach((q,i)=>{
+    const v=+form.querySelector(`input[name="q${i}"]:checked`).value;
+    score[q.s]+=v;
+  });
+  const max=12; // 3問×4点
+  const bars=document.getElementById('bars');bars.innerHTML='';
+  Object.keys(score).forEach(k=>{
+    const pct=Math.round(score[k]/max*100);
+    bars.innerHTML+=`<div class="bar-row"><div class="lbl">${SCALE_LABEL[k]}</div><div class="bar-bg"><div class="bar-fill" style="width:${pct}%"></div></div><div class="val">${score[k]}</div></div>`;
+  });
+  const top=Object.keys(score).sort((a,b)=>score[b]-score[a])[0];
+  const t=TYPE_DESC[top];
+  document.getElementById('typecard').innerHTML=`<h3>あなたの強み傾向：${t.h}</h3><p>${t.d}</p><p style="color:var(--sub);font-size:.78rem;margin-top:8px;">※サンプル解釈です。正典マニュアルで本解釈に差し替えます。</p>`;
+  document.getElementById('result').style.display='block';
+  document.getElementById('result').scrollIntoView({behavior:'smooth'});
+});
+</script>
+</body>
+</html>

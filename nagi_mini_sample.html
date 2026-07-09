@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>凪 組織の健康ミニ診断（サンプル）| Fusion Partners</title>
+<style>
+  :root{--bg:#0f1923;--surface:#1a2634;--card:#223044;--accent:#4fc3f7;--accent2:#81c784;--text:#e8eaf0;--sub:#8fa3b8;--border:#2e4460;--radius:12px;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:'Hiragino Kaku Gothic Pro','Meiryo',sans-serif;line-height:1.6;padding:0 0 60px;}
+  header{background:var(--surface);border-bottom:1px solid var(--border);padding:16px 20px;}
+  header h1{font-size:1.15rem;color:var(--accent);}
+  header p{font-size:.78rem;color:var(--sub);margin-top:4px;}
+  .wrap{max-width:680px;margin:0 auto;padding:18px;}
+  .note{background:#2a1f0e;border:1px solid #6b5113;color:#ffd54f;border-radius:10px;padding:10px 12px;font-size:.8rem;margin-bottom:18px;}
+  .lead{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:18px;}
+  .q{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px;}
+  .q .qt{font-size:.95rem;margin-bottom:10px;}
+  .q .qt span{color:var(--sub);font-size:.78rem;margin-right:6px;}
+  .opts{display:flex;gap:6px;flex-wrap:wrap;}
+  .opts label{flex:1;min-width:60px;text-align:center;font-size:.74rem;color:var(--sub);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 4px;cursor:pointer;}
+  .opts input{display:none;}
+  .opts label:has(input:checked){background:var(--accent);color:#0f1923;border-color:var(--accent);font-weight:700;}
+  .btn{display:block;width:100%;background:var(--accent);color:#0f1923;border:none;border-radius:10px;padding:14px;font-size:1rem;font-weight:700;cursor:pointer;margin-top:8px;}
+  .btn:disabled{opacity:.4;cursor:not-allowed;}
+  #result{display:none;margin-top:22px;}
+  .gauge{background:var(--card);border-radius:10px;height:26px;overflow:hidden;margin:14px 0;}
+  .gauge-fill{height:100%;background:linear-gradient(90deg,#ef5350,#ffb74d,var(--accent2));transition:width .6s;}
+  .scorecard{background:var(--card);border:1px solid var(--accent);border-radius:var(--radius);padding:16px;margin:16px 0;}
+  .scorecard h3{color:var(--accent);margin-bottom:6px;}
+  .cta{background:var(--surface);border:1px dashed var(--accent2);border-radius:var(--radius);padding:16px;text-align:center;margin-top:18px;}
+  .cta a{display:inline-block;background:var(--accent2);color:#0f1923;text-decoration:none;font-weight:700;border-radius:10px;padding:12px 22px;margin-top:10px;}
+  .foot{font-size:.72rem;color:var(--sub);text-align:center;margin-top:24px;}
+</style>
+</head>
+<body>
+<header>
+  <h1>凪 — 組織の健康ミニ診断<span style="font-size:.7rem;color:var(--sub);">（サンプル）</span></h1>
+  <p>3分・登録不要。あなたのチームの「心理的安全性」をざっと測ります。</p>
+</header>
+<div class="wrap">
+  <div class="note">⚠️ これは仕組みの<b>サンプル（たたき台）</b>です。設問・判定は仮。<b>正典の凪アセスメント（v1.7・経営羅針盤）に差し替える前提</b>です。レゴブロック1個の「型」を見ていただくためのものです。</div>
+  <div class="lead">あなたのチームを思い浮かべて、各質問に近いものを選んでください。<b>正解はありません。</b></div>
+  <form id="quiz"></form>
+  <button class="btn" id="submit" disabled>結果を見る</button>
+  <div id="result">
+    <h2 style="color:var(--accent);">チームの安全度</h2>
+    <div class="gauge"><div class="gauge-fill" id="gfill" style="width:0"></div></div>
+    <div class="scorecard" id="card"></div>
+    <div class="cta">
+      <div>この結果をもとに、組織の「詰まり」を一緒にほどきませんか？（黒字化・離職対策の入口）</div>
+      <a href="https://docs.google.com/forms/d/e/1FAIpQLSe-XyJT4_oZa84RRIr09oOUiBY7MTTnGmksuhs9VxWBoa9Bcg/viewform" target="_blank" rel="noopener">相談する（無料・1分）</a>
+    </div>
+    <button class="btn" style="background:var(--card);color:var(--text);margin-top:14px;" onclick="location.reload()">もう一度</button>
+  </div>
+  <p class="foot">Fusion Partners ／ 凪（Nagi）｜ ※サンプル版・設問は要差し替え</p>
+</div>
+<script>
+// サンプル設問（要・正典差し替え）＝心理的安全性のたたき台
+const Q=[
+ "このチームでは、ミスを正直に報告できる",
+ "分からないことを、気兼ねなく質問できる",
+ "反対意見を言っても、頭ごなしに否定されない",
+ "困ったとき、助けを求めやすい雰囲気がある",
+ "新しいことに挑戦して失敗しても、責められない",
+ "一人ひとりの強みが、活かされていると感じる",
+];
+const OPTS=[["とても",4],["やや",3],["普通",2],["あまり",1],["いいえ",0]];
+const form=document.getElementById('quiz');
+Q.forEach((q,i)=>{const d=document.createElement('div');d.className='q';
+ d.innerHTML=`<div class="qt"><span>Q${i+1}</span>${q}</div><div class="opts">`+OPTS.map(o=>`<label><input type="radio" name="q${i}" value="${o[1]}"><span>${o[0]}</span></label>`).join('')+`</div>`;
+ form.appendChild(d);});
+const submit=document.getElementById('submit');
+form.addEventListener('change',()=>{submit.disabled=!Q.every((_,i)=>form.querySelector(`input[name="q${i}"]:checked`));});
+submit.addEventListener('click',()=>{
+ let s=0;Q.forEach((_,i)=>s+=+form.querySelector(`input[name="q${i}"]:checked`).value);
+ const max=Q.length*4, pct=Math.round(s/max*100);
+ let lv,msg;
+ if(pct>=75){lv="良好（凪いでいます）";msg="安心して意見を出せる土台があります。この強みを言語化して、人が育つ仕組みに変えていきましょう。";}
+ else if(pct>=50){lv="やや揺れ";msg="表面は回っていても、本音が出にくい場面があります。どこで詰まるかを1枚にすると、打ち手が見えます。";}
+ else{lv="要注意（荒れ模様）";msg="本音が抑えられ、離職や報告漏れの温床になりがちです。早めに『詰まり』を可視化することをおすすめします。";}
+ document.getElementById('gfill').style.width=pct+'%';
+ document.getElementById('card').innerHTML=`<h3>${lv}（${pct}点）</h3><p>${msg}</p><p style="color:var(--sub);font-size:.78rem;margin-top:8px;">※サンプル判定です。正典の凪アセスメントで本判定に差し替えます。</p>`;
+ document.getElementById('result').style.display='block';
+ document.getElementById('result').scrollIntoView({behavior:'smooth'});
+});
+</script>
+</body>
+</html>

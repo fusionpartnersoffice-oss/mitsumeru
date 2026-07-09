@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ミツメル 今日の自分30秒チェック（サンプル）| Fusion Partners</title>
+<style>
+  :root{--bg:#0f1923;--surface:#1a2634;--card:#223044;--accent:#ce93d8;--accent2:#81c784;--text:#e8eaf0;--sub:#8fa3b8;--border:#2e4460;--radius:12px;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:'Hiragino Kaku Gothic Pro','Meiryo',sans-serif;line-height:1.6;padding:0 0 60px;}
+  header{background:var(--surface);border-bottom:1px solid var(--border);padding:16px 20px;}
+  header h1{font-size:1.12rem;color:var(--accent);}
+  header p{font-size:.78rem;color:var(--sub);margin-top:4px;}
+  .wrap{max-width:600px;margin:0 auto;padding:18px;}
+  .note{background:#2a1f0e;border:1px solid #6b5113;color:#ffd54f;border-radius:10px;padding:10px 12px;font-size:.8rem;margin-bottom:18px;}
+  .q{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px;}
+  .q .qt{font-size:.96rem;margin-bottom:10px;}
+  .opts{display:flex;gap:6px;flex-wrap:wrap;}
+  .opts label{flex:1;min-width:56px;text-align:center;font-size:.8rem;color:var(--sub);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px 4px;cursor:pointer;}
+  .opts input{display:none;}
+  .opts label:has(input:checked){background:var(--accent);color:#0f1923;border-color:var(--accent);font-weight:700;}
+  .btn{display:block;width:100%;background:var(--accent);color:#0f1923;border:none;border-radius:10px;padding:14px;font-size:1rem;font-weight:700;cursor:pointer;margin-top:8px;}
+  .btn:disabled{opacity:.4;cursor:not-allowed;}
+  #result{display:none;margin-top:22px;}
+  .msgcard{background:var(--card);border:1px solid var(--accent);border-radius:var(--radius);padding:18px;margin:16px 0;font-size:1.02rem;}
+  .links{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;}
+  .links a{flex:1;min-width:160px;text-align:center;background:var(--surface);border:1px solid var(--accent2);color:var(--accent2);text-decoration:none;border-radius:10px;padding:12px;font-size:.85rem;}
+  .foot{font-size:.72rem;color:var(--sub);text-align:center;margin-top:24px;}
+</style>
+</head>
+<body>
+<header>
+  <h1>ミツメル — 今日の自分30秒チェック<span style="font-size:.7rem;color:var(--sub);">（サンプル）</span></h1>
+  <p>30秒。登録不要。今日の自分を、ちょっとだけ見つめます。</p>
+</header>
+<div class="wrap">
+  <div class="note">⚠️ これは仕組みの<b>サンプル（たたき台）</b>です。設問・ひとことは仮。<b>正典のミツメル設計に差し替える前提</b>。レゴブロック1個の「型」です。</div>
+  <form id="quiz"></form>
+  <button class="btn" id="submit" disabled>今日のひとことを見る</button>
+  <div id="result">
+    <div class="msgcard" id="msg"></div>
+    <div style="font-size:.82rem;color:var(--sub);text-align:center;">しんどい時は、無理に立て直さなくて大丈夫。</div>
+    <div class="links">
+      <a href="https://fusionpartnersoffice-oss.github.io/3me/" target="_blank" rel="noopener">3分だけ整える（3me）</a>
+      <a href="https://fusionpartnersoffice-oss.github.io/mitsumeru/naze_naze.html" target="_blank" rel="noopener">もやもやを5分で掘る（なぜなぜ）</a>
+    </div>
+    <button class="btn" style="background:var(--card);color:var(--text);margin-top:14px;" onclick="location.reload()">もう一度</button>
+  </div>
+  <p class="foot">Fusion Partners ／ ミツメル｜ ※サンプル版・設問は要差し替え</p>
+</div>
+<script>
+// サンプル設問（要・正典差し替え）
+const Q=[
+ {t:"今日の気分は、どのあたり？",o:[["晴れ",2],["くもり",1],["雨",0]]},
+ {t:"昨夜は、眠れた？",o:[["眠れた",2],["まあまあ",1],["眠れず",0]]},
+ {t:"今、心や体の負荷は？",o:[["軽い",2],["普通",1],["重い",0]]},
+ {t:"誰かに話したいことが、ある？",o:[["ない",2],["少し",1],["ある",0]]},
+];
+const form=document.getElementById('quiz');
+Q.forEach((q,i)=>{const d=document.createElement('div');d.className='q';
+ d.innerHTML=`<div class="qt">${q.t}</div><div class="opts">`+q.o.map(o=>`<label><input type="radio" name="q${i}" value="${o[1]}"><span>${o[0]}</span></label>`).join('')+`</div>`;
+ form.appendChild(d);});
+const submit=document.getElementById('submit');
+form.addEventListener('change',()=>{submit.disabled=!Q.every((_,i)=>form.querySelector(`input[name="q${i}"]:checked`));});
+submit.addEventListener('click',()=>{
+ let s=0;Q.forEach((_,i)=>s+=+form.querySelector(`input[name="q${i}"]:checked`).value);
+ const max=Q.length*2;
+ let msg;
+ if(s>=max*0.75) msg="今日は、わりと整っていますね。この調子を覚えておくと、しんどい日の目印になります。";
+ else if(s>=max*0.4) msg="少し揺れている日かもしれません。ひとつだけ、今日やめてもいいことを決めてみませんか。";
+ else msg="今日は、かなり消耗していそうです。3分だけ自分に戻る時間を取りましょう。下のボタンが助けになります。";
+ document.getElementById('msg').textContent=msg;
+ document.getElementById('result').style.display='block';
+ document.getElementById('result').scrollIntoView({behavior:'smooth'});
+});
+</script>
+</body>
+</html>
