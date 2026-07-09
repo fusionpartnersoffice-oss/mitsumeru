@@ -155,10 +155,20 @@ function judgePhase() {
   return top;
 }
 
+const LEAD_WORKER_URL = 'https://shindan-saiken-worker.fusion-partners-office.workers.dev/lead';
+
 function showResult() {
   const email = document.getElementById('emailInput').value.trim();
   const phase = judgePhase();
   const info = PHASE_INFO[phase];
+  const answers = QUESTIONS.map((_, i) => Number(form.querySelector(`input[name="q${i}"]:checked`).value));
+
+  // 恒久保存（Cloudflare Worker + KV）。送信失敗してもユーザー体験（結果表示）は妨げない
+  fetch(LEAD_WORKER_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, phase: String(phase), badge: info.badge, answers }),
+  }).catch(() => {});
 
   // メール通知（送信済みの保証はできないため、結果表示は独立して行う）
   const subject = encodeURIComponent('【診断結果】再建フェーズ診断：' + info.badge);

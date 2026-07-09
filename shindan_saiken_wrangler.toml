@@ -1,0 +1,7 @@
+name = "shindan-saiken-worker"
+main = "shindan_saiken_worker.js"
+compatibility_date = "2026-06-29"
+
+[[kv_namespaces]]
+binding = "SHINDAN_KV"
+id = "20f99babf155407799d003d0d87488c4"
