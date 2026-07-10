@@ -253,6 +253,58 @@
   .mode-dblock { background: #fff3cd; color: var(--gold); border: 0.5px solid #ffd970; }
   .mode-2min { background: #fde8e8; color: var(--red); border: 0.5px solid #f5b5b5; }
 
+  .scouter-scan {
+    text-align: center;
+    padding: 60px 20px;
+    position: relative;
+    overflow: hidden;
+    border-radius: 8px;
+    background: var(--card);
+    border: 0.5px solid var(--border);
+  }
+  .scouter-scan-text {
+    font-size: 14px;
+    letter-spacing: 3px;
+    color: var(--text3);
+    margin-bottom: 20px;
+    font-family: 'Noto Serif JP', serif;
+    animation: scouterPulse 1s ease-in-out infinite;
+  }
+  .scouter-scan-line {
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    animation: scouterScan 1.2s linear infinite;
+  }
+  @keyframes scouterScan {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+  @keyframes scouterPulse {
+    0%, 100% { opacity: .5; }
+    50% { opacity: 1; }
+  }
+  .scouter-bar-row { margin-bottom: 18px; }
+  .scouter-bar-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--text3);
+    margin-bottom: 5px;
+    letter-spacing: 1px;
+  }
+  .scouter-bar-track {
+    height: 14px;
+    background: var(--bg2);
+    border: 0.5px solid var(--border);
+    border-radius: 7px;
+    overflow: hidden;
+  }
+  .scouter-bar-fill {
+    height: 100%;
+    border-radius: 7px;
+    transition: width 0.8s ease-out;
+  }
+
   .pomo-row {
     display: flex;
     align-items: center;
@@ -616,6 +668,7 @@
   <button class="mode-tab" onclick="switchTab('memo')">随時メモ</button>
   <button class="mode-tab" onclick="switchTab('evening')">夜</button>
   <button class="mode-tab" onclick="switchTab('output')">出力</button>
+  <button class="mode-tab" onclick="switchTab('scouter')">🔍 スカウター</button>
   <button class="mode-tab" onclick="switchTab('profile')">設定</button>
 </div>
 <div class="sync-bar">
@@ -687,6 +740,16 @@
     </div>
     <button class="btn-secondary" onclick="clearMemos()" style="margin-top:12px;color:var(--red);border-color:var(--red);">メモをリセット</button>
   </div>
+</div>
+
+<!-- スカウターモード -->
+<div id="screen-scouter" class="screen">
+  <div class="date-display">🔍 ミツメルスカウター</div>
+  <div id="scouter-scan" class="scouter-scan" style="display:none;">
+    <div class="scouter-scan-text">SCANNING...</div>
+    <div class="scouter-scan-line"></div>
+  </div>
+  <div id="scouter-result" class="section" style="display:none;"></div>
 </div>
 
 <!-- 設定モード -->
@@ -1999,11 +2062,12 @@ MUST:${p.must} NEVER:${p.never}
 
 function switchTab(tab) {
   document.querySelectorAll('.mode-tab').forEach((t,i) => {
-    t.classList.toggle('active', ['morning','memo','evening','output','profile'][i] === tab);
+    t.classList.toggle('active', ['morning','memo','evening','output','scouter','profile'][i] === tab);
   });
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-'+tab).classList.add('active');
   if (tab === 'profile') updateEgoBar();
+  if (tab === 'scouter') runScouterScan();
 }
 
 function selectTag(btn, tag) {
@@ -2335,6 +2399,54 @@ function computeDayClose() {
   return { hasMorning, startHP, startMP, endHP, endMP, pomoTotal, noiseCount,
            hpFromPomo, mpFromPomo, mpFromNoise, hpFromDebug, mpFromDebug,
            cntBatsu, cntSankaku, try100Done, mpFromTry100, lvBase, todayPts };
+}
+
+// ===== ミツメルスカウター（HP/MP/LVのRPG風可視化。新規の計算ロジックは持たず、
+// computeDayClose()・formatLV()・getLVBase()の既存の値を読み取って表示するだけ）=====
+function runScouterScan() {
+  const scanEl = document.getElementById('scouter-scan');
+  const resultEl = document.getElementById('scouter-result');
+  if (!scanEl || !resultEl) return;
+  resultEl.style.display = 'none';
+  scanEl.style.display = 'block';
+  setTimeout(() => {
+    renderScouterResult();
+    scanEl.style.display = 'none';
+    resultEl.style.display = 'block';
+  }, 1200);
+}
+
+function renderScouterResult() {
+  const resultEl = document.getElementById('scouter-result');
+  if (!resultEl) return;
+  const c = computeDayClose();
+  if (!c.hasMorning) {
+    resultEl.innerHTML = '<div style="text-align:center;color:var(--text3);font-size:13px;padding:30px 10px;line-height:1.8;">本日の記録はまだありません。<br>朝タブから記録を始めてください。</div>';
+    return;
+  }
+  const lvTotal = c.lvBase + c.todayPts;
+  const level = Math.floor(lvTotal / 100) + 1;
+  const lvPts = lvTotal % 100;
+  const hp = c.endHP, mp = c.endMP;
+  const hpColor = hp >= 60 ? 'var(--green)' : hp >= 40 ? 'var(--gold)' : 'var(--red)';
+  const mo = lsLoad('morning') || {};
+  const modeText = mo['mode-badge-text'] || '判定中...';
+  const modeClass = mo['mode-badge-class'] || 'mode-badge';
+  resultEl.innerHTML = `
+    <div class="scouter-bar-row">
+      <div class="scouter-bar-label"><span>LV ${level}</span><span>${lvPts}/100</span></div>
+      <div class="scouter-bar-track"><div class="scouter-bar-fill" style="width:${lvPts}%;background:var(--gold);"></div></div>
+    </div>
+    <div class="scouter-bar-row">
+      <div class="scouter-bar-label"><span>HP</span><span>${hp}/100</span></div>
+      <div class="scouter-bar-track"><div class="scouter-bar-fill" style="width:${Math.min(100,hp)}%;background:${hpColor};"></div></div>
+    </div>
+    <div class="scouter-bar-row">
+      <div class="scouter-bar-label"><span>MP</span><span>${mp}/110</span></div>
+      <div class="scouter-bar-track"><div class="scouter-bar-fill" style="width:${Math.min(100, mp/110*100)}%;background:#1a5a9a;"></div></div>
+    </div>
+    <div class="${modeClass}" style="margin-top:16px;">${modeText}</div>
+  `;
 }
 
 // ===== 夜：今日のHP/MPを締める（決定論のみ。質的評価は出力タブの翌日戦略AIが担う）=====
