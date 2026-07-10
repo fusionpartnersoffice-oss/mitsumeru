@@ -1393,6 +1393,15 @@ async function cloudSave(type, data, date) {
   }
 }
 
+// 朝夜タブの自由記述欄は1文字入力ごとにcloudSaveが発火しKV書き込みが過多になるため、
+// 入力停止後1.5秒待ってから最後の内容のみ書き込む（localStorageは即時保存のまま変更なし）
+const _cloudSaveDebounceTimers = {};
+function cloudSaveDebounced(type, data, date, delay = 1500) {
+  const key = type + '_' + (date || targetDate);
+  clearTimeout(_cloudSaveDebounceTimers[key]);
+  _cloudSaveDebounceTimers[key] = setTimeout(() => cloudSave(type, data, date), delay);
+}
+
 async function cloudSaveGlobal(type, data) {
   try {
     await fetch(`${SYNC_URL}?key=${encodeURIComponent('private_' + type + '_global')}`, {
@@ -1475,7 +1484,7 @@ function saveEvening() {
   data['try100-count'] = counts.try100;
   data['advanceSchedule'] = getAdvanceScheduleData();
   localStorage.setItem(lsKey('evening'), JSON.stringify(data));
-  cloudSave('evening', data);
+  cloudSaveDebounced('evening', data);
 }
 
 // ===== 先行予定マップ =====
@@ -1614,7 +1623,7 @@ function saveMorning() {
   if (morningResult) data['morning-result-visible'] = morningResult.style.display !== 'none';
   data['lv-base'] = getLVBase();
   localStorage.setItem(lsKey('morning'), JSON.stringify(data));
-  cloudSave('morning', data);
+  cloudSaveDebounced('morning', data);
 }
 
 // ===== UI復元ヘルパー =====
