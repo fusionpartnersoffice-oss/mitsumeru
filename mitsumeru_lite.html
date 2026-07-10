@@ -436,6 +436,40 @@
   <span>FUSION PARTNERS</span>
   <button onclick="toggleHelp()" style="margin-left:auto;background:none;border:0.5px solid var(--border);color:var(--bg);border-radius:20px;padding:4px 12px;font-size:11px;cursor:pointer;letter-spacing:1px;">？ ヘルプ</button>
   <button onclick="setApiKey()" style="margin-left:8px;background:none;border:0.5px solid var(--border);color:var(--bg);border-radius:20px;padding:4px 12px;font-size:11px;cursor:pointer;letter-spacing:1px;" id="api-btn">🔑 API</button>
+  <button onclick="openCompanyModal()" style="margin-left:8px;background:none;border:0.5px solid var(--border);color:var(--bg);border-radius:20px;padding:4px 12px;font-size:11px;cursor:pointer;letter-spacing:1px;" id="company-btn">🏢 会社と共有</button>
+</div>
+
+<!-- 企業アカウント紐付け（K-1・オプトイン同意） -->
+<div id="company-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:200;overflow-y:auto;padding:20px;">
+  <div style="background:var(--card);border-radius:12px;max-width:520px;margin:0 auto;padding:24px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <h2 style="font-family:'Noto Serif JP',serif;font-size:16px;font-weight:400;letter-spacing:2px;">会社と気分を共有する</h2>
+      <button onclick="closeCompanyModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text3);">✕</button>
+    </div>
+    <div style="font-size:13px;line-height:1.8;color:var(--text2);margin-bottom:16px;background:#e8f5ee;border-radius:8px;padding:12px;border:0.5px solid #a8dfc4;">
+      あなたの<b>日記の内容そのものは、会社の管理者には一切表示されません</b>。表示されるのは、チーム全体の「晴れ・曇り・雨」の人数集計と記録率のみです。個人が特定される形では一切共有されません。<br>
+      いつでもこの画面から解除できます。
+    </div>
+    <div id="company-linked-view" style="display:none;">
+      <p style="font-size:13px;margin-bottom:8px;">現在、共有中です：<b id="company-linked-label"></b></p>
+      <button class="btn-primary" style="background:var(--card);border:1px solid var(--border);color:var(--text);" onclick="unlinkCompany()">共有を解除する</button>
+    </div>
+    <div id="company-unlinked-view">
+      <div style="margin-bottom:10px;">
+        <label style="display:block;font-size:12px;color:var(--text3);margin-bottom:4px;">会社コード（会社から共有されたコード）</label>
+        <input type="text" id="company-id-input" placeholder="例：acme" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
+      </div>
+      <div style="margin-bottom:14px;">
+        <label style="display:block;font-size:12px;color:var(--text3);margin-bottom:4px;">チームコード</label>
+        <input type="text" id="team-id-input" placeholder="例：team-a" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
+      </div>
+      <label style="display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--text2);margin-bottom:14px;cursor:pointer;">
+        <input type="checkbox" id="company-consent-checkbox" style="margin-top:2px;">
+        <span>上記の説明を理解し、日記の内容は共有されず、チーム全体の気分・記録率の集計のみが会社に共有されることに同意します</span>
+      </label>
+      <button class="btn-primary" onclick="linkCompany()">同意して共有を開始する</button>
+    </div>
+  </div>
 </div>
 
 <div id="help-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:200;overflow-y:auto;padding:20px;">
@@ -1064,6 +1098,7 @@ function calcMorning() {
 
   document.getElementById('morning-result').style.display = 'block';
   saveMorning();
+  sendCompassCheckin(mood);
 
   const prompt = `あなたはFusion Partners代表の「SuccessOS 統合経営参謀」です。
 
@@ -1264,6 +1299,78 @@ function activateProCode() {
 // 特商法モーダル 開閉
 function showTokushoho() { document.getElementById('tokushoho-overlay').classList.add('active'); }
 function closeTokushoho() { document.getElementById('tokushoho-overlay').classList.remove('active'); }
+
+// ═══════════════════════════════════════════════
+// K-1・K-2：企業アカウント紐付け（オプトイン）・匿名チェックイン送信
+// 設計：06_イノベーション/ミツメル_企業向け羅針盤ダッシュボード_詳細設計_20260707.md §3-4
+// 送信するのは「会社ID・チームID・週・気分カテゴリ（晴れ/曇り/雨）」のみ。
+// 氏名・メールアドレス・日記本文は一切送信しない。
+// ═══════════════════════════════════════════════
+const COMPASS_WORKER_URL = 'https://mitsumeru-compass-worker.fusion-partners-office.workers.dev/checkin';
+
+function getCompanyLink() {
+  try { return JSON.parse(localStorage.getItem('mitsumeru_company_link') || 'null'); } catch(e) { return null; }
+}
+
+function openCompanyModal() {
+  const link = getCompanyLink();
+  document.getElementById('company-linked-view').style.display = link ? 'block' : 'none';
+  document.getElementById('company-unlinked-view').style.display = link ? 'none' : 'block';
+  if (link) {
+    document.getElementById('company-linked-label').textContent = link.companyId + ' / ' + link.teamId;
+  }
+  document.getElementById('company-overlay').style.display = 'block';
+}
+
+function closeCompanyModal() {
+  document.getElementById('company-overlay').style.display = 'none';
+}
+
+function linkCompany() {
+  const companyId = document.getElementById('company-id-input').value.trim();
+  const teamId = document.getElementById('team-id-input').value.trim();
+  const consented = document.getElementById('company-consent-checkbox').checked;
+  if (!companyId || !teamId) { alert('会社コード・チームコードを入力してください。'); return; }
+  if (!consented) { alert('同意のチェックを入れてください。'); return; }
+  localStorage.setItem('mitsumeru_company_link', JSON.stringify({ companyId, teamId, consentAt: new Date().toISOString() }));
+  closeCompanyModal();
+}
+
+function unlinkCompany() {
+  if (!confirm('会社との共有を解除します。よろしいですか？')) return;
+  localStorage.removeItem('mitsumeru_company_link');
+  closeCompanyModal();
+}
+
+// 1-5の気分値を天気カテゴリへ変換（設計書の晴れ/曇り/雨UIに合わせた簡易マッピング）
+function moodToWeather(mood) {
+  if (mood >= 4) return 'hare';
+  if (mood === 3) return 'kumori';
+  return 'ame';
+}
+
+function currentCompassWeekLabel() {
+  const d = new Date();
+  const onejan = new Date(d.getFullYear(), 0, 1);
+  const week = Math.ceil((((d - onejan) / 86400000) + onejan.getDay() + 1) / 7);
+  return d.getFullYear() + '-W' + String(week).padStart(2, '0');
+}
+
+// 同意済みの場合のみ、匿名カウンタ加算を送信する（1日1回・呼び出し側で制御）
+function sendCompassCheckin(mood) {
+  const link = getCompanyLink();
+  if (!link) return;
+  fetch(COMPASS_WORKER_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      companyId: link.companyId,
+      teamId: link.teamId,
+      week: currentCompassWeekLabel(),
+      mood: moodToWeather(mood),
+    }),
+  }).catch(() => {});
+}
 
 // ===== 同意取得 =====
 function hasConsent() {
