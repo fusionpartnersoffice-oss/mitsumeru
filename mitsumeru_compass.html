@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>ミツメル 企業向け羅針盤ダッシュボード — Fusion Partners</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23455a64'/><text x='16' y='24' font-size='18' text-anchor='middle'>🧭</text></svg>">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap');
+  :root {
+    --bg:#0d1117; --bg2:#161b22; --border:#30363d; --text:#c9d1d9; --text2:#8b949e;
+    --accent:#58a6ff; --green:#2d7a52; --yellow:#c9a227; --red:#c0392b; --card:#161b22;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family:'Noto Sans JP',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; padding:0 0 100px 0; font-size:14px; line-height:1.7; }
+  .header { background:#000; color:#fff; padding:18px 24px 14px; position:sticky; top:0; z-index:100; display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; }
+  .header h1 { font-size:18px; font-weight:500; letter-spacing:1px; }
+  .header span { font-size:11px; color:#8b949e; letter-spacing:1px; }
+  .screen { padding:18px 16px; max-width:900px; margin:0 auto; }
+  .section { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:16px; margin-bottom:14px; }
+  .section-title { font-size:13px; font-weight:500; margin-bottom:12px; letter-spacing:0.5px; display:flex; align-items:center; gap:6px; }
+  .note { font-size:11px; color:var(--text2); margin-top:6px; line-height:1.6; }
+  .field { margin-bottom:12px; }
+  .field label { display:block; font-size:12px; color:var(--text2); margin-bottom:4px; }
+  .field select { width:100%; padding:8px 10px; border:1px solid var(--border); border-radius:5px; background:#21262d; color:var(--text); font-size:13px; font-family:inherit; }
+  .suppressed { text-align:center; color:var(--yellow); font-size:13px; padding:30px 10px; border:1px dashed var(--yellow); border-radius:8px; background:rgba(201,162,39,.08); }
+  .grid3 { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:10px; }
+  .weather-card { border-radius:8px; padding:14px; text-align:center; }
+  .weather-card .icon { font-size:28px; }
+  .weather-card .num { font-size:22px; font-weight:700; margin-top:4px; }
+  .weather-card .lbl { font-size:11px; color:var(--text2); margin-top:2px; }
+  .w-hare { background:rgba(255,193,7,.1); border:1px solid rgba(255,193,7,.3); }
+  .w-kumori { background:rgba(144,164,174,.1); border:1px solid rgba(144,164,174,.3); }
+  .w-ame { background:rgba(88,166,255,.1); border:1px solid rgba(88,166,255,.3); }
+  .rate-bar-bg { background:#21262d; border-radius:6px; height:10px; overflow:hidden; margin-top:6px; }
+  .rate-bar-fill { background:var(--accent); height:100%; border-radius:6px; transition:width .3s; }
+  table.trend-table { width:100%; border-collapse:collapse; font-size:12px; margin-top:10px; }
+  table.trend-table th, table.trend-table td { border:1px solid var(--border); padding:6px 8px; text-align:center; }
+  table.trend-table th { background:#21262d; font-weight:500; }
+  .ai-comment-box { font-size:13px; line-height:1.7; padding:12px; background:#21262d; border-radius:6px; border-left:3px solid var(--accent); }
+  .btn { background:var(--accent); color:#000; border:none; border-radius:6px; padding:8px 16px; font-size:12px; cursor:pointer; font-weight:500; }
+  .btn:disabled { opacity:.4; cursor:not-allowed; }
+  .empty-state { text-align:center; color:var(--text2); font-size:12px; padding:30px 0; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🧭 ミツメル 企業向け羅針盤ダッシュボード</h1>
+  <span>MITSUMERU COMPASS · K-1〜K-4 MVP</span>
+</div>
+
+<div class="screen">
+  <div class="section">
+    <div class="section-title">対象チーム</div>
+    <div class="field">
+      <label>企業・チームを選択</label>
+      <select id="team-select" onchange="renderCompass()"></select>
+    </div>
+    <div class="note">
+      ⚠この画面は集計値のみを表示します。個人の氏名・日記本文・個人別スコアは一切表示されません（凪軸C方式を踏襲）。<br>
+      ⚠現時点ではK-1（個人アカウントの企業紐付け・オプトイン同意）とK-2（匿名化抽出バッチ）は未実装のため、下記は<b>手動で入力した週次集計値</b>を表示するMVPです。実際の個人ジャーナリングからの自動集計は今後の実装対象です（設計書§3参照）。
+    </div>
+  </div>
+
+  <div id="compass-body"></div>
+
+  <div class="section">
+    <div class="section-title">今週の集計値を入力（暫定・手動入力）</div>
+    <div class="note" style="margin-bottom:10px;">正式なK-1/K-2（個人データの自動匿名化パイプライン）が実装されるまでの暫定入力です。</div>
+    <div class="field"><label>晴れ（人数）</label><input type="number" id="in-hare" min="0" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:5px;background:#21262d;color:var(--text);"></div>
+    <div class="field"><label>曇り（人数）</label><input type="number" id="in-kumori" min="0" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:5px;background:#21262d;color:var(--text);"></div>
+    <div class="field"><label>雨（人数）</label><input type="number" id="in-ame" min="0" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:5px;background:#21262d;color:var(--text);"></div>
+    <div class="field"><label>記録率（%・0〜100）</label><input type="number" id="in-rate" min="0" max="100" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:5px;background:#21262d;color:var(--text);"></div>
+    <button class="btn" onclick="saveWeek()">この週のデータを保存</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// データ層
+// K-1/K-2未実装のため、暫定的にチームマスタ＋週次集計値を
+// このファイル内で完結する形で管理する（設計書§3・§4-2に準拠）
+// ═══════════════════════════════════════════════
+const MIN_TEAM_SIZE = 5; // §4-2：5名未満は表示抑制
+
+function loadTeams() { try { return JSON.parse(localStorage.getItem('mitsumeru_compass_teams') || '[]'); } catch(e) { return []; } }
+function saveTeams(v) { localStorage.setItem('mitsumeru_compass_teams', JSON.stringify(v)); }
+
+function weekKey(teamId) { return 'mitsumeru_compass_week_' + teamId; }
+function loadWeeks(teamId) { try { return JSON.parse(localStorage.getItem(weekKey(teamId)) || '[]'); } catch(e) { return []; } }
+function saveWeeks(teamId, v) { localStorage.setItem(weekKey(teamId), JSON.stringify(v)); }
+
+function currentWeekLabel() {
+  const d = new Date();
+  const onejan = new Date(d.getFullYear(), 0, 1);
+  const week = Math.ceil((((d - onejan) / 86400000) + onejan.getDay() + 1) / 7);
+  return d.getFullYear() + '-W' + String(week).padStart(2, '0');
+}
+
+// サンプルチームがまだ無ければ1件だけ作る（動作確認用）
+function ensureSampleTeam() {
+  const teams = loadTeams();
+  if (teams.length === 0) {
+    saveTeams([{ id: 'team_sample', name: '（サンプル）〇〇施設 チーム', size: 8 }]);
+  }
+}
+
+function populateTeamSelect() {
+  const teams = loadTeams();
+  const sel = document.getElementById('team-select');
+  sel.innerHTML = teams.length
+    ? teams.map(t => `<option value="${t.id}">${t.name}（${t.size}名）</option>`).join('')
+    : '<option value="">（チーム未登録）</option>';
+}
+
+function saveWeek() {
+  const teamId = document.getElementById('team-select').value;
+  if (!teamId) { alert('チームを選択してください'); return; }
+  const hare = Number(document.getElementById('in-hare').value) || 0;
+  const kumori = Number(document.getElementById('in-kumori').value) || 0;
+  const ame = Number(document.getElementById('in-ame').value) || 0;
+  const rate = Number(document.getElementById('in-rate').value) || 0;
+
+  const weeks = loadWeeks(teamId);
+  const label = currentWeekLabel();
+  const existing = weeks.find(w => w.label === label);
+  const entry = { label, hare, kumori, ame, rate, updatedAt: new Date().toISOString() };
+  if (existing) Object.assign(existing, entry);
+  else weeks.push(entry);
+  weeks.sort((a, b) => a.label.localeCompare(b.label));
+  saveWeeks(teamId, weeks.slice(-8)); // 直近8週分のみ保持
+
+  renderCompass();
+}
+
+// ═══════════════════════════════════════════════
+// K-3：管理者ダッシュボード描画
+// ═══════════════════════════════════════════════
+function renderCompass() {
+  const teams = loadTeams();
+  const teamId = document.getElementById('team-select').value;
+  const team = teams.find(t => t.id === teamId);
+  const body = document.getElementById('compass-body');
+
+  if (!team) { body.innerHTML = '<div class="empty-state">チームを選択してください</div>'; return; }
+
+  // §4-2：最小人数ルール
+  if (team.size < MIN_TEAM_SIZE) {
+    body.innerHTML = `<div class="section"><div class="suppressed">⚠ 表示するにはチーム人数が不足しています（現在${team.size}名・最低${MIN_TEAM_SIZE}名必要）。<br>個人が特定されることを防ぐための制限です。</div></div>`;
+    return;
+  }
+
+  const weeks = loadWeeks(teamId);
+  if (!weeks.length) {
+    body.innerHTML = '<div class="section"><div class="empty-state">まだ今週のデータがありません。下のフォームから入力してください</div></div>';
+    return;
+  }
+
+  const latest = weeks[weeks.length - 1];
+  const total = latest.hare + latest.kumori + latest.ame;
+
+  const weatherHtml = `
+    <div class="section">
+      <div class="section-title">📊 チーム全体サマリー（${latest.label}）</div>
+      <div class="grid3">
+        <div class="weather-card w-hare"><div class="icon">☀️</div><div class="num">${latest.hare}名</div><div class="lbl">晴れ${total?` (${Math.round(latest.hare/total*100)}%)`:''}</div></div>
+        <div class="weather-card w-kumori"><div class="icon">☁️</div><div class="num">${latest.kumori}名</div><div class="lbl">曇り${total?` (${Math.round(latest.kumori/total*100)}%)`:''}</div></div>
+        <div class="weather-card w-ame"><div class="icon">🌧️</div><div class="num">${latest.ame}名</div><div class="lbl">雨${total?` (${Math.round(latest.ame/total*100)}%)`:''}</div></div>
+      </div>
+      <div style="margin-top:14px;">
+        <div style="font-size:12px;color:var(--text2);">記録率：${latest.rate}%</div>
+        <div class="rate-bar-bg"><div class="rate-bar-fill" style="width:${latest.rate}%;"></div></div>
+      </div>
+    </div>
+  `;
+
+  const trendHtml = weeks.length > 1 ? `
+    <div class="section">
+      <div class="section-title">📈 トレンド（直近${weeks.length}週）</div>
+      <table class="trend-table">
+        <tr><th>週</th><th>☀️晴れ</th><th>☁️曇り</th><th>🌧️雨</th><th>記録率</th></tr>
+        ${weeks.map(w => `<tr><td>${w.label}</td><td>${w.hare}</td><td>${w.kumori}</td><td>${w.ame}</td><td>${w.rate}%</td></tr>`).join('')}
+      </table>
+    </div>
+  ` : '';
+
+  const aiHtml = `
+    <div class="section">
+      <div class="section-title">🤖 AI補足コメント</div>
+      <div id="compass-ai-comment" class="ai-comment-box">生成中…</div>
+    </div>
+  `;
+
+  body.innerHTML = weatherHtml + trendHtml + aiHtml;
+  loadCompassAiComment(weeks, team);
+}
+
+// ═══════════════════════════════════════════════
+// K-4：AI補足コメント（nagi_team.htmlと同一パターン踏襲）
+// 個人名・個人スコアは一切プロンプトに含めない。集計値のみ渡す
+// ═══════════════════════════════════════════════
+function compassGetApiKey() { return localStorage.getItem('mitsumeru_api_key') || ''; }
+
+function buildCompassAiPrompt(weeks, team) {
+  const latest = weeks[weeks.length - 1];
+  const prev = weeks.length > 1 ? weeks[weeks.length - 2] : null;
+  let prevLine = prev ? `先週：晴れ${prev.hare}名・曇り${prev.kumori}名・雨${prev.ame}名・記録率${prev.rate}%` : '先週のデータなし';
+  return `あるチーム（${team.size}名）の、匿名化された週次の気分集計データです。
+今週：晴れ${latest.hare}名・曇り${latest.kumori}名・雨${latest.ame}名・記録率${latest.rate}%
+${prevLine}
+
+このチーム全体の傾向から読み取れる、マネジメント上の観察点を1〜2文で述べてください。
+断定的な診断や個人の特定につながる言及は避け、チーム全体の傾向としてのみ、控えめな言い回しで述べてください。`;
+}
+
+function callClaudeForCompassAI(prompt, onSuccess, onError) {
+  const key = compassGetApiKey();
+  if (!key) { onError('APIキー未設定'); return; }
+  fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': key,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 300,
+      messages: [{ role: 'user', content: prompt }]
+    })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.error) { onError(data.error.message || 'APIエラー'); return; }
+    const text = data.content?.[0]?.text || '';
+    onSuccess(text);
+  })
+  .catch(e => onError(e.message || 'ネットワークエラー'));
+}
+
+function loadCompassAiComment(weeks, team) {
+  const box = document.getElementById('compass-ai-comment');
+  if (!box) return;
+  const key = compassGetApiKey();
+  if (!key) {
+    box.textContent = 'APIキー未設定のため表示できません（凪ハブの⚙データ管理から設定してください）';
+    return;
+  }
+  callClaudeForCompassAI(buildCompassAiPrompt(weeks, team),
+    text => { box.textContent = text; },
+    err => { box.textContent = '生成できませんでした（上記の集計値をご参照ください）：' + err; }
+  );
+}
+
+// ═══════════════════════════════════════════════
+// 起動時
+// ═══════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  ensureSampleTeam();
+  populateTeamSelect();
+  renderCompass();
+});
+</script>
+</body>
+</html>
