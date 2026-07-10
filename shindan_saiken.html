@@ -46,6 +46,7 @@
   .track{background:var(--surface);border-left:3px solid var(--accent2);border-radius:0 8px 8px 0;padding:12px 14px;font-size:.82rem;color:var(--sub);margin-top:14px;}
   .cta{background:var(--surface);border:1px dashed var(--accent2);border-radius:var(--radius);padding:18px;text-align:center;margin-top:18px;}
   .cta a{display:inline-block;background:var(--accent2);color:#0f1923;text-decoration:none;font-weight:700;border-radius:10px;padding:12px 26px;margin-top:10px;}
+  .cta-note{font-size:.74rem;color:var(--sub);margin-top:12px;line-height:1.6;}
   .foot{font-size:.72rem;color:var(--sub);text-align:center;margin-top:28px;}
 </style>
 </head>
@@ -182,6 +183,7 @@ function showResult() {
     <div class="cta">
       <div>あなたの施設の状況を、もう少し詳しく聞いてみませんか？</div>
       <a href="./sodan_form.html">相談する（無料）</a>
+      <div class="cta-note">ご相談自体は無料です。継続支援が必要な場合のみ、月次顧問契約（月5万円＋実費別途）へお進みいただけます。</div>
     </div>
   `;
   document.getElementById('result').style.display = 'block';
