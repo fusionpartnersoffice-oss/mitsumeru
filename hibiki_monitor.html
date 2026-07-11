@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>響 モニタリング（H1-MONITOR） | Fusion Partners</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23ce93d8'/><text x='16' y='24' font-size='20' text-anchor='middle'>📈</text></svg>">
+<style>
+:root {
+  --bg:#0f1923; --surface:#1a2634; --card:#223044;
+  --accent:#ce93d8; --accent2:#81c784; --accent3:#64b5f6;
+  --danger:#ef5350; --warn:#ffa726; --text:#e8eaf0; --sub:#8fa3b8;
+  --border:#2e4460; --radius:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Hiragino Kaku Gothic Pro','Meiryo',sans-serif;min-height:100vh;}
+
+.gate{position:fixed;inset:0;background:rgba(15,25,35,.97);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;}
+.gate.hidden{display:none;}
+.gate-box{max-width:500px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px 24px;}
+.gate-title{font-size:1.1rem;font-weight:700;color:var(--accent);margin-bottom:14px;}
+.gate-body{font-size:.83rem;color:var(--sub);line-height:1.8;margin-bottom:20px;}
+.gate-body strong{color:var(--text);}
+.gate-btn{width:100%;padding:12px;background:var(--accent);color:#1a0a1f;border:none;border-radius:var(--radius);font-size:.92rem;font-weight:700;cursor:pointer;font-family:inherit;}
+
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:9px 14px;display:flex;align-items:center;gap:8px;position:sticky;top:0;z-index:100;flex-wrap:wrap;}
+.hdr-logo{font-size:.98rem;font-weight:700;color:var(--accent);}
+.person-badge{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:3px 11px;font-size:.76rem;color:var(--sub);}
+.hdr-spacer{flex:1;}
+.hdr-btn{background:var(--card);border:1px solid var(--border);color:var(--sub);border-radius:6px;padding:5px 11px;font-size:.74rem;cursor:pointer;font-family:inherit;}
+
+.wrap{max-width:1200px;margin:0 auto;padding:16px;}
+.empty-state{text-align:center;color:var(--sub);font-size:.85rem;padding:60px 20px;}
+.empty-state a{color:var(--accent);}
+
+.person-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;}
+.person-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;cursor:pointer;transition:.15s;}
+.person-card:hover{border-color:var(--accent);}
+.pc-alias{font-weight:700;font-size:.92rem;margin-bottom:4px;}
+.pc-date{font-size:.7rem;color:var(--sub);}
+
+.split{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+@media(max-width:860px){.split{grid-template-columns:1fr;}}
+
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:14px;}
+.panel-title{font-size:.88rem;font-weight:700;color:var(--accent);margin-bottom:12px;display:flex;align-items:center;gap:6px;}
+.readonly-block{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:10px;}
+.readonly-label{font-size:.72rem;color:var(--sub);margin-bottom:4px;}
+.readonly-value{font-size:.85rem;line-height:1.7;white-space:pre-wrap;}
+.readonly-empty{font-size:.8rem;color:var(--sub);font-style:italic;}
+
+.proc-item{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px;}
+.proc-item .cell-label{font-size:.72rem;color:var(--accent3);margin-bottom:3px;}
+.proc-item .conclusion{font-size:.84rem;}
+
+.form-group{margin-bottom:12px;}
+.form-group label{display:block;font-size:.76rem;color:var(--sub);margin-bottom:5px;}
+.form-group input,.form-group select,.form-group textarea{width:100%;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:9px 11px;font-size:.86rem;font-family:inherit;}
+.form-group textarea{min-height:70px;resize:vertical;}
+
+.trend-select{display:flex;gap:8px;}
+.trend-opt{flex:1;text-align:center;padding:9px 4px;border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:.82rem;background:var(--card);}
+.trend-opt.selected-improve{background:rgba(129,199,132,.2);border-color:var(--accent2);color:var(--accent2);font-weight:700;}
+.trend-opt.selected-flat{background:rgba(255,167,38,.2);border-color:var(--warn);color:var(--warn);font-weight:700;}
+.trend-opt.selected-decline{background:rgba(239,83,80,.2);border-color:var(--danger);color:var(--danger);font-weight:700;}
+
+.btn-primary{width:100%;padding:11px;background:var(--accent);color:#1a0a1f;border:none;border-radius:8px;font-size:.88rem;font-weight:700;cursor:pointer;font-family:inherit;margin-top:6px;}
+
+.history-list{margin-top:14px;}
+.history-item{background:var(--card);border:1px solid var(--border);border-left:3px solid var(--border);border-radius:0 8px 8px 0;padding:10px 12px;margin-bottom:8px;}
+.history-item.trend-improve{border-left-color:var(--accent2);}
+.history-item.trend-flat{border-left-color:var(--warn);}
+.history-item.trend-decline{border-left-color:var(--danger);}
+.history-hdr{display:flex;justify-content:space-between;font-size:.72rem;color:var(--sub);margin-bottom:5px;}
+.history-trend-tag{font-size:.7rem;padding:1px 8px;border-radius:10px;}
+.history-trend-tag.improve{background:rgba(129,199,132,.2);color:var(--accent2);}
+.history-trend-tag.flat{background:rgba(255,167,38,.2);color:var(--warn);}
+.history-trend-tag.decline{background:rgba(239,83,80,.2);color:var(--danger);}
+.history-field{font-size:.82rem;margin-bottom:4px;}
+.history-field .fl{color:var(--sub);font-size:.72rem;}
+</style>
+</head>
+<body>
+
+<!-- 同意ゲート -->
+<div class="gate" id="gate">
+  <div class="gate-box">
+    <div class="gate-title">📈 モニタリング（H1-MONITOR）ご利用前の確認</div>
+    <div class="gate-body">
+      本ツールでは、利用者の支援経過（結果の様子・課題の推移・前進点・残る課題）を時系列で記録・蓄積します。<br><br>
+      <strong>入力したデータについて：</strong><br>
+      ・お使いの端末（ブラウザ）内にのみ保存されます<br>
+      ・外部サーバーには送信されません<br><br>
+      <strong>支援計画（H1-PLAN）・支援手順書（H1-PROC）との関係：</strong><br>
+      ・利用者一覧・支援計画・支援手順書は、それぞれの側のデータを読み取り専用で参照します。この画面から編集することはできません<br><br>
+      <strong>個人情報配慮：</strong>個人を特定できる情報は仮名・イニシャルでご入力ください。<br><br>
+      上記をご確認のうえ、ご利用ください。
+    </div>
+    <button class="gate-btn" onclick="giveConsent()">確認しました・利用を開始する</button>
+  </div>
+</div>
+
+<header>
+  <span class="hdr-logo">📈 H1-MONITOR モニタリング</span>
+  <span class="person-badge" id="personBadge" style="display:none;"></span>
+  <div class="hdr-spacer"></div>
+  <button class="hdr-btn" onclick="backToList()">👥 利用者一覧</button>
+</header>
+
+<div class="wrap">
+
+  <!-- 利用者一覧 -->
+  <div id="listScreen">
+    <div class="panel">
+      <div class="panel-title">👥 利用者を選択</div>
+      <div class="person-grid" id="personGrid"></div>
+    </div>
+  </div>
+
+  <!-- モニタリング画面（左右レイアウト） -->
+  <div id="monitorScreen" style="display:none;">
+    <div class="split">
+
+      <!-- 左：H1-PLAN・H1-PROC 読み取り専用 -->
+      <div>
+        <div class="panel">
+          <div class="panel-title">📋 支援計画（H1-PLAN）— 読み取り専用</div>
+          <div id="planReadonly"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-title">📖 支援手順書（H1-PROC）— 読み取り専用</div>
+          <div id="procReadonly"></div>
+        </div>
+      </div>
+
+      <!-- 右：モニタリング記録入力・履歴 -->
+      <div>
+        <div class="panel">
+          <div class="panel-title">✏️ 記録する</div>
+          <div class="form-group">
+            <label>記録日</label>
+            <input type="date" id="m-date">
+          </div>
+          <div class="form-group">
+            <label>最近の様子</label>
+            <textarea id="m-situation" placeholder="例：週2回の外出訓練を継続中。当初より歩行が安定してきている"></textarea>
+          </div>
+          <div class="form-group">
+            <label>推移</label>
+            <div class="trend-select" id="trendSelect">
+              <div class="trend-opt" data-trend="improve" onclick="selectTrend('improve')">🟢 改善</div>
+              <div class="trend-opt" data-trend="flat" onclick="selectTrend('flat')">🟡 横ばい</div>
+              <div class="trend-opt" data-trend="decline" onclick="selectTrend('decline')">🔴 悪化</div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>前進点</label>
+            <textarea id="m-progress" placeholder="例：自発的に挨拶ができるようになった"></textarea>
+          </div>
+          <div class="form-group">
+            <label>残る課題</label>
+            <textarea id="m-remaining" placeholder="例：長距離歩行時の疲労感が残る"></textarea>
+          </div>
+          <button class="btn-primary" onclick="saveMonitorRecord()">この内容を記録する</button>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">🕐 過去の記録（<span id="historyCount">0</span>件）</div>
+          <div class="history-list" id="historyList"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// キー定義（既存ファイルの命名パターンを踏襲）
+// ═══════════════════════════════════════════════
+const V2_INDEX_KEY = 'hibiki_v2_index';
+const V2_STORE_PREFIX = 'hibiki_v2_person_';
+const PLAN_STORE_PREFIX = 'hibiki_plan_';
+const PROC_STORE_PREFIX = 'hibiki_procedure_';
+const MONITOR_STORE_PREFIX = 'hibiki_monitor_';
+const CONSENT_KEY_MONITOR = 'hibiki_monitor_consent';
+
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function fmtDate(iso) { if (!iso) return ''; const d = new Date(iso); return d.toLocaleDateString('ja-JP'); }
+
+// ── 同意ゲート ──
+function giveConsent() {
+  localStorage.setItem(CONSENT_KEY_MONITOR, '1');
+  document.getElementById('gate').classList.add('hidden');
+}
+function checkConsent() {
+  if (localStorage.getItem(CONSENT_KEY_MONITOR) === '1') {
+    document.getElementById('gate').classList.add('hidden');
+  }
+}
+
+// ── H1-AS・H1-PLAN・H1-PROCを読み取り専用で参照 ──
+function getV2PersonIndex() {
+  try { return JSON.parse(localStorage.getItem(V2_INDEX_KEY) || '[]'); } catch { return []; }
+}
+function loadV2Person(personId) {
+  try { const raw = localStorage.getItem(V2_STORE_PREFIX + personId); return raw ? JSON.parse(raw) : null; } catch { return null; }
+}
+function loadPlanReadonly(personId) {
+  try { const raw = localStorage.getItem(PLAN_STORE_PREFIX + personId); return raw ? JSON.parse(raw) : null; } catch { return null; }
+}
+function loadProcReadonly(personId) {
+  try { const raw = localStorage.getItem(PROC_STORE_PREFIX + personId); return raw ? JSON.parse(raw) : null; } catch { return null; }
+}
+
+// ── H1-MONITOR自身のデータ（読み書き・時系列蓄積・上書きしない） ──
+function loadMonitorRecords(personId) {
+  try { return JSON.parse(localStorage.getItem(MONITOR_STORE_PREFIX + personId) || '[]'); } catch { return []; }
+}
+function saveMonitorRecords(personId, records) {
+  localStorage.setItem(MONITOR_STORE_PREFIX + personId, JSON.stringify(records));
+}
+
+// ═══════════════════════════════════════════════
+// 利用者一覧
+// ═══════════════════════════════════════════════
+let currentPersonId = null;
+let selectedTrend = null;
+
+function renderPersonList() {
+  const grid = document.getElementById('personGrid');
+  const idx = getV2PersonIndex();
+  if (!idx.length) {
+    grid.innerHTML = '<div class="empty-state">利用者がまだ登録されていません。<br><a href="./hibiki_v2.html" target="_blank">hibiki_v2.html</a>で利用者を登録してください。</div>';
+    return;
+  }
+  grid.innerHTML = idx.slice().reverse().map(p => `
+    <div class="person-card" onclick="openPerson('${p.id}')">
+      <div class="pc-alias">${esc(p.alias)}</div>
+      <div class="pc-date">${p.updatedAt ? '更新: ' + fmtDate(p.updatedAt) : '未保存'}</div>
+    </div>
+  `).join('');
+}
+
+function backToList() {
+  currentPersonId = null;
+  document.getElementById('monitorScreen').style.display = 'none';
+  document.getElementById('listScreen').style.display = '';
+  document.getElementById('personBadge').style.display = 'none';
+  renderPersonList();
+}
+
+function openPerson(personId) {
+  currentPersonId = personId;
+  const v2 = loadV2Person(personId);
+  document.getElementById('personBadge').textContent = v2?.modules?.basic?.alias || v2?.alias || '（利用者）';
+  document.getElementById('personBadge').style.display = '';
+  document.getElementById('listScreen').style.display = 'none';
+  document.getElementById('monitorScreen').style.display = '';
+
+  renderPlanReadonly(personId);
+  renderProcReadonly(personId);
+  resetForm();
+  renderHistory(personId);
+}
+
+// ═══════════════════════════════════════════════
+// 左列：H1-PLAN 読み取り専用表示
+// ═══════════════════════════════════════════════
+function renderPlanReadonly(personId) {
+  const plan = loadPlanReadonly(personId);
+  const box = document.getElementById('planReadonly');
+  if (!plan || !plan.goal || (!plan.goal.issue && !plan.goal.longTerm && !plan.goal.shortTerm)) {
+    box.innerHTML = '<div class="readonly-empty">支援計画（H1-PLAN）が未入力です。<a href="./hibiki_plan.html" target="_blank" style="color:var(--accent);">hibiki_plan.html</a>で入力してください。</div>';
+    return;
+  }
+  const g = plan.goal || {};
+  const p = plan.plan || {};
+  const blocks = [
+    ['優先課題', g.issue],
+    ['長期目標', g.longTerm],
+    ['短期目標', g.shortTerm],
+    ['支援方針', g.policy],
+  ].filter(([, v]) => v);
+  box.innerHTML = blocks.map(([label, value]) => `
+    <div class="readonly-block">
+      <div class="readonly-label">${label}</div>
+      <div class="readonly-value">${esc(value)}</div>
+    </div>
+  `).join('') || '<div class="readonly-empty">課題・目標が未入力です。</div>';
+}
+
+// ═══════════════════════════════════════════════
+// 左列：H1-PROC 読み取り専用表示
+// ═══════════════════════════════════════════════
+function renderProcReadonly(personId) {
+  const proc = loadProcReadonly(personId);
+  const box = document.getElementById('procReadonly');
+  const items = proc?.procedures || [];
+  if (!items.length) {
+    box.innerHTML = '<div class="readonly-empty">支援手順書（H1-PROC）が未入力です。<a href="./hibiki_procedure.html" target="_blank" style="color:var(--accent);">hibiki_procedure.html</a>で入力してください。</div>';
+    return;
+  }
+  box.innerHTML = items.map(item => `
+    <div class="proc-item">
+      <div class="cell-label">${esc(item.domainLabel || '')} / ${esc(item.cellLabel || '')}</div>
+      <div class="conclusion">${esc(item.conclusion || item.summary || '')}</div>
+    </div>
+  `).join('');
+}
+
+// ═══════════════════════════════════════════════
+// 右列：記録入力
+// ═══════════════════════════════════════════════
+function selectTrend(trend) {
+  selectedTrend = trend;
+  document.querySelectorAll('.trend-opt').forEach(el => {
+    el.classList.remove('selected-improve', 'selected-flat', 'selected-decline');
+    if (el.dataset.trend === trend) el.classList.add('selected-' + trend);
+  });
+}
+
+function resetForm() {
+  document.getElementById('m-date').value = new Date().toISOString().slice(0, 10);
+  document.getElementById('m-situation').value = '';
+  document.getElementById('m-progress').value = '';
+  document.getElementById('m-remaining').value = '';
+  selectedTrend = null;
+  document.querySelectorAll('.trend-opt').forEach(el => el.classList.remove('selected-improve', 'selected-flat', 'selected-decline'));
+}
+
+function saveMonitorRecord() {
+  if (!currentPersonId) return;
+  const date = document.getElementById('m-date').value;
+  const situation = document.getElementById('m-situation').value.trim();
+  const progress = document.getElementById('m-progress').value.trim();
+  const remaining = document.getElementById('m-remaining').value.trim();
+
+  if (!date) { alert('記録日を入力してください。'); return; }
+  if (!situation && !progress && !remaining) { alert('最近の様子・前進点・残る課題のいずれかを入力してください。'); return; }
+
+  const records = loadMonitorRecords(currentPersonId);
+  records.push({
+    date,
+    situation,
+    trend: selectedTrend,
+    progress,
+    remaining,
+    createdAt: new Date().toISOString(),
+  });
+  saveMonitorRecords(currentPersonId, records);
+
+  resetForm();
+  renderHistory(currentPersonId);
+}
+
+// ═══════════════════════════════════════════════
+// 右列：過去の記録一覧（時系列・新しい順）
+// ═══════════════════════════════════════════════
+const TREND_LABEL = { improve: '🟢 改善', flat: '🟡 横ばい', decline: '🔴 悪化' };
+const TREND_CLASS = { improve: 'improve', flat: 'flat', decline: 'decline' };
+
+function renderHistory(personId) {
+  const records = loadMonitorRecords(personId);
+  document.getElementById('historyCount').textContent = records.length;
+  const list = document.getElementById('historyList');
+  if (!records.length) {
+    list.innerHTML = '<div class="readonly-empty">まだ記録がありません。</div>';
+    return;
+  }
+  const sorted = records.slice().sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.createdAt || '').localeCompare(a.createdAt || ''));
+  list.innerHTML = sorted.map(r => `
+    <div class="history-item ${r.trend ? 'trend-' + TREND_CLASS[r.trend] : ''}">
+      <div class="history-hdr">
+        <span>${esc(r.date)}</span>
+        ${r.trend ? `<span class="history-trend-tag ${TREND_CLASS[r.trend]}">${TREND_LABEL[r.trend]}</span>` : ''}
+      </div>
+      ${r.situation ? `<div class="history-field"><span class="fl">様子：</span>${esc(r.situation)}</div>` : ''}
+      ${r.progress ? `<div class="history-field"><span class="fl">前進点：</span>${esc(r.progress)}</div>` : ''}
+      ${r.remaining ? `<div class="history-field"><span class="fl">残る課題：</span>${esc(r.remaining)}</div>` : ''}
+    </div>
+  `).join('');
+}
+
+// ═══════════════════════════════════════════════
+// 起動時
+// ═══════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  checkConsent();
+  renderPersonList();
+});
+</script>
+</body>
+</html>
