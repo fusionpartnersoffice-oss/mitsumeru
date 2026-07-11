@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MQ会計 電卓 — Fusion Partners</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<style>
+  :root {
+    --bg:#0f1923; --surface:#1a2634; --card:#223044;
+    --accent:#81c784; --accent2:#4fc3f7; --red:#ef5350; --text:#e8eaf0; --sub:#8fa3b8;
+    --border:#2e4460; --radius:12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background:var(--bg); color:var(--text); font-family:'Hiragino Kaku Gothic Pro','Meiryo',sans-serif; line-height:1.7; padding:0 0 60px; }
+  header { background:var(--surface); border-bottom:1px solid var(--border); padding:20px; text-align:center; }
+  header h1 { font-size:1.3rem; color:var(--accent); }
+  header p { font-size:.8rem; color:var(--sub); margin-top:6px; }
+  .wrap { max-width:480px; margin:0 auto; padding:24px 20px; }
+  .card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:20px; margin-bottom:16px; }
+  .field { margin-bottom:16px; }
+  .field label { display:block; font-size:.85rem; color:var(--sub); margin-bottom:6px; }
+  .field .input-row { display:flex; align-items:center; gap:6px; }
+  .field .yen { font-size:.9rem; color:var(--sub); }
+  .field input { flex:1; background:var(--surface); border:1px solid var(--border); border-radius:8px; color:var(--text); padding:12px; font-size:1.1rem; outline:none; font-family:inherit; text-align:right; }
+  .field input:focus { border-color:var(--accent); }
+  .divider { height:1px; background:var(--border); margin:16px 0; }
+  .result-row { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px; }
+  .result-row .label { font-size:.9rem; color:var(--sub); }
+  .result-row .value { font-size:1.4rem; font-weight:700; color:var(--accent); }
+  .result-row .value.negative { color:var(--red); }
+  .comment { margin-top:16px; padding:12px 14px; background:var(--surface); border-left:3px solid var(--accent2); border-radius:0 8px 8px 0; font-size:.85rem; color:var(--sub); }
+  .foot { font-size:.72rem; color:var(--sub); text-align:center; margin-top:24px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🧮 MQ会計 電卓</h1>
+  <p>売上・変動費・固定費の3つだけ。保存はしません。</p>
+</header>
+
+<div class="wrap">
+  <div class="card">
+    <div class="field">
+      <label>売上</label>
+      <div class="input-row">
+        <span class="yen">¥</span>
+        <input type="number" id="q-sales" inputmode="numeric" placeholder="0" oninput="calc()">
+      </div>
+    </div>
+    <div class="field">
+      <label>変動費</label>
+      <div class="input-row">
+        <span class="yen">¥</span>
+        <input type="number" id="q-variable" inputmode="numeric" placeholder="0" oninput="calc()">
+      </div>
+    </div>
+    <div class="field">
+      <label>固定費</label>
+      <div class="input-row">
+        <span class="yen">¥</span>
+        <input type="number" id="q-fixed" inputmode="numeric" placeholder="0" oninput="calc()">
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="result-row">
+      <span class="label">限界利益（M）</span>
+      <span class="value" id="result-m">¥0</span>
+    </div>
+    <div class="result-row">
+      <span class="label">利益（G）</span>
+      <span class="value" id="result-g">¥0</span>
+    </div>
+
+    <div class="comment" id="comment" style="display:none;"></div>
+  </div>
+
+  <p class="foot">Fusion Partners ／ MQ会計電卓</p>
+</div>
+
+<script>
+function n(v) { return Number(v) || 0; }
+function yen(v) { return (v < 0 ? '-¥' : '¥') + Math.abs(Math.round(v)).toLocaleString(); }
+
+function calc() {
+  const sales = n(document.getElementById('q-sales').value);
+  const variableCost = n(document.getElementById('q-variable').value);
+  const fixedCost = n(document.getElementById('q-fixed').value);
+
+  const m = sales - variableCost;
+  const g = m - fixedCost;
+
+  const mEl = document.getElementById('result-m');
+  const gEl = document.getElementById('result-g');
+  mEl.textContent = yen(m);
+  mEl.classList.toggle('negative', m < 0);
+  gEl.textContent = yen(g);
+  gEl.classList.toggle('negative', g < 0);
+
+  const commentEl = document.getElementById('comment');
+  if (sales > 0) {
+    const mRate = m / sales;
+    let text;
+    if (mRate >= 0.5) text = '限界利益率' + Math.round(mRate * 100) + '%。筋肉質な収益構造です。';
+    else if (mRate >= 0.3) text = '限界利益率' + Math.round(mRate * 100) + '%。標準的な水準です。';
+    else text = '限界利益率' + Math.round(mRate * 100) + '%。変動費の見直しが必要かもしれません。';
+    commentEl.textContent = text;
+    commentEl.style.display = 'block';
+  } else {
+    commentEl.style.display = 'none';
+  }
+}
+
+calc();
+</script>
+</body>
+</html>
