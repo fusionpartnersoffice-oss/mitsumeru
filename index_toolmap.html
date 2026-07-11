@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>俺でもわかるツール一覧 | FusionOS</title>
+<title>FusionOSツール一覧（システム別） | Fusion Partners</title>
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="apple-touch-icon" href="favicon.png">
@@ -57,6 +57,12 @@ html,body{background:var(--bg);color:var(--text);font-family:'Hiragino Kaku Goth
 .tool-desc{font-size:12px;color:var(--dim);line-height:1.7;}
 .tool-flag{display:inline-block;margin-left:6px;font-size:10px;color:var(--ok);}
 
+.tool-sub{margin-top:10px;padding:10px 14px;background:var(--panel2);border-left:2px solid var(--border);border-radius:0 4px 4px 0;display:flex;align-items:flex-start;gap:10px;}
+.tool-sub-body{flex:1;min-width:0;}
+.tool-sub-name{font-size:12px;font-weight:700;color:var(--dim);margin-bottom:3px;}
+.tool-sub-note{font-size:10px;color:var(--dim2);font-weight:400;margin-left:4px;}
+.tool-sub-desc{font-size:11px;color:var(--dim);line-height:1.6;}
+
 .sys-note{font-size:11.5px;color:var(--dim2);line-height:1.8;margin-top:10px;padding:10px 14px;background:var(--panel2);border-left:3px solid var(--gold);border-radius:0 4px 4px 0;}
 
 /* 独立ツール */
@@ -80,7 +86,7 @@ html,body{background:var(--bg);color:var(--text);font-family:'Hiragino Kaku Goth
 
 <div class="wrap">
   <header class="head">
-    <div class="eyebrow">俺でもわかる版</div>
+    <div class="eyebrow">システム別ツール一覧</div>
     <h1 class="h1">結局、FusionOSに何があるんだっけ？</h1>
     <div class="rule"></div>
     <div class="sub">凪・響・弦・奏・ミツメルの5システムごとに、そのシステムに属するツールを並べました。各ツールには「見込み客の動線上どこにいるか」のタグを付けています。</div>
@@ -90,7 +96,7 @@ html,body{background:var(--bg);color:var(--text);font-family:'Hiragino Kaku Goth
     <div class="legend-item"><span class="stage-badge stage-1">① 認知拡大</span>無料・登録不要の入口</div>
     <div class="legend-item"><span class="stage-badge stage-2">② お試し→本使用</span>無料→有料の転換ライン</div>
     <div class="legend-item"><span class="stage-badge stage-3">③ SaaS販売</span>現状の課金プロダクト</div>
-    <div class="legend-item"><span class="stage-badge stage-4">④ 俺コンサル用</span>クライアント支援の道具</div>
+    <div class="legend-item"><span class="stage-badge stage-4">④ コンサル支援用</span>クライアント支援の道具</div>
   </div>
 
   <!-- 凪 -->
@@ -112,8 +118,8 @@ html,body{background:var(--bg);color:var(--text);font-family:'Hiragino Kaku Goth
     <div class="tool">
       <div class="tool-badge-col"><span class="stage-badge stage-4">④</span></div>
       <div class="tool-body">
-        <div class="tool-name">凪の俺コンサル用モジュール群</div>
-        <div class="tool-file">nagi_system・nagi_mq・nagi_pipe・nagi_team・nagi_staff・nagi_psychsafety・ta_scan・pm_scan</div>
+        <div class="tool-name">凪のコンサル支援用モジュール群</div>
+        <div class="tool-file">nagi_system.html（法人ダッシュボード）・nagi_mq.html（MQ会計）・nagi_pipe.html（営業パイプライン）・nagi_team.html（チーム診断）・nagi_staff.html（スタッフ個人特性）・nagi_psychsafety.html（心理的安全性）・ta_scan.html（TAマップ診断）・pm_scan.html（PM理論診断）</div>
         <div class="tool-desc">クライアントの組織状態をアセスメントする診断群。ハブはnagi_system（法人全体ダッシュボード）。</div>
       </div>
     </div>
@@ -138,8 +144,8 @@ html,body{background:var(--bg);color:var(--text);font-family:'Hiragino Kaku Goth
     <div class="tool">
       <div class="tool-badge-col"><span class="stage-badge stage-4">④</span></div>
       <div class="tool-body">
-        <div class="tool-name">響の俺コンサル用モジュール群</div>
-        <div class="tool-file">hibiki_v2・hibiki_plan・hibiki_procedure・hibiki_ops・hibiki_inventory</div>
+        <div class="tool-name">響のコンサル支援用モジュール群</div>
+        <div class="tool-file">hibiki_v2.html（アセスメント）・hibiki_plan.html（支援計画）・hibiki_procedure.html（支援手順書）・hibiki_ops.html（運用標準書）・hibiki_inventory.html（在庫管理）</div>
         <div class="tool-desc">アセスメント→支援計画→支援手順書→運用標準書→在庫管理、という5モジュールの流れ。</div>
       </div>
     </div>
@@ -155,9 +161,9 @@ html,body{background:var(--bg);color:var(--text);font-family:'Hiragino Kaku Goth
     <div class="tool">
       <div class="tool-badge-col"><span class="stage-badge stage-4">④</span></div>
       <div class="tool-body">
-        <div class="tool-name">商圏マップ<span class="tool-flag">✅稼働中</span></div>
+        <div class="tool-name">商圏マップ（弦の基幹ツール）<span class="tool-flag">✅稼働中</span></div>
         <div class="tool-file">yuzuru_map.html</div>
-        <div class="tool-desc">東海3県の商圏マップ。条件検索→リスト抽出→行動。現時点で弦は本ツール1本のみ。</div>
+        <div class="tool-desc">東海3県の商圏マップ。条件検索→リスト抽出→行動。他システムの④は複数モジュールの束だが、弦は現時点でこの1本のみで構成される。</div>
       </div>
     </div>
   </section>
@@ -172,8 +178,8 @@ html,body{background:var(--bg);color:var(--text);font-family:'Hiragino Kaku Goth
     <div class="tool">
       <div class="tool-badge-col"><span class="stage-badge stage-4">④</span></div>
       <div class="tool-body">
-        <div class="tool-name">奏の俺コンサル用モジュール群</div>
-        <div class="tool-file">kanade_app・kanade_shift・kanade_growth・kanade_pulse・mitsumeru_tekisei_check</div>
+        <div class="tool-name">奏のコンサル支援用モジュール群</div>
+        <div class="tool-file">kanade_app.html（適性検査）・kanade_shift.html（勤務表）・kanade_growth.html（1on1育成）・kanade_pulse.html（離職アラート）・mitsumeru_tekisei_check.html（採用スキャン）</div>
         <div class="tool-desc">適性検査（kanade_app）を起点に、勤務表・1on1育成・離職アラートが続く。採用スキャン（候補者配布用）も奏の管轄。</div>
       </div>
     </div>
@@ -190,7 +196,7 @@ html,body{background:var(--bg);color:var(--text);font-family:'Hiragino Kaku Goth
       <div class="tool-badge-col"><span class="stage-badge stage-1">①</span></div>
       <div class="tool-body">
         <div class="tool-name">3minエマージェンシー<span class="tool-flag">✅稼働中</span></div>
-        <div class="tool-file">mitsumeru内 index.html</div>
+        <div class="tool-file">mitsumeru/index.html</div>
         <div class="tool-desc">3分でできる緊急時の心の応急処置。ミツメルLite内「⚡3min」からも起動。</div>
       </div>
     </div>
@@ -201,15 +207,14 @@ html,body{background:var(--bg);color:var(--text);font-family:'Hiragino Kaku Goth
         <div class="tool-name">ミツメル無料版<span class="tool-flag">✅稼働中</span></div>
         <div class="tool-file">mitsumeru_app.html</div>
         <div class="tool-desc">日次ジャーナリング・HP/MP/LV算出・翌日戦略生成。無料・BYOK（自分のAPIキー必須）。</div>
-      </div>
-    </div>
 
-    <div class="tool">
-      <div class="tool-badge-col"><span class="stage-badge stage-2">②</span></div>
-      <div class="tool-body">
-        <div class="tool-name">ミツメルレーダー<span class="tool-flag">✅稼働中</span></div>
-        <div class="tool-file">mitsumeru_appのタブ内</div>
-        <div class="tool-desc">HP/MP/LVのRPG風可視化。無料版の付加機能として、お試し体験の魅力を高める役割（2026-07-11確定）。</div>
+        <div class="tool-sub">
+          <span class="stage-badge stage-2">②</span>
+          <div class="tool-sub-body">
+            <div class="tool-sub-name">└ ミツメルレーダー<span class="tool-flag">✅稼働中</span><span class="tool-sub-note">独立ファイルではなく、上記mitsumeru_app.html内のタブ機能</span></div>
+            <div class="tool-sub-desc">HP/MP/LVのRPG風可視化。無料版の付加機能として、お試し体験の魅力を高める役割（2026-07-11確定）。</div>
+          </div>
+        </div>
       </div>
     </div>
 
