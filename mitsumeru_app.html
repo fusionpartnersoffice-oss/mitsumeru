@@ -668,7 +668,7 @@
   <button class="mode-tab" onclick="switchTab('memo')">随時メモ</button>
   <button class="mode-tab" onclick="switchTab('evening')">夜</button>
   <button class="mode-tab" onclick="switchTab('output')">出力</button>
-  <button class="mode-tab" onclick="switchTab('scouter')">🔍 ステータス</button>
+  <button class="mode-tab" onclick="switchTab('scouter')">🔍 レーダー</button>
   <button class="mode-tab" onclick="switchTab('profile')">設定</button>
 </div>
 <div class="sync-bar">
@@ -744,7 +744,7 @@
 
 <!-- スカウターモード -->
 <div id="screen-scouter" class="screen">
-  <div class="date-display">🔍 ミツメルステータス</div>
+  <div class="date-display">🔍 ミツメルレーダー</div>
   <div id="scouter-scan" class="scouter-scan" style="display:none;">
     <div class="scouter-scan-text">SCANNING...</div>
     <div class="scouter-scan-line"></div>
@@ -2401,7 +2401,7 @@ function computeDayClose() {
            cntBatsu, cntSankaku, try100Done, mpFromTry100, lvBase, todayPts };
 }
 
-// ===== ミツメルステータス（旧称：ミツメルスカウター。命名のコンプライアンス上の懸念を受け2026-07-11改名。
+// ===== ミツメルレーダー（旧称：ミツメルスカウター→ミツメルステータス。命名のコンプライアンス上の懸念を受け2026-07-11改名、柴山さんの希望で「レーダー」に再改名。
 // HP/MP/LVのRPG風可視化。新規の計算ロジックは持たず、
 // computeDayClose()・formatLV()・getLVBase()の既存の値を読み取って表示するだけ。
 // 内部の関数名・class名（scouter-*・runScouterScan等）は表示名に影響しないため変更していない）=====
