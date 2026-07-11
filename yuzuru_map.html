@@ -22509,7 +22509,16 @@ function makePopupHTML(p, id) {
     <select class="status-select" onchange="updateStatus(${id},this.value)">${statusOpts}</select>
     <div style="margin-top:8px;font-size:11px;color:#666">施設状態：</div>
     <select class="status-select" onchange="updateFacilityStatus(${id},this.value)">${facilityStatusOpts}</select>
+    <button onclick="openDocStudio(${id})" style="margin-top:10px;width:100%;padding:6px;border:none;border-radius:4px;background:#1c3248;color:#fff;font-size:11px;cursor:pointer;">📄 チラシを作成</button>
   </div>`;
+}
+
+// FusionOS文書生成エンジン（doc_studio.html）への施設データ引き渡し（B5-弦チラシ）
+function openDocStudio(id) {
+  const p = data[id].properties;
+  const handoff = { name: p.name, corp: p.corp, type: p.type, addr: p.addr, phone: p.phone, _ts: Date.now() };
+  localStorage.setItem('doc_studio_yuzuru_handoff', JSON.stringify(handoff));
+  window.open('./doc_studio.html?scene=yuzuru_flyer', '_blank');
 }
 
 function updateStatus(id, status) {
