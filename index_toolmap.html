@@ -15,6 +15,7 @@
   --gold:#c9a850; --gold2:#e0c273;
   --text:#e8ecf1; --dim:#93a3b5; --dim2:#5f7086;
   --border:#293b4d; --ok:#7fbf8f;
+  --s1:#e0c273; --s2:#7fbf8f; --s3:#8fc0ff; --s4:#c9a8e0;
 }
 html,body{background:var(--bg);color:var(--text);font-family:'Hiragino Kaku Gothic Pro','Meiryo','Yu Gothic',sans-serif;-webkit-font-smoothing:antialiased;min-height:100%;}
 .topbar{position:sticky;top:0;z-index:20;background:var(--navy);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;}
@@ -24,48 +25,50 @@ html,body{background:var(--bg);color:var(--text);font-family:'Hiragino Kaku Goth
 
 .wrap{max-width:980px;margin:0 auto;padding:40px 24px 80px;}
 
-.head{margin-bottom:44px;}
+.head{margin-bottom:32px;}
 .eyebrow{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);margin-bottom:12px;font-weight:600;}
 .h1{font-size:clamp(24px,3.4vw,32px);font-weight:700;color:#fff;line-height:1.4;}
-.sub{font-size:13px;color:var(--dim);margin-top:10px;line-height:1.9;max-width:640px;}
+.sub{font-size:13px;color:var(--dim);margin-top:10px;line-height:1.9;max-width:660px;}
 .rule{width:36px;height:2px;background:var(--gold);margin:18px 0;}
 
-/* 4カテゴリのタブ的見出し */
-.stage{margin-bottom:52px;}
-.stage-head{display:flex;align-items:baseline;gap:14px;margin-bottom:6px;padding-bottom:14px;border-bottom:1px solid var(--border);}
-.stage-num{
-  flex:0 0 auto;width:34px;height:34px;border-radius:50%;
-  background:var(--navy2);border:1px solid var(--gold);color:var(--gold2);
-  display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;
-}
-.stage-title{font-size:18px;font-weight:700;color:#fff;}
-.stage-tag{font-size:11px;color:var(--dim2);letter-spacing:.5px;margin-top:2px;}
-.stage-note{font-size:12px;color:var(--dim);line-height:1.9;margin:14px 0 18px;padding:12px 16px;background:var(--panel2);border-left:3px solid var(--gold);border-radius:0 4px 4px 0;}
+/* 凡例 */
+.legend{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:44px;padding:14px 18px;background:var(--panel2);border:1px solid var(--border);border-radius:6px;}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--dim);}
 
-.tgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
-.tcard{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:16px 18px;}
-.tcard-name{font-size:14.5px;font-weight:700;color:#fff;margin-bottom:4px;}
-.tcard-file{font-family:'SF Mono',Consolas,monospace;font-size:10.5px;color:var(--gold2);margin-bottom:8px;}
-.tcard-role{font-size:12px;color:var(--dim);line-height:1.7;}
-.tcard-status{display:inline-block;margin-top:10px;font-size:10px;letter-spacing:.5px;padding:3px 9px;border-radius:20px;background:rgba(127,191,143,.14);color:var(--ok);border:1px solid rgba(127,191,143,.35);}
+.stage-badge{display:inline-flex;align-items:center;font-size:10px;font-weight:700;padding:2px 8px;border-radius:3px;letter-spacing:.3px;white-space:nowrap;}
+.stage-1{background:rgba(224,194,115,.16);color:var(--s1);border:1px solid rgba(224,194,115,.4);}
+.stage-2{background:rgba(127,191,143,.16);color:var(--s2);border:1px solid rgba(127,191,143,.4);}
+.stage-3{background:rgba(143,192,255,.16);color:var(--s3);border:1px solid rgba(143,192,255,.4);}
+.stage-4{background:rgba(201,168,224,.16);color:var(--s4);border:1px solid rgba(201,168,224,.4);}
 
-/* ④俺コンサル用：システム別グループ */
-.sysgroup{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:18px 20px;margin-bottom:10px;}
-.sysgroup-head{display:flex;align-items:baseline;gap:10px;margin-bottom:10px;}
-.sysgroup-jp{font-size:17px;font-weight:700;color:var(--gold2);}
-.sysgroup-en{font-size:10px;color:var(--dim2);letter-spacing:1px;text-transform:uppercase;}
-.sysgroup-role{font-size:11.5px;color:var(--dim);margin-left:auto;}
-.modlist{display:flex;flex-wrap:wrap;gap:6px;}
-.mod{font-size:11px;color:var(--text);background:var(--panel2);border:1px solid var(--border);border-radius:4px;padding:5px 10px;}
-.mod b{color:var(--gold2);font-weight:600;}
+/* システムセクション */
+.sys{margin-bottom:40px;}
+.sys-head{display:flex;align-items:baseline;gap:14px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border);}
+.sys-jp{font-size:22px;font-weight:700;color:var(--gold2);}
+.sys-en{font-size:11px;color:var(--dim2);letter-spacing:1.5px;text-transform:uppercase;}
+.sys-role{font-size:12px;color:var(--dim);margin-left:auto;text-align:right;}
 
-.foot-hint{font-size:11.5px;color:var(--dim2);line-height:2;background:var(--panel2);border:1px solid var(--border);border-radius:6px;padding:18px 20px;margin-top:8px;}
+.tool{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:14px 18px;margin-bottom:8px;display:flex;align-items:flex-start;gap:14px;}
+.tool:last-child{margin-bottom:0;}
+.tool-badge-col{flex:0 0 auto;padding-top:1px;}
+.tool-body{flex:1;min-width:0;}
+.tool-name{font-size:14px;font-weight:700;color:#fff;margin-bottom:3px;}
+.tool-file{font-family:'SF Mono',Consolas,monospace;font-size:10px;color:var(--dim2);margin-bottom:6px;}
+.tool-desc{font-size:12px;color:var(--dim);line-height:1.7;}
+.tool-flag{display:inline-block;margin-left:6px;font-size:10px;color:var(--ok);}
+
+.sys-note{font-size:11.5px;color:var(--dim2);line-height:1.8;margin-top:10px;padding:10px 14px;background:var(--panel2);border-left:3px solid var(--gold);border-radius:0 4px 4px 0;}
+
+/* 独立ツール */
+.indep-head{font-size:13px;color:var(--dim2);letter-spacing:1px;text-transform:uppercase;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border);}
+
+.foot-hint{font-size:11.5px;color:var(--dim2);line-height:2;background:var(--panel2);border:1px solid var(--border);border-radius:6px;padding:18px 20px;margin-top:24px;}
 .foot-hint b{color:var(--dim);}
 
 @media(max-width:700px){
-  .tgrid{grid-template-columns:1fr;}
-  .sysgroup-head{flex-wrap:wrap;}
-  .sysgroup-role{margin-left:0;}
+  .sys-head{flex-wrap:wrap;}
+  .sys-role{margin-left:0;text-align:left;}
+  .tool{flex-direction:column;}
 }
 </style>
 </head>
@@ -80,197 +83,185 @@ html,body{background:var(--bg);color:var(--text);font-family:'Hiragino Kaku Goth
     <div class="eyebrow">俺でもわかる版</div>
     <h1 class="h1">結局、FusionOSに何があるんだっけ？</h1>
     <div class="rule"></div>
-    <div class="sub">全ツールを「見込み客の動線」に沿って4段階に整理しました。①→②→③は見込み客が辿る順番、④は柴山さんご自身がクライアント支援で使う道具です。</div>
+    <div class="sub">凪・響・弦・奏・ミツメルの5システムごとに、そのシステムに属するツールを並べました。各ツールには「見込み客の動線上どこにいるか」のタグを付けています。</div>
   </header>
 
-  <!-- ①認知を広げるツール -->
-  <section class="stage">
-    <div class="stage-head">
-      <div class="stage-num">1</div>
-      <div>
-        <div class="stage-title">認知を広げるツール</div>
-        <div class="stage-tag">無料・登録不要・見込み客との最初の接点</div>
-      </div>
-    </div>
-    <div class="tgrid">
-      <div class="tcard">
-        <div class="tcard-name">組織ノイズ診断（凪スキャン）</div>
-        <div class="tcard-file">shindan_saiken.html</div>
-        <div class="tcard-role">「あなたの施設は、再建のどのフェーズ？」4問診断でリード獲得。</div>
-        <span class="tcard-status">✅ 稼働中</span>
-      </div>
-      <div class="tcard">
-        <div class="tcard-name">無料相談フォーム</div>
-        <div class="tcard-file">sodan_form.html</div>
-        <div class="tcard-role">軽量2段階フォームでコンサル相談を受け付ける。</div>
-        <span class="tcard-status">✅ 稼働中</span>
-      </div>
-      <div class="tcard">
-        <div class="tcard-name">なぜなぜ分析</div>
-        <div class="tcard-file">naze_naze.html</div>
-        <div class="tcard-role">根本原因分析の思考ツール。</div>
-        <span class="tcard-status">✅ 稼働中</span>
-      </div>
-      <div class="tcard">
-        <div class="tcard-name">3minエマージェンシー</div>
-        <div class="tcard-file">mitsumeru内 index.html</div>
-        <div class="tcard-role">3分でできる緊急時の心の応急処置（ミツメルLite内「⚡3min」からも起動）。</div>
-        <span class="tcard-status">✅ 稼働中</span>
-      </div>
-    </div>
-    <div class="stage-note">📌 4点とも入口用バナー完成済み。「入口用（広げる）」「絞り込み用（次の一手）」の2段階を反映済み（2026-07-11時点）。</div>
-  </section>
+  <div class="legend">
+    <div class="legend-item"><span class="stage-badge stage-1">① 認知拡大</span>無料・登録不要の入口</div>
+    <div class="legend-item"><span class="stage-badge stage-2">② お試し→本使用</span>無料→有料の転換ライン</div>
+    <div class="legend-item"><span class="stage-badge stage-3">③ SaaS販売</span>現状の課金プロダクト</div>
+    <div class="legend-item"><span class="stage-badge stage-4">④ 俺コンサル用</span>クライアント支援の道具</div>
+  </div>
 
-  <!-- ②お試しから本使用へ -->
-  <section class="stage">
-    <div class="stage-head">
-      <div class="stage-num">2</div>
-      <div>
-        <div class="stage-title">お試しから本使用へ</div>
-        <div class="stage-tag">無料→有料の転換ライン</div>
-      </div>
+  <!-- 凪 -->
+  <section class="sys">
+    <div class="sys-head">
+      <span class="sys-jp">凪</span><span class="sys-en">Nagi</span>
+      <span class="sys-role">組織診断</span>
     </div>
-    <div class="tgrid">
-      <div class="tcard">
-        <div class="tcard-name">ミツメル無料版</div>
-        <div class="tcard-file">mitsumeru_app.html</div>
-        <div class="tcard-role">日次ジャーナリング・HP/MP/LV算出・翌日戦略生成。無料・BYOK（自分のAPIキー必須）。</div>
-        <span class="tcard-status">✅ 稼働中</span>
-      </div>
-      <div class="tcard">
-        <div class="tcard-name">ミツメルLite</div>
-        <div class="tcard-file">mitsumeru_lite.html</div>
-        <div class="tcard-role">月額980円のサブスク版（API利用料込み）。無料版からの転換先。</div>
-        <span class="tcard-status">✅ 稼働中</span>
-      </div>
-    </div>
-    <div class="stage-note">📌 転換の仕組み：無料版で価値を体感→APIキー管理が面倒な人・気軽に使いたい人がLiteへ転換。転換率のデータは現時点で未計測（正直な留保）。</div>
-  </section>
 
-  <!-- ③SaaS販売 -->
-  <section class="stage">
-    <div class="stage-head">
-      <div class="stage-num">3</div>
-      <div>
-        <div class="stage-title">SaaS販売で売るもの</div>
-        <div class="stage-tag">現状の課金プロダクト</div>
-      </div>
-    </div>
-    <div class="tgrid">
-      <div class="tcard">
-        <div class="tcard-name">ミツメルLite</div>
-        <div class="tcard-file">mitsumeru_lite.html</div>
-        <div class="tcard-role">月額980円、Stripe課金稼働中。<b style="color:var(--gold2);">現状これが唯一の課金稼働プロダクト。</b></div>
-        <span class="tcard-status">✅ 商用稼働中</span>
-      </div>
-    </div>
-    <div class="stage-note">📌 正直な現状：SaaSとして実際に売れているのはミツメルLiteのみ。凪・響・弦・奏はいずれも③ではなく④（俺コンサルの道具）の位置づけで、単体でのSaaS販売はまだ設計されていない。</div>
-  </section>
-
-  <!-- ④俺コンサルで使用するもの -->
-  <section class="stage">
-    <div class="stage-head">
-      <div class="stage-num">4</div>
-      <div>
-        <div class="stage-title">俺コンサルで使用するもの</div>
-        <div class="stage-tag">柴山さんご本人がクライアント支援で使う道具</div>
+    <div class="tool">
+      <div class="tool-badge-col"><span class="stage-badge stage-1">①</span></div>
+      <div class="tool-body">
+        <div class="tool-name">組織ノイズ診断（凪スキャン）<span class="tool-flag">✅稼働中</span></div>
+        <div class="tool-file">shindan_saiken.html</div>
+        <div class="tool-desc">「あなたの施設は、再建のどのフェーズ？」4問診断でリード獲得。</div>
       </div>
     </div>
 
-    <div class="sysgroup">
-      <div class="sysgroup-head">
-        <span class="sysgroup-jp">凪</span><span class="sysgroup-en">Nagi</span>
-        <span class="sysgroup-role">組織診断・クライアントの状態をアセスメント</span>
-      </div>
-      <div class="modlist">
-        <span class="mod"><b>nagi_system</b> 法人全体ダッシュボード</span>
-        <span class="mod"><b>nagi_mq</b> MQ会計</span>
-        <span class="mod"><b>nagi_pipe</b> 営業パイプライン</span>
-        <span class="mod"><b>nagi_team</b> チーム診断</span>
-        <span class="mod"><b>nagi_staff</b> 個人特性</span>
-        <span class="mod"><b>nagi_psychsafety</b> 心理的安全性</span>
-        <span class="mod"><b>ta_scan</b> TAマップ</span>
-        <span class="mod"><b>pm_scan</b> PM理論診断</span>
-      </div>
-    </div>
-
-    <div class="sysgroup">
-      <div class="sysgroup-head">
-        <span class="sysgroup-jp">響</span><span class="sysgroup-en">Hibiki</span>
-        <span class="sysgroup-role">現場改善・内部の仕組みづくりが役割</span>
-      </div>
-      <div class="modlist">
-        <span class="mod"><b>hibiki_v2</b> アセスメント</span>
-        <span class="mod"><b>hibiki_plan</b> 支援計画</span>
-        <span class="mod"><b>hibiki_procedure</b> 支援手順書</span>
-        <span class="mod"><b>hibiki_ops</b> 運用標準書</span>
-        <span class="mod"><b>hibiki_inventory</b> 在庫管理</span>
-      </div>
-    </div>
-
-    <div class="sysgroup">
-      <div class="sysgroup-head">
-        <span class="sysgroup-jp">弦</span><span class="sysgroup-en">Yuzuru</span>
-        <span class="sysgroup-role">対外的な営業支援が役割</span>
-      </div>
-      <div class="modlist">
-        <span class="mod"><b>yuzuru_map</b> 東海3県商圏マップ</span>
-        <span class="mod" style="opacity:.6;">（今後）チラシ制作ツール — 検討中</span>
-      </div>
-    </div>
-
-    <div class="sysgroup">
-      <div class="sysgroup-head">
-        <span class="sysgroup-jp">奏</span><span class="sysgroup-en">Kanade</span>
-        <span class="sysgroup-role">クライアントの採用・人材育成を支援</span>
-      </div>
-      <div class="modlist">
-        <span class="mod"><b>kanade_app</b> 適性検査</span>
-        <span class="mod"><b>kanade_shift</b> 勤務表</span>
-        <span class="mod"><b>kanade_growth</b> 1on1育成</span>
-        <span class="mod"><b>kanade_pulse</b> 離職アラート</span>
-      </div>
-    </div>
-
-    <div class="sysgroup">
-      <div class="sysgroup-head">
-        <span class="sysgroup-jp">ミツメル業務用</span><span class="sysgroup-en">Compass</span>
-        <span class="sysgroup-role">導入企業の管理者が職員の状態を匿名集計で把握</span>
-      </div>
-      <div class="modlist">
-        <span class="mod"><b>mitsumeru_compass</b> 企業向け羅針盤ダッシュボード</span>
+    <div class="tool">
+      <div class="tool-badge-col"><span class="stage-badge stage-4">④</span></div>
+      <div class="tool-body">
+        <div class="tool-name">凪の俺コンサル用モジュール群</div>
+        <div class="tool-file">nagi_system・nagi_mq・nagi_pipe・nagi_team・nagi_staff・nagi_psychsafety・ta_scan・pm_scan</div>
+        <div class="tool-desc">クライアントの組織状態をアセスメントする診断群。ハブはnagi_system（法人全体ダッシュボード）。</div>
       </div>
     </div>
   </section>
 
-  <!-- 分類できていないもの -->
-  <section class="stage">
-    <div class="stage-head">
-      <div class="stage-num">?</div>
-      <div>
-        <div class="stage-title">まだ分類できていないもの</div>
-        <div class="stage-tag">正直な留保</div>
+  <!-- 響 -->
+  <section class="sys">
+    <div class="sys-head">
+      <span class="sys-jp">響</span><span class="sys-en">Hibiki</span>
+      <span class="sys-role">現場改善・内部の仕組みづくりが役割</span>
+    </div>
+
+    <div class="tool">
+      <div class="tool-badge-col"><span class="stage-badge stage-1">①</span></div>
+      <div class="tool-body">
+        <div class="tool-name">なぜなぜ分析<span class="tool-flag">✅稼働中</span></div>
+        <div class="tool-file">naze_naze.html</div>
+        <div class="tool-desc">根本原因分析の思考ツール。響の傘下だが、汎用的な入口ツールの性質も持つ。</div>
       </div>
     </div>
-    <div class="tgrid">
-      <div class="tcard">
-        <div class="tcard-name">ミツメルレーダー</div>
-        <div class="tcard-file">mitsumeru_appのタブ内</div>
-        <div class="tcard-role">HP/MP/LVのRPG風可視化。ミツメル無料版の付加機能（②寄りと暫定）。</div>
+
+    <div class="tool">
+      <div class="tool-badge-col"><span class="stage-badge stage-4">④</span></div>
+      <div class="tool-body">
+        <div class="tool-name">響の俺コンサル用モジュール群</div>
+        <div class="tool-file">hibiki_v2・hibiki_plan・hibiki_procedure・hibiki_ops・hibiki_inventory</div>
+        <div class="tool-desc">アセスメント→支援計画→支援手順書→運用標準書→在庫管理、という5モジュールの流れ。</div>
       </div>
-      <div class="tcard">
-        <div class="tcard-name">単独MQ会計ツール</div>
-        <div class="tcard-file">mq_calculator.html</div>
-        <div class="tcard-role">売上・変動費・固定費だけで即計算する電卓。独立無料ツール（①寄りと暫定）。</div>
+    </div>
+  </section>
+
+  <!-- 弦 -->
+  <section class="sys">
+    <div class="sys-head">
+      <span class="sys-jp">弦</span><span class="sys-en">Yuzuru</span>
+      <span class="sys-role">対外的な営業支援が役割</span>
+    </div>
+
+    <div class="tool">
+      <div class="tool-badge-col"><span class="stage-badge stage-4">④</span></div>
+      <div class="tool-body">
+        <div class="tool-name">商圏マップ<span class="tool-flag">✅稼働中</span></div>
+        <div class="tool-file">yuzuru_map.html</div>
+        <div class="tool-desc">東海3県の商圏マップ。条件検索→リスト抽出→行動。現時点で弦は本ツール1本のみ。</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 奏 -->
+  <section class="sys">
+    <div class="sys-head">
+      <span class="sys-jp">奏</span><span class="sys-en">Kanade</span>
+      <span class="sys-role">クライアントの採用・人材育成を支援</span>
+    </div>
+
+    <div class="tool">
+      <div class="tool-badge-col"><span class="stage-badge stage-4">④</span></div>
+      <div class="tool-body">
+        <div class="tool-name">奏の俺コンサル用モジュール群</div>
+        <div class="tool-file">kanade_app・kanade_shift・kanade_growth・kanade_pulse・mitsumeru_tekisei_check</div>
+        <div class="tool-desc">適性検査（kanade_app）を起点に、勤務表・1on1育成・離職アラートが続く。採用スキャン（候補者配布用）も奏の管轄。</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ミツメル -->
+  <section class="sys">
+    <div class="sys-head">
+      <span class="sys-jp">ミツメル</span><span class="sys-en">Mitsumeru</span>
+      <span class="sys-role">個人セルフケア・管理職の耐久設計</span>
+    </div>
+
+    <div class="tool">
+      <div class="tool-badge-col"><span class="stage-badge stage-1">①</span></div>
+      <div class="tool-body">
+        <div class="tool-name">3minエマージェンシー<span class="tool-flag">✅稼働中</span></div>
+        <div class="tool-file">mitsumeru内 index.html</div>
+        <div class="tool-desc">3分でできる緊急時の心の応急処置。ミツメルLite内「⚡3min」からも起動。</div>
+      </div>
+    </div>
+
+    <div class="tool">
+      <div class="tool-badge-col"><span class="stage-badge stage-2">②</span></div>
+      <div class="tool-body">
+        <div class="tool-name">ミツメル無料版<span class="tool-flag">✅稼働中</span></div>
+        <div class="tool-file">mitsumeru_app.html</div>
+        <div class="tool-desc">日次ジャーナリング・HP/MP/LV算出・翌日戦略生成。無料・BYOK（自分のAPIキー必須）。</div>
+      </div>
+    </div>
+
+    <div class="tool">
+      <div class="tool-badge-col"><span class="stage-badge stage-2">②</span></div>
+      <div class="tool-body">
+        <div class="tool-name">ミツメルレーダー<span class="tool-flag">✅稼働中</span></div>
+        <div class="tool-file">mitsumeru_appのタブ内</div>
+        <div class="tool-desc">HP/MP/LVのRPG風可視化。無料版の付加機能として、お試し体験の魅力を高める役割（2026-07-11確定）。</div>
+      </div>
+    </div>
+
+    <div class="tool">
+      <div class="tool-badge-col"><span class="stage-badge stage-3">③</span></div>
+      <div class="tool-body">
+        <div class="tool-name">ミツメルLite<span class="tool-flag">✅商用稼働中</span></div>
+        <div class="tool-file">mitsumeru_lite.html</div>
+        <div class="tool-desc">月額980円、Stripe課金稼働中。<b style="color:var(--gold2);">現状これが唯一の課金稼働プロダクト。</b></div>
+      </div>
+    </div>
+
+    <div class="tool">
+      <div class="tool-badge-col"><span class="stage-badge stage-4">④</span></div>
+      <div class="tool-body">
+        <div class="tool-name">企業向け羅針盤ダッシュボード<span class="tool-flag">✅稼働中</span></div>
+        <div class="tool-file">mitsumeru_compass.html</div>
+        <div class="tool-desc">導入企業の管理者が、職員の状態を匿名集計で把握するダッシュボード。</div>
+      </div>
+    </div>
+
+    <div class="sys-note">📌 転換の仕組み：①3minやレーダーで無料版の価値を体感→②APIキー管理が面倒な人・気軽に使いたい人がLiteへ転換、という導線。転換率のデータは現時点で未計測（正直な留保）。</div>
+  </section>
+
+  <!-- 独立ツール -->
+  <section class="sys">
+    <div class="indep-head">システムに属さない独立ツール</div>
+
+    <div class="tool">
+      <div class="tool-badge-col"><span class="stage-badge stage-1">①</span></div>
+      <div class="tool-body">
+        <div class="tool-name">無料相談フォーム<span class="tool-flag">✅稼働中</span></div>
+        <div class="tool-file">sodan_form.html</div>
+        <div class="tool-desc">軽量2段階フォームでコンサル相談を受け付ける。特定システムに属さない汎用入口。</div>
+      </div>
+    </div>
+
+    <div class="tool">
+      <div class="tool-badge-col"><span class="stage-badge stage-1">①</span></div>
+      <div class="tool-body">
+        <div class="tool-name">単独MQ会計ツール<span class="tool-flag">✅稼働中</span></div>
+        <div class="tool-file">mq_calculator.html</div>
+        <div class="tool-desc">売上・変動費・固定費だけで限界利益・利益を即計算する電卓。「慣れると面倒になる」という柴山さんの指摘を受け、凪軸A（nagi_mq）とは意図的に切り離した独立無料ツール（2026-07-11確定）。</div>
       </div>
     </div>
   </section>
 
   <div class="foot-hint">
     <b>この一覧の元データ：</b><br>
-    ①機能軸（本ページのベース）：<code>06_イノベーション/FusionOS_ツール一覧_機能軸_20260711.md</code><br>
+    ①機能軸（各ツールの①〜④タグの根拠）：<code>06_イノベーション/FusionOS_ツール一覧_機能軸_20260711.md</code><br>
     ②システム軸（実装状態・構造定義書との対応の詳細）：<code>06_イノベーション/FusionOS_モジュール全体一覧_20260711.md</code><br><br>
-    細かい実装状態やモジュール構造をもっと詳しく見たい時は②の資料を直接参照してください。本ページは「①→②→③→④という見込み客の動線」で頭を整理するための一覧です。
+    細かい実装状態やモジュール構造をもっと詳しく見たい時は②の資料を直接参照してください。本ページは「システムごとに、動線上のどこにいるか」で頭を整理するための一覧です。
   </div>
 </div>
 </body>
