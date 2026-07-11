@@ -15,7 +15,7 @@
   --gold:#c9a850; --gold2:#e0c273;
   --text:#e8ecf1; --dim:#93a3b5; --dim2:#5f7086;
   --border:#293b4d; --ok:#7fbf8f;
-  --s1:#e0c273; --s2:#7fbf8f; --s3:#8fc0ff; --s4:#c9a8e0;
+  --s1:#e0c273; --s2:#7fbf8f; --s3:#8fc0ff; --s4:#c9a8e0; --sx:#7a8a9a;
 }
 html,body{background:var(--bg);color:var(--text);font-family:'Hiragino Kaku Gothic Pro','Meiryo','Yu Gothic',sans-serif;-webkit-font-smoothing:antialiased;min-height:100%;}
 .topbar{position:sticky;top:0;z-index:20;background:var(--navy);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;}
@@ -28,7 +28,7 @@ html,body{background:var(--bg);color:var(--text);font-family:'Hiragino Kaku Goth
 .head{margin-bottom:32px;}
 .eyebrow{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);margin-bottom:12px;font-weight:600;}
 .h1{font-size:clamp(24px,3.4vw,32px);font-weight:700;color:#fff;line-height:1.4;}
-.sub{font-size:13px;color:var(--dim);margin-top:10px;line-height:1.9;max-width:660px;}
+.sub{font-size:13px;color:var(--dim);margin-top:10px;line-height:1.9;max-width:680px;}
 .rule{width:36px;height:2px;background:var(--gold);margin:18px 0;}
 
 /* 凡例 */
@@ -40,6 +40,7 @@ html,body{background:var(--bg);color:var(--text);font-family:'Hiragino Kaku Goth
 .stage-2{background:rgba(127,191,143,.16);color:var(--s2);border:1px solid rgba(127,191,143,.4);}
 .stage-3{background:rgba(143,192,255,.16);color:var(--s3);border:1px solid rgba(143,192,255,.4);}
 .stage-4{background:rgba(201,168,224,.16);color:var(--s4);border:1px solid rgba(201,168,224,.4);}
+.stage-x{background:rgba(122,138,154,.14);color:var(--sx);border:1px solid rgba(122,138,154,.35);}
 
 /* システムセクション */
 .sys{margin-bottom:40px;}
@@ -56,6 +57,12 @@ html,body{background:var(--bg);color:var(--text);font-family:'Hiragino Kaku Goth
 .tool-file{font-family:'SF Mono',Consolas,monospace;font-size:10px;color:var(--dim2);margin-bottom:6px;}
 .tool-desc{font-size:12px;color:var(--dim);line-height:1.7;}
 .tool-flag{display:inline-block;margin-left:6px;font-size:10px;color:var(--ok);}
+
+/* モジュール群の内訳（凪・響・奏の④が複数ファイルを束ねる場合、1行ずつ内訳を出す） */
+.module-list{margin-top:10px;display:flex;flex-direction:column;gap:6px;}
+.module-row{font-size:11.5px;color:var(--dim);line-height:1.6;padding-left:12px;border-left:2px solid var(--border);}
+.module-row b{color:var(--text);font-family:'SF Mono',Consolas,monospace;font-weight:600;font-size:11px;}
+.module-row .m-tag{color:var(--dim2);font-size:10.5px;}
 
 .tool-sub{margin-top:10px;padding:10px 14px;background:var(--panel2);border-left:2px solid var(--border);border-radius:0 4px 4px 0;display:flex;align-items:flex-start;gap:10px;}
 .tool-sub-body{flex:1;min-width:0;}
@@ -87,9 +94,9 @@ html,body{background:var(--bg);color:var(--text);font-family:'Hiragino Kaku Goth
 <div class="wrap">
   <header class="head">
     <div class="eyebrow">システム別ツール一覧</div>
-    <h1 class="h1">結局、FusionOSに何があるんだっけ？</h1>
+    <h1 class="h1">FusionOSに、結局何があるのか。</h1>
     <div class="rule"></div>
-    <div class="sub">凪・響・弦・奏・ミツメルの5システムごとに、そのシステムに属するツールを並べました。各ツールには「見込み客の動線上どこにいるか」のタグを付けています。</div>
+    <div class="sub">凪・響・弦・奏・ミツメルの5システムごとに、そのシステムに属するツールを並べました。各ツールには「見込み客の動線上どこにいるか」のタグを付けています。複数モジュールを束ねる項目は、個々のファイルの役割まで内訳を出しています。</div>
   </header>
 
   <div class="legend">
@@ -97,6 +104,7 @@ html,body{background:var(--bg);color:var(--text);font-family:'Hiragino Kaku Goth
     <div class="legend-item"><span class="stage-badge stage-2">② お試し→本使用</span>無料→有料の転換ライン</div>
     <div class="legend-item"><span class="stage-badge stage-3">③ SaaS販売</span>現状の課金プロダクト</div>
     <div class="legend-item"><span class="stage-badge stage-4">④ コンサル支援用</span>クライアント支援の道具</div>
+    <div class="legend-item"><span class="stage-badge stage-x">対象外</span>見込み客の動線には乗らない、柴山さん個人用・管理者専用の道具</div>
   </div>
 
   <!-- 凪 -->
@@ -111,7 +119,7 @@ html,body{background:var(--bg);color:var(--text);font-family:'Hiragino Kaku Goth
       <div class="tool-body">
         <div class="tool-name">組織ノイズ診断（凪スキャン）<span class="tool-flag">✅稼働中</span></div>
         <div class="tool-file">shindan_saiken.html</div>
-        <div class="tool-desc">「あなたの施設は、再建のどのフェーズ？」4問診断でリード獲得。</div>
+        <div class="tool-desc">「あなたの施設は、再建のどのフェーズ？」4問診断でリード獲得。※構造定義書上は凪システム本体とは別実装の独立ツール（凪ハブから遷移する機能ではない）。「凪スキャン」という呼称はブランディング上のもので、実装上の所属ではない。</div>
       </div>
     </div>
 
@@ -119,8 +127,17 @@ html,body{background:var(--bg);color:var(--text);font-family:'Hiragino Kaku Goth
       <div class="tool-badge-col"><span class="stage-badge stage-4">④</span></div>
       <div class="tool-body">
         <div class="tool-name">凪のコンサル支援用モジュール群</div>
-        <div class="tool-file">nagi_system.html（法人ダッシュボード）・nagi_mq.html（MQ会計）・nagi_pipe.html（営業パイプライン）・nagi_team.html（チーム診断）・nagi_staff.html（スタッフ個人特性）・nagi_psychsafety.html（心理的安全性）・ta_scan.html（TAマップ診断）・pm_scan.html（PM理論診断）</div>
-        <div class="tool-desc">クライアントの組織状態をアセスメントする診断群。ハブはnagi_system（法人全体ダッシュボード）。</div>
+        <div class="tool-desc">クライアントの組織状態を多角的にアセスメントする診断群。ハブは法人全体ダッシュボード。</div>
+        <div class="module-list">
+          <div class="module-row"><b>nagi_system.html</b>　<span class="m-tag">ハブ</span>　法人全体ダッシュボード・羅針盤</div>
+          <div class="module-row"><b>nagi_mq.html</b>　<span class="m-tag">軸A・資金</span>　MQ会計・利益感度・定員充足率</div>
+          <div class="module-row"><b>nagi_pipe.html</b>　<span class="m-tag">軸B・営業</span>　NDBパイプライン・AI補足コメント</div>
+          <div class="module-row"><b>nagi_team.html</b>　<span class="m-tag">軸C・チーム</span>　RC/LSRP判定サマリー・AI補足コメント</div>
+          <div class="module-row"><b>nagi_staff.html</b>　<span class="m-tag">軸D・スタッフ性質</span>　エゴグラム・LSRP個人データ</div>
+          <div class="module-row"><b>nagi_psychsafety.html</b>　<span class="m-tag">オプション</span>　心理的安全性診断（エドモンドソン×クラーク）</div>
+          <div class="module-row"><b>ta_scan.html</b>　<span class="m-tag">オプション</span>　TAマップ診断（チームアセスメント）</div>
+          <div class="module-row"><b>pm_scan.html</b>　<span class="m-tag">オプション</span>　PM理論診断（リーダーシップ診断）</div>
+        </div>
       </div>
     </div>
   </section>
@@ -137,7 +154,7 @@ html,body{background:var(--bg);color:var(--text);font-family:'Hiragino Kaku Goth
       <div class="tool-body">
         <div class="tool-name">なぜなぜ分析<span class="tool-flag">✅稼働中</span></div>
         <div class="tool-file">naze_naze.html</div>
-        <div class="tool-desc">根本原因分析の思考ツール。響の傘下だが、汎用的な入口ツールの性質も持つ。</div>
+        <div class="tool-desc">根本原因分析の思考ツール。響の傘下だが、アセスメント・支援計画・運用標準づくり全般の「土台になる考え方」として、特定モジュールに紐づかない汎用ツールの性質を持つ。</div>
       </div>
     </div>
 
@@ -145,8 +162,14 @@ html,body{background:var(--bg);color:var(--text);font-family:'Hiragino Kaku Goth
       <div class="tool-badge-col"><span class="stage-badge stage-4">④</span></div>
       <div class="tool-body">
         <div class="tool-name">響のコンサル支援用モジュール群</div>
-        <div class="tool-file">hibiki_v2.html（アセスメント）・hibiki_plan.html（支援計画）・hibiki_procedure.html（支援手順書）・hibiki_ops.html（運用標準書）・hibiki_inventory.html（在庫管理）</div>
-        <div class="tool-desc">アセスメント→支援計画→支援手順書→運用標準書→在庫管理、という5モジュールの流れ。</div>
+        <div class="tool-desc">①アセスメント（利用者理解）を起点に、②支援計画③支援手順書④運用標準書⑤在庫管理へと分岐する構造。</div>
+        <div class="module-list">
+          <div class="module-row"><b>hibiki_v2.html</b>　<span class="m-tag">H1-AS・アセスメント</span>　基本情報・ICF・氷山モデル</div>
+          <div class="module-row"><b>hibiki_plan.html</b>　<span class="m-tag">H1-PLAN・支援計画</span>　課題・目標・支援方針（ケアマネ・サビ管専用）</div>
+          <div class="module-row"><b>hibiki_procedure.html</b>　<span class="m-tag">H1-PROC・支援手順書</span>　対応手順の生成・読了チェック（現場スタッフ向け）</div>
+          <div class="module-row"><b>hibiki_ops.html</b>　<span class="m-tag">H2-STD・運用標準書</span>　SOP文書・5S順序ゲート＋施設向け軽量版の営業提案診断</div>
+          <div class="module-row"><b>hibiki_inventory.html</b>　<span class="m-tag">H2-INV・在庫管理</span>　品目登録・ABC分析・2ビン方式・カンバンラベル</div>
+        </div>
       </div>
     </div>
   </section>
@@ -161,9 +184,9 @@ html,body{background:var(--bg);color:var(--text);font-family:'Hiragino Kaku Goth
     <div class="tool">
       <div class="tool-badge-col"><span class="stage-badge stage-4">④</span></div>
       <div class="tool-body">
-        <div class="tool-name">商圏マップ（弦の基幹ツール）<span class="tool-flag">✅稼働中</span></div>
+        <div class="tool-name">商圏マップ<span class="tool-flag">✅稼働中</span></div>
         <div class="tool-file">yuzuru_map.html</div>
-        <div class="tool-desc">東海3県の商圏マップ。条件検索→リスト抽出→行動。他システムの④は複数モジュールの束だが、弦は現時点でこの1本のみで構成される。</div>
+        <div class="tool-desc">東海3県の商圏マップ。条件検索→リスト抽出→行動。現時点でオプション機能・派生ツールは存在せず、弦は本ツール1本のみで構成される（凪・響・奏は複数モジュールの束）。</div>
       </div>
     </div>
   </section>
@@ -179,8 +202,14 @@ html,body{background:var(--bg);color:var(--text);font-family:'Hiragino Kaku Goth
       <div class="tool-badge-col"><span class="stage-badge stage-4">④</span></div>
       <div class="tool-body">
         <div class="tool-name">奏のコンサル支援用モジュール群</div>
-        <div class="tool-file">kanade_app.html（適性検査）・kanade_shift.html（勤務表）・kanade_growth.html（1on1育成）・kanade_pulse.html（離職アラート）・mitsumeru_tekisei_check.html（採用スキャン）</div>
-        <div class="tool-desc">適性検査（kanade_app）を起点に、勤務表・1on1育成・離職アラートが続く。採用スキャン（候補者配布用）も奏の管轄。</div>
+        <div class="tool-desc">適性検査を起点に、勤務表・1on1育成・離職アラートが続く。</div>
+        <div class="module-list">
+          <div class="module-row"><b>kanade_app.html</b>　<span class="m-tag">基幹</span>　適性検査・面接仮説生成・評価シート作成</div>
+          <div class="module-row"><b>kanade_shift.html</b>　<span class="m-tag">オプション</span>　勤務表自動作成・法定基準チェック・契約時間・有給管理</div>
+          <div class="module-row"><b>kanade_growth.html</b>　<span class="m-tag">オプション</span>　1on1・育成サポート（GROWモデル・OJT計画・SBIフィードバック）</div>
+          <div class="module-row"><b>kanade_pulse.html</b>　<span class="m-tag">オプション</span>　パルスサーベイ・離職アラート</div>
+          <div class="module-row"><b>mitsumeru_tekisei_check.html</b>　<span class="m-tag">採用スキャン・候補者配布用</span>　受検者/管理者UI分離済み。※ファイル名に「mitsumeru」を含むが2026-07-08に凪から奏へ移設済みの採用機能。ミツメル内の管理者用クイック診断（mitsumeru_scan.html）と同一の名簿データ・診断ロジックを共有するが、役割は分離（2026-07-11確定）</div>
+        </div>
       </div>
     </div>
   </section>
@@ -189,7 +218,7 @@ html,body{background:var(--bg);color:var(--text);font-family:'Hiragino Kaku Goth
   <section class="sys">
     <div class="sys-head">
       <span class="sys-jp">ミツメル</span><span class="sys-en">Mitsumeru</span>
-      <span class="sys-role">個人セルフケア・管理職の耐久設計</span>
+      <span class="sys-role">個人のセルフケア（管理職の消耗を防ぐ）</span>
     </div>
 
     <div class="tool">
@@ -228,11 +257,29 @@ html,body{background:var(--bg);color:var(--text);font-family:'Hiragino Kaku Goth
     </div>
 
     <div class="tool">
+      <div class="tool-badge-col"><span class="stage-badge stage-x">対象外</span></div>
+      <div class="tool-body">
+        <div class="tool-name">柴山さん専用版<span class="tool-flag">✅稼働中</span></div>
+        <div class="tool-file">mitsumeru_private.html</div>
+        <div class="tool-desc">データを本番（顧客利用分）と完全分離した柴山さんご本人専用版。見込み客の動線には乗らないため①〜④の対象外。</div>
+      </div>
+    </div>
+
+    <div class="tool">
       <div class="tool-badge-col"><span class="stage-badge stage-4">④</span></div>
       <div class="tool-body">
         <div class="tool-name">企業向け羅針盤ダッシュボード<span class="tool-flag">✅稼働中</span></div>
         <div class="tool-file">mitsumeru_compass.html</div>
         <div class="tool-desc">導入企業の管理者が、職員の状態を匿名集計で把握するダッシュボード。</div>
+      </div>
+    </div>
+
+    <div class="tool">
+      <div class="tool-badge-col"><span class="stage-badge stage-4">④</span></div>
+      <div class="tool-body">
+        <div class="tool-name">管理者用クイック診断<span class="tool-flag">✅稼働中</span></div>
+        <div class="tool-file">mitsumeru_scan.html</div>
+        <div class="tool-desc">LSRP/エゴグラム診断・名簿管理（社内スタッフ用）。ミツメル本体アプリ「🔍スキャン」から起動する管理者向け機能。奏の採用スキャン（mitsumeru_tekisei_check.html・候補者配布用）と同一の名簿データ・診断ロジックを共有するが、役割は分離（2026-07-11確定）。</div>
       </div>
     </div>
 
@@ -257,7 +304,7 @@ html,body{background:var(--bg);color:var(--text);font-family:'Hiragino Kaku Goth
       <div class="tool-body">
         <div class="tool-name">単独MQ会計ツール<span class="tool-flag">✅稼働中</span></div>
         <div class="tool-file">mq_calculator.html</div>
-        <div class="tool-desc">売上・変動費・固定費だけで限界利益・利益を即計算する電卓。「慣れると面倒になる」という柴山さんの指摘を受け、凪軸A（nagi_mq）とは意図的に切り離した独立無料ツール（2026-07-11確定）。</div>
+        <div class="tool-desc">売上・変動費・固定費だけで限界利益・利益を即計算する電卓。「慣れると面倒になる」という柴山さんの指摘を受け、凪軸A（nagi_mq.html）とは意図的に切り離した独立無料ツール（2026-07-11確定）。</div>
       </div>
     </div>
   </section>
