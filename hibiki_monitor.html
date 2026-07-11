@@ -254,7 +254,7 @@ function backToList() {
 function openPerson(personId) {
   currentPersonId = personId;
   const v2 = loadV2Person(personId);
-  document.getElementById('personBadge').textContent = v2?.modules?.basic?.alias || v2?.alias || '（利用者）';
+  document.getElementById('personBadge').textContent = v2?.meta?.alias || '（利用者）';
   document.getElementById('personBadge').style.display = '';
   document.getElementById('listScreen').style.display = 'none';
   document.getElementById('monitorScreen').style.display = '';
