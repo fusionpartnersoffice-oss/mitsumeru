@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>響 モニタリング（H1-MONITOR） | Fusion Partners</title>
+<title>響 支援モニタリングツール | Fusion Partners</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23ce93d8'/><text x='16' y='24' font-size='20' text-anchor='middle'>📈</text></svg>">
 <style>
 :root {
@@ -85,7 +85,7 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:9
 <!-- 同意ゲート -->
 <div class="gate" id="gate">
   <div class="gate-box">
-    <div class="gate-title">📈 モニタリング（H1-MONITOR）ご利用前の確認</div>
+    <div class="gate-title">📈 支援モニタリングツールご利用前の確認</div>
     <div class="gate-body">
       本ツールでは、利用者の支援経過（結果の様子・課題の推移・前進点・残る課題）を時系列で記録・蓄積します。<br><br>
       <strong>入力したデータについて：</strong><br>
@@ -101,7 +101,7 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:9
 </div>
 
 <header>
-  <span class="hdr-logo">📈 H1-MONITOR モニタリング</span>
+  <span class="hdr-logo">📈 支援モニタリングツール</span>
   <span class="person-badge" id="personBadge" style="display:none;"></span>
   <div class="hdr-spacer"></div>
   <button class="hdr-btn" onclick="backToList()">👥 利用者一覧</button>
@@ -214,7 +214,7 @@ function loadProcReadonly(personId) {
   try { const raw = localStorage.getItem(PROC_STORE_PREFIX + personId); return raw ? JSON.parse(raw) : null; } catch { return null; }
 }
 
-// ── H1-MONITOR自身のデータ（読み書き・時系列蓄積・上書きしない） ──
+// ── 支援モニタリングツール自身のデータ（読み書き・時系列蓄積・上書きしない） ──
 function loadMonitorRecords(personId) {
   try { return JSON.parse(localStorage.getItem(MONITOR_STORE_PREFIX + personId) || '[]'); } catch { return []; }
 }
