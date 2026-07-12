@@ -65,13 +65,25 @@ html,body{
 }
 .back:hover{color:var(--gold2);}
 
-.head{margin-bottom:40px;}
+.head{margin-bottom:32px;}
 .eyebrow{font-size:11px;letter-spacing:4px;text-transform:uppercase;color:var(--gold2);margin-bottom:16px;font-weight:500;}
 .h1{font-size:clamp(28px,4.2vw,40px);font-weight:300;color:var(--navy);line-height:1.4;}
 .rule{width:32px;height:2px;background:var(--gold3);margin:24px 0;}
 .lead{font-size:clamp(14px,1.6vw,15.5px);line-height:2;color:var(--text);max-width:600px;}
 .lead p{margin-bottom:1em;}
 .lead p:last-child{margin-bottom:0;}
+
+/* 凡例 */
+.legend{
+  margin-top:28px;padding:18px 22px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;
+  display:flex;flex-wrap:wrap;gap:10px 20px;
+}
+.legend-item{display:flex;align-items:baseline;gap:8px;font-size:12px;color:var(--dim);}
+.tag{
+  display:inline-block;font-size:10px;letter-spacing:.3px;color:var(--gold2);
+  border:1px solid var(--gold3);border-radius:10px;padding:2px 10px;
+  white-space:nowrap;font-weight:600;
+}
 
 /* システムセクション */
 .sys{margin-top:56px;padding-top:44px;border-top:1px solid var(--border);}
@@ -85,8 +97,16 @@ html,body{
 
 .tool{padding:18px 0;border-top:1px solid var(--border);}
 .tool:last-of-type{border-bottom:1px solid var(--border);}
-.tool-name{font-size:11px;letter-spacing:1.5px;color:var(--gold2);text-transform:uppercase;font-weight:600;margin-bottom:6px;}
+.tool-head{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:6px;}
+.tool-name{font-size:11px;letter-spacing:1.5px;color:var(--gold2);text-transform:uppercase;font-weight:600;}
 .tool-desc{font-size:13.5px;line-height:1.85;color:var(--text);}
+.status{
+  display:inline-block;font-size:10px;color:var(--dim2);border:1px solid var(--border);
+  border-radius:10px;padding:2px 10px;white-space:nowrap;
+}
+
+.indep-head{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--dim2);margin-bottom:10px;}
+.indep-role{font-size:13.5px;line-height:1.9;color:var(--dim);max-width:560px;margin-bottom:22px;}
 
 .diag-cta{
   margin-top:56px;
@@ -124,7 +144,14 @@ html,body{
     <div class="rule"></div>
     <div class="lead sans">
       <p>各システムのご紹介ページでは、代表的なツールを中心にお伝えしています。ここでは、現在動いているものすべてを、1ページでご覧いただけます。</p>
-      <p>それぞれのシステムの物語は、システムごとのページでも読んでいただけます。</p>
+      <p>それぞれのツールには、どういう形でお使いいただけるかのタグを付けています。</p>
+    </div>
+
+    <div class="legend sans">
+      <div class="legend-item"><span class="tag">①無料配布版</span>登録・購入不要でお使いいただけます</div>
+      <div class="legend-item"><span class="tag">②お試し後購入</span>まず無料で試し、気に入れば購入へ</div>
+      <div class="legend-item"><span class="tag">③購入するモノ</span>月額でご利用いただく商品です</div>
+      <div class="legend-item"><span class="tag">④コンサル伴走</span>柴山靖章が伴走支援の中で使う道具です</div>
     </div>
   </header>
 
@@ -139,39 +166,43 @@ html,body{
     </div>
 
     <div class="tool">
-      <div class="tool-name">nagi_system</div>
+      <div class="tool-head"><span class="tool-name">凪スキャン（組織ノイズ診断）</span><span class="tag">①無料配布版</span></div>
+      <div class="tool-desc sans">「あなたの施設は、再建のどのフェーズ？」4問診断。まず現状を知りたい方の入口。</div>
+    </div>
+    <div class="tool">
+      <div class="tool-head"><span class="tool-name">nagi_system</span><span class="tag">④コンサル伴走</span></div>
       <div class="tool-desc sans">法人全体ダッシュボード。全体の状態を一目で見渡すハブ画面。</div>
     </div>
     <div class="tool">
-      <div class="tool-name">nagi_mq</div>
+      <div class="tool-head"><span class="tool-name">nagi_mq</span><span class="tag">④コンサル伴走</span></div>
       <div class="tool-desc sans">MQ会計・資金データ。収益構造を数字で可視化。</div>
     </div>
     <div class="tool">
-      <div class="tool-name">nagi_pipe</div>
+      <div class="tool-head"><span class="tool-name">nagi_pipe</span><span class="tag">④コンサル伴走</span></div>
       <div class="tool-desc sans">営業パイプライン。案件の進捗を管理。</div>
     </div>
     <div class="tool">
-      <div class="tool-name">nagi_team</div>
+      <div class="tool-head"><span class="tool-name">nagi_team</span><span class="tag">④コンサル伴走</span></div>
       <div class="tool-desc sans">チーム評価。組織の状態を診る。</div>
     </div>
     <div class="tool">
-      <div class="tool-name">nagi_staff</div>
+      <div class="tool-head"><span class="tool-name">nagi_staff</span><span class="tag">④コンサル伴走</span></div>
       <div class="tool-desc sans">スタッフ一覧。個々の職員の傾向を記録。</div>
     </div>
     <div class="tool">
-      <div class="tool-name">nagi_psychsafety</div>
+      <div class="tool-head"><span class="tool-name">nagi_psychsafety</span><span class="tag">④コンサル伴走</span></div>
       <div class="tool-desc sans">心理的安全性診断。組織全体の安全性を測る。</div>
     </div>
     <div class="tool">
-      <div class="tool-name">ta_scan</div>
+      <div class="tool-head"><span class="tool-name">ta_scan</span><span class="tag">④コンサル伴走</span></div>
       <div class="tool-desc sans">チームアセスメント。チームの状態を診断する。</div>
     </div>
     <div class="tool">
-      <div class="tool-name">pm_scan</div>
+      <div class="tool-head"><span class="tool-name">pm_scan</span><span class="tag">④コンサル伴走</span></div>
       <div class="tool-desc sans">PM理論リーダーシップ診断。管理者のリーダーシップ傾向を測る。</div>
     </div>
     <div class="tool">
-      <div class="tool-name">mitsumeru_tekisei_check</div>
+      <div class="tool-head"><span class="tool-name">mitsumeru_tekisei_check</span><span class="tag">④コンサル伴走</span></div>
       <div class="tool-desc sans">採用スキャン。エゴグラム・LSRP・エニアグラムで受検者本人の特性を診断し、凪へ連携するアセスメントツール。</div>
     </div>
   </section>
@@ -187,23 +218,23 @@ html,body{
     </div>
 
     <div class="tool">
-      <div class="tool-name">mitsumeru_tekisei_check</div>
+      <div class="tool-head"><span class="tool-name">mitsumeru_tekisei_check</span><span class="tag">④コンサル伴走</span></div>
       <div class="tool-desc sans">採用スキャン。採用・人材配置向けアセスメント。データは凪と連携するが、主な使われ方が採用実務のため奏にも掲載。</div>
     </div>
     <div class="tool">
-      <div class="tool-name">kanade_app</div>
+      <div class="tool-head"><span class="tool-name">kanade_app</span><span class="tag">④コンサル伴走</span></div>
       <div class="tool-desc sans">適性検査の結果と連携し、本音を引き出す面接（RJP）を進行させる面接支援ツール。数字だけでなく、実際の対話から人を見極める。</div>
     </div>
     <div class="tool">
-      <div class="tool-name">kanade_shift</div>
+      <div class="tool-head"><span class="tool-name">kanade_shift</span><span class="tag">④コンサル伴走</span></div>
       <div class="tool-desc sans">勤務表自動作成。シフト・契約時間・有給を管理。</div>
     </div>
     <div class="tool">
-      <div class="tool-name">kanade_growth</div>
+      <div class="tool-head"><span class="tool-name">kanade_growth</span><span class="tag">④コンサル伴走</span></div>
       <div class="tool-desc sans">1on1・育成サポート。GROWモデルで育成を記録。</div>
     </div>
     <div class="tool">
-      <div class="tool-name">kanade_pulse</div>
+      <div class="tool-head"><span class="tool-name">kanade_pulse</span><span class="tag">④コンサル伴走</span></div>
       <div class="tool-desc sans">パルスサーベイ・離職アラート。日々のコンディションを察知。</div>
     </div>
   </section>
@@ -219,27 +250,31 @@ html,body{
     </div>
 
     <div class="tool">
-      <div class="tool-name">hibiki_v2</div>
+      <div class="tool-head"><span class="tool-name">hibiki_v2</span><span class="tag">④コンサル伴走</span></div>
       <div class="tool-desc sans">アセスメント。利用者の基本情報・ICF・氷山モデルで課題を構造化。</div>
     </div>
     <div class="tool">
-      <div class="tool-name">hibiki_plan</div>
+      <div class="tool-head"><span class="tool-name">hibiki_plan</span><span class="tag">④コンサル伴走</span></div>
       <div class="tool-desc sans">課題・目標・支援計画。アセスメントをもとに、支援方針を作成。</div>
     </div>
     <div class="tool">
-      <div class="tool-name">hibiki_procedure</div>
+      <div class="tool-head"><span class="tool-name">hibiki_procedure</span><span class="tag">④コンサル伴走</span></div>
       <div class="tool-desc sans">支援手順書・読了チェック。現場スタッフ向けの手順書を生成・管理。</div>
     </div>
     <div class="tool">
-      <div class="tool-name">hibiki_ops</div>
+      <div class="tool-head"><span class="tool-name">hibiki_monitor</span><span class="tag">④コンサル伴走</span><span class="status sans">実装済み・QA確認中</span></div>
+      <div class="tool-desc sans">支援経過モニタリング。支援計画・支援手順書を参照しながら、結果の様子・課題の推移・前進点を時系列で記録する。</div>
+    </div>
+    <div class="tool">
+      <div class="tool-head"><span class="tool-name">hibiki_ops</span><span class="tag">④コンサル伴走</span></div>
       <div class="tool-desc sans">運用標準書・営業提案診断。現場の運用を仕組み化する。</div>
     </div>
     <div class="tool">
-      <div class="tool-name">hibiki_inventory</div>
+      <div class="tool-head"><span class="tool-name">hibiki_inventory</span><span class="tag">④コンサル伴走</span></div>
       <div class="tool-desc sans">品目管理・ABC分析・在庫管理。2ビン方式・カンバンラベル発行。</div>
     </div>
     <div class="tool">
-      <div class="tool-name">naze_naze</div>
+      <div class="tool-head"><span class="tool-name">naze_naze</span><span class="tag">①無料配布版</span></div>
       <div class="tool-desc sans">なぜなぜ分析。根本原因を掘り下げる思考法。</div>
     </div>
   </section>
@@ -255,11 +290,11 @@ html,body{
     </div>
 
     <div class="tool">
-      <div class="tool-name">yuzuru_map</div>
+      <div class="tool-head"><span class="tool-name">yuzuru_map</span><span class="tag">④コンサル伴走</span></div>
       <div class="tool-desc sans">商圏マップ。営業先の発見と関係構築を支える。</div>
     </div>
     <div class="tool">
-      <div class="tool-name">doc_studio</div>
+      <div class="tool-head"><span class="tool-name">doc_studio</span><span class="tag">④コンサル伴走</span><span class="status sans">実装済み・QA確認中</span></div>
       <div class="tool-desc sans">対外営業チラシ作成。商圏マップの施設情報から、A4チラシを作成し印刷・PDF・Word出力できる。</div>
     </div>
   </section>
@@ -275,24 +310,41 @@ html,body{
     </div>
 
     <div class="tool">
-      <div class="tool-name">mitsumeru_app</div>
-      <div class="tool-desc sans">本体。日次ジャーナリングと翌日戦略。HP/MP/LVをRPG風に可視化する「ミツメルレーダー」も、本体のタブ機能として使える。</div>
+      <div class="tool-head"><span class="tool-name">mitsumeru_app</span><span class="tag">②お試し後購入</span></div>
+      <div class="tool-desc sans">無料版本体。日次ジャーナリングと翌日戦略。HP/MP/LVをRPG風に可視化する「ミツメルレーダー」も、本体のタブ機能として使える。</div>
     </div>
     <div class="tool">
-      <div class="tool-name">mitsumeru_lite</div>
-      <div class="tool-desc sans">商品版。一般ユーザー向けに機能を絞った版。</div>
+      <div class="tool-head"><span class="tool-name">mitsumeru_lite</span><span class="tag">③購入するモノ</span></div>
+      <div class="tool-desc sans">商品版。月額980円。一般ユーザー向けに機能を絞り、API利用料も込みにした版。</div>
     </div>
     <div class="tool">
-      <div class="tool-name">3minエマージェンシー</div>
-      <div class="tool-desc sans">3分でできる緊急時の心の応急処置。ミツメルLite内の「⚡3min」ボタンから起動する独立ツール。</div>
+      <div class="tool-head"><span class="tool-name">3minエマージェンシー</span><span class="tag">①無料配布版</span></div>
+      <div class="tool-desc sans">3分でできる緊急時の心の応急処置。ミツメルLite内の「⚡3min」ボタンからも起動する独立ツール。</div>
     </div>
     <div class="tool">
-      <div class="tool-name">mitsumeru_compass</div>
+      <div class="tool-head"><span class="tool-name">mitsumeru_compass</span><span class="tag">④コンサル伴走</span></div>
       <div class="tool-desc sans">企業向け羅針盤ダッシュボード。導入企業の管理者が、職員の状態を匿名集計で把握できる。</div>
     </div>
     <div class="tool">
-      <div class="tool-name">mitsumeru_scan</div>
+      <div class="tool-head"><span class="tool-name">mitsumeru_scan</span><span class="tag">④コンサル伴走</span></div>
       <div class="tool-desc sans">管理者用クイック診断。自社スタッフ向けのLSRP・エゴグラム診断。採用候補者向けの適性検査（mitsumeru_tekisei_check）とは対象が異なるが、同じ設計の診断ロジックを使っている。</div>
+    </div>
+  </section>
+
+  <!-- 独立ツール -->
+  <section class="sys">
+    <div class="sys-head">
+      <div class="indep-head sans">システムに属さない、単体の無料ツール</div>
+      <div class="indep-role sans">凪・響・弦・奏・ミツメルのどれか一つに属さない、独立して使えるツールです。</div>
+    </div>
+
+    <div class="tool">
+      <div class="tool-head"><span class="tool-name">無料相談フォーム</span><span class="tag">①無料配布版</span></div>
+      <div class="tool-desc sans">軽量な2段階フォームで、コンサルティングのご相談を受け付けています。</div>
+    </div>
+    <div class="tool">
+      <div class="tool-head"><span class="tool-name">MQ電卓</span><span class="tag">①無料配布版</span></div>
+      <div class="tool-desc sans">売上・変動費・固定費だけで、限界利益と利益をその場で計算できる電卓。</div>
     </div>
   </section>
 
