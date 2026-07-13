@@ -847,7 +847,7 @@ async function askNextQuestion() {
   } catch (e) {
     clearInterval(loadTimer);
     if (e.message === '__demo_exceeded__') {
-      questionEl.textContent = 'お試しの上限（20回）に達しました。続きをご希望の方はご連絡ください。';
+      questionEl.innerHTML = 'お試しの上限（20回）に達しました。続きをご希望の方は<a href="./sodan_form.html" style="color:inherit;text-decoration:underline;">こちらから無料相談</a>にお進みください。';
       nextBtn.style.display = 'none';
       return;
     }
@@ -1028,7 +1028,7 @@ async function generateOutput() {
   } catch (e) {
     if (e.message === '__demo_exceeded__') {
       _pendingOutput = true;
-      document.getElementById('aiQuestion').textContent = 'お試しの上限（20回）に達しました。続きをご希望の方はご連絡ください。';
+      document.getElementById('aiQuestion').innerHTML = 'お試しの上限（20回）に達しました。続きをご希望の方は<a href="./sodan_form.html" style="color:inherit;text-decoration:underline;">こちらから無料相談</a>にお進みください。';
       return;
     }
     // それ以外のエラーはもう一度試す
