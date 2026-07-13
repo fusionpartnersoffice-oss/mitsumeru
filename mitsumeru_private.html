@@ -830,13 +830,6 @@
 <div id="screen-morning" class="screen active">
   <div class="date-display" id="morning-date"></div>
 
-  <!-- 自動生成された今日の編成（毎朝7:00にKVへ書き込まれた内容を読み取り専用で表示） -->
-  <div class="section" id="dispatch-section" style="display:none;background:#e8f0fb;border:0.5px solid #a8c4f0;">
-    <div class="section-title" style="color:#1a4a8a;">🌅 今日の編成</div>
-    <div id="dispatch-content" style="white-space:pre-wrap;font-size:13px;line-height:1.8;color:var(--text2);"></div>
-    <div id="dispatch-meta" style="font-size:11px;color:var(--text3);margin-top:10px;"></div>
-  </div>
-
   <div class="section">
     <div class="section-title">対象日（宵越し・遅延入力の場合は変更）</div>
     <div class="field">
@@ -1627,21 +1620,6 @@ function saveMorning() {
 }
 
 // ===== UI復元ヘルパー =====
-// 今日の編成パネル（読み取り専用）。KVキー dispatch_<日付> の {text, _ts} を表示する。
-function applyDispatchData(d) {
-  const sec = document.getElementById('dispatch-section');
-  if (!sec) return;
-  const text = d ? (typeof d === 'string' ? d : d.text) : '';
-  if (!text || !text.trim()) { sec.style.display = 'none'; return; }
-  const content = document.getElementById('dispatch-content');
-  if (content) content.textContent = text;
-  const meta = document.getElementById('dispatch-meta');
-  if (meta) {
-    const ts = (d && d._ts) ? new Date(d._ts) : null;
-    meta.textContent = ts ? `自動編成：${ts.getFullYear()}/${ts.getMonth()+1}/${ts.getDate()} ${String(ts.getHours()).padStart(2,'0')}:${String(ts.getMinutes()).padStart(2,'0')}` : '';
-  }
-  sec.style.display = 'block';
-}
 
 function applyMorningData(d) {
   if (!d) return;
@@ -1712,13 +1690,11 @@ window.addEventListener('DOMContentLoaded', async function() {
   const lsOutput   = lsLoad('output');
   const lsCalendar = lsLoad('calendar');
   const lsDelay    = lsLoad('delay');
-  const lsDispatch = lsLoad('dispatch');
 
   applyMorningData(lsMorning);
   applyEveningData(lsEvening);
   if (!lsEvening || !lsEvening.advanceSchedule) initAdvanceSchedule([]);
   applyMemosData(lsMemos);
-  applyDispatchData(lsDispatch);
 
   if (lsOutput && lsOutput.text) {
     const mdBox = document.getElementById('output-markdown');
@@ -1738,18 +1714,11 @@ window.addEventListener('DOMContentLoaded', async function() {
   loadProfile();
 
   // ② KVから最新を取得してタイムスタンプで上書き判断
-  const [kvMemos, kvMorning, kvEvening, kvProfile, kvLV, kvOutput, kvCalendar, kvDelay, kvDispatch] = await Promise.all([
+  const [kvMemos, kvMorning, kvEvening, kvProfile, kvLV, kvOutput, kvCalendar, kvDelay] = await Promise.all([
     cloudLoad('memos'), cloudLoad('morning'), cloudLoad('evening'),
     cloudLoadGlobal('profile'), cloudLoadGlobal('lv'),
-    cloudLoad('output'), cloudLoad('calendar'), cloudLoad('delay'), cloudLoad('dispatch')
+    cloudLoad('output'), cloudLoad('calendar'), cloudLoad('delay')
   ]);
-
-  // 今日の編成：KVが新しければ表示を更新しローカルにもキャッシュ
-  const bestDispatch = newerOf(lsDispatch, kvDispatch);
-  if (bestDispatch && (typeof bestDispatch === 'string' || bestDispatch.text)) {
-    applyDispatchData(bestDispatch);
-    if (bestDispatch !== lsDispatch) localStorage.setItem(lsKey('dispatch'), JSON.stringify(bestDispatch));
-  }
 
   const bestMorning = newerOf(lsMorning, kvMorning);
   if (bestMorning !== lsMorning && kvMorning) {

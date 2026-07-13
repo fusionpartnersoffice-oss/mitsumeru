@@ -1,23 +1,19 @@
 /**
- * Mitsumeru Sync Worker — Cloudflare Workers KV proxy ＋ 朝の編成 Cron
+ * Mitsumeru Sync Worker — Cloudflare Workers KV proxy ＋ 週次ログエクスポート Cron ＋ Googleカレンダー連携
  * デプロイ方法: Cloudflare Dashboard > Workers & Pages > mitsumeru-sync > Quick Edit
  * または wrangler deploy
  *
  * KV namespace binding 変数名: MITSUMERU_KV または KV（どちらでも動く。getKV参照）
  *
- * 【Cron Triggers】毎朝7:00 JST に朝の編成を生成しKVへ書き込む。
- *   wrangler.toml:  [triggers]\n  crons = ["0 22 * * *"]   # 22:00 UTC = 07:00 JST
- *   または Dashboard > Settings > Triggers > Cron Triggers で "0 22 * * *" を追加。
+ * 【Cron Triggers】毎週月曜7:05 JST (日曜22:05 UTC) に過去7日分のdispatchログをGitHubへエクスポート。
+ * 旧・毎朝7:00 JSTの「朝の編成」自動生成機能は2026-07-14付けで撤去済み（柴山さんご本人の判断。
+ * 詳細は指示キュー2026-07-13付「ミツメル朝の編成機能・完全撤去」参照）。旧Cron Trigger
+ * （"0 22 * * *"）がCloudflare側に登録済みの場合、発火しても何も実行しない（無害）。
  *
  * 【必要なもの】
- *   - Secret: ANTHROPIC_API_KEY（Dashboard > Settings > Variables and Secrets、または
- *     `wrangler secret put ANTHROPIC_API_KEY`）。ミツメルで使っている sk-ant- キーでOK。
- *   - KVキー: knowledge_projects / knowledge_judgment（projects.md / judgment.md の内容を
- *     {"content":"...md全文..."} の形で保存しておく。内容更新時に入れ直す）。
+ *   - Secret: GITHUB_TOKEN（週次ログエクスポート用）・GOOGLE_SERVICE_ACCOUNT_KEY／
+ *     GOOGLE_CALENDAR_ID（Googleカレンダー連携用、Secret未設定時は無音でスキップ）
  */
-
-// 編成生成に使うモデル（Anthropic Messages API）
-const DISPATCH_MODEL = 'claude-opus-4-8';
 
 // KV名前空間バインディング。変数名は MITSUMERU_KV / KV のどちらでも動くようにする。
 function getKV(env) {
@@ -115,14 +111,13 @@ export default {
   },
 
   // ===== Cron Trigger =====
-  // 毎朝7:00 JST (22:00 UTC)：朝の編成生成
   // 毎週月曜7:05 JST (日曜22:05 UTC)：週次ログをGitHubにエクスポート
+  // 旧・毎朝7:00 JST「朝の編成」自動生成は2026-07-14付けで撤去。他のcron文字列で発火しても
+  // 何もしない（旧Cron Trigger "0 22 * * *" がCloudflare側に残っていても無害）。
   async scheduled(event, env, ctx) {
     const cron = event.cron;
     if (cron === '5 22 * * 0') {
       ctx.waitUntil(exportWeeklyLog(env));
-    } else {
-      ctx.waitUntil(generateDispatch(env));
     }
   },
 };
@@ -195,38 +190,6 @@ function jstDateStr() {
   return jst.toISOString().split('T')[0];
 }
 
-// KVに {"content":"..."} で保存された資料を読み出す
-async function readKnowledge(env, key) {
-  const raw = await getKV(env).get(key);
-  if (!raw) return '';
-  try {
-    const obj = JSON.parse(raw);
-    return typeof obj === 'string' ? obj : (obj.content || '');
-  } catch (e) {
-    return raw; // 万一プレーンテキストで入っていた場合
-  }
-}
-
-// Anthropic Messages API を呼んで本文を返す
-async function callClaude(env, prompt) {
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': env.ANTHROPIC_API_KEY,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: DISPATCH_MODEL,
-      max_tokens: 3000,
-      messages: [{ role: 'user', content: prompt }],
-    }),
-  });
-  const data = await res.json();
-  if (data.error) throw new Error(data.error.message || 'anthropic error');
-  return (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('').trim();
-}
-
 // 過去7日分のdispatchをKVから読んでGitHubへエクスポートする
 async function exportWeeklyLog(env) {
   if (!env.GITHUB_TOKEN) return; // Secret未設定なら無音でスキップ
@@ -297,54 +260,6 @@ async function exportWeeklyLog(env) {
     },
     body: JSON.stringify(body),
   });
-}
-
-// 朝の編成を生成してKVへ保存
-async function generateDispatch(env) {
-  const date = jstDateStr();
-  const projects = await readKnowledge(env, 'knowledge_projects');
-  const judgment = await readKnowledge(env, 'knowledge_judgment');
-
-  const prompt = `あなたは柴山靖章さんの「朝の編成」担当です。毎朝、隣で一緒に今日の動き方を整理する伴走者として書いてください。以下の2つの資料をもとに、今日(${date})やることを整理してください。
-
-# プロジェクト進捗（projects.md）
-${projects || '（資料未登録）'}
-
-# 判断軸（judgment.md）
-${judgment || '（資料未登録）'}
-
-# 指示
-- projects.mdの「次のアクション」をアイゼンハワーマトリクス（①急×重要→今すぐ ②重要×急でない→計画 ③急×重要でない→委任 ④それ以外→先送り/損切り）で4象限に分類する
-- 最優先1件をD-Block（朝の聖域直後の最優先枠）に固定し、2分間ルールで「最初の物理動作」に分解する
-- ポモ割を提案する。1ポモ=30分、1日上限10ポモ(300分)。各タスクに必要ポモ数を割り当て、合計が10ポモを超える分は損切り候補として提示する
-- judgment.mdのNEVER（就活地雷N-1〜N-8・行動のNEVER）に触れそうな項目があれば警告する
-
-# 文体（重要・最優先で守ること）
-- 「です・ます」調。精神論を排し、知的だが飾らない語り口
-- 「防空レーダー」「戦闘配置」のような軍事・分析レポート的な比喩は使わない。凝った例え話も使わない
-- 専門用語（ビジネス用語・カタカナ語）はできるだけ避け、短く分かりやすい言葉で書く
-- 分析結果を突きつけるのではなく、隣で一緒に今日の段取りを考えている、という伴走感のある口調にする
-- **上記の資料（projects.md・judgment.md）の中に、見出し名・専門用語・心理指標（例：「防空レーダー」という見出し、「エニアグラム」の番号、「A（論理思考：9）」等の指標表記）がそのまま書かれていても、それを引用・転記しないこと。** 資料の中身を理解した上で、必ず自分の言葉に置き換えて話すこと。専門用語をそのまま出力に含めるのは禁止
-- 「〜という性質だが」「〜の方向に精密に向かい始める」のような硬い分析口調・断定的な性質診断の言い回しも避け、口語的で柔らかい言い方にする（例：「〜な感じですね」「〜だと思います」等、伴走者が話しかけるような言葉遣い）
-- **一指示一動作（介護現場の声かけの原則を応用）**：各セクション（🎯🗓🤝✂️）は、そのセクションの役割1つだけに集中する。1つの文の中に「原因分析＋対策＋複数の問いかけ」を同時に詰め込まない。伝えることは一度に1つずつ、短く区切る
-- **言葉選びの変換（スピーチロック回避）**：「〜すべきです」「〜してください」という命令形・断定形は、「〜してみませんか」「〜でどうでしょう」という提案・確認の形に変換する。判断を柴山さんに委ねる言い方にする
-
-# 出力フォーマット（この見出しで簡潔に。前置き不要）
-🎯 今日のD-Block
-🗓 ポモ割
-🤝 委任候補
-✂️ 損切り
-⚠️ NEVER警告（該当なければ省略）`;
-
-  let text;
-  try {
-    text = await callClaude(env, prompt);
-  } catch (e) {
-    text = `朝の編成の自動生成に失敗しました（${date}）。\n理由: ${e.message}\nAPIキー・資料の登録状況をご確認ください。`;
-  }
-
-  const body = JSON.stringify({ text, _ts: Date.now() });
-  await getKV(env).put('dispatch_' + date, body, { expirationTtl: 7776000 });
 }
 
 // ═══════════════════════════════════════════════
