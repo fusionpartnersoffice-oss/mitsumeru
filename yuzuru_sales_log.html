@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>弦 営業先関係管理 — Fusion Partners</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23455a64'/><text x='16' y='24' font-size='18' text-anchor='middle'>📋</text></svg>">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:"Hiragino Kaku Gothic Pro",Meiryo,sans-serif;background:#0d1117;color:#c9d1d9;min-height:100vh;padding:0 0 60px;}
+header{background:linear-gradient(135deg,#1a237e,#283593);color:#fff;padding:14px 16px;position:sticky;top:0;z-index:100;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+header h1{font-size:16px;letter-spacing:.5px;}
+.hdr-spacer{flex:1;}
+.hdr-btn{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.3);color:#fff;font-size:11px;padding:5px 12px;border-radius:16px;cursor:pointer;font-family:inherit;}
+.wrap{max-width:640px;margin:0 auto;padding:16px;}
+.section{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px;margin-bottom:14px;}
+.section-title{font-size:13px;font-weight:bold;color:#e6edf3;margin-bottom:12px;}
+.empty-state{text-align:center;color:#8b949e;font-size:12px;padding:30px 10px;}
+
+.search-row{display:flex;gap:8px;margin-bottom:10px;}
+.search-row input{flex:1;font-size:13px;padding:8px 10px;border-radius:6px;border:1px solid #30363d;background:#21262d;color:#c9d1d9;font-family:inherit;}
+.dest-list{display:flex;flex-direction:column;gap:6px;max-height:420px;overflow-y:auto;}
+.dest-card{background:#0d1117;border:1px solid #21262d;border-radius:8px;padding:10px 12px;cursor:pointer;}
+.dest-card:hover{border-color:#58a6ff;}
+.dest-name{font-size:13px;font-weight:bold;color:#e6edf3;}
+.dest-meta{font-size:11px;color:#8b949e;margin-top:2px;}
+.dest-visits-badge{font-size:10px;color:#f0c674;margin-top:2px;}
+
+.btn-primary{width:100%;padding:11px;background:#238636;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:bold;cursor:pointer;font-family:inherit;margin-top:6px;}
+.btn-primary:hover{background:#2ea043;}
+.btn-secondary{width:100%;padding:9px;background:#21262d;color:#c9d1d9;border:1px solid #30363d;border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit;margin-top:8px;}
+
+.form-group{margin-bottom:12px;}
+.form-group label{display:block;font-size:11px;color:#8b949e;margin-bottom:5px;}
+.form-group input,.form-group textarea,.form-group select{width:100%;background:#21262d;border:1px solid #30363d;border-radius:6px;color:#c9d1d9;padding:9px 10px;font-size:13px;font-family:inherit;}
+.form-group textarea{min-height:60px;resize:vertical;}
+
+.tag-row{display:flex;gap:6px;flex-wrap:wrap;}
+.tag-opt{padding:8px 12px;border:1px solid #30363d;border-radius:20px;cursor:pointer;font-size:12px;background:#21262d;}
+.tag-opt.selected{background:#f0c674;border-color:#f0c674;color:#1a1500;font-weight:bold;}
+
+.geocode-row{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;}
+.geocode-status{font-size:11px;color:#8b949e;margin-top:4px;min-height:14px;}
+
+.visit-item{background:#0d1117;border:1px solid #21262d;border-left:3px solid #455a64;border-radius:0 8px 8px 0;padding:10px 12px;margin-bottom:8px;}
+.visit-hdr{display:flex;justify-content:space-between;font-size:11px;color:#8b949e;margin-bottom:5px;}
+.visit-tags{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:5px;}
+.visit-tag{font-size:10px;background:rgba(240,198,116,.2);color:#f0c674;padding:1px 8px;border-radius:10px;}
+.visit-field{font-size:12px;margin-bottom:4px;}
+.visit-field .fl{color:#8b949e;font-size:11px;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📋 弦 営業先関係管理</h1>
+  <div class="hdr-spacer"></div>
+  <button class="hdr-btn" onclick="backToList()">← 訪問先一覧</button>
+</header>
+
+<div class="wrap">
+
+  <!-- 訪問先一覧 -->
+  <div id="listScreen">
+    <div class="section">
+      <div class="section-title">訪問先を選ぶ</div>
+      <div class="search-row">
+        <input type="text" id="destSearch" placeholder="施設名で検索" oninput="renderDestList()">
+      </div>
+      <div class="dest-list" id="destList"></div>
+      <button class="btn-secondary" onclick="showAddDestForm()">＋ 新規の訪問先を追加</button>
+    </div>
+
+    <!-- 新規訪問先追加フォーム -->
+    <div class="section" id="addDestSection" style="display:none;">
+      <div class="section-title">新規訪問先を追加</div>
+      <div class="form-group">
+        <label>施設名（必須）</label>
+        <input type="text" id="newDestName">
+      </div>
+      <div class="form-group">
+        <label>住所（必須）</label>
+        <input type="text" id="newDestAddr">
+        <div class="geocode-row">
+          <button class="btn-secondary" style="width:auto;margin-top:0;" onclick="geocodeNewDest()">住所から座標を取得</button>
+        </div>
+        <div class="geocode-status" id="newDestGeoStatus"></div>
+      </div>
+      <div class="form-group">
+        <label>電話番号</label>
+        <input type="text" id="newDestPhone">
+      </div>
+      <button class="btn-primary" onclick="saveNewDest()">この訪問先を保存する</button>
+      <button class="btn-secondary" onclick="hideAddDestForm()">キャンセル</button>
+    </div>
+  </div>
+
+  <!-- 訪問先詳細・記録画面 -->
+  <div id="detailScreen" style="display:none;">
+    <div class="section">
+      <div class="section-title" id="destDetailName"></div>
+      <div class="dest-meta" id="destDetailMeta"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">✏️ 訪問を記録する</div>
+      <div class="form-group">
+        <label>訪問日</label>
+        <input type="date" id="v-date">
+      </div>
+      <div class="form-group">
+        <label>訪問目的</label>
+        <div class="tag-row" id="purposeTagRow"></div>
+      </div>
+      <div class="form-group">
+        <label>目的の補足（任意）</label>
+        <input type="text" id="v-purpose-note" placeholder="例：新設した加算の案内">
+      </div>
+      <div class="form-group">
+        <label>話した内容</label>
+        <textarea id="v-content" placeholder="例：担当者交代の挨拶。次回は来月上旬に訪問予定"></textarea>
+      </div>
+      <div class="form-group">
+        <label>獲得した案件（任意）</label>
+        <textarea id="v-outcome" placeholder="例：新規利用相談1件、来週体験利用予定"></textarea>
+      </div>
+      <button class="btn-primary" onclick="saveVisit()">この記録を保存する</button>
+    </div>
+
+    <div class="section">
+      <div class="section-title">🕐 過去の訪問履歴（<span id="visitHistoryCount">0</span>件）</div>
+      <div id="visitHistoryList"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// キー定義
+// ═══════════════════════════════════════════════
+const REFERRAL_CACHE_KEY = 'yuzuru_referral_data_cache'; // yuzuru_map.htmlが同期する読み取り専用キャッシュ
+const CUSTOM_DEST_KEY = 'yuzuru_sales_custom_destinations';
+const VISITS_KEY = 'yuzuru_sales_visits';
+
+const PURPOSE_TAGS = ['初回挨拶', '定期フォロー', '案件相談', 'お礼訪問', 'その他'];
+
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// ── データ層 ──
+function loadReferralCache() {
+  try { return JSON.parse(localStorage.getItem(REFERRAL_CACHE_KEY) || '[]'); } catch { return []; }
+}
+function loadCustomDests() {
+  try { return JSON.parse(localStorage.getItem(CUSTOM_DEST_KEY) || '[]'); } catch { return []; }
+}
+function saveCustomDests(list) {
+  localStorage.setItem(CUSTOM_DEST_KEY, JSON.stringify(list));
+}
+function loadVisits() {
+  try { return JSON.parse(localStorage.getItem(VISITS_KEY) || '[]'); } catch { return []; }
+}
+function saveVisits(list) {
+  localStorage.setItem(VISITS_KEY, JSON.stringify(list));
+}
+
+// 訪問先の統合一覧（既存REFERRAL_DATAキャッシュ＋自分で追加した訪問先）
+function getAllDestinations() {
+  const referral = loadReferralCache().map(r => ({
+    destId: r.id, name: r.name, addr: r.addr, phone: r.phone, lat: r.lat, lon: r.lon, source: 'referral',
+  }));
+  const custom = loadCustomDests().map(d => ({
+    destId: d.destId, name: d.name, addr: d.addr, phone: d.phone, lat: d.lat, lon: d.lon, source: 'custom',
+  }));
+  return [...referral, ...custom];
+}
+function getDestById(destId) {
+  return getAllDestinations().find(d => d.destId === destId) || null;
+}
+
+// ═══════════════════════════════════════════════
+// 訪問先一覧
+// ═══════════════════════════════════════════════
+let currentDestId = null;
+let selectedPurposeTag = null;
+
+function renderDestList() {
+  const keyword = (document.getElementById('destSearch').value || '').trim();
+  const all = getAllDestinations();
+  const visits = loadVisits();
+  const filtered = keyword ? all.filter(d => d.name.includes(keyword)) : all;
+  const box = document.getElementById('destList');
+
+  if (!all.length) {
+    box.innerHTML = '<div class="empty-state">訪問先データがありません。<a href="./yuzuru_map.html" target="_blank" style="color:#58a6ff;">yuzuru_map.html</a>を開くと紹介元データが読み込まれます。または下の「＋ 新規の訪問先を追加」から手入力してください。</div>';
+    return;
+  }
+  if (!filtered.length) {
+    box.innerHTML = '<div class="empty-state">該当する訪問先が見つかりません。</div>';
+    return;
+  }
+
+  box.innerHTML = filtered.map(d => {
+    const count = visits.filter(v => v.destId === d.destId).length;
+    return `<div class="dest-card" onclick="openDest('${esc(d.destId)}')">
+      <div class="dest-name">${esc(d.name)}</div>
+      <div class="dest-meta">${esc(d.addr || '')}</div>
+      ${count ? `<div class="dest-visits-badge">訪問記録 ${count}件</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function backToList() {
+  currentDestId = null;
+  document.getElementById('detailScreen').style.display = 'none';
+  document.getElementById('listScreen').style.display = '';
+  hideAddDestForm();
+  renderDestList();
+}
+
+function openDest(destId) {
+  const dest = getDestById(destId);
+  if (!dest) { alert('訪問先データが見つかりませんでした。'); return; }
+  currentDestId = destId;
+  document.getElementById('destDetailName').textContent = dest.name;
+  document.getElementById('destDetailMeta').textContent = [dest.addr, dest.phone].filter(Boolean).join(' ／ ');
+  document.getElementById('listScreen').style.display = 'none';
+  document.getElementById('detailScreen').style.display = '';
+  resetVisitForm();
+  renderPurposeTags();
+  renderVisitHistory();
+}
+
+// ═══════════════════════════════════════════════
+// 新規訪問先の追加
+// ═══════════════════════════════════════════════
+function showAddDestForm() {
+  document.getElementById('addDestSection').style.display = '';
+  document.getElementById('newDestName').value = '';
+  document.getElementById('newDestAddr').value = '';
+  document.getElementById('newDestPhone').value = '';
+  document.getElementById('newDestGeoStatus').textContent = '';
+}
+function hideAddDestForm() {
+  document.getElementById('addDestSection').style.display = 'none';
+}
+
+let newDestLat = null, newDestLon = null;
+
+async function geocodeNewDest() {
+  const addr = document.getElementById('newDestAddr').value.trim();
+  const status = document.getElementById('newDestGeoStatus');
+  if (!addr) { status.textContent = '住所を入力してください。'; return; }
+  status.textContent = '検索中…';
+  try {
+    const url = 'https://nominatim.openstreetmap.org/search?format=json&countrycodes=jp&limit=1&q=' + encodeURIComponent(addr);
+    const res = await fetch(url);
+    const json = await res.json();
+    if (json && json[0]) {
+      newDestLat = parseFloat(json[0].lat);
+      newDestLon = parseFloat(json[0].lon);
+      status.textContent = '⚠️ 参考値を取得しました（' + newDestLat.toFixed(4) + ', ' + newDestLon.toFixed(4) + '）。地図連携は次回訪問先一覧の表示に反映されます。';
+    } else {
+      status.textContent = '取得できませんでした。座標なしでも保存はできます。';
+    }
+  } catch (e) {
+    status.textContent = '通信エラーのため取得できませんでした。座標なしでも保存はできます。';
+  }
+}
+
+function saveNewDest() {
+  const name = document.getElementById('newDestName').value.trim();
+  const addr = document.getElementById('newDestAddr').value.trim();
+  const phone = document.getElementById('newDestPhone').value.trim();
+  if (!name) { alert('施設名を入力してください。'); return; }
+  if (!addr) { alert('住所を入力してください。'); return; }
+
+  const list = loadCustomDests();
+  const destId = 'custom_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  list.push({ destId, name, addr, phone, lat: newDestLat, lon: newDestLon, createdAt: new Date().toISOString() });
+  saveCustomDests(list);
+
+  newDestLat = null; newDestLon = null;
+  hideAddDestForm();
+  renderDestList();
+}
+
+// ═══════════════════════════════════════════════
+// 訪問記録の入力・保存
+// ═══════════════════════════════════════════════
+function renderPurposeTags() {
+  const box = document.getElementById('purposeTagRow');
+  box.innerHTML = PURPOSE_TAGS.map(tag =>
+    `<div class="tag-opt" data-tag="${esc(tag)}" onclick="selectPurposeTag('${esc(tag)}')">${esc(tag)}</div>`
+  ).join('');
+}
+function selectPurposeTag(tag) {
+  selectedPurposeTag = tag;
+  document.querySelectorAll('.tag-opt').forEach(el => {
+    el.classList.toggle('selected', el.dataset.tag === tag);
+  });
+}
+
+function resetVisitForm() {
+  document.getElementById('v-date').value = new Date().toISOString().slice(0, 10);
+  document.getElementById('v-purpose-note').value = '';
+  document.getElementById('v-content').value = '';
+  document.getElementById('v-outcome').value = '';
+  selectedPurposeTag = null;
+  document.querySelectorAll('.tag-opt').forEach(el => el.classList.remove('selected'));
+}
+
+function saveVisit() {
+  if (!currentDestId) return;
+  const dest = getDestById(currentDestId);
+  const date = document.getElementById('v-date').value;
+  const purposeNote = document.getElementById('v-purpose-note').value.trim();
+  const content = document.getElementById('v-content').value.trim();
+  const outcome = document.getElementById('v-outcome').value.trim();
+
+  if (!date) { alert('訪問日を入力してください。'); return; }
+  if (!selectedPurposeTag && !purposeNote) { alert('訪問目的（タグまたは補足）を選択・入力してください。'); return; }
+  if (!content) { alert('話した内容を入力してください。'); return; }
+
+  const visits = loadVisits();
+  visits.push({
+    visitId: 'visit_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    destId: currentDestId,
+    destName: dest ? dest.name : '',
+    destAddr: dest ? dest.addr : '',
+    visitDate: date,
+    purposeTag: selectedPurposeTag,
+    purposeNote,
+    content,
+    outcome,
+    createdAt: new Date().toISOString(),
+  });
+  saveVisits(visits);
+
+  resetVisitForm();
+  renderVisitHistory();
+}
+
+// ═══════════════════════════════════════════════
+// 訪問履歴（新しい順）
+// ═══════════════════════════════════════════════
+function renderVisitHistory() {
+  const visits = loadVisits().filter(v => v.destId === currentDestId);
+  document.getElementById('visitHistoryCount').textContent = visits.length;
+  const box = document.getElementById('visitHistoryList');
+  if (!visits.length) {
+    box.innerHTML = '<div class="empty-state">まだ訪問記録がありません。</div>';
+    return;
+  }
+  const sorted = visits.slice().sort((a, b) => (b.visitDate || '').localeCompare(a.visitDate || '') || (b.createdAt || '').localeCompare(a.createdAt || ''));
+  box.innerHTML = sorted.map(v => `
+    <div class="visit-item">
+      <div class="visit-hdr"><span>${esc(v.visitDate)}</span></div>
+      ${v.purposeTag || v.purposeNote ? `<div class="visit-tags">${v.purposeTag ? `<span class="visit-tag">${esc(v.purposeTag)}</span>` : ''}${v.purposeNote ? `<span class="visit-tag">${esc(v.purposeNote)}</span>` : ''}</div>` : ''}
+      <div class="visit-field"><span class="fl">内容：</span>${esc(v.content)}</div>
+      ${v.outcome ? `<div class="visit-field"><span class="fl">獲得案件：</span>${esc(v.outcome)}</div>` : ''}
+    </div>
+  `).join('');
+}
+
+// ═══════════════════════════════════════════════
+// 起動時：URLパラメータのdestIdがあれば直接その訪問先を開く
+// ═══════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  renderDestList();
+  const params = new URLSearchParams(window.location.search);
+  const destId = params.get('destId');
+  if (destId && getDestById(destId)) {
+    openDest(destId);
+  }
+});
+</script>
+</body>
+</html>

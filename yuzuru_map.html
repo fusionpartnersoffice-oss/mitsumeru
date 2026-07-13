@@ -22421,6 +22421,7 @@ function makeRefPopupHTML(r) {
     </table>
     <div style="margin-top:8px;font-size:10px;color:#999">${locNote}</div>
     ${sourceLine}
+    <div style="margin-top:8px;"><a href="yuzuru_sales_log.html?destId=${encodeURIComponent(r.id)}" target="_blank" style="display:inline-block;font-size:11px;color:#fff;background:#455a64;border-radius:5px;padding:5px 10px;text-decoration:none;">📋 訪問履歴を見る</a></div>
   </div>`;
 }
 
@@ -22957,6 +22958,11 @@ renderRefCategoryToggles();
 render();
 renderReferrals();
 renderClientSelectOptions();
+
+// 営業先関係管理（yuzuru_sales_log.html）への読み取り専用参照用キャッシュ。
+// REFERRAL_DATAはこのファイル内の静的JS配列でlocalStorageに存在しないため、
+// 他ファイルから参照できるようロード時に複製する（この配列自体は変更しない）。
+try { localStorage.setItem('yuzuru_referral_data_cache', JSON.stringify(REFERRAL_DATA)); } catch (e) {}
 </script>
 </body>
 </html>
