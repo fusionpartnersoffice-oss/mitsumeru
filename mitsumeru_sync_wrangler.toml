@@ -1,0 +1,14 @@
+name = "mitsumeru-sync"
+main = "worker.js"
+compatibility_date = "2026-06-29"
+
+[[kv_namespaces]]
+binding = "MITSUMERU_KV"
+id = "e24983bd97e14af19e323e5c51001cf1"
+
+[[kv_namespaces]]
+binding = "KV"
+id = "e24983bd97e14af19e323e5c51001cf1"
+
+[triggers]
+crons = []

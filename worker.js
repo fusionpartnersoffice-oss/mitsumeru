@@ -1,18 +1,16 @@
 /**
- * Mitsumeru Sync Worker — Cloudflare Workers KV proxy ＋ 週次ログエクスポート Cron ＋ Googleカレンダー連携
+ * Mitsumeru Sync Worker — Cloudflare Workers KV proxy ＋ Googleカレンダー連携
  * デプロイ方法: Cloudflare Dashboard > Workers & Pages > mitsumeru-sync > Quick Edit
  * または wrangler deploy
  *
  * KV namespace binding 変数名: MITSUMERU_KV または KV（どちらでも動く。getKV参照）
  *
- * 【Cron Triggers】毎週月曜7:05 JST (日曜22:05 UTC) に過去7日分のdispatchログをGitHubへエクスポート。
- * 旧・毎朝7:00 JSTの「朝の編成」自動生成機能は2026-07-14付けで撤去済み（柴山さんご本人の判断。
- * 詳細は指示キュー2026-07-13付「ミツメル朝の編成機能・完全撤去」参照）。旧Cron Trigger
- * （"0 22 * * *"）がCloudflare側に登録済みの場合、発火しても何も実行しない（無害）。
+ * Cron Triggerは使用していない（2026-07-14・柴山さんご本人の判断により、朝の編成・週次ログ
+ * エクスポートの両方を撤去。Cloudflare側のCron Trigger登録もあわせて削除すること）。
  *
  * 【必要なもの】
- *   - Secret: GITHUB_TOKEN（週次ログエクスポート用）・GOOGLE_SERVICE_ACCOUNT_KEY／
- *     GOOGLE_CALENDAR_ID（Googleカレンダー連携用、Secret未設定時は無音でスキップ）
+ *   - Secret: GOOGLE_SERVICE_ACCOUNT_KEY／GOOGLE_CALENDAR_ID（Googleカレンダー連携用、
+ *     Secret未設定時は無音でスキップ）
  */
 
 // KV名前空間バインディング。変数名は MITSUMERU_KV / KV のどちらでも動くようにする。
@@ -109,17 +107,6 @@ export default {
       headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
     });
   },
-
-  // ===== Cron Trigger =====
-  // 毎週月曜7:05 JST (日曜22:05 UTC)：週次ログをGitHubにエクスポート
-  // 旧・毎朝7:00 JST「朝の編成」自動生成は2026-07-14付けで撤去。他のcron文字列で発火しても
-  // 何もしない（旧Cron Trigger "0 22 * * *" がCloudflare側に残っていても無害）。
-  async scheduled(event, env, ctx) {
-    const cron = event.cron;
-    if (cron === '5 22 * * 0') {
-      ctx.waitUntil(exportWeeklyLog(env));
-    }
-  },
 };
 
 // ===== 安全装置①：プライベート版データのKV分離移行（2026-07-03） =====
@@ -190,78 +177,6 @@ function jstDateStr() {
   return jst.toISOString().split('T')[0];
 }
 
-// 過去7日分のdispatchをKVから読んでGitHubへエクスポートする
-async function exportWeeklyLog(env) {
-  if (!env.GITHUB_TOKEN) return; // Secret未設定なら無音でスキップ
-
-  const today = new Date(Date.now() + 9 * 60 * 60 * 1000); // JST
-  const dateStr = today.toISOString().split('T')[0]; // YYYY-MM-DD
-
-  // 過去7日分のキーを生成
-  const days = [];
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date(today.getTime() - i * 24 * 60 * 60 * 1000);
-    days.push(d.toISOString().split('T')[0]);
-  }
-
-  // 各日のdispatchを取得
-  const entries = await Promise.all(
-    days.map(async (day) => {
-      const raw = await getKV(env).get('dispatch_' + day);
-      if (!raw) return null;
-      try {
-        const obj = JSON.parse(raw);
-        return { date: day, text: obj.text || '' };
-      } catch {
-        return null;
-      }
-    })
-  );
-
-  // Markdownに整形
-  const lines = [`# ミツメル 週次ログ（${dateStr}時点）\n`];
-  for (const entry of entries) {
-    if (!entry) continue;
-    lines.push(`## ${entry.date}\n`);
-    lines.push(entry.text);
-    lines.push('\n---\n');
-  }
-  const content = lines.join('\n');
-
-  // GitHub Contents APIでpush
-  const filename = `exports/週次ログ_${dateStr.replace(/-/g, '')}.md`;
-  const apiUrl = `https://api.github.com/repos/fusionpartnersoffice-oss/mitsumeru/contents/${encodeURIComponent(filename)}`;
-
-  // 既存ファイルのSHAを取得（更新の場合に必要）
-  let sha;
-  const existing = await fetch(apiUrl, {
-    headers: {
-      Authorization: `token ${env.GITHUB_TOKEN}`,
-      'User-Agent': 'mitsumeru-worker',
-    },
-  });
-  if (existing.ok) {
-    const data = await existing.json();
-    sha = data.sha;
-  }
-
-  const body = {
-    message: `週次ログ自動エクスポート ${dateStr}`,
-    content: btoa(unescape(encodeURIComponent(content))), // UTF-8 → base64
-    ...(sha ? { sha } : {}),
-  };
-
-  await fetch(apiUrl, {
-    method: 'PUT',
-    headers: {
-      Authorization: `token ${env.GITHUB_TOKEN}`,
-      'Content-Type': 'application/json',
-      'User-Agent': 'mitsumeru-worker',
-    },
-    body: JSON.stringify(body),
-  });
-}
-
 // ═══════════════════════════════════════════════
 //  G連携基盤：ミツメルの記録をGoogleカレンダーへ自動書き出し（Phase1・柴山さんご本人専用）
 //  設計：06_イノベーション/Google連携基盤_統合実装設計_20260711.md §3
@@ -271,7 +186,7 @@ async function exportWeeklyLog(env) {
 async function handleSyncCalendar(request, env) {
   const headers = { ...CORS_HEADERS, 'Content-Type': 'application/json' };
 
-  // Secret未設定時は無音でスキップする（既存のGITHUB_TOKEN未設定時と同じパターン。エラーにしない）
+  // Secret未設定時は無音でスキップする（エラーにしない）
   if (!env.GOOGLE_SERVICE_ACCOUNT_KEY || !env.GOOGLE_CALENDAR_ID) {
     return new Response(JSON.stringify({ ok: true, skipped: true, reason: 'Google連携が未設定です（Secret未登録）' }), { status: 200, headers });
   }
