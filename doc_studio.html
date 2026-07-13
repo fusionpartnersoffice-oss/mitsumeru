@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FusionOS 文書生成エンジン — 対外チラシ作成 | Fusion Partners</title>
+<title>FusionOS 文書生成エンジン — チラシ作成 | Fusion Partners</title>
 <link rel="icon" type="image/png" href="favicon.png">
 <script src="https://cdn.jsdelivr.net/npm/html-docx-js/dist/html-docx.js"></script>
 <style>
@@ -21,6 +21,14 @@ html,body{background:var(--bg);font-family:'Hiragino Kaku Gothic Pro','Meiryo','
 .layout{display:flex;gap:20px;max-width:1180px;margin:0 auto;padding:20px;align-items:flex-start;}
 .editor-pane{flex:0 0 380px;display:flex;flex-direction:column;gap:14px;}
 .preview-wrap{flex:1;display:flex;justify-content:center;}
+
+.scene-tabs{display:flex;gap:6px;}
+.scene-tab{flex:1;padding:9px 6px;font-size:11.5px;font-weight:700;border:1px solid var(--border);border-radius:5px;background:var(--panel);color:var(--dim);cursor:pointer;}
+.scene-tab.active{background:var(--navy);color:#fff;border-color:var(--navy);}
+.scene-note{font-size:10.5px;color:var(--dim2);line-height:1.6;}
+
+.scene-fields{display:none;flex-direction:column;gap:14px;}
+.scene-fields.active{display:flex;}
 
 .field-card{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:14px 16px;}
 .field-card h3{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim2);margin-bottom:10px;font-weight:700;}
@@ -53,7 +61,9 @@ html,body{background:var(--bg);font-family:'Hiragino Kaku Gothic Pro','Meiryo','
 .a4-title{font-size:22px;font-weight:700;color:var(--navy);line-height:1.4;}
 .a4-facility{margin-top:10px;font-size:13px;color:var(--text);line-height:1.9;}
 .a4-facility b{color:var(--navy);}
-.a4-body{font-size:13px;line-height:1.9;white-space:pre-wrap;margin-bottom:18px;color:#222;}
+.a4-section{margin-bottom:16px;}
+.a4-section h4{font-size:12px;letter-spacing:1px;color:var(--navy);margin-bottom:6px;}
+.a4-body{font-size:13px;line-height:1.9;white-space:pre-wrap;color:#222;}
 .a4-case{background:#f5f7f9;border-left:4px solid var(--navy2);border-radius:4px;padding:14px 16px;margin-bottom:18px;}
 .a4-case h4{font-size:12px;letter-spacing:1px;color:var(--navy);margin-bottom:8px;}
 .a4-case-row{font-size:12.5px;line-height:1.8;margin-bottom:4px;}
@@ -82,8 +92,14 @@ html,body{background:var(--bg);font-family:'Hiragino Kaku Gothic Pro','Meiryo','
   <div class="editor-pane">
     <div id="handoff-note" class="handoff-note" style="display:none;"></div>
 
+    <div class="scene-tabs">
+      <button class="scene-tab active" data-scene="fusion_case" onclick="switchScene('fusion_case')">Fusion活用事例</button>
+      <button class="scene-tab" data-scene="recruit_user" onclick="switchScene('recruit_user')">利用者募集</button>
+    </div>
+    <div class="scene-note">用途ごとにレイアウトの型を切り替えられます。今後も種類を追加予定です。</div>
+
     <div class="field-card">
-      <h3>施設情報</h3>
+      <h3>施設情報（共通）</h3>
       <div class="field-row"><label>施設名</label><input type="text" id="f-name" oninput="onEdit()"></div>
       <div class="field-row"><label>法人名</label><input type="text" id="f-corp" oninput="onEdit()"></div>
       <div class="field-row"><label>種別</label><input type="text" id="f-type" oninput="onEdit()"></div>
@@ -91,21 +107,38 @@ html,body{background:var(--bg);font-family:'Hiragino Kaku Gothic Pro','Meiryo','
       <div class="field-row"><label>電話</label><input type="text" id="f-phone" oninput="onEdit()"></div>
     </div>
 
-    <div class="field-card">
-      <h3>チラシ本文</h3>
-      <div class="field-row"><label>タイトル・キャッチコピー</label><input type="text" id="f-title" placeholder="例：現場を止めない、仕組みで支える" oninput="onEdit()"></div>
-      <div class="field-row"><label>本文（自由記述）</label><textarea id="f-body" placeholder="サービス内容・提案の要点など" oninput="onEdit()"></textarea></div>
+    <!-- シーン：Fusion活用事例（既存・弦の対外営業チラシ） -->
+    <div class="scene-fields active" data-scene="fusion_case">
+      <div class="field-card">
+        <h3>チラシ本文</h3>
+        <div class="field-row"><label>タイトル・キャッチコピー</label><input type="text" id="fc-title" placeholder="例：現場を止めない、仕組みで支える" oninput="onEdit()"></div>
+        <div class="field-row"><label>本文（自由記述）</label><textarea id="fc-body" placeholder="サービス内容・提案の要点など" oninput="onEdit()"></textarea></div>
+      </div>
+      <div class="field-card">
+        <h3>具体的な受入事例</h3>
+        <div class="field-row"><label>種別</label><input type="text" id="fc-case-type" placeholder="例：離職率改善" oninput="onEdit()"></div>
+        <div class="field-row"><label>課題</label><input type="text" id="fc-case-issue" placeholder="例：新人の早期離職が続いていた" oninput="onEdit()"></div>
+        <div class="field-row"><label>対応内容</label><textarea id="fc-case-response" placeholder="例：初期教育の仕組み化と1on1の定例化" oninput="onEdit()"></textarea></div>
+      </div>
+    </div>
+
+    <!-- シーン：利用者募集（相談員向け） -->
+    <div class="scene-fields" data-scene="recruit_user">
+      <div class="field-card">
+        <h3>利用者募集チラシ</h3>
+        <div class="field-row"><label>タイトル・キャッチコピー</label><input type="text" id="ru-title" placeholder="例：あなたらしい毎日を、一緒に" oninput="onEdit()"></div>
+        <div class="field-row"><label>サービス内容・対象者</label><textarea id="ru-service" placeholder="例：要介護1〜5・認知症対応可。入浴・食事・機能訓練を提供" oninput="onEdit()"></textarea></div>
+        <div class="field-row"><label>施設の特徴・アピールポイント</label><textarea id="ru-strength" placeholder="例：少人数制で一人ひとりに合わせたケア、駅から徒歩5分" oninput="onEdit()"></textarea></div>
+      </div>
+      <div class="field-card">
+        <h3>受け入れ・お問い合わせ</h3>
+        <div class="field-row"><label>空き状況・受入可能人数</label><input type="text" id="ru-vacancy" placeholder="例：残り2名（随時見学可）" oninput="onEdit()"></div>
+        <div class="field-row"><label>お問い合わせ先（担当者名・受付時間等）</label><input type="text" id="ru-contact" placeholder="例：相談員・田中まで（平日9-17時）" oninput="onEdit()"></div>
+      </div>
     </div>
 
     <div class="field-card">
-      <h3>具体的な受入事例</h3>
-      <div class="field-row"><label>種別</label><input type="text" id="case-type" placeholder="例：離職率改善" oninput="onEdit()"></div>
-      <div class="field-row"><label>課題</label><input type="text" id="case-issue" placeholder="例：新人の早期離職が続いていた" oninput="onEdit()"></div>
-      <div class="field-row"><label>対応内容</label><textarea id="case-response" placeholder="例：初期教育の仕組み化と1on1の定例化" oninput="onEdit()"></textarea></div>
-    </div>
-
-    <div class="field-card">
-      <h3>画像挿入（複数可）</h3>
+      <h3>画像挿入（複数可・シーンごと）</h3>
       <div class="img-input-row">
         <input type="file" id="img-input" accept="image/*" multiple onchange="onImageSelect(event)">
       </div>
@@ -122,12 +155,11 @@ html,body{background:var(--bg);font-family:'Hiragino Kaku Gothic Pro','Meiryo','
   <div class="preview-wrap">
     <div class="a4-page" id="doc-container">
       <div class="a4-header">
-        <div class="a4-kicker">Fusion Partners — 弦</div>
+        <div class="a4-kicker" id="p-kicker">Fusion Partners — 弦</div>
         <div class="a4-title" id="p-title">（タイトル未入力）</div>
         <div class="a4-facility" id="p-facility"></div>
       </div>
-      <div class="a4-body" id="p-body"></div>
-      <div class="a4-case" id="p-case" style="display:none;"></div>
+      <div id="p-content"></div>
       <div class="a4-images" id="p-images"></div>
       <div class="a4-footer">Fusion Partners　｜　fusion.partners.office@gmail.com</div>
     </div>
@@ -135,51 +167,125 @@ html,body{background:var(--bg);font-family:'Hiragino Kaku Gothic Pro','Meiryo','
 </div>
 
 <script>
-const DRAFT_KEY = 'doc_studio_draft_yuzuru_flyer';
+// 用途別レイアウト（レゴブロック方式）：共通ブロック（施設情報・画像挿入・Word/印刷出力）はシーン間で共有し、
+// 本文構成（sceneState）だけをシーンごとに切り替える。新しいシーンは同じパターンで追加できる。
+const DRAFT_KEY = 'doc_studio_draft_v2';
+const OLD_DRAFT_KEY = 'doc_studio_draft_yuzuru_flyer'; // 旧単一シーン版からの移行用（読み取りのみ）
 const HANDOFF_KEY = 'doc_studio_yuzuru_handoff';
-let images = []; // [{data: base64}]
 
+let currentScene = 'fusion_case';
+let facility = { name:'', corp:'', type:'', addr:'', phone:'' };
+let sceneState = defaultSceneState();
+
+function defaultSceneState() {
+  return {
+    fusion_case:  { title:'', body:'', caseExample:{type:'',issue:'',response:''}, images:[] },
+    recruit_user: { title:'', service:'', strength:'', vacancy:'', contact:'', images:[] }
+  };
+}
+
+function val(id) { return document.getElementById(id).value; }
+
+// ===== 下書き保存・読み込み =====
 function loadDraft() {
-  try { return JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null'); } catch(e) { return null; }
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch(e) {}
+  return migrateOldDraft();
+}
+function migrateOldDraft() {
+  try {
+    const old = JSON.parse(localStorage.getItem(OLD_DRAFT_KEY) || 'null');
+    if (!old) return null;
+    const s = defaultSceneState();
+    s.fusion_case = {
+      title: old.title || '', body: old.body || '',
+      caseExample: old.caseExample || {type:'',issue:'',response:''},
+      images: Array.isArray(old.images) ? old.images : []
+    };
+    return {
+      facility: { name: old.name||'', corp: old.corp||'', type: old.type||'', addr: old.addr||'', phone: old.phone||'' },
+      sceneState: s, currentScene: 'fusion_case'
+    };
+  } catch(e) { return null; }
 }
 function saveDraft() {
-  const data = {
-    name: val('f-name'), corp: val('f-corp'), type: val('f-type'), addr: val('f-addr'), phone: val('f-phone'),
-    title: val('f-title'), body: val('f-body'),
-    caseExample: { type: val('case-type'), issue: val('case-issue'), response: val('case-response') },
-    images, _ts: Date.now()
-  };
+  const data = { facility, sceneState, currentScene, _ts: Date.now() };
   localStorage.setItem(DRAFT_KEY, JSON.stringify(data));
   const ind = document.getElementById('save-indicator');
   ind.textContent = '下書きを保存しました ' + new Date().toLocaleTimeString('ja-JP');
   clearTimeout(ind._t);
   ind._t = setTimeout(() => { ind.textContent = ''; }, 2500);
 }
-function val(id) { return document.getElementById(id).value; }
 
 function applyData(d) {
-  if (!d) return;
-  document.getElementById('f-name').value  = d.name  || '';
-  document.getElementById('f-corp').value  = d.corp  || '';
-  document.getElementById('f-type').value  = d.type  || '';
-  document.getElementById('f-addr').value  = d.addr  || '';
-  document.getElementById('f-phone').value = d.phone || '';
-  document.getElementById('f-title').value = d.title || '';
-  document.getElementById('f-body').value  = d.body  || '';
-  const c = d.caseExample || {};
-  document.getElementById('case-type').value     = c.type     || '';
-  document.getElementById('case-issue').value    = c.issue    || '';
-  document.getElementById('case-response').value = c.response || '';
-  images = Array.isArray(d.images) ? d.images : [];
+  facility = (d && d.facility) || { name:'', corp:'', type:'', addr:'', phone:'' };
+  sceneState = (d && d.sceneState) || defaultSceneState();
+  currentScene = (d && d.currentScene) || 'fusion_case';
+  document.querySelectorAll('.scene-tab').forEach(t => t.classList.toggle('active', t.dataset.scene === currentScene));
+  document.querySelectorAll('.scene-fields').forEach(el => el.classList.toggle('active', el.dataset.scene === currentScene));
+  populateFormFromState();
+}
+
+function populateFormFromState() {
+  document.getElementById('f-name').value  = facility.name  || '';
+  document.getElementById('f-corp').value  = facility.corp  || '';
+  document.getElementById('f-type').value  = facility.type  || '';
+  document.getElementById('f-addr').value  = facility.addr  || '';
+  document.getElementById('f-phone').value = facility.phone || '';
+
+  const fc = sceneState.fusion_case;
+  document.getElementById('fc-title').value = fc.title || '';
+  document.getElementById('fc-body').value  = fc.body  || '';
+  document.getElementById('fc-case-type').value     = fc.caseExample?.type     || '';
+  document.getElementById('fc-case-issue').value    = fc.caseExample?.issue    || '';
+  document.getElementById('fc-case-response').value = fc.caseExample?.response || '';
+
+  const ru = sceneState.recruit_user;
+  document.getElementById('ru-title').value    = ru.title    || '';
+  document.getElementById('ru-service').value  = ru.service  || '';
+  document.getElementById('ru-strength').value = ru.strength || '';
+  document.getElementById('ru-vacancy').value  = ru.vacancy  || '';
+  document.getElementById('ru-contact').value  = ru.contact  || '';
+
   renderThumbs();
-  renderPreview();
+}
+
+// 現在表示中のフォーム内容をsceneState/facilityへ書き戻す
+function pullFormIntoState() {
+  facility.name = val('f-name'); facility.corp = val('f-corp'); facility.type = val('f-type');
+  facility.addr = val('f-addr'); facility.phone = val('f-phone');
+  if (currentScene === 'fusion_case') {
+    sceneState.fusion_case.title = val('fc-title');
+    sceneState.fusion_case.body  = val('fc-body');
+    sceneState.fusion_case.caseExample = { type: val('fc-case-type'), issue: val('fc-case-issue'), response: val('fc-case-response') };
+  } else {
+    sceneState.recruit_user.title    = val('ru-title');
+    sceneState.recruit_user.service  = val('ru-service');
+    sceneState.recruit_user.strength = val('ru-strength');
+    sceneState.recruit_user.vacancy  = val('ru-vacancy');
+    sceneState.recruit_user.contact  = val('ru-contact');
+  }
 }
 
 function onEdit() {
+  pullFormIntoState();
   renderPreview();
   saveDraft();
 }
 
+function switchScene(scene) {
+  pullFormIntoState();
+  currentScene = scene;
+  document.querySelectorAll('.scene-tab').forEach(t => t.classList.toggle('active', t.dataset.scene === scene));
+  document.querySelectorAll('.scene-fields').forEach(el => el.classList.toggle('active', el.dataset.scene === scene));
+  populateFormFromState();
+  renderPreview();
+  saveDraft();
+}
+
+// ===== B2：画像挿入（シーンごとに独立） =====
 function onImageSelect(ev) {
   const files = Array.from(ev.target.files || []);
   let pending = files.length;
@@ -187,7 +293,7 @@ function onImageSelect(ev) {
   files.forEach(file => {
     const reader = new FileReader();
     reader.onload = () => {
-      images.push({ data: reader.result });
+      sceneState[currentScene].images.push({ data: reader.result });
       pending--;
       if (pending === 0) { renderThumbs(); renderPreview(); saveDraft(); }
     };
@@ -196,23 +302,20 @@ function onImageSelect(ev) {
   ev.target.value = '';
 }
 function removeImage(idx) {
-  images.splice(idx, 1);
+  sceneState[currentScene].images.splice(idx, 1);
   renderThumbs();
   renderPreview();
   saveDraft();
 }
 function renderThumbs() {
   const box = document.getElementById('img-thumbs');
-  box.innerHTML = images.map((img, i) =>
+  box.innerHTML = sceneState[currentScene].images.map((img, i) =>
     `<div class="img-thumb"><img src="${img.data}"><button onclick="removeImage(${i})">✕</button></div>`
   ).join('');
 }
 
+// ===== プレビュー描画 =====
 function renderPreview() {
-  const title = val('f-title').trim();
-  document.getElementById('p-title').textContent = title || '（タイトル未入力）';
-  document.getElementById('p-title').classList.toggle('a4-empty', !title);
-
   const name = val('f-name'), corp = val('f-corp'), type = val('f-type'), addr = val('f-addr'), phone = val('f-phone');
   const facilityLines = [];
   if (name)  facilityLines.push(`<b>${escapeHtml(name)}</b>`);
@@ -222,24 +325,60 @@ function renderPreview() {
   if (phone) facilityLines.push(`電話：${escapeHtml(phone)}`);
   document.getElementById('p-facility').innerHTML = facilityLines.join('<br>');
 
-  const body = val('f-body').trim();
-  const bodyEl = document.getElementById('p-body');
-  bodyEl.textContent = body || '（本文未入力）';
-  bodyEl.classList.toggle('a4-empty', !body);
+  const titleEl = document.getElementById('p-title');
+  const kickerEl = document.getElementById('p-kicker');
+  const contentEl = document.getElementById('p-content');
 
-  const cType = val('case-type').trim(), cIssue = val('case-issue').trim(), cResponse = val('case-response').trim();
-  const caseEl = document.getElementById('p-case');
-  if (cType || cIssue || cResponse) {
-    caseEl.style.display = 'block';
-    caseEl.innerHTML = `<h4>具体的な受入事例</h4>
-      ${cType ? `<div class="a4-case-row"><b>種別</b>${escapeHtml(cType)}</div>` : ''}
-      ${cIssue ? `<div class="a4-case-row"><b>課題</b>${escapeHtml(cIssue)}</div>` : ''}
-      ${cResponse ? `<div class="a4-case-row"><b>対応内容</b>${escapeHtml(cResponse)}</div>` : ''}`;
+  if (currentScene === 'fusion_case') {
+    const s = sceneState.fusion_case;
+    kickerEl.textContent = 'Fusion Partners — 弦';
+    const title = (s.title || '').trim();
+    titleEl.textContent = title || '（タイトル未入力）';
+    titleEl.classList.toggle('a4-empty', !title);
+    contentEl.innerHTML = buildFusionCaseHtml(s);
   } else {
-    caseEl.style.display = 'none';
+    const s = sceneState.recruit_user;
+    kickerEl.textContent = '利用者募集のご案内';
+    const title = (s.title || '').trim();
+    titleEl.textContent = title || '（タイトル未入力）';
+    titleEl.classList.toggle('a4-empty', !title);
+    contentEl.innerHTML = buildRecruitUserHtml(s);
   }
 
-  document.getElementById('p-images').innerHTML = images.map(img => `<img src="${img.data}">`).join('');
+  document.getElementById('p-images').innerHTML = sceneState[currentScene].images.map(img => `<img src="${img.data}">`).join('');
+}
+
+function buildFusionCaseHtml(s) {
+  const body = (s.body || '').trim();
+  let html = `<div class="a4-body ${body ? '' : 'a4-empty'}" style="margin-bottom:18px;">${escapeHtml(body || '（本文未入力）')}</div>`;
+  const c = s.caseExample || {};
+  const cType = (c.type || '').trim(), cIssue = (c.issue || '').trim(), cResponse = (c.response || '').trim();
+  if (cType || cIssue || cResponse) {
+    html += `<div class="a4-case">
+      <h4>具体的な受入事例</h4>
+      ${cType ? `<div class="a4-case-row"><b>種別</b>${escapeHtml(cType)}</div>` : ''}
+      ${cIssue ? `<div class="a4-case-row"><b>課題</b>${escapeHtml(cIssue)}</div>` : ''}
+      ${cResponse ? `<div class="a4-case-row"><b>対応内容</b>${escapeHtml(cResponse)}</div>` : ''}
+    </div>`;
+  }
+  return html;
+}
+
+function buildRecruitUserHtml(s) {
+  const service  = (s.service  || '').trim();
+  const strength = (s.strength || '').trim();
+  const vacancy  = (s.vacancy  || '').trim();
+  const contact  = (s.contact  || '').trim();
+  let html = `<div class="a4-section"><h4>サービス内容・対象者</h4><div class="a4-body ${service ? '' : 'a4-empty'}">${escapeHtml(service || '（未入力）')}</div></div>`;
+  html += `<div class="a4-section"><h4>施設の特徴・アピールポイント</h4><div class="a4-body ${strength ? '' : 'a4-empty'}">${escapeHtml(strength || '（未入力）')}</div></div>`;
+  if (vacancy || contact) {
+    html += `<div class="a4-case">
+      <h4>受け入れ・お問い合わせ</h4>
+      ${vacancy ? `<div class="a4-case-row"><b>空き状況</b>${escapeHtml(vacancy)}</div>` : ''}
+      ${contact ? `<div class="a4-case-row"><b>お問い合わせ</b>${escapeHtml(contact)}</div>` : ''}
+    </div>`;
+  }
+  return html;
 }
 
 function escapeHtml(s) {
@@ -253,27 +392,29 @@ function exportWord() {
   const blob = htmlDocx.asBlob(html);
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  const filename = (val('f-title').trim() || 'チラシ') + '.docx';
+  const title = (sceneState[currentScene].title || '').trim();
+  const filename = (title || 'チラシ') + '.docx';
   a.href = url; a.download = filename;
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
 
 // ===== B5-弦チラシ：yuzuru_map.htmlからの施設データ連携 =====
+// 注：ここでのURLパラメータ名「scene」は「yuzuru_mapからの引き渡しが有るか」を示すフラグであり、
+// 上記のcurrentScene（Fusion活用事例／利用者募集の切り替え）とは別の概念。
 function checkHandoff() {
   const params = new URLSearchParams(window.location.search);
   if (params.get('scene') !== 'yuzuru_flyer') return;
   let handoff;
   try { handoff = JSON.parse(localStorage.getItem(HANDOFF_KEY) || 'null'); } catch(e) { handoff = null; }
   if (!handoff) return;
-  document.getElementById('f-name').value  = handoff.name  || '';
-  document.getElementById('f-corp').value  = handoff.corp  || '';
-  document.getElementById('f-type').value  = handoff.type  || '';
-  document.getElementById('f-addr').value  = handoff.addr  || '';
-  document.getElementById('f-phone').value = handoff.phone || '';
+  facility.name = handoff.name || ''; facility.corp = handoff.corp || ''; facility.type = handoff.type || '';
+  facility.addr = handoff.addr || ''; facility.phone = handoff.phone || '';
+  populateFormFromState();
   const note = document.getElementById('handoff-note');
   note.style.display = 'block';
   note.textContent = `📥 「${handoff.name}」の施設データを読み込みました`;
+  renderPreview();
   saveDraft();
 }
 
