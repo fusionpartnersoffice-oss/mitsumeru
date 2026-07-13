@@ -26,7 +26,7 @@ function getKV(env) {
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, PUT, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, PUT, POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
   'Access-Control-Max-Age': '86400',
 };
@@ -39,6 +39,11 @@ export default {
     }
 
     const url = new URL(request.url);
+
+    // ===== G連携基盤：ミツメルの記録をGoogleカレンダーへ自動書き出し（Phase1・私専用） =====
+    if (url.pathname === '/sync-calendar' && request.method === 'POST') {
+      return handleSyncCalendar(request, env);
+    }
 
     // ===== 安全装置①：プライベート版データのKV分離移行（2026-07-03・一度きりの手動トリガー） =====
     // ドライラン：対象キーの一覧のみ返す（書き込みなし）
@@ -340,4 +345,167 @@ ${judgment || '（資料未登録）'}
 
   const body = JSON.stringify({ text, _ts: Date.now() });
   await getKV(env).put('dispatch_' + date, body, { expirationTtl: 7776000 });
+}
+
+// ═══════════════════════════════════════════════
+//  G連携基盤：ミツメルの記録をGoogleカレンダーへ自動書き出し（Phase1・柴山さんご本人専用）
+//  設計：06_イノベーション/Google連携基盤_統合実装設計_20260711.md §3
+//  G1：認証（サービスアカウントJWT）／G2：KV読み取り／G3-カレンダー：書き込み
+// ═══════════════════════════════════════════════
+
+async function handleSyncCalendar(request, env) {
+  const headers = { ...CORS_HEADERS, 'Content-Type': 'application/json' };
+
+  // Secret未設定時は無音でスキップする（既存のGITHUB_TOKEN未設定時と同じパターン。エラーにしない）
+  if (!env.GOOGLE_SERVICE_ACCOUNT_KEY || !env.GOOGLE_CALENDAR_ID) {
+    return new Response(JSON.stringify({ ok: true, skipped: true, reason: 'Google連携が未設定です（Secret未登録）' }), { status: 200, headers });
+  }
+
+  let date;
+  try {
+    const body = await request.json();
+    date = body.date || jstDateStr();
+  } catch (e) {
+    date = jstDateStr();
+  }
+
+  try {
+    const record = await getPrivateDailyRecord(env, date);          // G2
+    const accessToken = await getGoogleAccessToken(env);             // G1
+    const event = await writeCalendarEvent(env, accessToken, date, record); // G3-カレンダー
+    return new Response(JSON.stringify({ ok: true, date, eventId: event.id }), { status: 200, headers });
+  } catch (e) {
+    return new Response(JSON.stringify({ ok: false, error: e.message }), { status: 500, headers });
+  }
+}
+
+// ── G2：KVデータ読み取りブロック ──
+// mitsumeru_private.html の cloudSave() は private_{type}_{date} 形式でKVへ保存している。
+// プロファイルキー（private_profile_global）には設計上の制約により一切アクセスしない。
+async function getPrivateDailyRecord(env, date) {
+  const kv = getKV(env);
+  const [morningRaw, eveningRaw, memosRaw] = await Promise.all([
+    kv.get('private_morning_' + date),
+    kv.get('private_evening_' + date),
+    kv.get('private_memos_' + date),
+  ]);
+  const parseJson = (raw) => {
+    if (!raw) return null;
+    try { return JSON.parse(raw); } catch (e) { return null; }
+  };
+  return {
+    morning: parseJson(morningRaw),
+    evening: parseJson(eveningRaw),
+    memos: parseJson(memosRaw),
+  };
+}
+
+// ── G1：Google認証ブロック（サービスアカウント方式・JWT Bearer） ──
+function base64url(input) {
+  const bytes = typeof input === 'string'
+    ? new TextEncoder().encode(input)
+    : new Uint8Array(input);
+  let binary = '';
+  for (const b of bytes) binary += String.fromCharCode(b);
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+function pemToArrayBuffer(pem) {
+  const b64 = pem
+    .replace(/-----BEGIN PRIVATE KEY-----/, '')
+    .replace(/-----END PRIVATE KEY-----/, '')
+    .replace(/\s+/g, '');
+  const binary = atob(b64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes.buffer;
+}
+
+async function getGoogleAccessToken(env) {
+  const keyJson = JSON.parse(env.GOOGLE_SERVICE_ACCOUNT_KEY);
+  const now = Math.floor(Date.now() / 1000);
+  const header = { alg: 'RS256', typ: 'JWT' };
+  const claims = {
+    iss: keyJson.client_email,
+    scope: 'https://www.googleapis.com/auth/calendar',
+    aud: 'https://oauth2.googleapis.com/token',
+    iat: now,
+    exp: now + 3600,
+  };
+  const unsigned = base64url(JSON.stringify(header)) + '.' + base64url(JSON.stringify(claims));
+
+  const cryptoKey = await crypto.subtle.importKey(
+    'pkcs8',
+    pemToArrayBuffer(keyJson.private_key),
+    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+  const signature = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', cryptoKey, new TextEncoder().encode(unsigned));
+  const jwt = unsigned + '.' + base64url(signature);
+
+  const res = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: `grant_type=${encodeURIComponent('urn:ietf:params:oauth:grant-type:jwt-bearer')}&assertion=${encodeURIComponent(jwt)}`,
+  });
+  const data = await res.json();
+  if (!data.access_token) {
+    throw new Error('Googleアクセストークン取得失敗: ' + (data.error_description || data.error || JSON.stringify(data)));
+  }
+  return data.access_token;
+}
+
+// ── G3-カレンダー：カレンダー書き込みアダプタ ──
+// 同じ日に複数回実行されても重複作成しないよう、拡張プロパティ(mitsumeru_date)で既存イベントを検索し、
+// あれば更新（PATCH）、なければ新規作成（POST）する。
+function buildCalendarEventContent(date, record) {
+  const morning = record.morning || {};
+  const evening = record.evening || {};
+  const want = morning['m-want'] || '';
+  const hp = morning['hp-val'] || '—';
+  const mp = morning['mp-val'] || '—';
+  const supplement = evening['e-supplement'] || '';
+
+  const summary = `ミツメル：${date}の記録（HP${hp}／MP${mp}）`;
+  const descriptionLines = [];
+  if (want) descriptionLines.push(`今日の一言：${want}`);
+  descriptionLines.push(`HP：${hp}　MP：${mp}`);
+  if (supplement) descriptionLines.push(`補足：${supplement}`);
+  return { summary, description: descriptionLines.join('\n') };
+}
+
+async function writeCalendarEvent(env, accessToken, date, record) {
+  const calendarId = encodeURIComponent(env.GOOGLE_CALENDAR_ID);
+  const apiBase = `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events`;
+  const { summary, description } = buildCalendarEventContent(date, record);
+
+  const searchUrl = `${apiBase}?privateExtendedProperty=${encodeURIComponent('mitsumeru_date=' + date)}`;
+  const searchRes = await fetch(searchUrl, { headers: { Authorization: `Bearer ${accessToken}` } });
+  const searchData = await searchRes.json();
+  if (!searchRes.ok) {
+    throw new Error('カレンダー検索失敗: ' + JSON.stringify(searchData));
+  }
+  const existing = (searchData.items || [])[0];
+
+  const eventBody = {
+    summary,
+    description,
+    start: { date },
+    end: { date },
+    extendedProperties: { private: { mitsumeru_date: date } },
+  };
+
+  const url = existing ? `${apiBase}/${existing.id}` : apiBase;
+  const method = existing ? 'PATCH' : 'POST';
+  const res = await fetch(url, {
+    method,
+    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(eventBody),
+  });
+  const data = await res.json();
+  if (!res.ok || !data.id) {
+    throw new Error('カレンダー書き込み失敗: ' + JSON.stringify(data));
+  }
+  return data;
 }
