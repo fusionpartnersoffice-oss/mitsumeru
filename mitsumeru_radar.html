@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ミツメルレーダー | Fusion Partners</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#0b1929; --panel:#132338; --accent:#4fc3f7; --gold:#e0b84f; --green:#4fd18a; --red:#e0554f;
+  --text:#e8eef4; --dim:#8fa3b8;
+}
+html,body{background:var(--bg);font-family:'Hiragino Kaku Gothic Pro','Meiryo','Yu Gothic',sans-serif;color:var(--text);min-height:100%;font-size:14px;}
+.topbar{position:sticky;top:0;z-index:20;background:#081422;padding:11px 20px;display:flex;align-items:center;justify-content:space-between;}
+.topbar-brand{color:#fff;text-decoration:none;font-weight:700;font-size:13px;letter-spacing:.5px;}
+.topbar-back{color:var(--dim);text-decoration:none;font-size:11.5px;}
+.topbar-back:hover{color:#fff;}
+
+.wrap{max-width:480px;margin:0 auto;padding:20px 20px 60px;}
+.joke-badge{display:inline-block;font-size:10px;letter-spacing:2px;color:var(--gold);border:1px solid var(--gold);border-radius:20px;padding:3px 10px;margin-bottom:10px;}
+h1{font-size:22px;font-weight:700;margin-bottom:8px;letter-spacing:1px;}
+.lead{font-size:12.5px;color:var(--dim);line-height:1.8;margin-bottom:20px;}
+.privacy-note{font-size:11px;color:var(--green);background:rgba(79,209,138,.08);border:1px solid rgba(79,209,138,.3);border-radius:6px;padding:10px 12px;margin-bottom:20px;line-height:1.7;}
+
+#camera-stage{position:relative;border-radius:10px;overflow:hidden;background:#000;margin-bottom:16px;}
+#radar-video{width:100%;display:block;max-height:60vh;}
+.btn{width:100%;padding:13px;border-radius:8px;border:none;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:1px;}
+.btn-primary{background:var(--accent);color:#0b1929;}
+.btn-primary:hover{background:#7ad3fa;}
+.btn-secondary{background:var(--panel);color:var(--text);border:1px solid #23405c;margin-top:10px;}
+.btn-secondary:hover{background:#1a3450;}
+.btn:disabled{opacity:.4;cursor:not-allowed;}
+
+#camera-error{display:none;font-size:12px;color:var(--red);background:rgba(224,85,79,.08);border:1px solid rgba(224,85,79,.3);border-radius:6px;padding:12px;margin-bottom:16px;line-height:1.7;}
+
+#scan-overlay{display:none;text-align:center;padding:70px 20px;position:relative;overflow:hidden;border-radius:10px;background:var(--panel);border:1px solid #23405c;margin-bottom:16px;}
+.scan-text{font-size:14px;letter-spacing:4px;color:var(--accent);margin-bottom:20px;animation:radarPulse 1s ease-in-out infinite;}
+.scan-line{height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);animation:radarScan 1.2s linear infinite;}
+@keyframes radarScan{0%{transform:translateX(-100%);}100%{transform:translateX(100%);}}
+@keyframes radarPulse{0%,100%{opacity:.5;}50%{opacity:1;}}
+
+#radar-result{display:none;}
+#radar-photo{width:100%;border-radius:10px;margin-bottom:16px;display:block;}
+.bar-row{margin-bottom:16px;}
+.bar-label{display:flex;justify-content:space-between;font-size:12px;color:var(--dim);margin-bottom:5px;letter-spacing:1px;}
+.bar-track{height:14px;background:#0e2032;border:1px solid #23405c;border-radius:7px;overflow:hidden;}
+.bar-fill{height:100%;border-radius:7px;transition:width .8s ease-out;}
+.no-data{text-align:center;color:var(--dim);font-size:13px;padding:30px 10px;line-height:1.8;}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <span class="topbar-brand">🧭 FusionOS</span>
+  <a class="topbar-back" href="./mitsumeru_hub.html">← ミツメルへ戻る</a>
+</div>
+
+<div class="wrap">
+  <div class="joke-badge">🎉 ジョークアプリ</div>
+  <h1>📡 ミツメルレーダー</h1>
+  <div class="lead">カメラでスキャンすると、今日の「パワーレベル」（HP/MP/LV）が分かります。ミツメル本体（mitsumeru_app.html）に記録済みの今日のデータを表示するだけの、ちょっとした遊び機能です。</div>
+  <div class="privacy-note">📷 撮影した写真はこの端末（ブラウザ）内にのみ保存され、サーバーやCloudflareへは一切送信されません。</div>
+
+  <div id="camera-stage">
+    <video id="radar-video" autoplay playsinline muted></video>
+  </div>
+  <div id="camera-error"></div>
+  <button class="btn btn-primary" id="btn-shoot" onclick="shootPhoto()">📸 スキャンする</button>
+  <canvas id="radar-canvas" style="display:none;"></canvas>
+
+  <div id="scan-overlay">
+    <div class="scan-text">SCANNING...</div>
+    <div class="scan-line"></div>
+  </div>
+
+  <div id="radar-result">
+    <img id="radar-photo" alt="スキャン写真">
+    <div id="radar-stats"></div>
+    <button class="btn btn-secondary" onclick="retake()">📷 もう一度スキャンする</button>
+  </div>
+</div>
+
+<script>
+const PHOTO_KEY = 'mitsumeru_radar_photo';
+let stream = null;
+
+async function initCamera() {
+  const errBox = document.getElementById('camera-error');
+  errBox.style.display = 'none';
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    document.getElementById('radar-video').srcObject = stream;
+    document.getElementById('btn-shoot').disabled = false;
+  } catch (e) {
+    errBox.textContent = 'カメラを起動できませんでした（' + e.message + '）。ブラウザのカメラ許可設定をご確認ください。';
+    errBox.style.display = 'block';
+    document.getElementById('btn-shoot').disabled = true;
+  }
+}
+
+function stopCamera() {
+  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+}
+
+function shootPhoto() {
+  const video = document.getElementById('radar-video');
+  const canvas = document.getElementById('radar-canvas');
+  canvas.width = video.videoWidth || 640;
+  canvas.height = video.videoHeight || 480;
+  canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+  const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+
+  // 撮影した写真はサーバー・Cloudflare KVへは一切送信しない。ブラウザのlocalStorageにのみ保存する。
+  localStorage.setItem(PHOTO_KEY, JSON.stringify({ data: dataUrl, _ts: Date.now() }));
+
+  stopCamera();
+  document.getElementById('camera-stage').style.display = 'none';
+  document.getElementById('btn-shoot').style.display = 'none';
+  document.getElementById('camera-error').style.display = 'none';
+  runScan(dataUrl);
+}
+
+function runScan(photoDataUrl) {
+  document.getElementById('scan-overlay').style.display = 'block';
+  setTimeout(() => {
+    document.getElementById('scan-overlay').style.display = 'none';
+    showResult(photoDataUrl);
+  }, 1500);
+}
+
+function showResult(photoDataUrl) {
+  document.getElementById('radar-photo').src = photoDataUrl;
+  const statsEl = document.getElementById('radar-stats');
+  const c = computeTodayStatus();
+
+  if (!c.hasMorning) {
+    statsEl.innerHTML = '<div class="no-data">本日の記録がまだありません。<br>ミツメル本体（mitsumeru_app.html）の朝タブから記録を始めてください。</div>';
+  } else {
+    const lvTotal = c.lvBase + c.todayPts;
+    const level = Math.floor(lvTotal / 100) + 1;
+    const lvPts = lvTotal % 100;
+    const hp = c.endHP, mp = c.endMP;
+    const hpColor = hp >= 60 ? 'var(--green)' : hp >= 40 ? 'var(--gold)' : 'var(--red)';
+    statsEl.innerHTML = `
+      <div class="bar-row">
+        <div class="bar-label"><span>LV ${level}</span><span>${lvPts}/100</span></div>
+        <div class="bar-track"><div class="bar-fill" style="width:${lvPts}%;background:var(--gold);"></div></div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label"><span>HP</span><span>${hp}/100</span></div>
+        <div class="bar-track"><div class="bar-fill" style="width:${Math.min(100,hp)}%;background:${hpColor};"></div></div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label"><span>MP</span><span>${mp}/110</span></div>
+        <div class="bar-track"><div class="bar-fill" style="width:${Math.min(100, mp/110*100)}%;background:var(--accent);"></div></div>
+      </div>`;
+  }
+  document.getElementById('radar-result').style.display = 'block';
+}
+
+function retake() {
+  document.getElementById('radar-result').style.display = 'none';
+  document.getElementById('camera-stage').style.display = 'block';
+  document.getElementById('btn-shoot').style.display = 'block';
+  initCamera();
+}
+
+// ===== mitsumeru_app.htmlと同じlocalStorageキーを読み取り専用で参照し、HP/MP/LVを表示する =====
+// 新規の計算ロジックは持たない（mitsumeru_app.htmlのcomputeDayClose()と同じロジックをそのまま踏襲）
+function computeTodayStatus() {
+  const todayStr = localDateStr(new Date());
+  const morning = readJson('mitsumeru_morning_' + todayStr);
+  const evening = readJson('mitsumeru_evening_' + todayStr);
+  const memosRec = readJson('mitsumeru_memos_' + todayStr);
+  const lvBase = parseInt(localStorage.getItem('mitsumeru_lv_total') || '0', 10);
+
+  const startHP = morning ? parseInt(morning['hp-val'], 10) : NaN;
+  const startMP = morning ? parseInt(morning['mp-val'], 10) : NaN;
+  const hasMorning = !isNaN(startHP) && !isNaN(startMP);
+  if (!hasMorning) return { hasMorning: false, lvBase, todayPts: 0 };
+
+  const memos = (memosRec && Array.isArray(memosRec.data)) ? memosRec.data : [];
+  const pomoTotal = memos.filter(m => m.tag === 'P').reduce((s, m) => s + (m.pomos || 0), 0);
+  const noiseCount = memos.filter(m => m.tag === 'V').length;
+  const hpFromPomo = pomoTotal * 2;
+  const mpFromPomo = Math.max(0, pomoTotal - 10) * 3;
+  const mpFromNoise = noiseCount * 5;
+
+  const debugScores = (evening && evening.debugScores) || {};
+  let hpFromDebug = 0, mpFromDebug = 0;
+  ['d1', 'd2', 'd3', 'd4', 'd5'].forEach(k => {
+    const s = debugScores[k];
+    if (!s || s === '〇') return;
+    if (s === '△') { mpFromDebug += 4; return; }
+    hpFromDebug += 3; mpFromDebug += 8;
+  });
+
+  const try100Done = (evening && evening['try100-count']) || 0;
+  const mpFromTry100 = try100Done * 3;
+
+  const endHP = Math.max(0, startHP - hpFromPomo - hpFromDebug);
+  const endMP = Math.min(110, Math.max(0, startMP - mpFromPomo - mpFromNoise - mpFromDebug + mpFromTry100));
+  const todayPts = pomoTotal * 10;
+
+  return { hasMorning: true, endHP, endMP, lvBase, todayPts };
+}
+
+function readJson(key) {
+  try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch (e) { return null; }
+}
+function localDateStr(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+window.addEventListener('DOMContentLoaded', initCamera);
+window.addEventListener('beforeunload', stopCamera);
+</script>
+</body>
+</html>
