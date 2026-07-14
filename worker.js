@@ -39,6 +39,12 @@ export default {
       return handleSyncCalendar(request, env);
     }
 
+    // ===== アクセス解析（簡易・自前実装）：案件0の原因切り分け用（2026-07-14） =====
+    // 個人情報・IPアドレス等は一切記録しない。ページ名＋日付ごとの匿名カウントのみ。
+    if (url.pathname === '/pv' && request.method === 'GET') {
+      return handlePageview(request, env);
+    }
+
     // ===== 安全装置①：プライベート版データのKV分離移行（2026-07-03・一度きりの手動トリガー） =====
     // ドライラン：対象キーの一覧のみ返す（書き込みなし）
     if (url.searchParams.get('action') === 'migrate_private_dryrun') {
@@ -175,6 +181,23 @@ async function handleMigratePrivate(env, { commit }) {
 function jstDateStr() {
   const jst = new Date(Date.now() + 9 * 60 * 60 * 1000);
   return jst.toISOString().split('T')[0];
+}
+
+// ===== アクセス解析（簡易・自前実装） =====
+// ?page=<英数字・アンダースコアのみ> を受け取り、pv_<page>_<JST日付> のカウントを1増やす。
+// IPアドレス・User-Agent・個人情報は一切記録しない。GETのみ（<img>ビーコンとしても使える形）。
+async function handlePageview(request, env) {
+  const url = new URL(request.url);
+  const headers = { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' };
+  const page = (url.searchParams.get('page') || '').replace(/[^a-zA-Z0-9_-]/g, '').substring(0, 60);
+  if (!page) {
+    return new Response(JSON.stringify({ error: 'page is required' }), { status: 400, headers });
+  }
+  const kv = getKV(env);
+  const key = 'pv_' + page + '_' + jstDateStr();
+  const current = parseInt((await kv.get(key)) || '0', 10);
+  await kv.put(key, String(current + 1), { expirationTtl: 7776000 }); // 90日
+  return new Response(JSON.stringify({ ok: true }), { status: 200, headers });
 }
 
 // ═══════════════════════════════════════════════
