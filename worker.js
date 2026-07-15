@@ -11,6 +11,8 @@
  * 【必要なもの】
  *   - Secret: GOOGLE_SERVICE_ACCOUNT_KEY／GOOGLE_CALENDAR_ID（Googleカレンダー連携用、
  *     Secret未設定時は無音でスキップ）
+ *   - Secret: MOBILE_ACCESS_KEY（GET /me用の簡易共有キー。柴山さんご本人のみが知る文字列。
+ *     未設定時は/meが常に401を返す＝安全側に倒れる）
  */
 
 // KV名前空間バインディング。変数名は MITSUMERU_KV / KV のどちらでも動くようにする。
@@ -43,6 +45,14 @@ export default {
     // 個人情報・IPアドレス等は一切記録しない。ページ名＋日付ごとの匿名カウントのみ。
     if (url.pathname === '/pv' && request.method === 'GET') {
       return handlePageview(request, env);
+    }
+
+    // ===== モバイルセッション向け・柴山さんご本人の記録閲覧（読み取り専用・2026-07-15） =====
+    // GET /me?key=<MOBILE_ACCESS_KEY>&date=YYYY-MM-DD
+    // 柴山さんご本人がモバイル（wrangler CLI無し）からmitsumeru_private.htmlの
+    // 当日/直近の記録を見るためのもの。書き込み・削除は一切なし。
+    if (url.pathname === '/me' && request.method === 'GET') {
+      return handleMe(request, env);
     }
 
     // ===== 安全装置①：プライベート版データのKV分離移行（2026-07-03・一度きりの手動トリガー） =====
@@ -198,6 +208,22 @@ async function handlePageview(request, env) {
   const current = parseInt((await kv.get(key)) || '0', 10);
   await kv.put(key, String(current + 1), { expirationTtl: 7776000 }); // 90日
   return new Response(JSON.stringify({ ok: true }), { status: 200, headers });
+}
+
+// ===== モバイルセッション向け・柴山さんご本人の記録閲覧（読み取り専用） =====
+// private_morning_{date}／private_evening_{date}／private_memos_{date}のみ返す。
+// private_profile_globalには一切アクセスしない（G2と同じ制約）。書き込み・削除は一切なし。
+async function handleMe(request, env) {
+  const url = new URL(request.url);
+  const headers = { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' };
+
+  if (!env.MOBILE_ACCESS_KEY || url.searchParams.get('key') !== env.MOBILE_ACCESS_KEY) {
+    return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401, headers });
+  }
+
+  const date = (url.searchParams.get('date') || jstDateStr()).replace(/[^0-9-]/g, '').substring(0, 10);
+  const record = await getPrivateDailyRecord(env, date);
+  return new Response(JSON.stringify({ date, ...record }), { status: 200, headers });
 }
 
 // ═══════════════════════════════════════════════
