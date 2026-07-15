@@ -28,12 +28,14 @@
   .opts input{width:16px;height:16px;flex-shrink:0;}
   .opts label:has(input:checked){background:rgba(129,199,132,.15);border-color:var(--accent);color:var(--accent);font-weight:700;}
 
-  .email-gate{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-top:8px;display:none;}
-  .email-gate.show{display:block;}
-  .email-gate label{display:block;font-size:.82rem;color:var(--sub);margin-bottom:8px;}
-  .email-gate input{width:100%;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:12px;font-size:.9rem;outline:none;font-family:inherit;}
-  .email-gate input:focus{border-color:var(--accent);}
   .email-note{font-size:.72rem;color:var(--sub);margin-top:8px;line-height:1.6;}
+  .email-optin{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-top:16px;}
+  .email-optin label{display:block;font-size:.82rem;color:var(--sub);margin-bottom:8px;}
+  .email-optin .row{display:flex;gap:8px;}
+  .email-optin input{flex:1;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;font-size:.85rem;outline:none;font-family:inherit;}
+  .email-optin input:focus{border-color:var(--accent);}
+  .email-optin button{background:var(--card);color:var(--accent);border:1px solid var(--accent);border-radius:8px;padding:0 16px;font-size:.85rem;font-weight:700;cursor:pointer;white-space:nowrap;}
+  .email-optin .sent{color:var(--accent);font-size:.82rem;}
 
   .btn{display:block;width:100%;background:var(--accent);color:#0f1923;border:none;border-radius:10px;padding:14px;font-size:1rem;font-weight:700;cursor:pointer;margin-top:14px;}
   .btn:disabled{opacity:.4;cursor:not-allowed;}
@@ -63,16 +65,20 @@
 
   <form id="quiz"></form>
 
-  <div class="email-gate" id="emailGate">
-    <label>結果を見るには、メールアドレスをご入力ください</label>
-    <input type="email" id="emailInput" placeholder="例：you@example.com" oninput="checkReady()">
-    <div class="email-note">※ ご入力いただいたメールアドレスは、診断結果のご案内以外の目的では使用しません。</div>
-  </div>
-
   <button class="btn" id="submit" disabled onclick="showResult()">結果を見る</button>
 
   <div id="result">
     <div id="resultBody"></div>
+
+    <div class="email-optin" id="emailOptin">
+      <label>この診断結果をメールでも受け取っておく（任意・あとで見返せます）</label>
+      <div class="row">
+        <input type="email" id="emailInput" placeholder="例：you@example.com">
+        <button onclick="submitEmailOptIn()" id="emailOptinBtn">送信する</button>
+      </div>
+      <div class="email-note">※ ご入力いただいたメールアドレスは、診断結果のご案内以外の目的では使用しません。</div>
+    </div>
+
     <button class="btn" style="background:var(--card);color:var(--text);margin-top:14px;" onclick="location.reload()">もう一度診断する</button>
   </div>
 
@@ -135,11 +141,7 @@ function allAnswered() {
   return QUESTIONS.every((_, i) => form.querySelector(`input[name="q${i}"]:checked`));
 }
 function checkReady() {
-  const answered = allAnswered();
-  document.getElementById('emailGate').classList.toggle('show', answered);
-  const email = document.getElementById('emailInput').value.trim();
-  const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  document.getElementById('submit').disabled = !(answered && validEmail);
+  document.getElementById('submit').disabled = !allAnswered();
 }
 
 function judgePhase() {
@@ -158,19 +160,17 @@ function judgePhase() {
 
 const LEAD_WORKER_URL = 'https://shindan-saiken-worker.fusion-partners-office.workers.dev/lead';
 
+// 診断結果を即座に見せるため、質問への回答内容はメール送信有無に関わらずここに保持しておく
+let lastPhase = null, lastAnswers = null;
+
 function showResult() {
-  const email = document.getElementById('emailInput').value.trim();
   const phase = judgePhase();
   const info = PHASE_INFO[phase];
   const answers = QUESTIONS.map((_, i) => Number(form.querySelector(`input[name="q${i}"]:checked`).value));
+  lastPhase = phase;
+  lastAnswers = answers;
 
-  // 恒久保存（Cloudflare Worker + KV）。送信失敗してもユーザー体験（結果表示）は妨げない
-  fetch(LEAD_WORKER_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, phase: String(phase), badge: info.badge, answers }),
-  }).catch(() => {});
-
+  // メールアドレス入力は結果表示の後（任意）に変更。ここでは即座に結果を描画するのみ
   document.getElementById('resultBody').innerHTML = `
     <div class="resultcard">
       <span class="phase-badge">${info.badge}</span>
@@ -189,6 +189,28 @@ function showResult() {
   document.getElementById('result').style.display = 'block';
   document.getElementById('result').scrollIntoView({ behavior: 'smooth' });
   document.getElementById('submit').style.display = 'none';
+}
+
+function submitEmailOptIn() {
+  const emailInput = document.getElementById('emailInput');
+  const email = emailInput.value.trim();
+  const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  if (!validEmail) {
+    emailInput.focus();
+    return;
+  }
+  const info = PHASE_INFO[lastPhase];
+  const btn = document.getElementById('emailOptinBtn');
+  btn.disabled = true;
+
+  // 恒久保存（Cloudflare Worker + KV）。送信失敗してもユーザー体験は妨げない
+  fetch(LEAD_WORKER_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, phase: String(lastPhase), badge: info.badge, answers: lastAnswers }),
+  }).catch(() => {});
+
+  document.getElementById('emailOptin').innerHTML = '<div class="sent">送信しました。ありがとうございます。</div>';
 }
 </script>
 <script>
