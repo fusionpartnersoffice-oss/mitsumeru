@@ -6,6 +6,7 @@
 <title>FusionOS 文書生成エンジン — チラシ作成 | Fusion Partners</title>
 <link rel="icon" type="image/png" href="favicon.png">
 <script src="https://cdn.jsdelivr.net/npm/html-docx-js/dist/html-docx.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{
@@ -386,10 +387,14 @@ function escapeHtml(s) {
 }
 
 // ===== B3：Wordエクスポート =====
-function exportWord() {
+// html-docx-jsは用紙サイズの指定に対応していない（orientation/marginsのみ）ため、
+// 生成された.docx（実体はZIP）を開いてword/document.xmlのw:pgSzをUS Letterから
+// A4（w:w="11906" w:h="16838"）へ直接書き換える（QA指摘・2026-07-17）。
+async function exportWord() {
   const container = document.getElementById('doc-container').outerHTML;
   const html = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>${container}</body></html>`;
-  const blob = htmlDocx.asBlob(html);
+  const rawBlob = htmlDocx.asBlob(html);
+  const blob = await fixDocxPageSizeToA4(rawBlob);
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   const title = (sceneState[currentScene].title || '').trim();
@@ -397,6 +402,23 @@ function exportWord() {
   a.href = url; a.download = filename;
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+
+async function fixDocxPageSizeToA4(blob) {
+  try {
+    const zip = await JSZip.loadAsync(blob);
+    const docXmlPath = 'word/document.xml';
+    const docFile = zip.file(docXmlPath);
+    if (!docFile) return blob; // 想定外の構造なら元のまま返す（安全側）
+    let xml = await docFile.async('string');
+    xml = xml.replace(/<w:pgSz\b[^>]*\/?>/g, tag =>
+      tag.replace(/w:w="\d+"/, 'w:w="11906"').replace(/w:h="\d+"/, 'w:h="16838"')
+    );
+    zip.file(docXmlPath, xml);
+    return await zip.generateAsync({ type: 'blob', mimeType: blob.type });
+  } catch (e) {
+    return blob; // 変換に失敗しても元のdocxはそのまま出力できるようにする
+  }
 }
 
 // ===== B5-弦チラシ：yuzuru_map.htmlからの施設データ連携 =====
