@@ -2331,6 +2331,7 @@ function closeDayHPMP() {
   }
   renderDayClose(c, c.endHP, c.endMP);
   syncToGoogleCalendar();
+  syncToVault();
 }
 
 // G連携基盤・G3-カレンダー：夜の締めのタイミングでGoogleカレンダーへ自動書き出し（柴山さんご本人専用）。
@@ -2338,6 +2339,17 @@ function closeDayHPMP() {
 function syncToGoogleCalendar() {
   const date = targetDate || localDateStr(new Date());
   fetch(`${SYNC_URL}/sync-calendar`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ date }),
+  }).catch(() => {});
+}
+
+// G連携基盤・G3-Vault：夜の締めのタイミングでVault（Google Drive）へ自動書き出し（柴山さんご本人専用）。
+// Secret未設定時はWorker側で無音スキップされる。失敗しても既存機能には一切影響させない。
+function syncToVault() {
+  const date = targetDate || localDateStr(new Date());
+  fetch(`${SYNC_URL}/sync-vault`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ date }),
