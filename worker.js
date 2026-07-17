@@ -1,5 +1,5 @@
 /**
- * Mitsumeru Sync Worker — Cloudflare Workers KV proxy ＋ Googleカレンダー連携
+ * Mitsumeru Sync Worker — Cloudflare Workers KV proxy ＋ Google連携（カレンダー・Vault）
  * デプロイ方法: Cloudflare Dashboard > Workers & Pages > mitsumeru-sync > Quick Edit
  * または wrangler deploy
  *
@@ -9,8 +9,13 @@
  * エクスポートの両方を撤去。Cloudflare側のCron Trigger登録もあわせて削除すること）。
  *
  * 【必要なもの】
- *   - Secret: GOOGLE_SERVICE_ACCOUNT_KEY／GOOGLE_CALENDAR_ID（Googleカレンダー連携用、
- *     Secret未設定時は無音でスキップ）
+ *   - Secret: GOOGLE_SERVICE_ACCOUNT_KEY（サービスアカウントの秘密鍵JSON。カレンダー・Vault
+ *     両方で共通利用。同じサービスアカウントにCalendar API・Drive API両方を有効化し、対象の
+ *     カレンダー・Vaultフォルダをこのサービスアカウントのメールアドレスと共有しておくこと）
+ *   - Secret: GOOGLE_CALENDAR_ID（Googleカレンダー連携用）
+ *   - Secret: GOOGLE_VAULT_FOLDER_ID（Vault自動書き出し用。書き出し先フォルダのGoogle Drive
+ *     フォルダID。フォルダURL末尾の文字列）
+ *     ↑いずれもSecret未設定時は該当機能のみ無音でスキップ（他機能に影響しない）
  *   - Secret: MOBILE_ACCESS_KEY（GET /me用の簡易共有キー。柴山さんご本人のみが知る文字列。
  *     未設定時は/meが常に401を返す＝安全側に倒れる）
  */
@@ -39,6 +44,11 @@ export default {
     // ===== G連携基盤：ミツメルの記録をGoogleカレンダーへ自動書き出し（Phase1・私専用） =====
     if (url.pathname === '/sync-calendar' && request.method === 'POST') {
       return handleSyncCalendar(request, env);
+    }
+
+    // ===== G連携基盤：ミツメルの記録をVault（Google Drive）へ自動書き出し（Phase2・私専用） =====
+    if (url.pathname === '/sync-vault' && request.method === 'POST') {
+      return handleSyncVault(request, env);
     }
 
     // ===== アクセス解析（簡易・自前実装）：案件0の原因切り分け用（2026-07-14） =====
@@ -250,7 +260,7 @@ async function handleSyncCalendar(request, env) {
 
   try {
     const record = await getPrivateDailyRecord(env, date);          // G2
-    const accessToken = await getGoogleAccessToken(env);             // G1
+    const accessToken = await getGoogleAccessToken(env, 'https://www.googleapis.com/auth/calendar'); // G1
     const event = await writeCalendarEvent(env, accessToken, date, record); // G3-カレンダー
     return new Response(JSON.stringify({ ok: true, date, eventId: event.id }), { status: 200, headers });
   } catch (e) {
@@ -300,13 +310,13 @@ function pemToArrayBuffer(pem) {
   return bytes.buffer;
 }
 
-async function getGoogleAccessToken(env) {
+async function getGoogleAccessToken(env, scope) {
   const keyJson = JSON.parse(env.GOOGLE_SERVICE_ACCOUNT_KEY);
   const now = Math.floor(Date.now() / 1000);
   const header = { alg: 'RS256', typ: 'JWT' };
   const claims = {
     iss: keyJson.client_email,
-    scope: 'https://www.googleapis.com/auth/calendar',
+    scope,
     aud: 'https://oauth2.googleapis.com/token',
     iat: now,
     exp: now + 3600,
@@ -386,5 +396,107 @@ async function writeCalendarEvent(env, accessToken, date, record) {
   if (!res.ok || !data.id) {
     throw new Error('カレンダー書き込み失敗: ' + JSON.stringify(data));
   }
+  return data;
+}
+
+// ═══════════════════════════════════════════════
+//  G連携基盤：ミツメルの記録をVault（Google Drive）へ自動書き出し（Phase2・柴山さんご本人専用）
+//  設計：06_イノベーション/_検討書/ミツメル_Vault自動書き出し_実現可能性検討_20260711.md
+//  G1（認証）・G2（KV読み取り）はカレンダー連携と共通。G3-Vaultのみ新規（変換先：Markdown／書き込み先：Google Drive）
+// ═══════════════════════════════════════════════
+
+async function handleSyncVault(request, env) {
+  const headers = { ...CORS_HEADERS, 'Content-Type': 'application/json' };
+
+  // Secret未設定時は無音でスキップする（エラーにしない。カレンダー連携と同じパターン）
+  if (!env.GOOGLE_SERVICE_ACCOUNT_KEY || !env.GOOGLE_VAULT_FOLDER_ID) {
+    return new Response(JSON.stringify({ ok: true, skipped: true, reason: 'Vault書き出しが未設定です（Secret未登録）' }), { status: 200, headers });
+  }
+
+  let date;
+  try {
+    const body = await request.json();
+    date = body.date || jstDateStr();
+  } catch (e) {
+    date = jstDateStr();
+  }
+
+  try {
+    const record = await getPrivateDailyRecord(env, date);          // G2（カレンダー連携と共通）
+    const accessToken = await getGoogleAccessToken(env, 'https://www.googleapis.com/auth/drive.file'); // G1（スコープのみ変更）
+    const file = await writeVaultMarkdown(env, accessToken, date, record); // G3-Vault
+    return new Response(JSON.stringify({ ok: true, date, fileId: file.id }), { status: 200, headers });
+  } catch (e) {
+    return new Response(JSON.stringify({ ok: false, error: e.message }), { status: 500, headers });
+  }
+}
+
+// 日次記録をMarkdownに変換する（プロファイルキーには一切触れない。G2の戻り値のみを使用）
+function buildVaultMarkdown(date, record) {
+  const morning = record.morning || {};
+  const evening = record.evening || {};
+  const want = morning['m-want'] || '（記載なし）';
+  const hp = morning['hp-val'] || '—';
+  const mp = morning['mp-val'] || '—';
+  const supplement = evening['e-supplement'] || '（記載なし）';
+
+  return `# ミツメル日次記録 ${date}
+
+- 作成者：mitsumeru-sync Worker（自動書き出し）／作成日時：${date}
+- ステータス：日次ログ（自動生成・上書きなし）
+
+## ステータス
+HP：${hp}／MP：${mp}
+
+## 今日の一言
+${want}
+
+## 補足
+${supplement}
+`;
+}
+
+// Google Drive API v3。指定フォルダ内に同名ファイルがあれば内容を更新（PATCH）、
+// なければ新規作成（multipart POST）。同日再実行しても重複作成しない。
+async function writeVaultMarkdown(env, accessToken, date, record) {
+  const folderId = env.GOOGLE_VAULT_FOLDER_ID;
+  const filename = `${date}.md`;
+  const content = buildVaultMarkdown(date, record);
+
+  const query = encodeURIComponent(`name='${filename}' and '${folderId}' in parents and trashed=false`);
+  const searchRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id,name)`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  const searchData = await searchRes.json();
+  if (!searchRes.ok) {
+    throw new Error('Vault検索失敗: ' + JSON.stringify(searchData));
+  }
+  const existing = (searchData.files || [])[0];
+
+  if (existing) {
+    const res = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${existing.id}?uploadType=media`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'text/markdown' },
+      body: content,
+    });
+    const data = await res.json();
+    if (!res.ok || !data.id) throw new Error('Vault更新失敗: ' + JSON.stringify(data));
+    return data;
+  }
+
+  const boundary = 'mitsumeru_vault_boundary';
+  const metadata = { name: filename, parents: [folderId], mimeType: 'text/markdown' };
+  const multipartBody =
+    `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n` +
+    `--${boundary}\r\nContent-Type: text/markdown\r\n\r\n${content}\r\n` +
+    `--${boundary}--`;
+
+  const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': `multipart/related; boundary=${boundary}` },
+    body: multipartBody,
+  });
+  const data = await res.json();
+  if (!res.ok || !data.id) throw new Error('Vault新規作成失敗: ' + JSON.stringify(data));
   return data;
 }
