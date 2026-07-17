@@ -27,6 +27,7 @@ html,body{background:var(--bg);font-family:'Hiragino Kaku Gothic Pro','Meiryo','
 .card:hover{border-left-color:var(--navy);background:#fff;}
 .card-badge{font-size:9.5px;letter-spacing:1.5px;color:var(--dim2);text-transform:uppercase;margin-bottom:5px;font-weight:600;}
 .card-name{font-size:15px;font-weight:700;color:var(--navy);margin-bottom:4px;}
+.card-file{font-family:monospace;font-size:10px;color:var(--dim2);margin-bottom:4px;}
 .card-desc{font-size:11.5px;color:var(--dim);line-height:1.6;}
 .card-go{font-size:10.5px;font-weight:700;letter-spacing:.5px;color:var(--navy);margin-top:8px;display:inline-block;}
 .foot{margin-top:28px;text-align:center;border-top:1px solid var(--border);padding-top:16px;}
@@ -48,43 +49,50 @@ html,body{background:var(--bg);font-family:'Hiragino Kaku Gothic Pro','Meiryo','
   <div class="list">
     <a class="card" href="./hibiki_v2.html">
       <div class="card-badge">H1-AS・アセスメント</div>
-      <div class="card-name">hibiki_v2.html — アセスメント</div>
+      <div class="card-name">アセスメント</div>
+      <div class="card-file">hibiki_v2.html（H1-AS）</div>
       <div class="card-desc">基本情報・緊急連絡先・その他属性・ICF・氷山モデル・ざわつき診断・出力。支援計画・支援手順書はH1-PLAN／H1-PROCへ分離済み。</div>
       <span class="card-go">開く →</span>
     </a>
     <a class="card" href="./hibiki_plan.html">
       <div class="card-badge">H1-PLAN・支援計画</div>
-      <div class="card-name">hibiki_plan.html — 課題・目標・支援計画</div>
+      <div class="card-name">支援計画</div>
+      <div class="card-file">hibiki_plan.html（H1-PLAN）</div>
       <div class="card-desc">ケアマネ・サビ管専用。アセスメントを読み取り専用で参照し、課題・目標・支援方針・具体的支援内容を作成。</div>
       <span class="card-go">開く →</span>
     </a>
     <a class="card" href="./hibiki_procedure.html">
       <div class="card-badge">H1-PROC・支援手順書</div>
-      <div class="card-name">hibiki_procedure.html — 支援手順書・読了チェック</div>
+      <div class="card-name">支援手順書</div>
+      <div class="card-file">hibiki_procedure.html（H1-PROC）</div>
       <div class="card-desc">現場スタッフ向け。ICFの🔴リスクから手順書を生成。支援計画が無くても単独で作成できる。</div>
       <span class="card-go">開く →</span>
     </a>
     <a class="card" href="./hibiki_monitor.html">
       <div class="card-badge">支援モニタリングツール</div>
-      <div class="card-name">hibiki_monitor.html — 支援経過モニタリング</div>
+      <div class="card-name">支援モニタリングツール</div>
+      <div class="card-file">hibiki_monitor.html（H1-MONITOR）</div>
       <div class="card-desc">支援計画・支援手順書を読み取り専用で参照しながら、結果の様子・課題の推移・前進点・残る課題を時系列で記録・蓄積する。</div>
       <span class="card-go">開く →</span>
     </a>
     <a class="card" href="./hibiki_ops.html">
       <div class="card-badge">H2-STD・運用標準書</div>
-      <div class="card-name">hibiki_ops.html — 運用標準書・営業提案診断</div>
+      <div class="card-name">運用標準書</div>
+      <div class="card-file">hibiki_ops.html（H2-STD）</div>
       <div class="card-desc">運用標準書（5S順序ゲート付き）・施設向け軽量版の営業提案診断を集約。品目・在庫管理はH2-INVへ分離済み。</div>
       <span class="card-go">開く →</span>
     </a>
     <a class="card" href="./hibiki_inventory.html">
       <div class="card-badge">H2-INV・在庫管理</div>
-      <div class="card-name">hibiki_inventory.html — 品目管理・ABC分析・在庫管理</div>
+      <div class="card-name">品目管理・在庫管理</div>
+      <div class="card-file">hibiki_inventory.html（H2-INV）</div>
       <div class="card-desc">現場担当者向け。品目登録・ABC分析・2ビン方式・カンバンラベル発行。</div>
       <span class="card-go">開く →</span>
     </a>
     <a class="card" href="./naze_naze.html">
       <div class="card-badge">思考法</div>
-      <div class="card-name">naze_naze.html — なぜなぜ分析</div>
+      <div class="card-name">なぜなぜ分析</div>
+      <div class="card-file">naze_naze.html</div>
       <div class="card-desc">根本原因を掘り下げる思考法。アセスメント・支援計画・運用標準づくりの土台になる考え方。</div>
       <span class="card-go">開く →</span>
     </a>
