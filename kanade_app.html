@@ -266,11 +266,30 @@
 <div id="aptitude-import-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:300;align-items:center;justify-content:center;padding:20px;">
   <div style="background:var(--card);border-radius:12px;max-width:560px;width:100%;padding:24px;">
     <div style="font-family:'Noto Serif JP',serif;font-size:16px;margin-bottom:12px;">📥 適性検査をインポート</div>
-    <p style="font-size:12px;color:var(--text3);margin-bottom:10px;">mitsumeru_tekisei_check.htmlの「📋 ミツメルにコピー」ボタンで取得したJSONをここに貼り付けてください。</p>
+    <p style="font-size:12px;color:var(--text3);margin-bottom:10px;">①「📝 適性検査を受ける」ボタンで別タブを開き検査を受ける②検査結果画面の「📋 ミツメルにコピー」ボタンを押す③ここに戻って下に貼り付ける④「フィールドに反映する」を押す。</p>
     <textarea id="aptitude-import-json" rows="10" style="width:100%;font-size:11px;font-family:monospace;padding:10px;border:0.5px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);resize:vertical;" placeholder='{"egogram":{...},"enneagram":{...},"lsrp":{...}}'></textarea>
     <div style="display:flex;gap:10px;margin-top:14px;">
       <button class="btn btn-primary" onclick="importAptitudeResult()" style="flex:1;">フィールドに反映する</button>
       <button class="btn btn-secondary" onclick="closeAptitudeImport()" style="flex:1;">キャンセル</button>
+    </div>
+  </div>
+</div>
+
+<!-- AIキー設定モーダル -->
+<div id="apikey-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:300;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--card);border-radius:12px;max-width:560px;width:100%;padding:24px;">
+    <div style="font-family:'Noto Serif JP',serif;font-size:16px;margin-bottom:12px;">🔑 AI機能の初回設定</div>
+    <p style="font-size:12px;color:var(--text3);margin-bottom:10px;line-height:1.8;">
+      面接仮説の生成など、AIを使う機能は初回だけ設定が必要です。手順：<br>
+      ①ブラウザで console.anthropic.com を開く（別タブで開いてください）<br>
+      ②画面の案内に沿ってアカウントを登録する<br>
+      ③「API Keys」→「Create Key」でキーを発行する<br>
+      ④発行された文字列（sk- から始まります）をコピーし、下に貼り付けて保存する
+    </p>
+    <input id="apikey-input" type="text" placeholder="sk- から始まる文字列を貼り付け" style="width:100%;font-size:12px;font-family:monospace;padding:10px;border:0.5px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);">
+    <div style="display:flex;gap:10px;margin-top:14px;">
+      <button class="btn btn-primary" onclick="saveApiKey()" style="flex:1;">保存する</button>
+      <button class="btn btn-secondary" onclick="closeApiKeyModal()" style="flex:1;">キャンセル</button>
     </div>
   </div>
 </div>
@@ -281,7 +300,7 @@
 // ============================================================
 // 奏 Kanade v1 — MVP（範囲A：面接ガイド＋自動採点）
 // データは localStorage に保存（縦断データの種）。
-// 適性検査フェーズ2：LSRP搭載（法務確認済み・奏システム_LSRP搭載_法務意見書_20260626.md / 橋下徹）。
+// 適性検査フェーズ2：LSRP搭載（AI検証済み・内部法務意見書に基づく設計・奏システム_LSRP搭載_法務意見書_20260626.md）。
 //   原則：①医学的診断でない ②スコアのみで採否不可 ③本人同意必須 ④トリガーであり命令でない。
 // ============================================================
 
@@ -371,24 +390,35 @@ function newId() {
 }
 
 // ---------- Block1：面接仮説生成（AI）・LSRPアラート ----------
-function getApiKey() {
-  let key = localStorage.getItem('kanade_api_key');
-  if (key) return key;
-  key = prompt('AnthropicのAPIキーを入力してください：\n\n取得方法：console.anthropic.com → API Keys → Create Key');
-  if (key && key.trim().startsWith('sk-')) {
-    key = key.trim();
-    localStorage.setItem('kanade_api_key', key);
-    return key;
-  } else if (key) {
-    alert('APIキーは「sk-」から始まる文字列です。もう一度確認してください。');
-    return null;
+let pendingApiCall = null;
+
+function openApiKeyModal() {
+  document.getElementById('apikey-overlay').style.display = 'flex';
+}
+function closeApiKeyModal() {
+  document.getElementById('apikey-overlay').style.display = 'none';
+  document.getElementById('apikey-input').value = '';
+}
+function saveApiKey() {
+  const input = document.getElementById('apikey-input');
+  const key = input.value.trim();
+  if (!key.startsWith('sk-')) { toast('キーの形式が正しくないようです（sk-で始まる文字列のはずです）'); return; }
+  localStorage.setItem('kanade_api_key', key);
+  closeApiKeyModal();
+  if (pendingApiCall) {
+    const { promptText, onSuccess, onError } = pendingApiCall;
+    pendingApiCall = null;
+    callClaude(promptText, onSuccess, onError);
   }
-  return null;
 }
 
 function callClaude(promptText, onSuccess, onError) {
-  const key = getApiKey();
-  if (!key) { onError('APIキーが設定されていません。'); return; }
+  const key = localStorage.getItem('kanade_api_key');
+  if (!key) {
+    pendingApiCall = { promptText, onSuccess, onError };
+    openApiKeyModal();
+    return;
+  }
   fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
@@ -426,7 +456,7 @@ function lsrpAlertBanner(c){
 function generateHypothesis() {
   const c = cur(); if (!c) return;
   const loading = document.getElementById('hyp-loading');
-  if (loading) loading.style.display = 'block';
+  if (loading) loading.style.display = localStorage.getItem('kanade_api_key') ? 'block' : 'none';
   const ego = ['CP','NP','A','FC','AC'].map(k=>`${k}:${c['ego'+k]||'—'}`).join(' ');
   const promptText = `あなたは採用面接の設計を支援する専門家です。以下の適性検査結果から、面接で重点的に確認すべき問いを3〜5点、日本語で簡潔に生成してください。
 各問いは1行・質問文のみ（番号付き箇条書き）。前置きや解説文は書かないこと。ハルシネーション禁止、検査結果にない事実を創作しないこと。
@@ -562,7 +592,7 @@ function importAptitudeResult() {
   const c = cur(); if (!c) { alert('先に候補者を選択してください。'); return; }
   const raw = document.getElementById('aptitude-import-json').value.trim();
   let data;
-  try { data = JSON.parse(raw); } catch(e) { alert('JSONの形式が正しくありません。'); return; }
+  try { data = JSON.parse(raw); } catch(e) { alert('貼り付けた内容が読み取れませんでした。適性検査の「📋 ミツメルにコピー」ボタンで取得した内容をそのまま貼り付けてください。'); return; }
 
   let imported = [];
   // エゴグラム：data.egogram.CP/NP/A/FC/AC
@@ -645,10 +675,11 @@ function renderInterview() {
   <div class="section">
     <div class="section-title">フェーズ1 ｜ 適性検査（事前・手入力）</div>
     <div class="note-box" style="margin-bottom:12px">
-      検査スコアは面接の「仮説」に使います。エゴグラム・エニアグラムは受検結果を手入力するか、下のボタンで適性検査（mitsumeru_tekisei_check.html）の結果を自動反映できます。
+      検査スコアは面接の「仮説」に使います。①下の「📝 適性検査を受ける」ボタンで別タブを開き検査を受ける②検査結果画面の「📋 ミツメルにコピー」ボタンを押す③このページに戻り「📥 適性検査をインポート」を押す④貼り付けて反映する、の順で進めてください。エゴグラム・エニアグラムを手入力することもできます。
     </div>
     <div class="btn-row" style="margin-bottom:12px">
-      <button class="btn btn-secondary" onclick="openAptitudeImport()">📥 適性検査をインポート（JSONを貼り付け）</button>
+      <a class="btn btn-primary" href="./mitsumeru_tekisei_check.html" target="_blank" rel="noopener" style="text-decoration:none;display:inline-flex;align-items:center;">📝 適性検査を受ける（別タブで開く）</a>
+      <button class="btn btn-secondary" onclick="openAptitudeImport()">📥 適性検査の結果を取り込む</button>
     </div>
     <label>エゴグラム（5つの自我状態）</label>
     <div class="ego-grid" style="margin-bottom:12px">
@@ -668,7 +699,7 @@ function renderInterview() {
   <div class="section">
     <div class="section-title">適性検査フェーズ2 ｜ LSRP（精神病質傾向の参考指標）</div>
     <div class="legal-note">
-      <b>⚖ 法務確認済み（奏システム_LSRP搭載_法務意見書_20260626.md ／ 橋下徹）</b><br>
+      <b>⚖ AI検証済み（内部法務意見書に基づく設計・奏システム_LSRP搭載_法務意見書_20260626.md）</b><br>
       LSRPは<b>医学的診断ではありません</b>。スコアのみを根拠とした採用拒否・配置決定は行えません（職業安定法・障害者差別解消法）。
       必ず面談・行動観察など<b>事実情報と組み合わせて</b>、複数情報の一つとして参照してください。
     </div>
@@ -693,14 +724,14 @@ function renderInterview() {
       <div class="trigger-banner">
         <span class="t-title">⚑ これはトリガー（きっかけ）です — 命令ではありません</span>
         スコアが気になる場合の正しい読み方：「スコアのみで判断せず、<b>個別面談で事実を確認</b>し、
-        行動・言動の事実をもとに必要な支援や配置を検討する余地がある」。実際の判断は面接官（柴山さん）が面談・事実確認のうえで行います。
+        行動・言動の事実をもとに必要な支援や配置を検討する余地がある」。実際の判断は面接官（${esc(c.interviewer) || '面接官'}）が面談・事実確認のうえで行います。
       </div>
 
       <div class="field"><label>面談で確認した事実・所見（スコアの裏取り）</label><textarea oninput="setField('lsrpNote', this.value)" placeholder="スコアではなく、面談で確認した具体的な行動・事実を記録">${esc(c.lsrpNote)}</textarea></div>
     </div>
 
     <div class="note-box" style="margin-top:10px">
-      🔒 保管・取扱い（奏システム_LSRP搭載_法務意見書_20260626.md 条件5）：データは本端末のlocalStorageにのみ保存し、外部送信しません。
+      🔒 保管・取扱い（奏システム_LSRP搭載_法務意見書_20260626.md 条件5）：データはこの端末（このパソコン）にのみ保存され、外部送信しません。
       本人からの開示請求に対応。不採用者は採用活動終了後6ヶ月以内に削除（候補者一覧の✕で削除）。
     </div>
   </div>
