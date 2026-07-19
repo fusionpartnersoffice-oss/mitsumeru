@@ -281,7 +281,7 @@
 // ============================================================
 // 奏 Kanade v1 — MVP（範囲A：面接ガイド＋自動採点）
 // データは localStorage に保存（縦断データの種）。
-// 適性検査フェーズ2：LSRP搭載（法務確認済み・運用規程No.001 / 橋下徹 2026-06-27）。
+// 適性検査フェーズ2：LSRP搭載（法務確認済み・奏システム_LSRP搭載_法務意見書_20260626.md / 橋下徹）。
 //   原則：①医学的診断でない ②スコアのみで採否不可 ③本人同意必須 ④トリガーであり命令でない。
 // ============================================================
 
@@ -339,7 +339,7 @@ const GUIDE = {
         q: ['誰かの気持ちが、言葉にされる前に手に取るようにわかった経験はありますか？',
             'あなたが関わったことで、誰かの行動や気持ちが大きく変わった場面を教えてください',
             'その人はその後どうなりましたか？'],
-        obs: '「想像した」でなく「相手がそう言っていた」まで追えるか。' }
+        obs: '「想像した」でなく「相手がそう言っていた」まで追えるか。⚠️能力・実績の話に比べて、この項目だけ極端に薄い／他責に流れる場合は、共鳴力の"欠落"のサインかもしれない（事実で確認：具体的に誰が・いつ・何と言ったか）。毒サインは事実に基づく観察であり、印象や第一印象で判断しないこと。' }
     ],
     noteKey: 'note_pote'
   },
@@ -350,7 +350,7 @@ const GUIDE = {
         '働く上で、絶対に譲れないことは何ですか？',
         'あなたが心の底から尊敬している人は誰ですか？その人のどこを尊敬していますか？',
         '今まで最も後悔した選択と、最も誇りに思う選択を一つずつ教えてください'],
-    obs: '答えの内容より「即座に出るか・自分の言葉か」を見る。準備した良い答えは音程が合いすぎて不自然。',
+    obs: '答えの内容より「即座に出るか・自分の言葉か」を見る。準備した良い答えは音程が合いすぎて不自然。⚠️「チームの成功」より「自分が正しかったこと」を繰り返し語る場合は、価値観の自己中心傾向のサインかもしれない。毒サインは事実に基づく観察であり、印象や第一印象で判断しないこと。',
     noteKey: 'note_values'
   }
 };
@@ -430,6 +430,7 @@ function generateHypothesis() {
   const ego = ['CP','NP','A','FC','AC'].map(k=>`${k}:${c['ego'+k]||'—'}`).join(' ');
   const promptText = `あなたは採用面接の設計を支援する専門家です。以下の適性検査結果から、面接で重点的に確認すべき問いを3〜5点、日本語で簡潔に生成してください。
 各問いは1行・質問文のみ（番号付き箇条書き）。前置きや解説文は書かないこと。ハルシネーション禁止、検査結果にない事実を創作しないこと。
+候補者のスキル・成果志向（フェーズ2進行後は地上1F・地下1Fのスコア）が高い一方、共鳴力や価値観の観察ポイントで気になる兆候がある場合は、そのねじれを面接官に一言で示唆してください（断定はせず、確認質問の形で）。
 
 候補者：${c.name}（応募ポジション：${c.position||'未設定'}）
 エゴグラム（5つの自我状態）：${ego}
@@ -451,6 +452,38 @@ ${c.lsrpConsent ? `LSRP参考スコア：一次${c.lsrp1||'—'}pt／二次${c.l
   );
 }
 
+// ---------- 往復ループ：フロアごとのAI事実確認（意見/事実判定） ----------
+function checkFactVsOpinion(floorKey) {
+  const c = cur(); if (!c) return;
+  const noteMap = { skill: 'note_skill', comp: 'note_comp', pote: 'note_pote', values: 'note_values' };
+  const noteKey = noteMap[floorKey];
+  const note = c[noteKey] || '';
+  if (!note.trim()) { toast('先に根拠コメントを入力してください'); return; }
+
+  const promptText = `あなたは採用面接の質を上げる専門家です。以下は面接官が書いた候補者評価の根拠メモです。
+このメモが「意見・印象」に寄っているか「事実（誰が・いつ・具体的に何をしたか・数字）」に基づいているかを判定し、
+意見に寄っている場合は、事実を引き出すための追加質問を1つ、日本語で簡潔に提案してください。
+既に事実ベースで十分に具体的な場合は「事実ベースで十分具体的です」とだけ返してください。
+ハルシネーション禁止。メモに無い事実を創作しないこと。
+
+メモ：${note}`;
+
+  callClaude(promptText,
+    text => { c[`aiFactCheck_${floorKey}`] = text.trim();
+              c[`aiFactCheck_${floorKey}At`] = new Date().toISOString().slice(0,16).replace('T',' ');
+              save(); renderInterview(); },
+    err => toast('生成エラー：' + err)
+  );
+}
+
+function factCheckBlock(floorKey, c) {
+  const result = c[`aiFactCheck_${floorKey}`];
+  return `
+    <button class="btn btn-secondary" onclick="checkFactVsOpinion('${floorKey}')">🔍 事実を確認する</button>
+    ${result ? `<div class="note-box" style="margin-top:8px;white-space:pre-wrap">🔍 AIの見立て（${c[`aiFactCheck_${floorKey}At`]}）\n${esc(result)}</div>` : ''}
+  `;
+}
+
 // ---------- 候補者操作 ----------
 function addCandidate() {
   const name = document.getElementById('new-name').value.trim();
@@ -469,7 +502,12 @@ function addCandidate() {
     // スコア
     s_skill:0, s_seika:0, s_senryaku:0, s_henkaku:0,
     s_kouki:0, s_dosatsu:0, s_tanryoku:0, s_kyomei:0, s_values:0,
-    note_comp:'', note_pote:'', note_values:'',
+    note_skill:'', note_comp:'', note_pote:'', note_values:'',
+    // 往復ループ：フロアごとのAI事実確認結果（v0新規）
+    aiFactCheck_skill:'', aiFactCheck_skillAt:'',
+    aiFactCheck_comp:'',  aiFactCheck_compAt:'',
+    aiFactCheck_pote:'',  aiFactCheck_poteAt:'',
+    aiFactCheck_values:'', aiFactCheck_valuesAt:'',
     // フェーズ3
     rjp:'', rjp_reason:'',
     consistency_ennea:'', consistency_ego:'',
@@ -541,7 +579,7 @@ function importAptitudeResult() {
     const num = (top1.type || '').replace(/^T/, '');
     if (num) { c.ennea = 'タイプ' + num + (top1.name ? '（' + top1.name + '）' : ''); imported.push('エニアグラム'); }
   }
-  // LSRP：本人同意（lsrpConsent）取得済みの場合のみ反映（運用規程No.001・法務確認済みの同意ゲートを迂回しない）
+  // LSRP：本人同意（lsrpConsent）取得済みの場合のみ反映（奏システム_LSRP搭載_法務意見書_20260626.md・法務確認済みの同意ゲートを迂回しない）
   if (data.lsrp && (data.lsrp.primary !== undefined || data.lsrp.secondary !== undefined)) {
     if (!c.lsrpConsent) {
       alert('LSRPスコアも含まれていますが、本人同意が未取得のためLSRP欄への反映はスキップしました。\nエゴグラム・エニアグラムのみ反映します。同意取得後、再度インポートしてください。');
@@ -630,7 +668,7 @@ function renderInterview() {
   <div class="section">
     <div class="section-title">適性検査フェーズ2 ｜ LSRP（精神病質傾向の参考指標）</div>
     <div class="legal-note">
-      <b>⚖ 法務確認済み（運用規程No.001 ／ 橋下徹）</b><br>
+      <b>⚖ 法務確認済み（奏システム_LSRP搭載_法務意見書_20260626.md ／ 橋下徹）</b><br>
       LSRPは<b>医学的診断ではありません</b>。スコアのみを根拠とした採用拒否・配置決定は行えません（職業安定法・障害者差別解消法）。
       必ず面談・行動観察など<b>事実情報と組み合わせて</b>、複数情報の一つとして参照してください。
     </div>
@@ -651,7 +689,7 @@ function renderInterview() {
         <div class="field"><label>二次サイコパシー（pt）</label><input type="text" inputmode="numeric" value="${esc(c.lsrp2)}" oninput="setField('lsrp2', this.value)" placeholder="例：19"></div>
       </div>
 
-      <!-- トリガー表示（命令ではない・運用規程第3条） -->
+      <!-- トリガー表示（命令ではない・奏システム_LSRP搭載_法務意見書_20260626.md 条件2） -->
       <div class="trigger-banner">
         <span class="t-title">⚑ これはトリガー（きっかけ）です — 命令ではありません</span>
         スコアが気になる場合の正しい読み方：「スコアのみで判断せず、<b>個別面談で事実を確認</b>し、
@@ -662,7 +700,7 @@ function renderInterview() {
     </div>
 
     <div class="note-box" style="margin-top:10px">
-      🔒 保管・取扱い（運用規程No.001 第4条）：データは本端末のlocalStorageにのみ保存し、外部送信しません。
+      🔒 保管・取扱い（奏システム_LSRP搭載_法務意見書_20260626.md 条件5）：データは本端末のlocalStorageにのみ保存し、外部送信しません。
       本人からの開示請求に対応。不採用者は採用活動終了後6ヶ月以内に削除（候補者一覧の✕で削除）。
     </div>
   </div>
@@ -693,6 +731,8 @@ function renderInterview() {
     <div class="note-box" style="margin-bottom:8px">${esc(g.skill.desc)}</div>
     ${qBlock({q:g.skill.q, obs:g.skill.obs})}
     ${scoreRow('スキル・経験', g.skill.key, g.skill.max, c[g.skill.key])}
+    <div class="field" style="margin-top:10px"><label>根拠コメント（スキル・経験）</label><textarea oninput="setField('note_skill', this.value)">${esc(c.note_skill)}</textarea></div>
+    ${factCheckBlock('skill', c)}
   </div>
 
   <!-- フェーズ2：地下1F -->
@@ -705,6 +745,7 @@ function renderInterview() {
         ${scoreRow(it.name, it.key, it.max, c[it.key])}
       </div>`).join('')}
     <div class="field"><label>根拠コメント（コンピテンシー）</label><textarea oninput="setField('note_comp', this.value)">${esc(c.note_comp)}</textarea></div>
+    ${factCheckBlock('comp', c)}
   </div>
 
   <!-- フェーズ2：地下2F -->
@@ -717,6 +758,8 @@ function renderInterview() {
         ${scoreRow(it.name, it.key, it.max, c[it.key])}
       </div>`).join('')}
     <div class="field"><label>根拠コメント（ポテンシャル）</label><textarea oninput="setField('note_pote', this.value)">${esc(c.note_pote)}</textarea></div>
+    <div class="note-box" style="margin-top:6px">※上記の観察ポイントは面接官の気づきを助けるための参考です。単独で合否を決定するものではなく、他の評価と合わせて総合的に判断してください。</div>
+    ${factCheckBlock('pote', c)}
   </div>
 
   <!-- フェーズ2：地下3F -->
@@ -726,6 +769,8 @@ function renderInterview() {
     ${qBlock({q:g.values.q, obs:g.values.obs})}
     ${scoreRow('価値観適合', g.values.key, g.values.max, c[g.values.key])}
     <div class="field" style="margin-top:10px"><label>根拠コメント（価値観）</label><textarea oninput="setField('note_values', this.value)">${esc(c.note_values)}</textarea></div>
+    <div class="note-box" style="margin-top:6px">※上記の観察ポイントは面接官の気づきを助けるための参考です。単独で合否を決定するものではなく、他の評価と合わせて総合的に判断してください。</div>
+    ${factCheckBlock('values', c)}
   </div>
 
   <!-- フェーズ3：RJP -->
@@ -847,15 +892,22 @@ function buildMarkdown(c) {
 - 本人同意：${c.lsrpConsent ? '取得済み（'+(c.lsrpConsentDate||'日時不明')+'）' : '未取得'}
 - 一次サイコパシー：${c.lsrp1||'—'} pt ／ 二次サイコパシー：${c.lsrp2||'—'} pt
 - 面談で確認した事実・所見：${c.lsrpNote||'—'}
-- ※LSRPは医学的診断ではなく参考指標。スコアのみでの採否・配置決定は不可。これはトリガーであり命令ではない（運用規程No.001）。
+- ※LSRPは医学的診断ではなく参考指標。スコアのみでの採否・配置決定は不可。これはトリガーであり命令ではない（奏システム_LSRP搭載_法務意見書_20260626.md 条件2）。
 
 ## 面接仮説（AI生成・Block1）
 ${c.aiHypothesis ? c.aiHypothesis + '\n\n生成日時：' + (c.aiHypothesisAt||'—') : '未生成'}
 
 ## フェーズ2：根拠コメント
+- スキル・経験：${c.note_skill||'—'}
 - コンピテンシー：${c.note_comp||'—'}
 - ポテンシャル：${c.note_pote||'—'}
 - 価値観：${c.note_values||'—'}
+
+## 🔍 AIの見立て（往復ループ・事実/意見判定）
+- スキル・経験：${c.aiFactCheck_skill ? c.aiFactCheck_skill + '（' + (c.aiFactCheck_skillAt||'—') + '）' : '未実施'}
+- コンピテンシー：${c.aiFactCheck_comp ? c.aiFactCheck_comp + '（' + (c.aiFactCheck_compAt||'—') + '）' : '未実施'}
+- ポテンシャル：${c.aiFactCheck_pote ? c.aiFactCheck_pote + '（' + (c.aiFactCheck_poteAt||'—') + '）' : '未実施'}
+- 価値観：${c.aiFactCheck_values ? c.aiFactCheck_values + '（' + (c.aiFactCheck_valuesAt||'—') + '）' : '未実施'}
 
 ## フェーズ3：RJP反応
 - 反応：${c.rjp||'—'}
