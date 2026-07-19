@@ -1401,13 +1401,11 @@ function cloudSaveDebounced(type, data, date, delay = 1500) {
 }
 
 async function cloudSaveGlobal(type, data) {
-  if (!isProductionHost()) { console.warn('[安全装置②] 本番URL以外のためcloudSaveGlobalをスキップしました:', type); return; }
-  try {
-    await fetch(`${SYNC_URL}?key=${encodeURIComponent(type + '_global')}`, {
-      method: 'PUT', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({...data, _ts: Date.now()})
-    });
-  } catch(e) {}
+  // 安全装置③（2026-07-19）：公開のお試し版（本ファイル）は柴山さん個人の実データ（profile_global等）を
+  // 一切書き込まない。訪問者ごとにローカルのお試しデータを共有KVへ上書きしてしまう漏洩・破壊経路を閉じる
+  // （mitsumeru_private.htmlは別キー空間`private_`プレフィックスのため無関係・無影響）。
+  console.warn('[安全装置③] 公開版のためcloudSaveGlobalをスキップしました:', type);
+  return;
 }
 
 async function cloudSaveFusionOSStatus(data) {
@@ -1721,11 +1719,14 @@ window.addEventListener('DOMContentLoaded', async function() {
   loadProfile();
 
   // ② KVから最新を取得してタイムスタンプで上書き判断
-  const [kvMemos, kvMorning, kvEvening, kvProfile, kvLV, kvOutput, kvCalendar, kvDelay] = await Promise.all([
+  // 安全装置③（2026-07-19）：公開のお試し版（本ファイル）は柴山さん個人の実データ（profile_global／lv_global）を
+  // 一切取得しない。プロフィール・LVはローカルのデフォルト値（loadProfile()）のみを使う設計とする
+  // （実データ漏洩の修正・mitsumeru_private.htmlは別キー空間`private_profile_global`のため無関係・無影響）。
+  const [kvMemos, kvMorning, kvEvening, kvOutput, kvCalendar, kvDelay] = await Promise.all([
     cloudLoad('memos'), cloudLoad('morning'), cloudLoad('evening'),
-    cloudLoadGlobal('profile'), cloudLoadGlobal('lv'),
     cloudLoad('output'), cloudLoad('calendar'), cloudLoad('delay')
   ]);
+  const kvProfile = null, kvLV = null;
 
   const bestMorning = newerOf(lsMorning, kvMorning);
   if (bestMorning !== lsMorning && kvMorning) {
