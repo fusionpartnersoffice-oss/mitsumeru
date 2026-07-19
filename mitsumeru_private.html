@@ -816,6 +816,16 @@
     <div id="private-api-key-saved" style="display:none;color:var(--green);font-size:12px;margin-top:6px;text-align:center;">✓ 保存しました</div>
   </div>
 
+  <div class="section" style="margin-top:12px;border:1px solid var(--gold);background:rgba(184,134,11,0.05);">
+    <div class="section-title" style="color:var(--gold);">🔒 アクセストークン（PRIVATE版・クラウド同期用）</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.7;">2026-07-19より、専用版のデータ保護のため必須になりました。設計・秘書からお渡しされた文字列を入力してください。未設定だとクラウド同期（保存・読み込み）が動きません。</p>
+    <div class="field">
+      <input type="password" id="private-access-token-input" placeholder="アクセストークンを貼り付け" style="font-family:monospace;font-size:12px;">
+    </div>
+    <button class="btn-primary" onclick="savePrivateTokenFromSettings()">トークンを保存する</button>
+    <div id="private-access-token-saved" style="display:none;color:var(--green);font-size:12px;margin-top:6px;text-align:center;">✓ 保存しました</div>
+  </div>
+
   <div class="section" style="margin-top:12px;">
     <div class="section-title">☁️ クラウド同期</div>
     <p style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.7;">KVを正典として、最新データを強制取得します。<br>別デバイスで入力した内容を反映したい時に使います。</p>
@@ -1374,7 +1384,7 @@ async function cloudSave(type, data, date) {
   const key = 'private_' + type + '_' + (date || targetDate);
   showSyncStatus('saving');
   try {
-    const res = await fetch(`${SYNC_URL}?key=${encodeURIComponent(key)}`, {
+    const res = await fetch(`${SYNC_URL}?key=${encodeURIComponent(key)}&token=${encodeURIComponent(getPrivateToken())}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({...data, _ts: Date.now()})
@@ -1397,7 +1407,7 @@ function cloudSaveDebounced(type, data, date, delay = 1500) {
 
 async function cloudSaveGlobal(type, data) {
   try {
-    await fetch(`${SYNC_URL}?key=${encodeURIComponent('private_' + type + '_global')}`, {
+    await fetch(`${SYNC_URL}?key=${encodeURIComponent('private_' + type + '_global')}&token=${encodeURIComponent(getPrivateToken())}`, {
       method: 'PUT', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({...data, _ts: Date.now()})
     });
@@ -1407,7 +1417,7 @@ async function cloudSaveGlobal(type, data) {
 async function cloudSaveFusionOSStatus(data) {
   const date = targetDate || localDateStr(new Date());
   try {
-    await fetch(`${SYNC_URL}?key=${encodeURIComponent('private_fusionos_status_' + date)}`, {
+    await fetch(`${SYNC_URL}?key=${encodeURIComponent('private_fusionos_status_' + date)}&token=${encodeURIComponent(getPrivateToken())}`, {
       method: 'PUT', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({...data, source: 'mitsumeru_private', date, _ts: Date.now()})
     });
@@ -1416,7 +1426,7 @@ async function cloudSaveFusionOSStatus(data) {
 
 async function cloudLoadGlobal(type) {
   try {
-    const res = await fetch(`${SYNC_URL}?key=${encodeURIComponent('private_' + type + '_global')}`);
+    const res = await fetch(`${SYNC_URL}?key=${encodeURIComponent('private_' + type + '_global')}&token=${encodeURIComponent(getPrivateToken())}`);
     if (!res.ok) return null;
     const json = await res.json();
     if (!json.value) return null;
@@ -1427,7 +1437,7 @@ async function cloudLoadGlobal(type) {
 async function cloudLoad(type, date) {
   const key = 'private_' + type + '_' + (date || targetDate);
   try {
-    const res = await fetch(`${SYNC_URL}?key=${encodeURIComponent(key)}`);
+    const res = await fetch(`${SYNC_URL}?key=${encodeURIComponent(key)}&token=${encodeURIComponent(getPrivateToken())}`);
     if (!res.ok) return null;
     const json = await res.json();
     if (!json.value) return null;
@@ -1809,6 +1819,20 @@ function saveApiKeyFromSettings() {
   apiKey = key;
   localStorage.setItem('mitsumeru_private_api_key', key);
   const saved = document.getElementById('private-api-key-saved');
+  if (saved) { saved.style.display = 'block'; setTimeout(() => saved.style.display = 'none', 2000); }
+}
+
+// 安全装置④（2026-07-19・緊急封じ込め）：private_ プレフィックスのKVアクセスに必須のトークン。
+// APIキーと同じ保存方式（localStorage・柴山さんが1回入力）。未設定の間、専用版のKV同期は
+// 動かない（Worker側が401を返す）が、これは意図的な安全側フォールバック。
+function getPrivateToken() {
+  return localStorage.getItem('mitsumeru_private_access_token') || '';
+}
+function savePrivateTokenFromSettings() {
+  const token = (document.getElementById('private-access-token-input') || {value:''}).value.trim();
+  if (!token) return;
+  localStorage.setItem('mitsumeru_private_access_token', token);
+  const saved = document.getElementById('private-access-token-saved');
   if (saved) { saved.style.display = 'block'; setTimeout(() => saved.style.display = 'none', 2000); }
 }
 

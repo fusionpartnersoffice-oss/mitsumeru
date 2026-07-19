@@ -18,6 +18,9 @@
  *     ↑いずれもSecret未設定時は該当機能のみ無音でスキップ（他機能に影響しない）
  *   - Secret: MOBILE_ACCESS_KEY（GET /me用の簡易共有キー。柴山さんご本人のみが知る文字列。
  *     未設定時は/meが常に401を返す＝安全側に倒れる）
+ *   - Secret: PRIVATE_ACCESS_TOKEN（2026-07-19緊急封じ込め・private_プレフィックスの
+ *     全キーへのGET/PUTに必須の共有トークン。mitsumeru_private.htmlが?token=として送信する。
+ *     未設定時はprivate_キーへのアクセスが常に401＝安全側に倒れる）
  */
 
 // KV名前空間バインディング。変数名は MITSUMERU_KV / KV のどちらでも動くようにする。
@@ -99,6 +102,22 @@ export default {
         status: 400,
         headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
       });
+    }
+
+    // 安全装置④（2026-07-19・緊急封じ込め）：private_ プレフィックスのキー、および
+    // 移行漏れで無防備なまま残っていた profile_global / lv_global は、GET/PUTともに
+    // 有効な ?token=（PRIVATE_ACCESS_TOKEN Secretと一致）が無ければ一律拒否する。
+    // 「呼び出し側が送らないから安全」ではなく、Worker自身がキー名で構造的に拒否する設計
+    // （公開版mitsumeru_app.htmlはこれらのキーに一切アクセスしないが、それとは無関係に
+    // 第三者が直接叩いても通らないようにするための本丸）。
+    if (key.startsWith('private_') || key === 'profile_global' || key === 'lv_global') {
+      const token = url.searchParams.get('token');
+      if (!env.PRIVATE_ACCESS_TOKEN || token !== env.PRIVATE_ACCESS_TOKEN) {
+        return new Response(JSON.stringify({ error: 'private data requires a valid token' }), {
+          status: 401,
+          headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+        });
+      }
     }
 
     if (request.method === 'PUT') {
