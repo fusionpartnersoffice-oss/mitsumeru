@@ -1366,9 +1366,23 @@ function isProductionHost(){
   return location.hostname === 'fusionpartnersoffice-oss.github.io';
 }
 
+// 安全装置⑤（2026-07-19・緊急修正）：公開のお試し版は、日付のみをキーにしていたため、
+// 柴山さんご本人が書いた当日の記録（例：morning_2026-07-19）を、その日にお試し版を開いた
+// 見込み客が読み込んでしまう（＝上書きもされ得る）事故が起きていた。訪問者ごとに固有のIDを
+// ローカルへ一度だけ発行し、以後のキーに必ず含めることで、他人（柴山さん含む）のデータと
+// 衝突しない完全に独立した保存領域にする。
+function getVisitorId() {
+  let id = localStorage.getItem('mitsumeru_visitor_id');
+  if (!id) {
+    id = 'v' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+    localStorage.setItem('mitsumeru_visitor_id', id);
+  }
+  return id;
+}
+
 async function cloudSave(type, data, date) {
   if (!isProductionHost()) { console.warn('[安全装置②] 本番URL以外のためcloudSaveをスキップしました:', type); return; }
-  const key = type + '_' + (date || targetDate);
+  const key = type + '_' + getVisitorId() + '_' + (date || targetDate);
   showSyncStatus('saving');
   try {
     const res = await fetch(`${SYNC_URL}?key=${encodeURIComponent(key)}`, {
@@ -1387,7 +1401,7 @@ async function cloudSave(type, data, date) {
 // 入力停止後1.5秒待ってから最後の内容のみ書き込む（localStorageは即時保存のまま変更なし）
 const _cloudSaveDebounceTimers = {};
 function cloudSaveDebounced(type, data, date, delay = 1500) {
-  const key = type + '_' + (date || targetDate);
+  const key = type + '_' + getVisitorId() + '_' + (date || targetDate);
   clearTimeout(_cloudSaveDebounceTimers[key]);
   _cloudSaveDebounceTimers[key] = setTimeout(() => cloudSave(type, data, date), delay);
 }
@@ -1404,7 +1418,7 @@ async function cloudSaveFusionOSStatus(data) {
   if (!isProductionHost()) { console.warn('[安全装置②] 本番URL以外のためcloudSaveFusionOSStatusをスキップしました'); return; }
   const date = targetDate || localDateStr(new Date());
   try {
-    await fetch(`${SYNC_URL}?key=${encodeURIComponent('fusionos_status_' + date)}`, {
+    await fetch(`${SYNC_URL}?key=${encodeURIComponent('fusionos_status_' + getVisitorId() + '_' + date)}`, {
       method: 'PUT', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({...data, source: 'mitsumeru', date, _ts: Date.now()})
     });
@@ -1422,7 +1436,7 @@ async function cloudLoadGlobal(type) {
 }
 
 async function cloudLoad(type, date) {
-  const key = type + '_' + (date || targetDate);
+  const key = type + '_' + getVisitorId() + '_' + (date || targetDate);
   try {
     const res = await fetch(`${SYNC_URL}?key=${encodeURIComponent(key)}`);
     if (!res.ok) return null;

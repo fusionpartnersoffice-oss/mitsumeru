@@ -104,13 +104,19 @@ export default {
       });
     }
 
-    // 安全装置④（2026-07-19・緊急封じ込め）：private_ プレフィックスのキー、および
-    // 移行漏れで無防備なまま残っていた profile_global / lv_global は、GET/PUTともに
+    // 安全装置④（2026-07-19・緊急封じ込め）：private_ プレフィックスのキー、
+    // profile_global / lv_global、および安全装置⑤導入前の「日付のみキー」
+    // （例：morning_2026-07-19。柴山さんご本人の実データ）は、GET/PUTともに
     // 有効な ?token=（PRIVATE_ACCESS_TOKEN Secretと一致）が無ければ一律拒否する。
-    // 「呼び出し側が送らないから安全」ではなく、Worker自身がキー名で構造的に拒否する設計
-    // （公開版mitsumeru_app.htmlはこれらのキーに一切アクセスしないが、それとは無関係に
-    // 第三者が直接叩いても通らないようにするための本丸）。
-    if (key.startsWith('private_') || key === 'profile_global' || key === 'lv_global') {
+    // 「呼び出し側が送らないから安全」ではなく、Worker自身がキー名で構造的に拒否する設計。
+    const LEGACY_DATE_KEY_TYPES = ['morning', 'evening', 'memos', 'dispatch', 'output', 'calendar', 'delay', 'fusionos_status'];
+    // 安全装置⑤（2026-07-19）：公開のお試し版は type_訪問者ID_日付 という新形式のキーのみを使う。
+    // 新形式は訪問者ごとに完全分離されているため、引き続き無認証でよい。
+    const isVisitorScopedKey = LEGACY_DATE_KEY_TYPES.some(
+      t => key.startsWith(t + '_v') && /^v[a-z0-9]+_/.test(key.slice(t.length + 1))
+    );
+    const isLegacyBareDateKey = !isVisitorScopedKey && LEGACY_DATE_KEY_TYPES.some(t => key.startsWith(t + '_'));
+    if (key.startsWith('private_') || key === 'profile_global' || key === 'lv_global' || isLegacyBareDateKey) {
       const token = url.searchParams.get('token');
       if (!env.PRIVATE_ACCESS_TOKEN || token !== env.PRIVATE_ACCESS_TOKEN) {
         return new Response(JSON.stringify({ error: 'private data requires a valid token' }), {
