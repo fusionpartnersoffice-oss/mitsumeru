@@ -57,6 +57,15 @@ export default {
       return handlePageview(request, env);
     }
 
+    // ===== AI呼び出しの中継（2026-07-19・ブラウザCORS回避）=====
+    // 利用者自身のAnthropic APIキーをそのまま中継するだけで、キー自体はどこにも保存・記録しない。
+    // ブラウザから api.anthropic.com を直接叩くとCORSでブロックされるため、これまで利用者に
+    // ブラウザのセキュリティ機能を無効化させる案内をしていた（重大な設計ミス）。本エンドポイントは
+    // それに代わり、Worker側で中継するだけでCORSを解消する（キーの持ち主・課金主体は利用者のまま）。
+    if (url.pathname === '/analyze-proxy' && request.method === 'POST') {
+      return handleAnalyzeProxy(request, env);
+    }
+
     // ===== モバイルセッション向け・柴山さんご本人の記録閲覧（読み取り専用・2026-07-15） =====
     // GET /me?key=<MOBILE_ACCESS_KEY>&date=YYYY-MM-DD
     // 柴山さんご本人がモバイル（wrangler CLI無し）からmitsumeru_private.htmlの
@@ -201,6 +210,38 @@ async function handleMigratePrivate(env, { commit }) {
 function jstDateStr() {
   const jst = new Date(Date.now() + 9 * 60 * 60 * 1000);
   return jst.toISOString().split('T')[0];
+}
+
+// ===== AI呼び出しの中継（利用者自身のAPIキーをそのまま中継・保存しない） =====
+async function handleAnalyzeProxy(request, env) {
+  const headers = { ...CORS_HEADERS, 'Content-Type': 'application/json' };
+  let body;
+  try { body = await request.json(); }
+  catch { return new Response(JSON.stringify({ error: 'invalid JSON' }), { status: 400, headers }); }
+
+  const { apikey, promptText, maxTokens = 4000 } = body;
+  if (!apikey || !String(apikey).startsWith('sk-ant-')) {
+    return new Response(JSON.stringify({ error: '有効なAnthropic APIキー（sk-ant-...）が必要です' }), { status: 401, headers });
+  }
+  if (!promptText || typeof promptText !== 'string') {
+    return new Response(JSON.stringify({ error: 'promptText（文字列）が必要です' }), { status: 400, headers });
+  }
+
+  const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': String(apikey).substring(0, 200),
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: maxTokens, messages: [{ role: 'user', content: promptText }] }),
+  });
+
+  const data = await claudeRes.json().catch(() => ({}));
+  if (!claudeRes.ok || data.error) {
+    return new Response(JSON.stringify({ error: data.error?.message || 'Claude API error' }), { status: 502, headers });
+  }
+  return new Response(JSON.stringify({ content: data.content || [] }), { status: 200, headers });
 }
 
 // ===== アクセス解析（簡易・自前実装） =====

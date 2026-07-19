@@ -599,15 +599,7 @@
         <p style="font-weight:500;color:#1a7a52;margin-bottom:8px;">🔑 さいしょに1回だけ</p>
         <p>右上の「🔑 API」を押して、キーを貼り付けてください。</p>
         <p>ボタンが緑になれば、準備完了です。</p>
-        <p style="color:#6a5a4a;font-size:12px;margin-top:6px;">※キーは console.anthropic.com で取れます（sk-ant- で始まります）</p>
         <p style="color:#6a5a4a;font-size:12px;">※ブラウザを閉じたら、もう一度入れてください。</p>
-      </div>
-
-      <div style="background:var(--bg2);border-radius:8px;padding:14px;margin-bottom:16px;">
-        <p style="font-weight:500;color:var(--text);margin-bottom:8px;">🖥️ PCでの開き方（1回だけ設定）</p>
-        <p>Windowsキー+R を押して、下の1行を貼り付けて実行してください。</p>
-        <p style="font-family:monospace;background:var(--bg);padding:6px;border-radius:4px;font-size:11px;margin-top:6px;word-break:break-all;">chrome.exe --disable-web-security --user-data-dir="%TEMP%\chrome_dev"</p>
-        <p style="color:var(--text3);font-size:12px;margin-top:6px;">※この開き方でないと、アドバイスが出ません。</p>
       </div>
 
       <p style="font-weight:500;color:var(--text);margin-bottom:6px;">📋 毎日はこの順番で</p>
@@ -1837,15 +1829,16 @@ function callClaude(prompt, onSuccess, onError) {
   }
   const key = getApiKey();
   if (!key) { onError('APIキーが設定されていません。'); return; }
-  fetch('https://api.anthropic.com/v1/messages', {
+  // 2026-07-19：ブラウザから api.anthropic.com を直接呼ぶとCORSでブロックされるため、
+  // 以前は利用者にブラウザのセキュリティ機能を無効化させる案内をしていた（重大な設計ミス・是正済み）。
+  // Worker（mitsumeru-sync）が利用者自身のキーをそのまま中継するだけで、CORSを回避する。
+  // キーは中継のみでWorker側に保存・記録されない。
+  fetch(`${SYNC_URL}/analyze-proxy`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },    body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 4000,
-      messages: [{ role: 'user', content: prompt }]
-    })
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ apikey: key, promptText: prompt, maxTokens: 4000 })
   }).then(r => r.json()).then(data => {
-    if (data.error) { onError(data.error.message); return; }
+    if (data.error) { onError(data.error); return; }
     const text = data.content?.map(c => c.text || '').join('') || 'エラーが発生しました';
     onSuccess(text);
   }).catch(e => onError(e.message));
