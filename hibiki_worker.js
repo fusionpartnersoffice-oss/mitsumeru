@@ -39,6 +39,15 @@ const TOKEN_TTL_SEC = 60 * 60 * 24 * 30; // 30日
 const DEMO_TTL_SEC  = 60 * 60 * 24 * 90; // 90日
 const KANADE_DAILY_MAX = 500; // 柴山さん一人の利用が前提の乱用防止・多めに設定
 
+// price ID → plan判別テーブル（設計承認済み・2026-07-20）。
+// checkout.session.completedのpayloadにはprice情報が入らない（含めるにはSTRIPE_SECRET_KEYでの
+// 追加API問い合わせが必要でレイテンシ増）ため、price IDがpayloadにインラインで入っている
+// customer.subscription.createdイベントで判別する。現時点ではミツメルLiteのみのため空のまま。
+// 別商品を追加する際、そのPayment LinkのPrice IDが判明し次第ここに追記すること
+// （例: 'price_xxxxxxxx': 'new_product_name'）。未登録のprice IDは既存動作を壊さないよう
+// 'mitsumeru_lite'にフォールバックする。
+const PRICE_ID_TO_PLAN = {};
+
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
@@ -284,6 +293,24 @@ async function handleStripeWebhook(request, env) {
     } else {
       // QA所見：削除0件が黙って起きるのが最悪、のため明示的にログへ残す。
       console.log('[stripe_webhook] ⚠️削除対象のトークンが見つからない: customer=' + customerId + ' event=' + event.type);
+    }
+  } else if (event.type === 'customer.subscription.created') {
+    // price ID判別（設計承認済み・2026-07-20）：既存トークン（checkout.session.completedで発行済み）の
+    // planフィールドを、実際のprice IDから確定した値で上書きする。トークン自体は作らない
+    // （customerが無い等の異常時にトークンだけ先に出来てしまう事故を避けるため）。
+    const sub = event.data.object;
+    const customerId = sub.customer || '';
+    const priceId = sub.items?.data?.[0]?.price?.id || '';
+    if (customerId) {
+      const record = await kv.get('stripe_token_' + customerId);
+      if (record) {
+        const parsed = JSON.parse(record);
+        parsed.plan = PRICE_ID_TO_PLAN[priceId] || 'mitsumeru_lite';
+        await kv.put('stripe_token_' + customerId, JSON.stringify(parsed), { expirationTtl: TOKEN_TTL_SEC });
+        console.log('[stripe_webhook] plan確定: customer=' + customerId + ' price=' + priceId + ' plan=' + parsed.plan);
+      } else {
+        console.log('[stripe_webhook] ⚠️plan確定対象のトークンが見つからない: customer=' + customerId);
+      }
     }
   } else if (event.type === 'invoice.payment_succeeded') {
     // 継続課金が成功したら、トークンのTTLを更新する（30日で切れて2ヶ月目以降の顧客が
