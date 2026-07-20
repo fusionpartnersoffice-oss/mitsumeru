@@ -1319,7 +1319,9 @@ async function verifyProToken(token) {
     const data = await res.json();
     const ok = !!(data.valid && data.plan === 'mitsumeru_lite');
     localStorage.setItem('mitsumeru_lite_pro_verified', ok ? 'true' : 'false');
-    if (ok) maybeShowWelcomeMessage();
+    // QA所見（2026-07-20）：表示専用の処理が例外を投げてこのtry節のcatchに落ちると、
+    // Pro判定（ok）自体がfalseに巻き込まれてしまう。表示の失敗が課金判定に波及しないよう分離する。
+    if (ok) { try { maybeShowWelcomeMessage(); } catch (e) {} }
     return ok;
   } catch (e) {
     // QA所見（2026-07-20）：この関数は表示用・コード入力時の確認にのみ使用し、AI呼び出しの
@@ -1371,8 +1373,10 @@ function closeTokushoho() { document.getElementById('tokushoho-overlay').classLi
 // 課金判定のような厳格さ（サーバー確認等）は不要・localStorageフラグのみで足りる。
 function maybeShowWelcomeMessage() {
   if (localStorage.getItem('mitsumeru_lite_welcome_shown') === 'true') return;
+  const overlay = document.getElementById('welcome-overlay');
+  if (!overlay) return;
+  overlay.classList.add('active');
   localStorage.setItem('mitsumeru_lite_welcome_shown', 'true');
-  document.getElementById('welcome-overlay').classList.add('active');
 }
 function closeWelcomeMessage() { document.getElementById('welcome-overlay').classList.remove('active'); }
 
