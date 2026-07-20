@@ -1461,6 +1461,22 @@ async function cloudLoad(type, date) {
   } catch(e) { return null; }
 }
 
+// 設計指摘（2026-07-20）：cloudLoad()は「401等の失敗」と「200だがデータが無いだけ」を
+// どちらもnullで返すため区別できない。既存のcloudLoad()呼び出し箇所（他に6箇所）は
+// この区別を必要としないため契約を変えず、区別が要る forceSyncFromCloud() 専用に
+// authFailedを持つ新関数を用意する（既存呼び出し箇所への影響を避けるため）。
+async function cloudLoadStatus(type, date) {
+  const key = 'private_' + type + '_' + (date || targetDate);
+  try {
+    const res = await fetch(`${SYNC_URL}?key=${encodeURIComponent(key)}&token=${encodeURIComponent(getPrivateToken())}`);
+    if (res.status === 401) return { ok: false, authFailed: true, value: null };
+    if (!res.ok) return { ok: false, authFailed: false, value: null };
+    const json = await res.json();
+    if (!json.value) return { ok: true, authFailed: false, value: null };
+    return { ok: true, authFailed: false, value: typeof json.value === 'string' ? JSON.parse(json.value) : json.value };
+  } catch(e) { return { ok: false, authFailed: false, value: null }; }
+}
+
 // タイムスタンプが新しい方を返す
 function newerOf(a, b) {
   if (!a) return b;
@@ -1980,7 +1996,7 @@ function startPrivateTokenQRScanFallback() {
   if (msg) msg.textContent = 'カメラを準備しています…';
 
   Promise.all([
-    import('https://esm.sh/qr@0.6.0/decode.js').catch(() => null),
+    import('./vendor/qr-decode.mjs').catch(() => null),
     navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
   ]).then(([decodeModule, stream]) => {
     if (!decodeModule) {
