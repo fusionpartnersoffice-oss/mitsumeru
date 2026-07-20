@@ -406,33 +406,22 @@
   </div>
 </div>
 
-<!-- Pro初回検出時の歓迎メッセージ（2026-07-20・受付下書きより。設計指示：初回Pro検出時に表示・一度きり） -->
+<!-- Pro初回検出時の歓迎メッセージ（2026-07-20・受付下書き「画面内歓迎メッセージ」版より。設計指示：初回Pro検出時に表示・一度きり。
+     ※受付の意図的な判断で「別端末不可」の注記は入れていない（購入直後の高揚感を削がないため・つまずいたらFAQで案内）。 -->
 <div class="consent-overlay" id="welcome-overlay">
   <div class="demo-card" style="max-width:400px;max-height:80vh;overflow-y:auto;">
-    <div class="demo-badge" style="background:var(--accent);color:#fff;border-color:var(--accent)">お申し込みありがとうございます</div>
-    <h3 style="font-family:'Noto Serif JP',serif;font-weight:400;font-size:18px;margin:12px 0 8px;letter-spacing:1px;">ミツメルLiteへようこそ</h3>
-    <p style="font-size:13px;color:var(--text2);line-height:1.8;margin-bottom:16px;">
-      今すぐお使いいただけます。決済に使ったこのブラウザ・端末で、そのままご利用ください。特別なコードの入力や操作は必要ありません。
+    <div class="demo-badge" style="background:var(--accent);color:#fff;border-color:var(--accent)">ご購入ありがとうございます</div>
+    <p style="font-size:13px;color:var(--text2);line-height:1.8;margin:14px 0 10px;">
+      ミツメルLiteへのお申し込みが完了しました。このブラウザでそのままお使いいただけます。
     </p>
-    <p style="font-size:11px;color:var(--text3);line-height:1.7;margin-bottom:16px;">
-      ※別の端末・別のブラウザからはご利用いただけません。いつもお使いの端末・ブラウザでアクセスしてください。
+    <p style="font-size:13px;color:var(--text2);line-height:1.8;margin-bottom:14px;">
+      AI機能には、別途Anthropic社のAPIキーが必要です（画面右上の「🔑 API」から設定できます）。
     </p>
-    <div style="border-top:1px solid var(--border);padding-top:14px;margin-bottom:14px;">
-      <p style="font-size:12px;color:var(--text2);margin-bottom:8px;font-weight:500;">AI機能を使うには、もう1つだけ</p>
-      <p style="font-size:12px;color:var(--text2);line-height:1.8;margin-bottom:8px;">
-        日々の記録から翌日の戦略を作るAI機能は、Anthropic社のAPIキーが必要です（月額980円とは別に、使った分だけの従量課金です）。
-      </p>
-      <ol style="font-size:12px;color:var(--text2);line-height:1.9;padding-left:18px;margin:0;">
-        <li>console.anthropic.com でAPIキーを取得（sk-ant- から始まります）</li>
-        <li>ミツメルLite右上の「🔑 API」ボタンからキーを貼り付け</li>
-        <li>ボタンが緑になれば準備完了です</li>
-      </ol>
-    </div>
-    <p style="font-size:11px;color:var(--text3);line-height:1.7;margin-bottom:16px;">
-      ご不明な点があれば、<a href="https://fusionpartnersoffice-oss.github.io/mitsumeru/sodan_form.html" target="_blank" rel="noopener" style="color:var(--text3);">無料相談フォーム</a>からお気軽にお問い合わせください。
+    <p style="font-size:12px;color:var(--text3);line-height:1.7;margin-bottom:20px;">
+      ご不明な点は、<a href="https://fusionpartnersoffice-oss.github.io/mitsumeru/sodan_form.html" target="_blank" rel="noopener" style="color:var(--text3);">無料相談フォーム</a>からお気軽にどうぞ。
     </p>
     <button onclick="closeWelcomeMessage()" style="width:100%;padding:10px;background:var(--text);color:var(--bg);border:none;border-radius:6px;font-size:13px;cursor:pointer;">
-      閉じる
+      はじめる
     </button>
   </div>
 </div>
