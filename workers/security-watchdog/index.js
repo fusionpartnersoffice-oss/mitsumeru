@@ -117,13 +117,45 @@ async function runChecks(env) {
   return results;
 }
 
+// 【アラート方式・2026-07-20追加】QA検証で「検知しても誰にも届かない」と指摘され追加。
+// このWorker自身はVault・指示キューへの書き込み手段を持たないため、
+// 「本部の定期巡回が毎回このキーの有無をチェックする」運用（本部へ申し送り済み）を前提に、
+// 失敗時だけ存在する状態フラグキーとして実装する（ポーリング前提・push通知ではない）。
+//
+// キー：watchdog_alert_pending（WATCHDOG_KV内）
+// 読み方：
+//   - キーが存在する（GET結果がnullでない）→ 直近の実行で1件以上のチェックが失敗している＝要対応
+//   - キーが存在しない（null）→ 直近の実行は全件pass、または一度も実行されていない
+//   - 値はJSON： { ts: ISO時刻, failing: [{name, actual, detail}, ...] }
+// 対応後の消し方：次回の全件pass実行で自動的にこのWorkerがdeleteする（手動削除は不要）。
+const ALERT_KEY = 'watchdog_alert_pending';
+
+async function runAndPersist(env) {
+  const results = await runChecks(env);
+  const allPass = results.every(r => r.pass);
+  const now = new Date();
+  const yyyymm = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
+  const record = { allPass, results, ts: now.toISOString() };
+  if (env.WATCHDOG_KV) {
+    await env.WATCHDOG_KV.put('watchdog_result_' + yyyymm, JSON.stringify(record));
+    if (allPass) {
+      await env.WATCHDOG_KV.delete(ALERT_KEY);
+    } else {
+      await env.WATCHDOG_KV.put(ALERT_KEY, JSON.stringify({
+        ts: record.ts,
+        failing: results.filter(r => !r.pass).map(r => ({ name: r.name, actual: r.actual, detail: r.detail })),
+      }));
+    }
+  }
+  return record;
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     if (url.pathname === '/run' && request.method === 'GET') {
-      const results = await runChecks(env);
-      const allPass = results.every(r => r.pass);
-      return new Response(JSON.stringify({ allPass, results, ts: Date.now() }, null, 2), {
+      const record = await runAndPersist(env);
+      return new Response(JSON.stringify(record, null, 2), {
         headers: { 'Content-Type': 'application/json' },
       });
     }
@@ -131,15 +163,6 @@ export default {
   },
 
   async scheduled(event, env, ctx) {
-    ctx.waitUntil((async () => {
-      const results = await runChecks(env);
-      const allPass = results.every(r => r.pass);
-      const now = new Date();
-      const yyyymm = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
-      const record = { allPass, results, ts: now.toISOString() };
-      if (env.WATCHDOG_KV) {
-        await env.WATCHDOG_KV.put('watchdog_result_' + yyyymm, JSON.stringify(record));
-      }
-    })());
+    ctx.waitUntil(runAndPersist(env));
   },
 };
