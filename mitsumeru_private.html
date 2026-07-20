@@ -1809,16 +1809,25 @@ window.addEventListener('DOMContentLoaded', async function() {
 });
 
 // 設定タブ：強制同期
+// 設計指摘（2026-07-20）：cloudLoad()は401等の失敗時に静かにnullを返すため、以前は失敗を
+// 検知せず常に成功表示していた（実際は何も取得できていないのに「取得しました」と出る）。
+// gotAnyで実際の取得有無を判定し、失敗時はアクセストークン確認を促す表示に分ける。
 async function forceSyncFromCloud() {
   showSyncStatus('saving');
   const [kvMemos, kvMorning, kvEvening] = await Promise.all([
     cloudLoad('memos'), cloudLoad('morning'), cloudLoad('evening')
   ]);
+  const gotAny = kvMorning || kvEvening || kvMemos;
   if (kvMorning) { applyMorningData(kvMorning); localStorage.setItem(lsKey('morning'), JSON.stringify(kvMorning)); }
   if (kvEvening) { applyEveningData(kvEvening); localStorage.setItem(lsKey('evening'), JSON.stringify(kvEvening)); }
   if (kvMemos)   { applyMemosData(kvMemos);     localStorage.setItem(lsKey('memos'),   JSON.stringify(kvMemos)); }
-  showSyncStatus('synced');
-  alert('KVから最新データを取得しました。');
+  if (gotAny) {
+    showSyncStatus('synced');
+    alert('KVから最新データを取得しました。');
+  } else {
+    showSyncStatus('failed');
+    alert('データを取得できませんでした。アクセストークンが正しいか、設定タブでご確認ください。');
+  }
 }
 
 function getApiKey() {
