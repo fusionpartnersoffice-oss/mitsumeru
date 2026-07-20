@@ -1831,17 +1831,46 @@ window.addEventListener('DOMContentLoaded', async function() {
 // 検知せず常に成功表示していた（実際は何も取得できていないのに「取得しました」と出る）。
 // さらにQA指摘：単純なnull判定では「認証失敗」と「その日まだ記録が無く正常に空」を区別
 // できない。cloudLoadStatus()のauthFailedで両者を分け、利用者に正確な状況を伝える。
+// 設計・柴山さん確定原因（2026-07-20）：本来欲しいのは「PCで生成した翌日戦略を、スマホでは
+// 再生成せず取得したい」だが、output/calendar/delay（翌日戦略・カレンダーCSV・要検討CSV）が
+// このボタンの取得対象に入っておらず、DOMContentLoaded時の復元処理にしか無かった実装漏れ。
+// DOMContentLoaded（1794-1813行）と同じnewerOf比較のロジックをここにも適用する。
 async function forceSyncFromCloud() {
   showSyncStatus('saving');
-  const [rMemos, rMorning, rEvening] = await Promise.all([
-    cloudLoadStatus('memos'), cloudLoadStatus('morning'), cloudLoadStatus('evening')
+  const [rMemos, rMorning, rEvening, rOutput, rCalendar, rDelay] = await Promise.all([
+    cloudLoadStatus('memos'), cloudLoadStatus('morning'), cloudLoadStatus('evening'),
+    cloudLoadStatus('output'), cloudLoadStatus('calendar'), cloudLoadStatus('delay')
   ]);
   const kvMorning = rMorning.value, kvEvening = rEvening.value, kvMemos = rMemos.value;
-  const gotAny = kvMorning || kvEvening || kvMemos;
-  const authFailed = rMorning.authFailed || rEvening.authFailed || rMemos.authFailed;
+  const kvOutput = rOutput.value, kvCalendar = rCalendar.value, kvDelay = rDelay.value;
+  const gotAny = kvMorning || kvEvening || kvMemos || kvOutput || kvCalendar || kvDelay;
+  const authFailed = rMorning.authFailed || rEvening.authFailed || rMemos.authFailed
+    || rOutput.authFailed || rCalendar.authFailed || rDelay.authFailed;
   if (kvMorning) { applyMorningData(kvMorning); localStorage.setItem(lsKey('morning'), JSON.stringify(kvMorning)); }
   if (kvEvening) { applyEveningData(kvEvening); localStorage.setItem(lsKey('evening'), JSON.stringify(kvEvening)); }
   if (kvMemos)   { applyMemosData(kvMemos);     localStorage.setItem(lsKey('memos'),   JSON.stringify(kvMemos)); }
+
+  const bestOutput = newerOf(lsLoad('output'), kvOutput);
+  if (bestOutput && bestOutput.text) {
+    const mdBox = document.getElementById('output-markdown');
+    if (mdBox) { mdBox.textContent = bestOutput.text; mdBox.classList.add('visible'); showOutputCopyBtns(); }
+    localStorage.setItem(lsKey('output'), JSON.stringify(bestOutput));
+  }
+  const bestCalendar = newerOf(lsLoad('calendar'), kvCalendar);
+  if (bestCalendar && bestCalendar.csv) {
+    calendarCSV = bestCalendar.csv;
+    const csvBox = document.getElementById('output-csv');
+    if (csvBox) { csvBox.textContent = calendarCSV; csvBox.classList.add('visible'); }
+    localStorage.setItem(lsKey('calendar'), JSON.stringify(bestCalendar));
+  }
+  const bestDelay = newerOf(lsLoad('delay'), kvDelay);
+  if (bestDelay && bestDelay.csv) {
+    delayCSV = bestDelay.csv;
+    const dBox = document.getElementById('output-delay-csv');
+    if (dBox) { dBox.textContent = delayCSV; dBox.classList.add('visible'); }
+    localStorage.setItem(lsKey('delay'), JSON.stringify(bestDelay));
+  }
+
   if (gotAny) {
     showSyncStatus('synced');
     alert('KVから最新データを取得しました。');
