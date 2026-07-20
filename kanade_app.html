@@ -275,25 +275,6 @@
   </div>
 </div>
 
-<!-- AIキー設定モーダル -->
-<div id="apikey-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:300;align-items:center;justify-content:center;padding:20px;">
-  <div style="background:var(--card);border-radius:12px;max-width:560px;width:100%;padding:24px;">
-    <div style="font-family:'Noto Serif JP',serif;font-size:16px;margin-bottom:12px;">🔑 AI機能の初回設定</div>
-    <p style="font-size:12px;color:var(--text3);margin-bottom:10px;line-height:1.8;">
-      面接仮説の生成など、AIを使う機能は初回だけ設定が必要です。手順：<br>
-      ①ブラウザで console.anthropic.com を開く（別タブで開いてください）<br>
-      ②画面の案内に沿ってアカウントを登録する<br>
-      ③「API Keys」→「Create Key」でキーを発行する<br>
-      ④発行された文字列（sk- から始まります）をコピーし、下に貼り付けて保存する
-    </p>
-    <input id="apikey-input" type="text" placeholder="sk- から始まる文字列を貼り付け" style="width:100%;font-size:12px;font-family:monospace;padding:10px;border:0.5px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);">
-    <div style="display:flex;gap:10px;margin-top:14px;">
-      <button class="btn btn-primary" onclick="saveApiKey()" style="flex:1;">保存する</button>
-      <button class="btn btn-secondary" onclick="closeApiKeyModal()" style="flex:1;">キャンセル</button>
-    </div>
-  </div>
-</div>
-
 <div class="toast" id="toast"></div>
 
 <script>
@@ -390,41 +371,28 @@ function newId() {
 }
 
 // ---------- Block1：面接仮説生成（AI）・LSRPアラート ----------
-let pendingApiCall = null;
+// AI機能は共有Worker（hibiki_worker.js／柴山さんのAPIキーをサーバー側で保持）経由。
+// 面接官個人がAPIキーを用意する必要はない。
+const KANADE_WORKER_URL = 'https://hibiki-worker.fusion-partners-office.workers.dev/kanade-analyze';
 
-function openApiKeyModal() {
-  document.getElementById('apikey-overlay').style.display = 'flex';
-}
-function closeApiKeyModal() {
-  document.getElementById('apikey-overlay').style.display = 'none';
-  document.getElementById('apikey-input').value = '';
-}
-function saveApiKey() {
-  const input = document.getElementById('apikey-input');
-  const key = input.value.trim();
-  if (!key.startsWith('sk-')) { toast('キーの形式が正しくないようです（sk-で始まる文字列のはずです）'); return; }
-  localStorage.setItem('kanade_api_key', key);
-  closeApiKeyModal();
-  if (pendingApiCall) {
-    const { promptText, onSuccess, onError } = pendingApiCall;
-    pendingApiCall = null;
-    callClaude(promptText, onSuccess, onError);
-  }
+// 実装安全原則v1・原則1準拠（2026-07-20）：公開URLを知っていれば誰でも叩けるコスト空撃ちリスクを
+// 塞ぐためのトークン。個人データは扱わないため漏洩リスクは無いが、原則に沿って認証を付ける。
+function getKanadeToken() { return localStorage.getItem('kanade_access_token') || ''; }
+function saveKanadeToken() {
+  const input = document.getElementById('kanade-token-input');
+  const token = (input || {value:''}).value.trim();
+  if (!token) return;
+  localStorage.setItem('kanade_access_token', token);
+  renderInterview();
 }
 
 function callClaude(promptText, onSuccess, onError) {
-  const key = localStorage.getItem('kanade_api_key');
-  if (!key) {
-    pendingApiCall = { promptText, onSuccess, onError };
-    openApiKeyModal();
-    return;
-  }
-  fetch('https://api.anthropic.com/v1/messages', {
+  fetch(KANADE_WORKER_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-    body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1200, messages: [{ role: 'user', content: promptText }] })
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ promptText, token: getKanadeToken() })
   }).then(r => r.json()).then(data => {
-    if (data.error) { onError(data.error.message); return; }
+    if (data.error) { onError(data.error); return; }
     const text = data.content?.map(x => x.text || '').join('') || 'エラーが発生しました';
     onSuccess(text);
   }).catch(e => onError(e.message));
@@ -456,7 +424,7 @@ function lsrpAlertBanner(c){
 function generateHypothesis() {
   const c = cur(); if (!c) return;
   const loading = document.getElementById('hyp-loading');
-  if (loading) loading.style.display = localStorage.getItem('kanade_api_key') ? 'block' : 'none';
+  if (loading) loading.style.display = 'block';
   const ego = ['CP','NP','A','FC','AC'].map(k=>`${k}:${c['ego'+k]||'—'}`).join(' ');
   const promptText = `あなたは採用面接の設計を支援する専門家です。以下の適性検査結果から、面接で重点的に確認すべき問いを3〜5点、日本語で簡潔に生成してください。
 各問いは1行・質問文のみ（番号付き箇条書き）。前置きや解説文は書かないこと。ハルシネーション禁止、検査結果にない事実を創作しないこと。
@@ -740,8 +708,13 @@ function renderInterview() {
   <div class="section">
     <div class="section-title">🎯 面接仮説（AI生成）</div>
     <div class="note-box" style="margin-bottom:10px">
-      フェーズ1・フェーズ2（エゴグラム・エニアグラム・LSRP・所見メモ）の入力内容から、面接で重点確認すべき問いをAIが3〜5点生成します。初回のみAnthropic APIキーの入力が必要です。
+      フェーズ1・フェーズ2（エゴグラム・エニアグラム・LSRP・所見メモ）の入力内容から、面接で重点確認すべき問いをAIが3〜5点生成します。
     </div>
+    ${getKanadeToken() ? '' : `<div class="field" style="max-width:400px;margin-bottom:10px">
+      <label>アクセストークン（初回のみ・設計・秘書からお渡しされた文字列）</label>
+      <input type="text" id="kanade-token-input" placeholder="トークンを貼り付け">
+      <button class="btn btn-secondary" style="margin-top:6px" onclick="saveKanadeToken()">保存する</button>
+    </div>`}
     <div class="btn-row" style="margin-bottom:10px">
       <button class="btn btn-primary" onclick="generateHypothesis()">🎯 面接仮説を生成する</button>
     </div>

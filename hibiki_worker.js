@@ -8,6 +8,9 @@
  *   ANTHROPIC_API_KEY     … 柴山さんのAnthropicキー (sk-ant-...)
  *   STRIPE_SECRET_KEY     … Stripe Secret Key（本稼働時に設定）
  *   STRIPE_WEBHOOK_SECRET … Stripe Webhook署名Secret（本稼働時に設定）
+ *   PRIVATE_ACCESS_TOKEN  … 2026-07-20追加。/kanade-analyzeの認証トークン
+ *     （mitsumeru-sync Workerの同名Secretと同じ値を使う想定・実装安全原則v1原則1準拠。
+ *     未設定時は/kanade-analyzeが常に401を返す＝安全側に倒れる）
  *
  * 【KV namespace binding】
  *   バインディング変数名: HIBIKI_KV
@@ -18,6 +21,8 @@
  *   POST /analyze          … Claude APIプロキシ（デモ or Stripe認証）
  *   POST /stripe/webhook   … Stripe決済完了Webhook → アクセストークン発行
  *   GET  /stripe/verify    … トークン有効性確認
+ *   POST /kanade-analyze   … 奏（Kanade）専用・内部利用限定のClaude APIプロキシ
+ *                            （社内利用のみ・外部公開の意図なし。ANTHROPIC_API_KEYを直接使用）
  *
  * 【デモモード仕様】
  *   端末固有ID（fingerprint）をキーにKVでカウント管理。
@@ -32,6 +37,7 @@ const MODEL = 'claude-sonnet-4-6';
 const DEMO_MAX = 20;
 const TOKEN_TTL_SEC = 60 * 60 * 24 * 30; // 30日
 const DEMO_TTL_SEC  = 60 * 60 * 24 * 90; // 90日
+const KANADE_DAILY_MAX = 500; // 柴山さん一人の利用が前提の乱用防止・多めに設定
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -61,6 +67,9 @@ export default {
 
     if (url.pathname === '/analyze' && request.method === 'POST') {
       return handleAnalyze(request, env);
+    }
+    if (url.pathname === '/kanade-analyze' && request.method === 'POST') {
+      return handleKanadeAnalyze(request, env);
     }
     if (url.pathname === '/stripe/webhook' && request.method === 'POST') {
       return handleStripeWebhook(request, env);
@@ -148,6 +157,61 @@ async function handleAnalyze(request, env) {
       'X-Accel-Buffering': 'no',
     },
   });
+}
+
+// ===== /kanade-analyze（奏専用・内部利用限定） =====
+async function handleKanadeAnalyze(request, env) {
+  let body;
+  try { body = await request.json(); }
+  catch { return jsonRes({ error: 'invalid JSON' }, 400); }
+
+  // 実装安全原則v1・原則1（フロント/対象限定を防御とみなさない）：内部専用ツールであっても
+  // 公開URLを知っていれば誰でも叩けるため、サーバー側でトークン必須化する（2026-07-20追加）。
+  // mitsumeru-syncのPRIVATE_ACCESS_TOKENと同じパターン。個人データ漏洩リスクは無いが、
+  // 認証を怠るとAPIコストの空撃ちを許してしまう。
+  const { token } = body;
+  if (!env.PRIVATE_ACCESS_TOKEN || token !== env.PRIVATE_ACCESS_TOKEN) {
+    return jsonRes({ error: 'valid token required' }, 401);
+  }
+
+  const { promptText } = body;
+  if (!promptText || typeof promptText !== 'string') {
+    return jsonRes({ error: 'promptText（文字列）が必要です' }, 400);
+  }
+
+  if (!env.ANTHROPIC_API_KEY) {
+    return jsonRes({ error: 'サーバー側のAI設定が未完了です（ANTHROPIC_API_KEY未設定）' }, 500);
+  }
+
+  // 乱用防止：1日あたりの総呼び出し数（柴山さん一人の利用が前提・多めの上限）
+  const today = new Date().toISOString().slice(0, 10);
+  const countKey = 'kanade_daily_' + today;
+  const current = parseInt(await getKV(env).get(countKey) || '0');
+  if (current >= KANADE_DAILY_MAX) {
+    return jsonRes({ error: '本日の利用上限に達しました。明日また試してください。' }, 429);
+  }
+  await getKV(env).put(countKey, String(current + 1), { expirationTtl: 60 * 60 * 24 * 2 });
+
+  const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': env.ANTHROPIC_API_KEY,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({
+      model: MODEL,
+      max_tokens: 1200,
+      messages: [{ role: 'user', content: promptText }],
+    }),
+  });
+
+  const data = await claudeRes.json().catch(() => ({}));
+  if (!claudeRes.ok || data.error) {
+    return jsonRes({ error: data.error?.message || 'Claude API error' }, 502);
+  }
+
+  return jsonRes({ content: data.content || [] });
 }
 
 // ===== /stripe/webhook =====
