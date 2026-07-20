@@ -406,6 +406,37 @@
   </div>
 </div>
 
+<!-- Pro初回検出時の歓迎メッセージ（2026-07-20・受付下書きより。設計指示：初回Pro検出時に表示・一度きり） -->
+<div class="consent-overlay" id="welcome-overlay">
+  <div class="demo-card" style="max-width:400px;max-height:80vh;overflow-y:auto;">
+    <div class="demo-badge" style="background:var(--accent);color:#fff;border-color:var(--accent)">お申し込みありがとうございます</div>
+    <h3 style="font-family:'Noto Serif JP',serif;font-weight:400;font-size:18px;margin:12px 0 8px;letter-spacing:1px;">ミツメルLiteへようこそ</h3>
+    <p style="font-size:13px;color:var(--text2);line-height:1.8;margin-bottom:16px;">
+      今すぐお使いいただけます。決済に使ったこのブラウザ・端末で、そのままご利用ください。特別なコードの入力や操作は必要ありません。
+    </p>
+    <p style="font-size:11px;color:var(--text3);line-height:1.7;margin-bottom:16px;">
+      ※別の端末・別のブラウザからはご利用いただけません。いつもお使いの端末・ブラウザでアクセスしてください。
+    </p>
+    <div style="border-top:1px solid var(--border);padding-top:14px;margin-bottom:14px;">
+      <p style="font-size:12px;color:var(--text2);margin-bottom:8px;font-weight:500;">AI機能を使うには、もう1つだけ</p>
+      <p style="font-size:12px;color:var(--text2);line-height:1.8;margin-bottom:8px;">
+        日々の記録から翌日の戦略を作るAI機能は、Anthropic社のAPIキーが必要です（月額980円とは別に、使った分だけの従量課金です）。
+      </p>
+      <ol style="font-size:12px;color:var(--text2);line-height:1.9;padding-left:18px;margin:0;">
+        <li>console.anthropic.com でAPIキーを取得（sk-ant- から始まります）</li>
+        <li>ミツメルLite右上の「🔑 API」ボタンからキーを貼り付け</li>
+        <li>ボタンが緑になれば準備完了です</li>
+      </ol>
+    </div>
+    <p style="font-size:11px;color:var(--text3);line-height:1.7;margin-bottom:16px;">
+      ご不明な点があれば、<a href="https://fusionpartnersoffice-oss.github.io/mitsumeru/sodan_form.html" target="_blank" rel="noopener" style="color:var(--text3);">無料相談フォーム</a>からお気軽にお問い合わせください。
+    </p>
+    <button onclick="closeWelcomeMessage()" style="width:100%;padding:10px;background:var(--text);color:var(--bg);border:none;border-radius:6px;font-size:13px;cursor:pointer;">
+      閉じる
+    </button>
+  </div>
+</div>
+
 <!-- 同意取得モーダル -->
 <div class="consent-overlay" id="consent-overlay">
   <div class="demo-card">
@@ -1299,6 +1330,7 @@ async function verifyProToken(token) {
     const data = await res.json();
     const ok = !!(data.valid && data.plan === 'mitsumeru_lite');
     localStorage.setItem('mitsumeru_lite_pro_verified', ok ? 'true' : 'false');
+    if (ok) maybeShowWelcomeMessage();
     return ok;
   } catch (e) {
     // QA所見（2026-07-20）：この関数は表示用・コード入力時の確認にのみ使用し、AI呼び出しの
@@ -1345,6 +1377,15 @@ async function activateProCode() {
 // 特商法モーダル 開閉
 function showTokushoho() { document.getElementById('tokushoho-overlay').classList.add('active'); }
 function closeTokushoho() { document.getElementById('tokushoho-overlay').classList.remove('active'); }
+
+// Pro初回検出時の歓迎メッセージ（2026-07-20・設計指示）。表示ON/OFFの判定なので、
+// 課金判定のような厳格さ（サーバー確認等）は不要・localStorageフラグのみで足りる。
+function maybeShowWelcomeMessage() {
+  if (localStorage.getItem('mitsumeru_lite_welcome_shown') === 'true') return;
+  localStorage.setItem('mitsumeru_lite_welcome_shown', 'true');
+  document.getElementById('welcome-overlay').classList.add('active');
+}
+function closeWelcomeMessage() { document.getElementById('welcome-overlay').classList.remove('active'); }
 
 // ═══════════════════════════════════════════════
 // K-1・K-2：企業アカウント紐付け（オプトイン）・匿名チェックイン送信
