@@ -364,7 +364,7 @@
     </p>
     <div style="border-top:1px solid var(--border);padding-top:16px;">
       <p style="font-size:12px;color:var(--text2);margin-bottom:8px;">お申し込み後、確認メールのコードを入力：</p>
-      <input type="text" id="pro-code-input" placeholder="PRO_202607"
+      <input type="text" id="pro-code-input" placeholder="確認メールに記載のコード"
              style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:14px;background:var(--bg);color:var(--text);margin-bottom:6px;text-transform:uppercase;">
       <p id="pro-code-error" style="display:none;color:var(--red);font-size:11px;margin-bottom:8px;">コードが無効です。確認メールをご確認ください。</p>
       <button onclick="activateProCode()"
@@ -1253,13 +1253,16 @@ function _proMonthKey() {
 function getProMonthCount() { return parseInt(localStorage.getItem(_proMonthKey()) || '0'); }
 function incrementProCount() { localStorage.setItem(_proMonthKey(), String(getProMonthCount() + 1)); }
 
-// プラン判定（コード形式：PRO_YYYYMM）
+// プラン判定
+// ⚠️応急処置（2026-07-20・QA発見・柴山さん承認）：旧コード「PRO_年月」は年月から誰でも
+// 推測できる形式だったため、まず推測不可能なランダム文字列へ差し替えた。ただし判定は
+// 依然クライアント側（ソースを開けば分かる）のままであり、これは根本解決ではない。
+// 恒久対策＝サーバー側（Stripe決済と連動した検証）での再実装が別途必要（QA判定②）。
+const PRO_CODE = 'PRO-6F8162ABFEE94082A21F510ECFDDC868';
 function isPro() {
   const code = localStorage.getItem('mitsumeru_lite_pro_code');
   if (!code) return false;
-  const n = new Date();
-  const valid = 'PRO_' + n.getFullYear() + String(n.getMonth()+1).padStart(2,'0');
-  return code === valid;
+  return code === PRO_CODE;
 }
 
 // カウンター表示
@@ -1284,9 +1287,7 @@ function closeProGate() { document.getElementById('pro-gate-overlay').classList.
 // コード認証
 function activateProCode() {
   const code = (document.getElementById('pro-code-input').value || '').trim().toUpperCase();
-  const n = new Date();
-  const valid = 'PRO_' + n.getFullYear() + String(n.getMonth()+1).padStart(2,'0');
-  if (code === valid) {
+  if (code === PRO_CODE) {
     localStorage.setItem('mitsumeru_lite_pro_code', code);
     closeProGate();
     updateAICounter();
