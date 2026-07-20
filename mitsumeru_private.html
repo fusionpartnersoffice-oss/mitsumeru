@@ -1829,25 +1829,28 @@ window.addEventListener('DOMContentLoaded', async function() {
 // 設定タブ：強制同期
 // 設計指摘（2026-07-20）：cloudLoad()は401等の失敗時に静かにnullを返すため、以前は失敗を
 // 検知せず常に成功表示していた（実際は何も取得できていないのに「取得しました」と出る）。
-// gotAnyで実際の取得有無を判定し、失敗時はアクセストークン確認を促す表示に分ける。
+// さらにQA指摘：単純なnull判定では「認証失敗」と「その日まだ記録が無く正常に空」を区別
+// できない。cloudLoadStatus()のauthFailedで両者を分け、利用者に正確な状況を伝える。
 async function forceSyncFromCloud() {
   showSyncStatus('saving');
-  const [kvMemos, kvMorning, kvEvening] = await Promise.all([
-    cloudLoad('memos'), cloudLoad('morning'), cloudLoad('evening')
+  const [rMemos, rMorning, rEvening] = await Promise.all([
+    cloudLoadStatus('memos'), cloudLoadStatus('morning'), cloudLoadStatus('evening')
   ]);
+  const kvMorning = rMorning.value, kvEvening = rEvening.value, kvMemos = rMemos.value;
   const gotAny = kvMorning || kvEvening || kvMemos;
+  const authFailed = rMorning.authFailed || rEvening.authFailed || rMemos.authFailed;
   if (kvMorning) { applyMorningData(kvMorning); localStorage.setItem(lsKey('morning'), JSON.stringify(kvMorning)); }
   if (kvEvening) { applyEveningData(kvEvening); localStorage.setItem(lsKey('evening'), JSON.stringify(kvEvening)); }
   if (kvMemos)   { applyMemosData(kvMemos);     localStorage.setItem(lsKey('memos'),   JSON.stringify(kvMemos)); }
   if (gotAny) {
     showSyncStatus('synced');
     alert('KVから最新データを取得しました。');
-  } else {
-    // QA所見（2026-07-20）：gotAnyはKV側が「401等で失敗」と「その日まだ何も記録が無く
-    // 正常に空」を区別できない（cloudLoadは両方nullを返す）。厳密な切り分けは今回のスコープ外
-    // とし、文言側で誤解を避ける（「今日まだ記録が無ければこれで正常」の一文を添える）。
+  } else if (authFailed) {
     showSyncStatus('failed');
-    alert('データを取得できませんでした。まだ今日の記録が無い場合はこの表示で正常です。記録があるはずなのに出る場合は、設定タブでアクセストークンをご確認ください。');
+    alert('データを取得できませんでした。アクセストークンが正しいか、設定タブでご確認ください。');
+  } else {
+    showSyncStatus('synced');
+    alert('同期は成功しましたが、まだ今日の記録がありません。');
   }
 }
 
