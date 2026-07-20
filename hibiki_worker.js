@@ -236,10 +236,14 @@ async function handleStripeWebhook(request, env) {
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
     const token = crypto.randomUUID();
+    // 2026-07-20：ミツメルLiteのPayment LinkはStripe APIで作成済みのためダッシュボードから
+    // metadataを編集できない（「編集」がAPI専用ロックされている）。現時点でこのWebhookが受ける
+    // 決済はミツメルLiteのみのため、metadata未設定時のデフォルトを'mitsumeru_lite'にする。
+    // 将来別商品を追加する際は、このデフォルトに頼らずPayment Link作成時にmetadataを指定すること。
     await getKV(env).put(
       'stripe_token_' + token,
       JSON.stringify({
-        plan: session.metadata?.plan || 'monthly',
+        plan: session.metadata?.plan || 'mitsumeru_lite',
         customer: session.customer || '',
         email: session.customer_details?.email || '',
         created: Date.now(),
