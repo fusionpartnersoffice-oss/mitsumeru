@@ -154,12 +154,22 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     if (url.pathname === '/run' && request.method === 'GET') {
+      // QA指摘（2026-07-20）：/runは監視対象一覧と現在の異常箇所をまとめて返すため、
+      // 無認証のままだと「P1再発防止策自体が無認証で叩ける」状態だった。
+      // mitsumeru-sync等と同じPRIVATE_ACCESS_TOKENパターンで認証必須化。
+      const token = url.searchParams.get('token');
+      if (!env.PRIVATE_ACCESS_TOKEN || token !== env.PRIVATE_ACCESS_TOKEN) {
+        return new Response(JSON.stringify({ error: 'valid token required' }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
       const record = await runAndPersist(env);
       return new Response(JSON.stringify(record, null, 2), {
         headers: { 'Content-Type': 'application/json' },
       });
     }
-    return new Response('security-watchdog: use /run for manual check, or wait for monthly cron.', { status: 200 });
+    return new Response('security-watchdog: use /run?token=... for manual check, or wait for monthly cron.', { status: 200 });
   },
 
   async scheduled(event, env, ctx) {
