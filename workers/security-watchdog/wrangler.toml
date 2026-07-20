@@ -1,0 +1,30 @@
+name = "security-watchdog"
+main = "index.js"
+compatibility_date = "2026-07-01"
+
+[[kv_namespaces]]
+binding = "WATCHDOG_KV"
+id = "d46486c7abda425583c7c38ac437bae6"
+
+[[services]]
+binding = "SYNC_WORKER"
+service = "mitsumeru-sync"
+
+[[services]]
+binding = "XPOSTER_WORKER"
+service = "fusionos-x-poster"
+
+[[services]]
+binding = "HIBIKI_WORKER"
+service = "hibiki-worker"
+
+[[services]]
+binding = "SHINDAN_WORKER"
+service = "shindan-saiken-worker"
+
+[[services]]
+binding = "COMPASS_WORKER"
+service = "mitsumeru-compass-worker"
+
+[triggers]
+crons = ["0 0 1 * *"]
