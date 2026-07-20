@@ -233,29 +233,65 @@ async function handleStripeWebhook(request, env) {
   try { event = JSON.parse(rawBody); }
   catch { return jsonRes({ error: 'invalid JSON' }, 400); }
 
+  const kv = getKV(env);
+
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
     const token = crypto.randomUUID();
+    const customerId = session.customer || '';
     // 2026-07-20：ミツメルLiteのPayment LinkはStripe APIで作成済みのためダッシュボードから
     // metadataを編集できない（「編集」がAPI専用ロックされている）。現時点でこのWebhookが受ける
     // 決済はミツメルLiteのみのため、metadata未設定時のデフォルトを'mitsumeru_lite'にする。
     // 将来別商品を追加する際は、このデフォルトに頼らずPayment Link作成時にmetadataを指定すること。
-    await getKV(env).put(
+    await kv.put(
       'stripe_token_' + token,
       JSON.stringify({
         plan: session.metadata?.plan || 'mitsumeru_lite',
-        customer: session.customer || '',
+        customer: customerId,
+        subscription: session.subscription || '',
         email: session.customer_details?.email || '',
         created: Date.now(),
       }),
       { expirationTtl: TOKEN_TTL_SEC }
     );
+    // 安全装置⑥（2026-07-20・QA発見：解約・返金後もトークンが失効しない問題への対応）：
+    // 顧客IDからトークンを逆引きできるよう索引を作る。customer.subscription.deleted・
+    // charge.refunded・invoice.payment_succeededの各イベントはcustomerフィールドを持つため、
+    // この索引経由でトークンの削除・TTL延長ができる。
+    if (customerId) {
+      await kv.put('customer_index_' + customerId, token, { expirationTtl: TOKEN_TTL_SEC });
+    }
     // 発行トークンをKVに記録（柴山さんが手動でメール送付する用）
-    await getKV(env).put(
+    await kv.put(
       'pending_token_' + Date.now(),
       JSON.stringify({ token, email: session.customer_details?.email || '' }),
       { expirationTtl: TOKEN_TTL_SEC }
     );
+  } else if (event.type === 'customer.subscription.deleted' || event.type === 'charge.refunded') {
+    // 安全装置⑥：解約・返金が起きたら、対応するトークンを即座に無効化する（削除）。
+    const customerId = event.data.object.customer || '';
+    if (customerId) {
+      const token = await kv.get('customer_index_' + customerId);
+      if (token) {
+        await kv.delete('stripe_token_' + token);
+        await kv.delete('customer_index_' + customerId);
+      }
+    }
+  } else if (event.type === 'invoice.payment_succeeded') {
+    // 安全装置⑥：継続課金が成功したら、トークンのTTLを更新する（30日で切れて
+    // 2ヶ月目以降の顧客が突然使えなくなる事故を防ぐ）。初回決済（checkout.session.completed）
+    // 直後の請求書はここでも発火しうるが、同じ値で上書きするだけなので無害。
+    const customerId = event.data.object.customer || '';
+    if (customerId) {
+      const token = await kv.get('customer_index_' + customerId);
+      if (token) {
+        const record = await kv.get('stripe_token_' + token);
+        if (record) {
+          await kv.put('stripe_token_' + token, record, { expirationTtl: TOKEN_TTL_SEC });
+          await kv.put('customer_index_' + customerId, token, { expirationTtl: TOKEN_TTL_SEC });
+        }
+      }
+    }
   }
 
   return jsonRes({ received: true });
