@@ -1211,26 +1211,22 @@ function setApiKey() {
 
 async function callClaude(prompt, onSuccess, onError) {
   if (!hasConsent()) { onError('利用規約・プライバシーポリシーへの同意が必要です。ページを再読み込みしてください。'); return; }
-  // QA差し戻し対応（2026-07-20）：isPro()のローカルキャッシュだけで判定すると、開発者ツールで
-  // フラグを直接書き換えれば通ってしまう。AI呼び出しの実行直前は必ずサーバーへ再検証する
-  // （表示用のisPro()/updateAICounter()はキャッシュのままでよいが、課金ゲートはここが本丸）。
-  const proToken = getProToken();
-  const pro = proToken ? await verifyProToken(proToken) : false;
-  if (pro) {
-    if (getProMonthCount() >= 30) {
-      onError('今月のAI利用上限（30回）に達しました。\n来月になるとリセットされます。');
-      return;
-    }
-  } else {
-    if (getFreeUsedCount() >= 5) {
-      showProGate();
-      return;
-    }
-  }
   const key = getApiKey();
   if (!key) { onError('APIキーが設定されていません。'); return; }
-  if (pro) { incrementProCount(); } else { incrementFreeCount(); }
+  // 案B（2026-07-20・QA再差し戻し対応）：判定とカウントアップをサーバー側で一体で行う。
+  // ローカルの値（isPro()・キャッシュされた残り回数）は表示専用で、実行可否には使わない。
+  const usage = await checkUsageAllowed();
   updateAICounter();
+  if (!usage.allowed) {
+    if (usage.reason === 'monthly_limit') {
+      onError('今月のAI利用上限（30回）に達しました。\n来月になるとリセットされます。');
+    } else if (usage.reason === 'network_error') {
+      onError('サーバーへの接続に失敗しました。しばらくしてから再度お試しください。');
+    } else {
+      showProGate();
+    }
+    return;
+  }
   fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
@@ -1246,21 +1242,42 @@ async function callClaude(prompt, onSuccess, onError) {
   }).catch(e => onError(e.message));
 }
 
-// ===== AI使用回数管理 =====
+// ===== AI使用回数管理（案B・2026-07-20：サーバー側〔Worker+KV〕を正とする） =====
+// QA再差し戻し対応：Pro判定だけでなく利用回数（無料5回・Pro月30回）の判定・カウントアップも
+// サーバー側で行う。ローカルの値は表示専用キャッシュであり、実行可否には一切使わない。
 const FREE_LIMIT = 5;
 const PRO_MONTH_LIMIT = 30;
+const LITE_USAGE_URL = 'https://hibiki-worker.fusion-partners-office.workers.dev/lite-usage-check';
 
-// 無料トライアル（累計5回）
-function getFreeUsedCount() { return parseInt(localStorage.getItem('mitsumeru_lite_free_used') || '0'); }
-function incrementFreeCount() { localStorage.setItem('mitsumeru_lite_free_used', String(getFreeUsedCount() + 1)); }
-
-// 有料プラン（月次30回）
-function _proMonthKey() {
-  const n = new Date();
-  return 'mitsumeru_lite_pro_count_' + n.getFullYear() + String(n.getMonth()+1).padStart(2,'0');
+// 訪問者ごとの固定ID（匿名・localStorage永続）。無料枠のカウントをサーバー側で個人ごとに
+// 区別するために使う（ログイン不要のため）。
+function getVisitorId() {
+  let id = localStorage.getItem('mitsumeru_lite_visitor_id');
+  if (!id) {
+    id = 'v' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+    localStorage.setItem('mitsumeru_lite_visitor_id', id);
+  }
+  return id;
 }
-function getProMonthCount() { return parseInt(localStorage.getItem(_proMonthKey()) || '0'); }
-function incrementProCount() { localStorage.setItem(_proMonthKey(), String(getProMonthCount() + 1)); }
+
+// サーバーへ利用可否を問い合わせる（許可されれば、サーバー側で同時にカウントアップも行われる＝
+// 判定とカウントが分離していない。表示用キャッシュもここで更新する）。
+async function checkUsageAllowed() {
+  try {
+    const res = await fetch(LITE_USAGE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ visitorId: getVisitorId(), token: getProToken() })
+    });
+    const data = await res.json();
+    localStorage.setItem('mitsumeru_lite_pro_verified', data.pro ? 'true' : 'false');
+    if (typeof data.remaining === 'number') localStorage.setItem('mitsumeru_lite_remaining_cache', String(data.remaining));
+    return data;
+  } catch (e) {
+    // ネットワーク不通時は安全側（許可しない）に倒す。表示用のisPro等は直近のキャッシュを維持。
+    return { allowed: false, pro: isPro(), remaining: 0, reason: 'network_error' };
+  }
+}
 
 // プラン判定
 // 恒久対策（2026-07-20・実装安全原則v1・原則1準拠）：判定をクライアント側の固定文字列比較から
@@ -1289,16 +1306,16 @@ async function verifyProToken(token) {
   }
 }
 
-// カウンター表示
+// カウンター表示（サーバーからの直近の応答をキャッシュした値を表示するだけ・実行可否の判定には使わない）
 function updateAICounter() {
   const el = document.getElementById('ai-counter');
   if (!el) return;
+  const cached = localStorage.getItem('mitsumeru_lite_remaining_cache');
+  const rem = cached !== null ? parseInt(cached) : (isPro() ? PRO_MONTH_LIMIT : FREE_LIMIT);
   if (isPro()) {
-    const rem = PRO_MONTH_LIMIT - getProMonthCount();
     el.textContent = '今月の残りAI回数：' + rem + '/' + PRO_MONTH_LIMIT;
     el.style.color = rem <= 3 ? 'var(--red)' : rem <= 7 ? 'var(--gold)' : 'var(--text3)';
   } else {
-    const rem = FREE_LIMIT - getFreeUsedCount();
     el.textContent = rem > 0 ? 'お試し残り：' + rem + '/' + FREE_LIMIT + '回（無料）' : 'お試し終了 ― 月額プランへ';
     el.style.color = rem <= 1 ? 'var(--red)' : rem <= 2 ? 'var(--gold)' : 'var(--text3)';
   }

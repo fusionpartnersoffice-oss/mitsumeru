@@ -77,6 +77,9 @@ export default {
     if (url.pathname === '/stripe/verify' && request.method === 'GET') {
       return handleStripeVerify(request, env);
     }
+    if (url.pathname === '/lite-usage-check' && request.method === 'POST') {
+      return handleLiteUsageCheck(request, env);
+    }
 
     return jsonRes({ error: 'not found' }, 404);
   },
@@ -265,6 +268,55 @@ async function handleStripeVerify(request, env) {
 
   const data = JSON.parse(record);
   return jsonRes({ valid: true, plan: data.plan, email: data.email });
+}
+
+// ===== /lite-usage-check（ミツメルLite・利用回数のサーバー側管理） =====
+// QA差し戻し対応（2026-07-20・案B確定）：Pro判定だけでなく利用回数の判定・カウントアップも
+// サーバー側を正とする。クライアントのlocalStorageは表示専用に格下げし、実行可否の判定は
+// 必ずこのエンドポイントの応答で決める（実装安全原則v1・原則1準拠）。
+const LITE_FREE_MAX = 5;
+const LITE_PRO_MONTH_MAX = 30;
+const LITE_FREE_TTL_SEC = 60 * 60 * 24 * 365; // 累計カウントのため長め（1年）
+const LITE_PRO_TTL_SEC = 60 * 60 * 24 * 35;   // 月次カウントなので月末+αで十分
+
+async function handleLiteUsageCheck(request, env) {
+  let body;
+  try { body = await request.json(); }
+  catch { return jsonRes({ error: 'invalid JSON' }, 400); }
+
+  const { visitorId, token } = body;
+  const kv = getKV(env);
+  const monthKey = new Date().toISOString().slice(0, 7); // YYYY-MM
+
+  // Proトークンが送られてきた場合：有効かつミツメルLite用トークンであれば月間上限で判定
+  if (token) {
+    const record = await kv.get('stripe_token_' + String(token).substring(0, 64));
+    if (record) {
+      const data = JSON.parse(record);
+      if (data.plan === 'mitsumeru_lite') {
+        const countKey = 'lite_pro_count_' + String(token).substring(0, 64) + '_' + monthKey;
+        const current = parseInt(await kv.get(countKey) || '0');
+        if (current >= LITE_PRO_MONTH_MAX) {
+          return jsonRes({ allowed: false, pro: true, remaining: 0, reason: 'monthly_limit' });
+        }
+        await kv.put(countKey, String(current + 1), { expirationTtl: LITE_PRO_TTL_SEC });
+        return jsonRes({ allowed: true, pro: true, remaining: LITE_PRO_MONTH_MAX - current - 1 });
+      }
+    }
+    // トークンが無効・期限切れ・他商品用の場合は無料枠へフォールスルー（詐称対策・原則2）
+  }
+
+  if (!visitorId || typeof visitorId !== 'string') {
+    return jsonRes({ error: 'visitorId が必要です' }, 400);
+  }
+  const fp = visitorId.substring(0, 64);
+  const freeKey = 'lite_free_count_' + fp;
+  const current = parseInt(await kv.get(freeKey) || '0');
+  if (current >= LITE_FREE_MAX) {
+    return jsonRes({ allowed: false, pro: false, remaining: 0, reason: 'free_limit' });
+  }
+  await kv.put(freeKey, String(current + 1), { expirationTtl: LITE_FREE_TTL_SEC });
+  return jsonRes({ allowed: true, pro: false, remaining: LITE_FREE_MAX - current - 1 });
 }
 
 // ===== Stripe署名検証（Web Crypto API） =====
