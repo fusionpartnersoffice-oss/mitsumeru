@@ -824,6 +824,10 @@ window.addEventListener('DOMContentLoaded', function() {
   setDates();
   checkConsent();
   updateAICounter();
+  // 保存済みトークンがあれば、ページ読み込みのたびにサーバーへ再検証する
+  // （固定文字列の使い回しを防ぎ、決済状態の変化＝解約等にも追従できるようにする）
+  const savedProToken = getProToken();
+  if (savedProToken) { verifyProToken(savedProToken).then(updateAICounter); }
   if (apiKey) {
     const btn = document.getElementById('api-btn');
     if (btn) btn.style.color = '#4caf82';
@@ -1254,15 +1258,30 @@ function getProMonthCount() { return parseInt(localStorage.getItem(_proMonthKey(
 function incrementProCount() { localStorage.setItem(_proMonthKey(), String(getProMonthCount() + 1)); }
 
 // プラン判定
-// ⚠️応急処置（2026-07-20・QA発見・柴山さん承認）：旧コード「PRO_年月」は年月から誰でも
-// 推測できる形式だったため、まず推測不可能なランダム文字列へ差し替えた。ただし判定は
-// 依然クライアント側（ソースを開けば分かる）のままであり、これは根本解決ではない。
-// 恒久対策＝サーバー側（Stripe決済と連動した検証）での再実装が別途必要（QA判定②）。
-const PRO_CODE = 'PRO-6F8162ABFEE94082A21F510ECFDDC868';
+// 恒久対策（2026-07-20・実装安全原則v1・原則1準拠）：判定をクライアント側の固定文字列比較から
+// サーバー側検証（hibiki_worker.jsの/stripe/verify・Stripe決済と連動して発行されたトークン）へ
+// 移行した。isPro()自体は同期のまま（呼び出し側を壊さないため）で、直近の検証結果をローカルに
+// キャッシュして読むだけ。実際のサーバー問い合わせはverifyProToken()が行う（ページ読み込み時・
+// コード入力時）。plan !== 'mitsumeru_lite' のトークンは拒否する（同一Worker上の他商品のトークンが
+// 誤って通らないようにするため・原則2の考え方に基づく防御）。
+const STRIPE_VERIFY_URL = 'https://hibiki-worker.fusion-partners-office.workers.dev/stripe/verify';
 function isPro() {
-  const code = localStorage.getItem('mitsumeru_lite_pro_code');
-  if (!code) return false;
-  return code === PRO_CODE;
+  return localStorage.getItem('mitsumeru_lite_pro_verified') === 'true';
+}
+function getProToken() { return localStorage.getItem('mitsumeru_lite_pro_token') || ''; }
+
+async function verifyProToken(token) {
+  if (!token) { localStorage.setItem('mitsumeru_lite_pro_verified', 'false'); return false; }
+  try {
+    const res = await fetch(`${STRIPE_VERIFY_URL}?token=${encodeURIComponent(token)}`);
+    const data = await res.json();
+    const ok = !!(data.valid && data.plan === 'mitsumeru_lite');
+    localStorage.setItem('mitsumeru_lite_pro_verified', ok ? 'true' : 'false');
+    return ok;
+  } catch (e) {
+    // ネットワーク不通時は直近の検証結果をそのまま維持する（オフラインで即Pro解除にしない）
+    return isPro();
+  }
 }
 
 // カウンター表示
@@ -1284,11 +1303,13 @@ function updateAICounter() {
 function showProGate() { document.getElementById('pro-gate-overlay').classList.add('active'); }
 function closeProGate() { document.getElementById('pro-gate-overlay').classList.remove('active'); }
 
-// コード認証
-function activateProCode() {
-  const code = (document.getElementById('pro-code-input').value || '').trim().toUpperCase();
-  if (code === PRO_CODE) {
-    localStorage.setItem('mitsumeru_lite_pro_code', code);
+// コード認証（Stripe決済完了時にサーバーが発行したトークンを、確認メールから貼り付ける）
+async function activateProCode() {
+  const token = (document.getElementById('pro-code-input').value || '').trim();
+  document.getElementById('pro-code-error').style.display = 'none';
+  const ok = await verifyProToken(token);
+  if (ok) {
+    localStorage.setItem('mitsumeru_lite_pro_token', token);
     closeProGate();
     updateAICounter();
     alert('プレミアムプランが有効になりました！今月も引き続きご利用ください。');
