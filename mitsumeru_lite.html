@@ -1209,9 +1209,14 @@ function setApiKey() {
   }
 }
 
-function callClaude(prompt, onSuccess, onError) {
+async function callClaude(prompt, onSuccess, onError) {
   if (!hasConsent()) { onError('利用規約・プライバシーポリシーへの同意が必要です。ページを再読み込みしてください。'); return; }
-  if (isPro()) {
+  // QA差し戻し対応（2026-07-20）：isPro()のローカルキャッシュだけで判定すると、開発者ツールで
+  // フラグを直接書き換えれば通ってしまう。AI呼び出しの実行直前は必ずサーバーへ再検証する
+  // （表示用のisPro()/updateAICounter()はキャッシュのままでよいが、課金ゲートはここが本丸）。
+  const proToken = getProToken();
+  const pro = proToken ? await verifyProToken(proToken) : false;
+  if (pro) {
     if (getProMonthCount() >= 30) {
       onError('今月のAI利用上限（30回）に達しました。\n来月になるとリセットされます。');
       return;
@@ -1224,7 +1229,7 @@ function callClaude(prompt, onSuccess, onError) {
   }
   const key = getApiKey();
   if (!key) { onError('APIキーが設定されていません。'); return; }
-  if (isPro()) { incrementProCount(); } else { incrementFreeCount(); }
+  if (pro) { incrementProCount(); } else { incrementFreeCount(); }
   updateAICounter();
   fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
