@@ -235,16 +235,25 @@ async function handleStripeWebhook(request, env) {
 
   const kv = getKV(env);
 
+  // 安全装置⑥（2026-07-20・QA構造指摘への対応）：トークンのキーを顧客IDそのものにする。
+  // 旧実装はcrypto.randomUUID()を毎回新規発行していたため、①Stripeの再配信（at-least-once）で
+  // 同一決済に対し複数トークンが発行される（実際に1決済で2件発行された）②customer/session.idから
+  // 逆引きできず、返金・解約時にどのトークンを消すべきか特定できない、という二重の欠陥があった。
+  // 顧客IDをキーにすれば、再配信は同じキーへの上書きになり（冪等）、返金・解約・継続課金の
+  // 各イベントも customer フィールドで直接そのキーを引ける（索引テーブル不要）。
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
-    const token = crypto.randomUUID();
     const customerId = session.customer || '';
+    if (!customerId) {
+      console.log('[stripe_webhook] checkout.session.completed に customer が無いためトークン発行をスキップ');
+      return jsonRes({ received: true });
+    }
     // 2026-07-20：ミツメルLiteのPayment LinkはStripe APIで作成済みのためダッシュボードから
     // metadataを編集できない（「編集」がAPI専用ロックされている）。現時点でこのWebhookが受ける
     // 決済はミツメルLiteのみのため、metadata未設定時のデフォルトを'mitsumeru_lite'にする。
     // 将来別商品を追加する際は、このデフォルトに頼らずPayment Link作成時にmetadataを指定すること。
     await kv.put(
-      'stripe_token_' + token,
+      'stripe_token_' + customerId,
       JSON.stringify({
         plan: session.metadata?.plan || 'mitsumeru_lite',
         customer: customerId,
@@ -254,42 +263,40 @@ async function handleStripeWebhook(request, env) {
       }),
       { expirationTtl: TOKEN_TTL_SEC }
     );
-    // 安全装置⑥（2026-07-20・QA発見：解約・返金後もトークンが失効しない問題への対応）：
-    // 顧客IDからトークンを逆引きできるよう索引を作る。customer.subscription.deleted・
-    // charge.refunded・invoice.payment_succeededの各イベントはcustomerフィールドを持つため、
-    // この索引経由でトークンの削除・TTL延長ができる。
-    if (customerId) {
-      await kv.put('customer_index_' + customerId, token, { expirationTtl: TOKEN_TTL_SEC });
-    }
-    // 発行トークンをKVに記録（柴山さんが手動でメール送付する用）
+    console.log('[stripe_webhook] トークン発行: customer=' + customerId);
+    // 発行トークンをKVに記録（柴山さんが手動でメール送付する用）。顧客IDをキーにして重複も防止。
     await kv.put(
-      'pending_token_' + Date.now(),
-      JSON.stringify({ token, email: session.customer_details?.email || '' }),
+      'pending_token_' + customerId,
+      JSON.stringify({ token: customerId, email: session.customer_details?.email || '' }),
       { expirationTtl: TOKEN_TTL_SEC }
     );
   } else if (event.type === 'customer.subscription.deleted' || event.type === 'charge.refunded') {
-    // 安全装置⑥：解約・返金が起きたら、対応するトークンを即座に無効化する（削除）。
+    // 解約・返金が起きたら、対応するトークンを即座に無効化する（削除）。
     const customerId = event.data.object.customer || '';
-    if (customerId) {
-      const token = await kv.get('customer_index_' + customerId);
-      if (token) {
-        await kv.delete('stripe_token_' + token);
-        await kv.delete('customer_index_' + customerId);
-      }
+    if (!customerId) {
+      console.log('[stripe_webhook] ' + event.type + ' に customer が無いため削除をスキップ');
+      return jsonRes({ received: true });
+    }
+    const existed = await kv.get('stripe_token_' + customerId);
+    if (existed) {
+      await kv.delete('stripe_token_' + customerId);
+      console.log('[stripe_webhook] トークン削除: customer=' + customerId + ' event=' + event.type);
+    } else {
+      // QA所見：削除0件が黙って起きるのが最悪、のため明示的にログへ残す。
+      console.log('[stripe_webhook] ⚠️削除対象のトークンが見つからない: customer=' + customerId + ' event=' + event.type);
     }
   } else if (event.type === 'invoice.payment_succeeded') {
-    // 安全装置⑥：継続課金が成功したら、トークンのTTLを更新する（30日で切れて
-    // 2ヶ月目以降の顧客が突然使えなくなる事故を防ぐ）。初回決済（checkout.session.completed）
-    // 直後の請求書はここでも発火しうるが、同じ値で上書きするだけなので無害。
+    // 継続課金が成功したら、トークンのTTLを更新する（30日で切れて2ヶ月目以降の顧客が
+    // 突然使えなくなる事故を防ぐ）。初回決済（checkout.session.completed）直後の請求書は
+    // ここでも発火しうるが、同じ値で上書きするだけなので無害。
     const customerId = event.data.object.customer || '';
     if (customerId) {
-      const token = await kv.get('customer_index_' + customerId);
-      if (token) {
-        const record = await kv.get('stripe_token_' + token);
-        if (record) {
-          await kv.put('stripe_token_' + token, record, { expirationTtl: TOKEN_TTL_SEC });
-          await kv.put('customer_index_' + customerId, token, { expirationTtl: TOKEN_TTL_SEC });
-        }
+      const record = await kv.get('stripe_token_' + customerId);
+      if (record) {
+        await kv.put('stripe_token_' + customerId, record, { expirationTtl: TOKEN_TTL_SEC });
+        console.log('[stripe_webhook] TTL延長: customer=' + customerId);
+      } else {
+        console.log('[stripe_webhook] ⚠️TTL延長対象のトークンが見つからない: customer=' + customerId);
       }
     }
   }
