@@ -813,11 +813,14 @@ tr:hover td{background:rgba(79,195,247,0.03);}
 <div class="modal-overlay" id="modal-nagi-apikey" onclick="if(event.target===this)closeModal('modal-nagi-apikey')">
   <div class="modal" style="max-width:480px;">
     <button class="modal-close" onclick="closeModal('modal-nagi-apikey')">✕</button>
-    <div class="modal-title">🔑 Anthropic APIキー設定</div>
+    <div class="modal-title">🔑 AI機能の初回設定</div>
     <p style="font-size:0.78rem;color:var(--sub);margin-bottom:12px;line-height:1.7;">
-      取得先：<code style="background:var(--bg);padding:2px 6px;border-radius:4px;">console.anthropic.com</code> → API Keys → Create Key<br>
-      キーは <code style="background:var(--bg);padding:2px 6px;border-radius:4px;">sk-ant-</code> または <code style="background:var(--bg);padding:2px 6px;border-radius:4px;">sk-</code> で始まります。<br>
-      保存先：<code style="background:var(--bg);padding:2px 6px;border-radius:4px;">localStorage（mitsumeru_api_key）</code> ←ミツメルと共通
+      AI経営アドバイスの生成など、AIを使う機能は初回だけ設定が必要です。手順：<br>
+      ①ブラウザで <code style="background:var(--bg);padding:2px 6px;border-radius:4px;">console.anthropic.com</code> を開く（別タブで開いてください）<br>
+      ②画面の案内に沿ってアカウントを登録する<br>
+      ③「API Keys」→「Create Key」でキーを発行する<br>
+      ④発行された文字列（<code style="background:var(--bg);padding:2px 6px;border-radius:4px;">sk-</code> から始まります）をコピーし、下に貼り付けて保存する<br>
+      ※ミツメルで既に設定済みの場合は、このシステムでも自動的に同じキーが使われます（あらためて入力する必要はありません）
     </p>
     <div class="form-group">
       <label style="font-size:0.78rem;color:var(--sub);">APIキー</label>
@@ -3503,9 +3506,9 @@ function nagiSetApiKey(){
   if(inp) inp.value = '';
   if(status){
     if(nagiApiKey){
-      status.innerHTML = '<span style="color:var(--accent2);">✅ 設定済み：' + nagiApiKey.substring(0,14) + '...</span>';
+      status.innerHTML = '<span style="color:var(--accent2);">✅ 設定済みです（' + nagiApiKey.substring(0,10) + '...）</span>';
     } else {
-      status.innerHTML = '<span style="color:var(--warn);">⚠️ 未設定です。APIキーを入力してください。</span>';
+      status.innerHTML = '<span style="color:var(--warn);">⚠️ まだ設定されていません。上の手順でキーを入力してください。</span>';
     }
   }
   openModal('modal-nagi-apikey');
@@ -3521,13 +3524,13 @@ function saveNagiApiKey(){
     return;
   }
   if(!raw.startsWith('sk-')){
-    if(status) status.innerHTML = '<span style="color:var(--danger);">❌ キーは「sk-」から始まる文字列です。</span>';
+    if(status) status.innerHTML = '<span style="color:var(--danger);">❌ キーの形式が正しくないようです（sk- で始まる文字列のはずです）。</span>';
     return;
   }
   nagiApiKey = raw;
   localStorage.setItem('mitsumeru_api_key', nagiApiKey);
   updateNagiApiBtn();
-  if(status) status.innerHTML = '<span style="color:var(--accent2);">✅ 保存しました：' + nagiApiKey.substring(0,14) + '...</span>';
+  if(status) status.innerHTML = '<span style="color:var(--accent2);">✅ 保存しました（' + nagiApiKey.substring(0,10) + '...）</span>';
   if(inp) inp.value = '';
   setTimeout(()=>closeModal('modal-nagi-apikey'), 800);
 }
@@ -3753,7 +3756,7 @@ ${sections.join('\n')}
     err => {
       document.getElementById('nagi-advice-loading').style.display = 'none';
       const out = document.getElementById('nagi-advice-output');
-      out.textContent = 'エラー：' + err + '\n\nAPIキーを確認してください（右上の「🔑 API」ボタン）。\nまた、ブラウザのCORSポリシーを回避するため、chrome --disable-web-security で起動する必要があります。';
+      out.textContent = 'エラー：' + err + '\n\nAPIキーを確認してください（右上の「🔑 API」ボタン）。\nそれでもうまく動作しない場合は、運営へお問い合わせください。';
       out.style.display = 'block';
     }
   );
