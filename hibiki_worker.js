@@ -266,8 +266,10 @@ async function handleStripeVerify(request, env) {
   const record = await getKV(env).get('stripe_token_' + String(token).substring(0, 64));
   if (!record) return jsonRes({ valid: false });
 
+  // 課金判定にはvalid/planのみで十分（設計・QA指摘・2026-07-20）。emailはトークン漏洩時に
+  // 購入者の個人情報まで一緒に漏れてしまうため、レスポンスに含めない。
   const data = JSON.parse(record);
-  return jsonRes({ valid: true, plan: data.plan, email: data.email });
+  return jsonRes({ valid: true, plan: data.plan });
 }
 
 // ===== /lite-usage-check（ミツメルLite・利用回数のサーバー側管理） =====

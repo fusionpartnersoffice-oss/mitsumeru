@@ -1301,8 +1301,10 @@ async function verifyProToken(token) {
     localStorage.setItem('mitsumeru_lite_pro_verified', ok ? 'true' : 'false');
     return ok;
   } catch (e) {
-    // ネットワーク不通時は直近の検証結果をそのまま維持する（オフラインで即Pro解除にしない）
-    return isPro();
+    // QA所見（2026-07-20）：この関数は表示用・コード入力時の確認にのみ使用し、AI呼び出しの
+    // 実行可否ゲートには使わない（ゲートの本丸はcheckUsageAllowed()、フェイルクローズ設計）。
+    // 将来この関数をゲートに転用する事故を防ぐため、通信不通時は安全側（未検証=false）に倒す。
+    return false;
   }
 }
 
