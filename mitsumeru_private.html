@@ -9,8 +9,10 @@
 <title>ミツメル PRIVATE — 柴山靖章専用</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%233a3028'/><polygon points='16,3 27,9.5 27,22.5 16,29 5,22.5 5,9.5' fill='none' stroke='%23c8b89a' stroke-width='1.2'/><polygon points='9,10 15,14 9,22' fill='%238a7a6a'/><polygon points='23,10 17,14 23,22' fill='%238a7a6a'/><circle cx='16' cy='16' r='3.5' fill='%23c8b89a'/></svg>">
 <!-- QRコード生成（2026-07-20・アクセストークンのスマホ渡し用）。davidshimjs/qrcodejs（new QRCode(el, opts)形式）。
-     読み取り側はブラウザ標準のBarcodeDetector APIを使うため追加ライブラリ不要。 -->
-<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+     QA指摘（2026-07-20）：柴山さん個人のアクセストークンを扱うため、外部CDNから実行コードを
+     都度取り寄せる構成を避け、vendor/へ自ホスト化。読み取り側はブラウザ標準のBarcodeDetector APIを
+     使うため追加ライブラリ不要。 -->
+<script src="vendor/qrcode.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;500&family=Noto+Sans+JP:wght@300;400;500&display=swap');
 
@@ -1861,6 +1863,16 @@ function savePrivateTokenFromSettings() {
 
 // ===== トークンのQR同期（2026-07-20・設計発注：携帯とのトークン手入力を無くす） =====
 // 表示側：今この端末に保存済みのトークンをQRコード化して見せるだけ（新しい値は作らない）。
+// QA指摘（2026-07-20）：アクセストークンを画面に出しっぱなしにしないよう、60秒後の自動消去と
+// 手動の「閉じる」導線を用意する。
+let _privateTokenQRHideTimer = null;
+function hidePrivateTokenQR() {
+  if (_privateTokenQRHideTimer) { clearTimeout(_privateTokenQRHideTimer); _privateTokenQRHideTimer = null; }
+  const area = document.getElementById('private-token-qr-area');
+  if (area) { area.style.display = 'none'; area.innerHTML = ''; }
+  const msg = document.getElementById('private-token-qr-msg');
+  if (msg) msg.textContent = '';
+}
 function showPrivateTokenQR() {
   const token = getPrivateToken();
   const area = document.getElementById('private-token-qr-area');
@@ -1881,7 +1893,15 @@ function showPrivateTokenQR() {
   area.innerHTML = '';
   area.style.display = 'block';
   new QRCode(area, { text: token, width: 200, height: 200 });
-  if (msg) msg.textContent = 'もう一方の端末の「📷 QRを読み取る」で、この画面を映してください。';
+  const closeBtn = document.createElement('button');
+  closeBtn.className = 'btn-secondary';
+  closeBtn.textContent = '閉じる';
+  closeBtn.style.cssText = 'margin-top:8px;width:100%;';
+  closeBtn.onclick = hidePrivateTokenQR;
+  area.appendChild(closeBtn);
+  if (msg) msg.textContent = 'もう一方の端末の「📷 QRを読み取る」で、この画面を映してください（60秒後に自動で隠れます）。';
+  if (_privateTokenQRHideTimer) clearTimeout(_privateTokenQRHideTimer);
+  _privateTokenQRHideTimer = setTimeout(hidePrivateTokenQR, 60000);
 }
 
 // 読み取り側：ブラウザのBarcodeDetector APIでQRを検出し、成功したら自動でトークンを保存する。
@@ -1896,8 +1916,9 @@ function startPrivateTokenQRScan() {
   if (!area) return;
 
   if (typeof BarcodeDetector === 'undefined') {
-    area.style.display = 'none';
-    if (msg) msg.textContent = 'このブラウザはQR読み取りに対応していません。お手数ですが下の欄に直接貼り付けてください。';
+    // iOS Safari等、BarcodeDetector非対応ブラウザ向けフォールバック（2026-07-20追加）。
+    // paulmillr/qr（0-dependency・decode対応）をCDN経由で動的importして代替する。
+    startPrivateTokenQRScanFallback();
     return;
   }
 
@@ -1939,6 +1960,65 @@ function stopPrivateTokenQRScan() {
   if (_privateTokenScanStream) { _privateTokenScanStream.getTracks().forEach(t => t.stop()); _privateTokenScanStream = null; }
   const area = document.getElementById('private-token-scan-area');
   if (area) { area.style.display = 'none'; area.innerHTML = ''; }
+}
+
+// iOS Safari等、BarcodeDetector非対応ブラウザ向けフォールバック（2026-07-20・リサーチ照会で判明した
+// iOS非対応への対応）。paulmillr/qr（依存なし・decode対応・Apache-2.0 OR MIT）をCDN経由でESM importし、
+// 自前でvideoフレームをcanvasへ描画→ImageDataを渡して解読する。BarcodeDetectorが無いブラウザでのみ使用。
+// ⚠️実機（iPad実機でのカメラ解読）は本セッションでは検証できていません。QA・ラットでの実機確認が必要です。
+function startPrivateTokenQRScanFallback() {
+  const area = document.getElementById('private-token-scan-area');
+  const msg = document.getElementById('private-token-qr-msg');
+  if (!area) return;
+
+  area.style.display = 'block';
+  area.innerHTML = '<video id="private-token-scan-video" autoplay playsinline muted style="width:100%;border-radius:8px;"></video><button class="btn-secondary" onclick="stopPrivateTokenQRScan()" style="margin-top:6px;width:100%;">読み取りをやめる</button>';
+  const video = document.getElementById('private-token-scan-video');
+  if (msg) msg.textContent = 'カメラを準備しています…';
+
+  Promise.all([
+    import('https://esm.sh/qr@0.6.0/decode.js').catch(() => null),
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+  ]).then(([decodeModule, stream]) => {
+    if (!decodeModule) {
+      if (msg) msg.textContent = 'QR読み取り機能を読み込めませんでした。お手数ですが下の欄に直接貼り付けてください。';
+      stream.getTracks().forEach(t => t.stop());
+      area.style.display = 'none';
+      return;
+    }
+    const decodeQR = decodeModule.default;
+    _privateTokenScanStream = stream;
+    video.srcObject = stream;
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (msg) msg.textContent = 'カメラをQRコードに向けてください。';
+
+    const tick = () => {
+      if (!_privateTokenScanStream) return; // 停止済み
+      if (video.videoWidth > 0) {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        try {
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const scanned = decodeQR(imageData);
+          if (scanned && typeof scanned === 'string' && scanned.trim()) {
+            localStorage.setItem('mitsumeru_private_access_token', scanned.trim());
+            const input = document.getElementById('private-access-token-input');
+            if (input) input.value = scanned.trim();
+            if (msg) msg.textContent = '✓ QRからトークンを読み取り、保存しました。';
+            stopPrivateTokenQRScan();
+            return;
+          }
+        } catch (e) { /* このフレームでは検出できず。次のフレームへ（想定内の失敗） */ }
+      }
+      _privateTokenScanRAF = requestAnimationFrame(tick);
+    };
+    tick();
+  }).catch(() => {
+    if (msg) msg.textContent = 'カメラを使用できませんでした。ブラウザの設定でカメラへのアクセスを許可してください。';
+    area.style.display = 'none';
+  });
 }
 
 function callClaude(prompt, onSuccess, onError, maxTokens) {
