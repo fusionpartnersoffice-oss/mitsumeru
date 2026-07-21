@@ -281,7 +281,8 @@
 // ============================================================
 // 奏 Kanade v1 — MVP（範囲A：面接ガイド＋自動採点）
 // データは localStorage に保存（縦断データの種）。
-// 適性検査フェーズ2：LSRP搭載（AI検証済み・内部法務意見書に基づく設計・奏システム_LSRP搭載_法務意見書_20260626.md）。
+// 適性検査フェーズ2：LSRP搭載（2026-07-21・柴山さん判断により検証段階のためダミー参照文書を使用。
+// 08_法務\検証用ダミー_奏LSRP運用文書_20260721.md 参照。実在の法務意見書ではない）。
 //   原則：①医学的診断でない ②スコアのみで採否不可 ③本人同意必須 ④トリガーであり命令でない。
 // ============================================================
 
@@ -417,7 +418,7 @@ function lsrpAlertBanner(c){
   if (total===null || total <= Number(th)) return '';
   return `<div class="legal-note" style="margin-top:10px">
     <b>⚠ 面接中止推奨</b>（LSRP合計 ${total}pt／設定閾値 ${esc(th)}pt 超過）<br>
-    <span style="font-size:11px">※これは参考情報です。最終判断は面接官が行ってください。システムによる応募者の自動除外・ステータス変更は行いません（法務意見書条件2準拠）。</span>
+    <span style="font-size:11px">※これは参考情報です。最終判断は面接官が行ってください。システムによる応募者の自動除外・ステータス変更は行いません（検証用ダミー文書 条件2〔仮〕・実在の正式な法務確認ではありません）。</span>
   </div>`;
 }
 
@@ -493,7 +494,7 @@ function addCandidate() {
     interviewer: document.getElementById('new-interviewer').value.trim(),
     // フェーズ1
     egoCP:'', egoNP:'', egoA:'', egoFC:'', egoAC:'', ennea:'', enneaWing:'', p1note:'',
-    // 適性検査フェーズ2：LSRP（法務確認済み・参考指標）＋本人同意
+    // 適性検査フェーズ2：LSRP（検証段階・参考指標）＋本人同意
     lsrp1:'', lsrp2:'', lsrpNote:'', lsrpConsent:false, lsrpConsentDate:'',
     // Block1：面接仮説（AI生成）
     aiHypothesis:'', aiHypothesisAt:'',
@@ -577,7 +578,7 @@ function importAptitudeResult() {
     const num = (top1.type || '').replace(/^T/, '');
     if (num) { c.ennea = 'タイプ' + num + (top1.name ? '（' + top1.name + '）' : ''); imported.push('エニアグラム'); }
   }
-  // LSRP：本人同意（lsrpConsent）取得済みの場合のみ反映（奏システム_LSRP搭載_法務意見書_20260626.md・法務確認済みの同意ゲートを迂回しない）
+  // LSRP：本人同意（lsrpConsent）取得済みの場合のみ反映（検証用ダミー文書・08_法務\検証用ダミー_奏LSRP運用文書_20260721.md の同意ゲートを迂回しない）
   if (data.lsrp && (data.lsrp.primary !== undefined || data.lsrp.secondary !== undefined)) {
     if (!c.lsrpConsent) {
       alert('LSRPスコアも含まれていますが、本人同意が未取得のためLSRP欄への反映はスキップしました。\nエゴグラム・エニアグラムのみ反映します。同意取得後、再度インポートしてください。');
@@ -663,11 +664,11 @@ function renderInterview() {
     <div class="field"><label>所見・面接で確認したい仮説</label><textarea oninput="setField('p1note', this.value)" placeholder="検査から立てた仮説をメモ">${esc(c.p1note)}</textarea></div>
   </div>
 
-  <!-- 適性検査フェーズ2：LSRP（法務確認済み・参考指標） -->
+  <!-- 適性検査フェーズ2：LSRP（検証段階・参考指標） -->
   <div class="section">
     <div class="section-title">適性検査フェーズ2 ｜ LSRP（精神病質傾向の参考指標）</div>
     <div class="legal-note">
-      <b>⚖ AI検証済み（内部法務意見書に基づく設計・奏システム_LSRP搭載_法務意見書_20260626.md）</b><br>
+      <b>⚠ 検証段階（正式な法務確認は未完了・08_法務\検証用ダミー_奏LSRP運用文書_20260721.md 参照）</b><br>
       LSRPは<b>医学的診断ではありません</b>。スコアのみを根拠とした採用拒否・配置決定は行えません（職業安定法・障害者差別解消法）。
       必ず面談・行動観察など<b>事実情報と組み合わせて</b>、複数情報の一つとして参照してください。
     </div>
@@ -688,7 +689,7 @@ function renderInterview() {
         <div class="field"><label>二次サイコパシー（pt）</label><input type="text" inputmode="numeric" value="${esc(c.lsrp2)}" oninput="setField('lsrp2', this.value)" placeholder="例：19"></div>
       </div>
 
-      <!-- トリガー表示（命令ではない・奏システム_LSRP搭載_法務意見書_20260626.md 条件2） -->
+      <!-- トリガー表示（命令ではない・検証用ダミー文書 条件2〔仮〕・08_法務\検証用ダミー_奏LSRP運用文書_20260721.md） -->
       <div class="trigger-banner">
         <span class="t-title">⚑ これはトリガー（きっかけ）です — 命令ではありません</span>
         スコアが気になる場合の正しい読み方：「スコアのみで判断せず、<b>個別面談で事実を確認</b>し、
@@ -699,7 +700,7 @@ function renderInterview() {
     </div>
 
     <div class="note-box" style="margin-top:10px">
-      🔒 保管・取扱い（奏システム_LSRP搭載_法務意見書_20260626.md 条件5）：データはこの端末（このパソコン）にのみ保存され、外部送信しません。
+      🔒 保管・取扱い（検証用ダミー文書 条件5〔仮〕・08_法務\検証用ダミー_奏LSRP運用文書_20260721.md）：データはこの端末（このパソコン）にのみ保存され、外部送信しません。
       本人からの開示請求に対応。不採用者は採用活動終了後6ヶ月以内に削除（候補者一覧の✕で削除）。
     </div>
   </div>
@@ -892,11 +893,11 @@ function buildMarkdown(c) {
 - エニアグラム：${c.ennea||'—'} ${c.enneaWing||''}
 - 所見・仮説：${c.p1note||'—'}
 
-## 適性検査フェーズ2：LSRP（参考指標・法務確認済み）
+## 適性検査フェーズ2：LSRP（参考指標・検証段階）
 - 本人同意：${c.lsrpConsent ? '取得済み（'+(c.lsrpConsentDate||'日時不明')+'）' : '未取得'}
 - 一次サイコパシー：${c.lsrp1||'—'} pt ／ 二次サイコパシー：${c.lsrp2||'—'} pt
 - 面談で確認した事実・所見：${c.lsrpNote||'—'}
-- ※LSRPは医学的診断ではなく参考指標。スコアのみでの採否・配置決定は不可。これはトリガーであり命令ではない（奏システム_LSRP搭載_法務意見書_20260626.md 条件2）。
+- ※LSRPは医学的診断ではなく参考指標。スコアのみでの採否・配置決定は不可。これはトリガーであり命令ではない（検証用ダミー文書 条件2〔仮〕・正式な法務確認は未完了）。
 
 ## 面接仮説（AI生成・Block1）
 ${c.aiHypothesis ? c.aiHypothesis + '\n\n生成日時：' + (c.aiHypothesisAt||'—') : '未生成'}
