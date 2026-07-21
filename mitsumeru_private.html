@@ -3084,6 +3084,16 @@ HP: ${hp}→${endHP} ／ MP: ${mp}→${endMP}
     return;
   }
 
+  // 柱B・QA指摘対応（2026-07-21）：欠落セクションの検知。
+  // 「特になし」表示だけだと、AIが本当に「該当事実なし」と判断したのか、
+  // マーカー欠落で生成に失敗したのかが利用者から区別できない（QA🟡条件付きOK）。
+  // 最低限コンソールへ出し、欠落が多い場合は画面上にも一言添える。
+  const _aiSectionKeys = ['calendar','review','delegate','cutloss','comment','summaryP','summaryV','summaryG','tomorrowPlan','tomorrowMessage'];
+  const _missingSections = _aiSectionKeys.filter(k => !aiResult[k]);
+  if (_missingSections.length > 0) {
+    console.warn('[ミツメル AI生成] 欠落セクション:', _missingSections);
+  }
+
   // 既存の【1】〜【5】形式を再構成する（copyForNotebookLM・copyTextForKeep等、
   // output-markdownの全文コピーに依存する既存機能との互換性を保つため）
   const text = `【1】本日のP（実施事項）
@@ -3109,13 +3119,19 @@ ${aiResult.tomorrowMessage || '特になし'}
 ・アーカイブ移動：[済みファイルがあれば記載。なければ「なし」]
 ・session_log追記：[今日のサマリーを1行で記載]`;
 
-  mdBox.textContent = text;
+  // 欠落が半数（5件）以上の場合は、生成失敗の可能性が高いと利用者にも一言添える
+  mdBox.textContent = _missingSections.length >= 5
+    ? `⚠️ 一部の項目がうまく生成されませんでした。お手数ですが「翌日戦略を生成する」をもう一度お試しください。\n\n${text}`
+    : text;
   mdBox.classList.add('visible');
 
   // 柱B（リサーチ設計案）：「明日への一言」を最も目立つ位置に固定表示
   const tomorrowBox = document.getElementById('output-tomorrow-message');
   if (tomorrowBox && aiResult.tomorrowMessage) {
     tomorrowBox.textContent = '🌙 ' + aiResult.tomorrowMessage;
+    tomorrowBox.style.display = 'block';
+  } else if (tomorrowBox && _missingSections.includes('tomorrowMessage')) {
+    tomorrowBox.textContent = '⚠️ 「明日への一言」が生成されませんでした。再生成をお試しください。';
     tomorrowBox.style.display = 'block';
   }
 
