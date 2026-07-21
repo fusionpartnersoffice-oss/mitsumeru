@@ -8,6 +8,8 @@
 <meta http-equiv="Expires" content="0">
 <title>ミツメル v8 — Fusion Partners</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%233a3028'/><polygon points='16,3 27,9.5 27,22.5 16,29 5,22.5 5,9.5' fill='none' stroke='%23c8b89a' stroke-width='1.2'/><polygon points='9,10 15,14 9,22' fill='%238a7a6a'/><polygon points='23,10 17,14 23,22' fill='%238a7a6a'/><circle cx='16' cy='16' r='3.5' fill='%23c8b89a'/></svg>">
+<!-- 柱A（共通コア化・2026-07-21）：APIキー管理・Claude API呼び出しの共通処理 -->
+<script src="./mitsumeru_core.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;500&family=Noto+Sans+JP:wght@300;400;500&display=swap');
 
@@ -1811,18 +1813,14 @@ async function forceSyncFromCloud() {
   alert('KVから最新データを取得しました。');
 }
 
+// 柱A（共通コア化）：中身はmitsumeru_core.jsへ委譲。既存の技術用語露出（生のconsole.anthropic.com
+// 案内）も、core.js側の平易な文言（mitsumeruPromptApiKey）に置き換わることで自動的に解消される。
 function getApiKey() {
   if (apiKey) return apiKey;
-  const key = prompt('AnthropicのAPIキーを入力してください：\n\n取得方法：console.anthropic.com → API Keys → Create Key');
-  if (key && key.trim().startsWith('sk-')) {
-    apiKey = key.trim();
-    localStorage.setItem('mitsumeru_api_key', apiKey);
-    return apiKey;
-  } else if (key) {
-    alert('APIキーは「sk-」から始まる文字列です。もう一度確認してください。');
-    return null;
-  }
-  return null;
+  apiKey = mitsumeruGetApiKey('mitsumeru_api_key');
+  if (apiKey) return apiKey;
+  apiKey = mitsumeruPromptApiKey('mitsumeru_api_key');
+  return apiKey;
 }
 
 function callClaude(prompt, onSuccess, onError) {
