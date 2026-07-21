@@ -2078,8 +2078,11 @@ function startPrivateTokenQRScanFallback() {
 }
 
 // 柱A（共通コア化）：中身はmitsumeru_core.jsへ委譲。呼び出し元の契約（引数・コールバック）は無変更。
+// 2026-07-21：Workerプロキシ方式へ移行（app.htmlが2026-07-19に移行済みの安全な方式に合わせる）。
+// ブラウザから直接api.anthropic.comを叩かなくなり、CORS回避のためのブラウザセキュリティ
+// 無効化案内が不要になる。SYNC_URLは既存のcloud同期用定数を流用（1397行目付近で定義済み）。
 function callClaude(prompt, onSuccess, onError, maxTokens) {
-  mitsumeruCallClaude('mitsumeru_private_api_key', prompt, onSuccess, onError, maxTokens);
+  mitsumeruCallClaude('mitsumeru_private_api_key', prompt, onSuccess, onError, maxTokens, SYNC_URL);
 }
 
 const courseData = {

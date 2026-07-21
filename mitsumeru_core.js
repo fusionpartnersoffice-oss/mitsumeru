@@ -44,26 +44,40 @@ function mitsumeruPromptApiKey(storageKey) {
   return result.key;
 }
 
-// Claude API呼び出し（4引数に統一。maxTokensは省略可）
-function mitsumeruCallClaude(storageKey, promptText, onSuccess, onError, maxTokens) {
+// Claude API呼び出し。
+// proxyUrlを渡すとWorkerプロキシ（{proxyUrl}/analyze-proxy）経由になる（app.htmlが2026-07-19に
+// 移行済みの安全な方式。ブラウザから直接api.anthropic.comを叩かないため、
+// CORS回避のためのブラウザセキュリティ無効化案内が不要）。
+// 省略時は直接fetch（旧方式・過渡的に残す。3ファイル全てプロキシ統一後は
+// このオプション自体を撤去する想定。設計：06_イノベーション\ミツメル_共通コア化_柱A設計書_v1_20260721.md）
+function mitsumeruCallClaude(storageKey, promptText, onSuccess, onError, maxTokens, proxyUrl) {
   maxTokens = maxTokens || 4000;
   const key = mitsumeruGetApiKey(storageKey);
   if (!key) { onError(MITSUMERU_MSG.apiKeyNotConfigured); return; }
-  fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': key,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true'
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
-      max_tokens: maxTokens,
-      messages: [{ role: 'user', content: promptText }]
-    })
-  }).then(r => r.json()).then(data => {
-    if (data.error) { onError(data.error.message); return; }
+
+  const request = proxyUrl
+    ? fetch(`${proxyUrl}/analyze-proxy`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ apikey: key, promptText, maxTokens })
+      })
+    : fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': key,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: maxTokens,
+          messages: [{ role: 'user', content: promptText }]
+        })
+      });
+
+  request.then(r => r.json()).then(data => {
+    if (data.error) { onError(typeof data.error === 'string' ? data.error : data.error.message); return; }
     const text = data.content?.map(c => c.text || '').join('') || 'エラーが発生しました';
     onSuccess(text);
   }).catch(e => onError(e.message));
