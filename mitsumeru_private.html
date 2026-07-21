@@ -13,6 +13,8 @@
      都度取り寄せる構成を避け、vendor/へ自ホスト化。読み取り側はブラウザ標準のBarcodeDetector APIを
      使うため追加ライブラリ不要。 -->
 <script src="vendor/qrcode.min.js"></script>
+<!-- 柱A（共通コア化・2026-07-21）：APIキー管理・Claude API呼び出しの共通処理 -->
+<script src="./mitsumeru_core.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;500&family=Noto+Sans+JP:wght@300;400;500&display=swap');
 
@@ -1152,6 +1154,8 @@
     <div class="section-title">① ミツメル行動監査サマリー</div>
     <button class="btn-primary" onclick="generateEvening()" style="margin-bottom:12px;">翌日戦略を生成する</button>
     <div class="loading-text" id="output-loading">Claude が分析中です...</div>
+    <!-- 柱B（2026-07-21・リサーチ設計案）：「明日への一言」を最も目立つ位置に固定表示 -->
+    <div id="output-tomorrow-message" style="display:none;background:#fff8e8;border:1px solid #e8d090;border-radius:8px;padding:12px 14px;margin-bottom:10px;font-size:13px;line-height:1.8;color:#3a3020;"></div>
     <div class="output-box" id="output-markdown"></div>
     <div id="output-copy-row" style="display:none;flex-direction:column;gap:8px;margin-top:10px;">
       <div style="display:flex;gap:8px;">
@@ -1883,17 +1887,18 @@ async function forceSyncFromCloud() {
   }
 }
 
+// 柱A（共通コア化）：中身はmitsumeru_core.jsへ委譲。関数名・挙動は既存呼び出し元と同じ。
 function getApiKey() {
   if (apiKey) return apiKey;
-  apiKey = localStorage.getItem('mitsumeru_private_api_key') || '';
+  apiKey = mitsumeruGetApiKey('mitsumeru_private_api_key') || '';
   return apiKey || null;
 }
 
 function saveApiKeyFromSettings() {
-  const key = (document.getElementById('private-api-key-input') || {value:''}).value.trim();
-  if (!key) return;
-  apiKey = key;
-  localStorage.setItem('mitsumeru_private_api_key', key);
+  const input = document.getElementById('private-api-key-input') || {value:''};
+  const result = mitsumeruSetApiKey('mitsumeru_private_api_key', input.value);
+  if (!result.ok) return; // 空欄なら既存どおり無反応（フォーム形式・エラー文言はこの画面では未使用のため現状維持）
+  apiKey = result.key;
   const saved = document.getElementById('private-api-key-saved');
   if (saved) { saved.style.display = 'block'; setTimeout(() => saved.style.display = 'none', 2000); }
 }
@@ -2072,23 +2077,9 @@ function startPrivateTokenQRScanFallback() {
   });
 }
 
+// 柱A（共通コア化）：中身はmitsumeru_core.jsへ委譲。呼び出し元の契約（引数・コールバック）は無変更。
 function callClaude(prompt, onSuccess, onError, maxTokens) {
-  maxTokens = maxTokens || 4000;
-  const key = getApiKey();
-  if (!key) { onError('APIキーが設定されていません。設定タブ → APIキー欄で設定してください。'); return; }
-  fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
-      max_tokens: maxTokens,
-      messages: [{ role: 'user', content: prompt }]
-    })
-  }).then(r => r.json()).then(data => {
-    if (data.error) { onError(data.error.message); return; }
-    const text = data.content?.map(c => c.text || '').join('') || 'エラーが発生しました';
-    onSuccess(text);
-  }).catch(e => onError(e.message));
+  mitsumeruCallClaude('mitsumeru_private_api_key', prompt, onSuccess, onError, maxTokens);
 }
 
 const courseData = {
@@ -2783,14 +2774,25 @@ function buildDelayWithFlags(delayText, history) {
 }
 
 // AIによるアイゼンハワー分類
-async function runAICalendarAnalysis(tomorrow, delayWithFlags, hp, mp, eveSummary) {
-  const hpNum = parseInt(hp), mpNum = parseInt(mp);
+// 柱B（2026-07-21・リサーチ設計案採用）：カレンダー分類＋ナレーションを1回のAPI呼び出しへ統合。
+// 旧：runAICalendarAnalysis（①分類）→ 結果をgenerateEvening内の第2プロンプトへ埋め込み、という
+// 2回呼び出し構成だった（②が①に依存するため順番に呼ぶ必要があった）。
+// 新：①②とも同じ入力データから同一呼び出し内で同時生成させることで統合し、重複入力（endHP/endMP等）を1回に削減。
+async function runAIEveningAnalysis(promptContext) {
+  const { tomorrow, delayWithFlags, hp, mp, eveSummary, profileText, p, v, g, debugText,
+          endHP, endMP, counts, lvBaseFormatted, dateStr, trend7, must, never, ego, enea1, supplement } = promptContext;
+
+  const hpNum = parseInt(endHP), mpNum = parseInt(endMP);
   const isLowEnergy = (!isNaN(hpNum) && hpNum <= 70) || (!isNaN(mpNum) && mpNum <= 70);
   const limitNote = isLowEnergy
-    ? `※夜の締め後 HP=${hp}/MP=${mp} で低エネルギー。明日の追加タスクは最大2つまでに絞ること。`
+    ? `※夜の締め後 HP=${endHP}/MP=${endMP} で低エネルギー。明日の追加タスクは最大2つまでに絞ること。`
     : '';
 
-  const prompt = `あなたはFusion Partners代表の「SuccessOS 統合経営参謀」です。
+  const prompt = `あなたはFusion Partners代表・柴山靖章の専属「SuccessOS 統合経営参謀」です。
+柴山さんの今日1日を知る唯一の参謀として、事実を読み、的確な言葉と明日の設計を返してください。
+
+【柴山靖章 プロファイル】
+${profileText}
 
 ${eveSummary || ''}
 
@@ -2800,13 +2802,30 @@ ${tomorrow || 'なし'}
 【先送りタスクリスト（⚠️は3日以上の長期先送り）】
 ${delayWithFlags || 'なし'}
 
-【明日に持ち越すエネルギー（夜の締め後）】HP:${hp}/100 MP:${mp}/100
+【明日に持ち越すエネルギー（夜の締め後）】HP:${endHP}/100 MP:${endMP}/100
 ${limitNote}
 
-上の「今日の終わり方（消耗・成長・デバッグ結果）」を必ず踏まえ、明日の負荷を調整してください。
-上記に明記されていない予定・出来事を創作しないこと（「明日の確定アポ」に無いものを勝手に補わない）。
-文体：硬い分析レポート的な言い回しは避け、口語的で柔らかい言い方にすること。
-以下の区切りマーカーを必ず使い、各セクションを出力してください。他のテキストは不要です。
+指定日：${dateStr}
+過去7日間トレンド：${trend7}
+P（事実）：${p}
+V（ノイズ）：${v}
+G（気づき）：${g}
+デバッグ評価（役割/委譲/動機/資産/余白）：${debugText}
+補足・追記：${supplement || 'なし'}
+
+以下のルールを厳守してください：
+- 客観的な事実のみ抽出。感情的な脚色・推測・ハルシネーション禁止。マークダウン装飾禁止（#・##・太字の多用禁止）
+- 該当事実がない場合は「特になし」と明記。語尾は「です・ます」調
+- 上の「今日の終わり方（消耗・成長・デバッグ結果）」を必ず踏まえ、明日の負荷を調整すること
+- 上記に明記されていない予定・出来事を創作しないこと（「明日の確定アポ」に無いものを勝手に補わない）
+- **文体は「エレガントに毒を吐く」（正典「文体・トーン」準拠）。精神論を排した知的な語り口で、断言はするが攻撃的にはならない。この文体は全セクションで一貫させること**
+- 特にHP/MPが低い・悪化した等のネガティブな事実を伝える時ほど、事実は正確に伝えたうえで最後に軽いユーモア・オチを添えて着地させること。深刻な内容の時はユーモアの強さを抑え誠実さを優先する判断も必要
+- 説明的・事務的な言い回しを避け、柴山さんご本人が実際に使う生きた言い回しに近づけること（分析の正確さ・具体性は犠牲にしない）
+- 明日の行動戦略のタスク優先順位はMUST「${must}」に照らして判断すること。NEVER「${never}」に反する提案は絶対にしないこと
+- エゴグラム（${ego}）またはエニアグラム第1位（${enea1}）を、V(ノイズ)分析かTOMORROW_MESSAGEで必ず1回具体的に言及すること
+- トーン厳守：同志として隣に立つ言葉（上から目線・励まし・慰め禁止）。命令形・断定形は「〜してみませんか」「〜でどうでしょう」に変換すること
+
+以下の区切りマーカーを必ず使い、10セクションすべてを出力してください。他のテキストは不要です。
 
 ===CALENDAR===
 確定アポ以外で①急・重要なタスクのみ。形式：HHMM ポモ数 タスク内容（1行1件）
@@ -2818,16 +2837,37 @@ ${limitNote}
 ④先送り3日以上（損切り提案）を箇条書き
 ===COMMENT===
 伴走コメント2〜3文。必ず「今日の終わり方」を根拠として具体的に引用して評価する（例：MPが○○まで落ちた／デバッグ✕が△件あった／Try100を△件達成した、等の事実を挙げ、だから明日をこう設計した、と述べる）。
+===SUMMARY_P===
+今日完了したこと・実施したことの事実のみ
+===SUMMARY_V===
+浮き彫りになった問題・懸念・保留事項
+===SUMMARY_G===
+今後の戦略やFusion OS構築に繋がる視点
+===TOMORROW_PLAN===
+ポモ数は必ず数字で記載し省略禁止。以下の形式：
+最優先タスク（急重度①）：内容（Xポモ）
+重要タスク（急重度②）：内容（Xポモ）
+軽微タスク（急重度③）：内容（Xポモ）
+保留・将来タスク（急重度④）：内容（ポモ未定）
+（①翌日必達・急用で重要／②翌日中・重要だが急用でない／③今週中・急用だが重要でない／④将来対応）
+===TOMORROW_MESSAGE===
+以下の形式で必ず記載：
+HP：${endHP}/100　MP：${endMP}/100　LV：${lvBaseFormatted}
+根拠：デバッグ評価・ポモ数・ノイズ件数を踏まえHP/MPがこの値になった要因を1文で（計算式の読み上げは禁止。「今日は〇〇に時間を使った分、HPが削られた感じですね」のように実際の一日の様子として言葉にする）
+明日への一言：分量は固定しない（目安1〜3文、迷ったら短い方）。今日のP・Gの中で最も印象的なものを最初の1文で拾い、最後にもう1文「明日は〜してみませんか」という提案の形で添えてよい
 ===END===`;
 
   return new Promise(resolve => {
     callClaude(prompt,
       text => resolve(parseAICalendarSections(text)),
-      ()   => resolve(null)
+      ()   => resolve(null),
+      8000
     );
   });
 }
 
+// 統合後は10セクション。既存フィールド名（calendar/review/delegate/cutloss/comment）は
+// カレンダーCSV生成コードとの互換のためそのまま維持し、新規5フィールドを追加する。
 function parseAICalendarSections(text) {
   const get = (from, to) => {
     const re = new RegExp('===' + from + '===\\s*([\\s\\S]*?)(?:===' + to + '===|$)');
@@ -2839,7 +2879,12 @@ function parseAICalendarSections(text) {
     review:   get('REVIEW','DELEGATE'),
     delegate: get('DELEGATE','CUTLOSS'),
     cutloss:  get('CUTLOSS','COMMENT'),
-    comment:  get('COMMENT','END')
+    comment:  get('COMMENT','SUMMARY_P'),
+    summaryP: get('SUMMARY_P','SUMMARY_V'),
+    summaryV: get('SUMMARY_V','SUMMARY_G'),
+    summaryG: get('SUMMARY_G','TOMORROW_PLAN'),
+    tomorrowPlan:    get('TOMORROW_PLAN','TOMORROW_MESSAGE'),
+    tomorrowMessage: get('TOMORROW_MESSAGE','END')
   };
 }
 
@@ -2933,9 +2978,39 @@ HP: ${hp}→${endHP} ／ MP: ${mp}→${endMP}
   loading.style.display = 'block';
   mdBox.classList.remove('visible'); csvBox.classList.remove('visible'); delayCsvBox.classList.remove('visible');
   if (commentBox) { commentBox.style.display='none'; commentBox.textContent=''; }
+  const tomorrowBoxReset = document.getElementById('output-tomorrow-message');
+  if (tomorrowBoxReset) { tomorrowBoxReset.style.display='none'; tomorrowBoxReset.textContent=''; }
 
-  // ① AI分類（アイゼンハワー）を先に実行
-  const aiResult = await runAICalendarAnalysis(tomorrow, delayWithFlags, endHP, endMP, eveSummary);
+  // 柱B（2026-07-21）：カレンダー分類＋ナレーションを1回のAPI呼び出しへ統合
+  // 7日間トレンド・プロファイルは、旧②プロンプトでのみ使っていたが、統合呼び出しでも必要なため先に計算する
+  const trend7 = (() => {
+    const results = [];
+    const today = new Date();
+    for (let i = 1; i <= 7; i++) {
+      const d = new Date(today); d.setDate(d.getDate() - i);
+      const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      const m = lsLoad('morning', ds);
+      if (m && m['hp-val']) results.push({ ds, hp: parseInt(m['hp-val'])||0, mp: parseInt(m['mp-val']||'0')||0 });
+    }
+    if (!results.length) return '記録なし';
+    const avgHP = Math.round(results.reduce((s,r)=>s+r.hp,0)/results.length);
+    const avgMP = Math.round(results.reduce((s,r)=>s+r.mp,0)/results.length);
+    return `過去${results.length}日平均 HP:${avgHP} MP:${avgMP}`;
+  })();
+  const _epSaved = localStorage.getItem('mitsumeru_private_profile');
+  const _ep = _epSaved ? JSON.parse(_epSaved) : {};
+  const _eMust = _ep.must || '未設定';
+  const _eNever = _ep.never || '未設定';
+  const _eEgo = _ep.ego ? `CP:${_ep.ego.cp} NP:${_ep.ego.np} A:${_ep.ego.a} FC:${_ep.ego.fc} AC:${_ep.ego.ac}` : '未設定';
+  const _eEnea1 = (_ep.enea && _ep.enea[0]) ? _ep.enea[0] : '未設定';
+  const lvBaseFormatted = `${formatLV(close.lvBase + close.todayPts)}（本日+${lv}pt、${counts.pomo}ポモ）`;
+
+  const aiResult = await runAIEveningAnalysis({
+    tomorrow, delayWithFlags, hp, mp, eveSummary,
+    profileText: getProfileText(), p, v, g, debugText,
+    endHP, endMP, counts, lvBaseFormatted, dateStr, trend7,
+    must: _eMust, never: _eNever, ego: _eEgo, enea1: _eEnea1, supplement
+  });
 
   // ② 確定アポ CSV（確定アポ + AI①）
   const { events: confirmedEvents } = parseSchedule(tomorrow);
@@ -3000,98 +3075,31 @@ HP: ${hp}→${endHP} ／ MP: ${mp}→${endMP}
     commentBox.style.display = 'block';
   }
 
-  // ④ メインサマリー生成
-  const aiScheduleSuggestion = aiResult ? `【AI提案スケジュール（①急・重要）】\n${aiResult.calendar||'なし'}\n\n【要検討リスト】\n②今週中:${aiResult.review||'なし'}\n③委任:${aiResult.delegate||'なし'}\n④損切り:${aiResult.cutloss||'なし'}` : '';
+  // ④ メインサマリー表示（柱B：統合呼び出しの結果からここで組み立てる。2回目のAPI呼び出しは無し）
+  loading.style.display = 'none';
 
-  // 7日間トレンド取得
-  const trend7 = (() => {
-    const results = [];
-    const today = new Date();
-    for (let i = 1; i <= 7; i++) {
-      const d = new Date(today); d.setDate(d.getDate() - i);
-      const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-      const m = lsLoad('morning', ds);
-      if (m && m['hp-val']) results.push({ ds, hp: parseInt(m['hp-val'])||0, mp: parseInt(m['mp-val']||'0')||0 });
-    }
-    if (!results.length) return '記録なし';
-    const avgHP = Math.round(results.reduce((s,r)=>s+r.hp,0)/results.length);
-    const avgMP = Math.round(results.reduce((s,r)=>s+r.mp,0)/results.length);
-    return `過去${results.length}日平均 HP:${avgHP} MP:${avgMP}`;
-  })();
+  if (!aiResult) {
+    mdBox.textContent = 'エラー：AIからの応答を取得できませんでした。しばらくしてからもう一度お試しください。';
+    mdBox.classList.add('visible');
+    return;
+  }
 
-  // プロファイルから夜用に直接展開
-  const _epSaved = localStorage.getItem('mitsumeru_private_profile');
-  const _ep = _epSaved ? JSON.parse(_epSaved) : {};
-  const _eMust = _ep.must || '未設定';
-  const _eNever = _ep.never || '未設定';
-  const _eEgo = _ep.ego ? `CP:${_ep.ego.cp} NP:${_ep.ego.np} A:${_ep.ego.a} FC:${_ep.ego.fc} AC:${_ep.ego.ac}` : '未設定';
-  const _eEnea1 = (_ep.enea && _ep.enea[0]) ? _ep.enea[0] : '未設定';
-
-  const prompt = `あなたはFusion Partners代表・柴山靖章の専属「SuccessOS 統合経営参謀」です。
-柴山さんの今日1日を知る唯一の参謀として、事実を読み、的確な言葉と明日の設計を返してください。
-
-【柴山靖章 プロファイル】
-${getProfileText()}
-
-以下のルールを厳守してください：
-- 客観的な事実のみ抽出
-- 感情的な脚色・推測・ハルシネーション禁止
-- マークダウン装飾禁止（#・##・太字の多用禁止）
-- 該当事実がない場合は「特になし」と明記
-- 語尾は「です・ます」調
-- **文体は「エレガントに毒を吐く」（正典「文体・トーン」準拠。出典：「エレガントな毒の吐き方」京都式コミュニケーション＝100対0で叩きのめさず、指摘やネガティブな事実も最後は笑い・ユーモアでマイルドに着地させる技術）。精神論を排した知的な語り口で、断言はするが攻撃的にはならない。福祉現場の空気を知っている人の言葉を使う。この文体は【1】〜【5】の出力全体で一貫させること（【5】だけがユーモアを持つ構成にしない）**
-- 特にHP/MPが低い・悪化した等のネガティブな事実を伝える時ほど、事務的に言い切って終わらせず（100:0の断定で追い詰めない）、事実は正確に伝えたうえで最後に軽いユーモア・オチを添えて着地させること。ただし機知・皮肉は上品さを保ち、軽薄にはしないこと。体調不良・HP/MPの大幅な悪化等、特に深刻な内容の時は、ユーモアの強さを抑え誠実さを優先する判断も必要
-- 説明的・事務的な言い回し（悪い例：「エネルギーが完全に底をついた状態です」）を避け、柴山さんご本人が実際に使う生きた言い回し（良い例：「ばっちり使い切っている、エコですね」）に近づけること。ただし分析の正確さ・具体性は一切犠牲にしない（ユーモアと精度はトレードオフではない。両方成立させること）
-- 【4】明日の行動戦略のタスク優先順位はMUST「${_eMust}」に照らして判断すること
-- NEVER「${_eNever}」に反する提案は絶対にしないこと
-- エゴグラム（${_eEgo}）またはエニアグラム第1位（${_eEnea1}）を【3】気づきか【5】明日への一言で必ず1回具体的に言及すること
-
----
-指定日：${dateStr}
-HP:${hp}→${endHP}/100　MP:${mp}→${endMP}/100　本日ポモ:${counts.pomo}ポモ(+${lv}pt)　LV:${formatLV(close.lvBase)}→${formatLV(close.lvBase + close.todayPts)}
-過去7日間トレンド：${trend7}
-
-P（事実）：${p}
-V（ノイズ）：${v}
-G（気づき）：${g}
-デバッグ評価（役割/委譲/動機/資産/余白）：${debugText}
-HP/MP消耗内訳：ポモ${close.pomoTotal}個→HP-${close.hpFromPomo}${close.mpFromPomo ? `/MP-${close.mpFromPomo}` : ''}、ノイズ${close.noiseCount}件→MP-${close.mpFromNoise}、デバッグ✕${close.cntBatsu}/△${close.cntSankaku}→HP-${close.hpFromDebug}/MP-${close.mpFromDebug}、Try100 ${close.try100Done}件→MP+${close.mpFromTry100}
-
-補足・追記：${supplement || 'なし'}
-明日の確定アポ：${tomorrow || 'なし'}
-先送りタスク（フラグ付き）：${delayWithFlags || 'なし'}
-${aiScheduleSuggestion ? '\n' + aiScheduleSuggestion : ''}
----
-
-【1】本日のP（実施事項）
-今日完了したこと・実施したことの事実のみ
+  // 既存の【1】〜【5】形式を再構成する（copyForNotebookLM・copyTextForKeep等、
+  // output-markdownの全文コピーに依存する既存機能との互換性を保つため）
+  const text = `【1】本日のP（実施事項）
+${aiResult.summaryP || '特になし'}
 
 【2】本日のV（ノイズ・ボトルネック）
-浮き彫りになった問題・懸念・保留事項
+${aiResult.summaryV || '特になし'}
 
 【3】本日のG（気づき・アイデア・Tryの種）
-今後の戦略やFusion OS構築に繋がる視点
+${aiResult.summaryG || '特になし'}
 
 【4】明日の行動戦略
-ポモ数は必ず数字で記載し省略禁止：
-
-最優先タスク（急重度①）：内容（Xポモ）
-重要タスク（急重度②）：内容（Xポモ）
-軽微タスク（急重度③）：内容（Xポモ）
-保留・将来タスク（急重度④）：内容（ポモ未定）
-
-急重度の定義：
-①翌日必達・急用で重要
-②翌日中・重要だが急用でない
-③今週中・急用だが重要でない
-④将来対応
+${aiResult.tomorrowPlan || '特になし'}
 
 【5】本日のステータスと明日への一言
-以下の形式で必ず記載してください：
-HP：${endHP}/100　MP：${endMP}/100　LV：${formatLV(close.lvBase + close.todayPts)}（本日+${lv}pt、${counts.pomo}ポモ）
-根拠：デバッグ評価（役割/委譲/動機/資産/余白の〇△✕）・ポモ数・ノイズ件数を踏まえ、HP/MPがこの値になった要因を1文で書く。ただし「ポモ12個でHP-24」のような数式的な内訳の書き方（計算式の読み上げ）はしないこと。「今日は〇〇に時間を使った分、HPが削られた感じですね」のように、数字の裏にある実際の一日の様子として言葉にすること
-明日への一言：分量は固定しない（目安1〜3文）。今日の記録量（P/V/Gの文字数）や過去7日間トレンド（${trend7}）から疲れが溜まっていそうだと判断できる時は特に簡潔に。余裕がありそうな時はやや詳しくしてよい。読む負担自体が新たなタスクにならないよう、迷ったら短い方を選ぶこと。**一指示一動作**：今日のP/G・性質分析・行動決断を全部詰め込まない。今日のP（実施事項）かG（気づき）の中で最も印象的なものを最初の1文で具体的に拾うことを主軸にする（HP/MP数値より今日起きた事実を優先）。エゴグラム（${_eEgo}）・エニアグラム第1位（${_eEnea1}）・MUST「${_eMust}」は、自然に絡む場合のみ軽く触れてよいが、無理に毎回全部入れない。最後にもう1文だけ、「だから明日はこう動きます」という断定ではなく「明日は〜してみませんか」という提案の形で添えてよい。
-トーン厳守：同志として隣に立つ言葉（上から目線・励まし・慰め禁止）。ユーモアを1つ自然に。比喩より事実ベース。具体的に書くが根拠は必ず上記データのみ。データにない事実を作って解像度を演出しないこと。上記【柴山靖章プロファイル】の指標名（エゴグラムのCP/NP/A/FC/AC、エニアグラムの番号等）はそのまま転記せず自分の言葉に置き換える。「〜という性質だが」等の硬い分析口調も避け、口語的で柔らかい言い方にすること。命令形・断定形（「〜すべきです」）は「〜してみませんか」「〜でどうでしょう」に変換する（介護現場のスピーチロック回避の知見を応用）。事実承認（評価ではなく事実をそのまま伝える言い方）は使えそうな場面があれば積極的に使ってよい。
+${aiResult.tomorrowMessage || '特になし'}
 
 ---
 【明日のVault管理Codeへの指示】
@@ -3101,39 +3109,36 @@ HP：${endHP}/100　MP：${endMP}/100　LV：${formatLV(close.lvBase + close.tod
 ・アーカイブ移動：[済みファイルがあれば記載。なければ「なし」]
 ・session_log追記：[今日のサマリーを1行で記載]`;
 
-  callClaude(prompt,
-    text => {
-      loading.style.display = 'none';
-      mdBox.textContent = text;
-      mdBox.classList.add('visible');
-      const outputPayload = { text, _ts: Date.now() };
-      localStorage.setItem(lsKey('output'), JSON.stringify(outputPayload));
-      cloudSave('output', outputPayload);
-      const _bsHP = typeof close.endHP === 'number' ? close.endHP : 50;
-      const _bsMP = typeof close.endMP === 'number' ? close.endMP : 50;
-      // バーンアウトV2（睡眠・コース・ポモ・7日トレンド加味）
-      const _sleepH = (() => { try { const lsM = lsLoad('morning')||{}; const s=lsM['m-sleep']||'23:00', w=lsM['m-wake']||'07:00'; const [sh,sm]=s.split(':').map(Number),[wh,wm]=w.split(':').map(Number); let m=(wh*60+wm)-(sh*60+sm); if(m<0)m+=1440; return m/60; } catch(e){return 7;} })();
-      const _cv = parseInt((document.getElementById('m-course')||{value:'4'}).value)||4;
-      const _base = (100-_bsHP)*0.3+(100-_bsMP)*0.4+close.noiseCount*5+close.cntBatsu*8;
-      const _sf = _sleepH<5?20:_sleepH<6?10:0;
-      const _cf = (_cv>=5&&_bsHP<50)?8:0;
-      const _pf = close.pomoTotal>14?10:close.pomoTotal>10?5:0;
-      const _burnout = Math.min(100, Math.round(_base+_sf+_cf+_pf));
-      const _modeLevel = _bsHP>=60&&_bsMP>=60 ? 'normal' : (_bsHP>=40||_bsMP>=40 ? 'dblock' : 'minimal');
-      const _headline = (text.match(/明日への一言[：:]([^\n]+)/) || [])[1]?.trim().slice(0,60) || '';
-      cloudSaveFusionOSStatus({ hp: _bsHP, mp: _bsMP, mode_level: _modeLevel,
-        mode: _modeLevel==='normal'?'通常モード':_modeLevel==='dblock'?'D-blockモード':'2分タスクモード',
-        burnout_score: _burnout, noise_count: close.noiseCount, debug_x_count: close.cntBatsu,
-        pomo_total: close.pomoTotal, strategy_headline: _headline });
-      showOutputCopyBtns();
-    },
-    err => {
-      loading.style.display = 'none';
-      mdBox.textContent = 'エラー：' + err;
-      mdBox.classList.add('visible');
-    },
-    8000
-  );
+  mdBox.textContent = text;
+  mdBox.classList.add('visible');
+
+  // 柱B（リサーチ設計案）：「明日への一言」を最も目立つ位置に固定表示
+  const tomorrowBox = document.getElementById('output-tomorrow-message');
+  if (tomorrowBox && aiResult.tomorrowMessage) {
+    tomorrowBox.textContent = '🌙 ' + aiResult.tomorrowMessage;
+    tomorrowBox.style.display = 'block';
+  }
+
+  const outputPayload = { text, _ts: Date.now() };
+  localStorage.setItem(lsKey('output'), JSON.stringify(outputPayload));
+  cloudSave('output', outputPayload);
+  const _bsHP = typeof close.endHP === 'number' ? close.endHP : 50;
+  const _bsMP = typeof close.endMP === 'number' ? close.endMP : 50;
+  // バーンアウトV2（睡眠・コース・ポモ・7日トレンド加味）
+  const _sleepH = (() => { try { const lsM = lsLoad('morning')||{}; const s=lsM['m-sleep']||'23:00', w=lsM['m-wake']||'07:00'; const [sh,sm]=s.split(':').map(Number),[wh,wm]=w.split(':').map(Number); let m=(wh*60+wm)-(sh*60+sm); if(m<0)m+=1440; return m/60; } catch(e){return 7;} })();
+  const _cv = parseInt((document.getElementById('m-course')||{value:'4'}).value)||4;
+  const _base = (100-_bsHP)*0.3+(100-_bsMP)*0.4+close.noiseCount*5+close.cntBatsu*8;
+  const _sf = _sleepH<5?20:_sleepH<6?10:0;
+  const _cf = (_cv>=5&&_bsHP<50)?8:0;
+  const _pf = close.pomoTotal>14?10:close.pomoTotal>10?5:0;
+  const _burnout = Math.min(100, Math.round(_base+_sf+_cf+_pf));
+  const _modeLevel = _bsHP>=60&&_bsMP>=60 ? 'normal' : (_bsHP>=40||_bsMP>=40 ? 'dblock' : 'minimal');
+  const _headline = (text.match(/明日への一言[：:]([^\n]+)/) || [])[1]?.trim().slice(0,60) || '';
+  cloudSaveFusionOSStatus({ hp: _bsHP, mp: _bsMP, mode_level: _modeLevel,
+    mode: _modeLevel==='normal'?'通常モード':_modeLevel==='dblock'?'D-blockモード':'2分タスクモード',
+    burnout_score: _burnout, noise_count: close.noiseCount, debug_x_count: close.cntBatsu,
+    pomo_total: close.pomoTotal, strategy_headline: _headline });
+  showOutputCopyBtns();
 }
 
 function copyOutput(id) {

@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>読書メモ — 柴山靖章専用</title>
+<style>
+  :root {
+    --bg: #f5f1ea; --text: #2a2420; --text2: #5a5048; --text3: #8a7f74;
+    --border: #ddd3c4; --accent: #8a6a3a; --red: #c0392b; --green: #1a7a52;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Noto Sans JP', sans-serif; background: var(--bg); color: var(--text);
+    max-width: 640px; margin: 0 auto; padding: 24px 16px 60px;
+  }
+  h1 { font-size: 18px; font-weight: 500; letter-spacing: 2px; margin-bottom: 4px; }
+  p.sub { font-size: 12px; color: var(--text3); margin-bottom: 24px; }
+  .field { margin-bottom: 16px; }
+  label { display: block; font-size: 12px; color: var(--text2); margin-bottom: 6px; }
+  input[type=text] {
+    width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px;
+    font-size: 14px; background: #fff; color: var(--text);
+  }
+  .record-area {
+    border: 1px solid var(--border); border-radius: 10px; padding: 16px; background: #fff;
+  }
+  .record-btn {
+    display: block; width: 100%; padding: 16px; font-size: 15px; font-weight: 500;
+    border: none; border-radius: 8px; cursor: pointer; margin-bottom: 12px;
+    background: var(--accent); color: #fff;
+  }
+  .record-btn.recording { background: var(--red); }
+  textarea#transcript {
+    width: 100%; min-height: 160px; padding: 10px; border: 1px solid var(--border);
+    border-radius: 6px; font-size: 14px; line-height: 1.7; background: #fdfcfa; color: var(--text);
+    resize: vertical;
+  }
+  .save-btn {
+    display: block; width: 100%; padding: 12px; margin-top: 12px; font-size: 14px;
+    border: none; border-radius: 6px; cursor: pointer; background: var(--text); color: var(--bg);
+  }
+  .save-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  #status { font-size: 12px; margin-top: 10px; min-height: 16px; }
+  #status.ok { color: var(--green); }
+  #status.err { color: var(--red); }
+</style>
+</head>
+<body>
+
+<h1>読書メモ</h1>
+<p class="sub">本を読みながら、気づいたことをそのまま話してください。話した内容は本ごとにVaultへ自動で蓄積されます（本の複製ではなく、あなたの気づき・要点の記録です）。</p>
+
+<div class="field">
+  <label>本のタイトル</label>
+  <input type="text" id="book-title" placeholder="例：具体と抽象">
+</div>
+
+<div class="record-area">
+  <button class="record-btn" id="record-btn" onclick="toggleRecording()">🎤 話し始める</button>
+  <textarea id="transcript" placeholder="ここに話した内容が文字になって溜まっていきます（手で直接編集してもOKです）"></textarea>
+  <button class="save-btn" id="save-btn" onclick="saveNote()">Vaultへ保存する</button>
+  <div id="status"></div>
+</div>
+
+<script>
+const SYNC_URL = 'https://mitsumeru-sync.fusion-partners-office.workers.dev';
+let recognizer = null;
+
+function toggleRecording() {
+  const btn = document.getElementById('record-btn');
+  if (recognizer) { recognizer.stop(); return; }
+
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    alert('このブラウザは音声入力に対応していません。\nChrome または Edge をお使いください。');
+    return;
+  }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognizer = new SR();
+  recognizer.lang = 'ja-JP';
+  recognizer.interimResults = false;
+  recognizer.continuous = true;
+  btn.textContent = '⏹ 話すのをやめる';
+  btn.classList.add('recording');
+
+  recognizer.onresult = function(e) {
+    const box = document.getElementById('transcript');
+    let text = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) text += e.results[i][0].transcript;
+    }
+    if (text) {
+      box.value = (box.value ? box.value + '\n' : '') + text;
+    }
+  };
+  recognizer.onerror = function(e) {
+    btn.textContent = '🎤 話し始める';
+    btn.classList.remove('recording');
+    recognizer = null;
+    if (e.error !== 'aborted' && e.error !== 'no-speech') alert('音声入力エラー：' + e.error);
+  };
+  recognizer.onend = function() {
+    btn.textContent = '🎤 話し始める';
+    btn.classList.remove('recording');
+    recognizer = null;
+  };
+  recognizer.start();
+}
+
+function getPrivateToken() {
+  return localStorage.getItem('mitsumeru_private_access_token') || '';
+}
+
+async function saveNote() {
+  const bookTitle = document.getElementById('book-title').value.trim();
+  const noteText = document.getElementById('transcript').value.trim();
+  const statusEl = document.getElementById('status');
+  const saveBtn = document.getElementById('save-btn');
+
+  if (!bookTitle) { statusEl.textContent = '本のタイトルを入力してください。'; statusEl.className = 'err'; return; }
+  if (!noteText) { statusEl.textContent = '保存する内容がありません。'; statusEl.className = 'err'; return; }
+  if (!getPrivateToken()) { statusEl.textContent = 'アクセストークンが未設定です。ミツメルPRIVATEの設定画面で設定済みのトークンと同じものが必要です。'; statusEl.className = 'err'; return; }
+
+  saveBtn.disabled = true;
+  statusEl.textContent = '保存中…';
+  statusEl.className = '';
+
+  try {
+    const res = await fetch(`${SYNC_URL}/sync-vault-note`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bookTitle, noteText, token: getPrivateToken() }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      statusEl.textContent = '✓ 保存しました（' + (data.mode === 'created' ? '新規作成' : '追記') + '・累計' + data.count + '件）。';
+      statusEl.className = 'ok';
+      document.getElementById('transcript').value = '';
+    } else {
+      statusEl.textContent = '保存できませんでした：' + (data.error || '不明なエラー');
+      statusEl.className = 'err';
+    }
+  } catch (e) {
+    statusEl.textContent = '通信エラー：' + e.message;
+    statusEl.className = 'err';
+  } finally {
+    saveBtn.disabled = false;
+  }
+}
+</script>
+
+</body>
+</html>

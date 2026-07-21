@@ -54,6 +54,18 @@ export default {
       return handleSyncVault(request, env);
     }
 
+    // ===== 読書メモ（口述記録の拡張・2026-07-21・柴山さん指示）：本ごとにVaultへ音声メモを蓄積 =====
+    if (url.pathname === '/sync-vault-note' && request.method === 'POST') {
+      return handleSyncVaultNote(request, env);
+    }
+    if (url.pathname === '/sync-vault-note' && request.method === 'GET') {
+      const t = url.searchParams.get('token');
+      if (!env.PRIVATE_ACCESS_TOKEN || t !== env.PRIVATE_ACCESS_TOKEN) {
+        return new Response(JSON.stringify({ ok: false, error: 'private data requires a valid token' }), { status: 401, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
+      }
+      return handleGetVaultNote(request, env);
+    }
+
     // ===== アクセス解析（簡易・自前実装）：案件0の原因切り分け用（2026-07-14） =====
     // 個人情報・IPアドレス等は一切記録しない。ページ名＋日付ごとの匿名カウントのみ。
     if (url.pathname === '/pv' && request.method === 'GET') {
@@ -497,6 +509,75 @@ async function handleSyncVault(request, env) {
   }
 }
 
+// ═══════════════════════════════════════════════
+//  読書メモ（2026-07-21・柴山さん指示・設計優先度①）：読書中の口述記録をVaultへ蓄積する。
+//  Kindleの内容を複製するのではなく、柴山さんご自身の気づき・要点を音声で話したものを、
+//  本のタイトルごとにMarkdownとして追記していく（既存の口述記録の仕組みの拡張）。
+// ═══════════════════════════════════════════════
+
+// ファイル名に使えない文字を除去する（Google Driveのファイル名制約対応）
+function sanitizeFilename(s) {
+  return String(s || '').replace(/[\\/:*?"<>|]/g, '').trim().slice(0, 100) || '無題';
+}
+
+// 2026-07-21実測：Google Driveへの書き込みはサービスアカウントの既知の制約
+// （storageQuotaExceeded・個人Driveへ新規ファイル作成不可）で失敗するため、
+// 既存の/sync-vault（日次記録）と同じ問題を踏襲しないよう、KV保存方式にした。
+// Drive直接書き込みへの移行は、OAuth2/Picker方式（別途進行中）の完成後に検討する。
+async function handleSyncVaultNote(request, env) {
+  const headers = { ...CORS_HEADERS, 'Content-Type': 'application/json' };
+
+  let bookTitle, noteText, token;
+  try {
+    const body = await request.json();
+    bookTitle = body.bookTitle;
+    noteText = body.noteText;
+    token = body.token;
+  } catch (e) {
+    return new Response(JSON.stringify({ ok: false, error: 'リクエストの形式が不正です' }), { status: 400, headers });
+  }
+  // private_ プレフィックスキーを使うため、安全装置④（2026-07-19）と同じ基準でトークン必須にする
+  if (!env.PRIVATE_ACCESS_TOKEN || token !== env.PRIVATE_ACCESS_TOKEN) {
+    return new Response(JSON.stringify({ ok: false, error: 'private data requires a valid token' }), { status: 401, headers });
+  }
+  if (!bookTitle || !noteText) {
+    return new Response(JSON.stringify({ ok: false, error: 'bookTitleとnoteTextは必須です' }), { status: 400, headers });
+  }
+
+  try {
+    const kv = getKV(env);
+    const key = 'private_dokusho_memo_' + sanitizeFilename(bookTitle);
+    const timestamp = new Date().toISOString();
+    const entry = { text: noteText, ts: timestamp };
+
+    const existingRaw = await kv.get(key);
+    const record = existingRaw ? JSON.parse(existingRaw) : { bookTitle, entries: [] };
+    record.entries.push(entry);
+    await kv.put(key, JSON.stringify(record));
+
+    return new Response(JSON.stringify({ ok: true, bookTitle, mode: existingRaw ? 'append' : 'created', count: record.entries.length }), { status: 200, headers });
+  } catch (e) {
+    return new Response(JSON.stringify({ ok: false, error: e.message }), { status: 500, headers });
+  }
+}
+
+// 読書メモ一覧・全文取得（?title=で1冊分、省略で全冊のタイトル一覧のみ）
+async function handleGetVaultNote(request, env) {
+  const headers = { ...CORS_HEADERS, 'Content-Type': 'application/json' };
+  const url = new URL(request.url);
+  const title = url.searchParams.get('title');
+  const kv = getKV(env);
+
+  if (title) {
+    const raw = await kv.get('private_dokusho_memo_' + sanitizeFilename(title));
+    if (!raw) return new Response(JSON.stringify({ ok: true, found: false }), { status: 200, headers });
+    return new Response(JSON.stringify({ ok: true, found: true, record: JSON.parse(raw) }), { status: 200, headers });
+  }
+
+  const list = await kv.list({ prefix: 'private_dokusho_memo_' });
+  return new Response(JSON.stringify({ ok: true, keys: list.keys.map(k => k.name) }), { status: 200, headers });
+}
+
 // 日次記録をMarkdownに変換する（プロファイルキーには一切触れない。G2の戻り値のみを使用）
 function buildVaultMarkdown(date, record) {
   const morning = record.morning || {};
@@ -522,41 +603,25 @@ ${supplement}
 `;
 }
 
-// Google Drive API v3。指定フォルダ内に同名ファイルがあれば内容を更新（PATCH）、
-// なければ新規作成（multipart POST）。同日再実行しても重複作成しない。
-async function writeVaultMarkdown(env, accessToken, date, record) {
-  const folderId = env.GOOGLE_VAULT_FOLDER_ID;
-  const filename = `${date}.md`;
-  const content = buildVaultMarkdown(date, record);
-
+// Google Drive API v3。指定フォルダ内から同名ファイルを検索する（読書メモの追記判定と共用）。
+async function findVaultFile(accessToken, folderId, filename) {
   const query = encodeURIComponent(`name='${filename}' and '${folderId}' in parents and trashed=false`);
   const searchRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id,name)`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
   const searchData = await searchRes.json();
-  if (!searchRes.ok) {
-    throw new Error('Vault検索失敗: ' + JSON.stringify(searchData));
-  }
-  const existing = (searchData.files || [])[0];
+  if (!searchRes.ok) throw new Error('Vault検索失敗: ' + JSON.stringify(searchData));
+  return (searchData.files || [])[0] || null;
+}
 
-  if (existing) {
-    const res = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${existing.id}?uploadType=media`, {
-      method: 'PATCH',
-      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'text/markdown' },
-      body: content,
-    });
-    const data = await res.json();
-    if (!res.ok || !data.id) throw new Error('Vault更新失敗: ' + JSON.stringify(data));
-    return data;
-  }
-
+// 指定フォルダに新規ファイルを作成する（multipart POST）。
+async function createVaultFile(accessToken, folderId, filename, content) {
   const boundary = 'mitsumeru_vault_boundary';
   const metadata = { name: filename, parents: [folderId], mimeType: 'text/markdown' };
   const multipartBody =
     `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n` +
     `--${boundary}\r\nContent-Type: text/markdown\r\n\r\n${content}\r\n` +
     `--${boundary}--`;
-
   const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
     method: 'POST',
     headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': `multipart/related; boundary=${boundary}` },
@@ -565,4 +630,27 @@ async function writeVaultMarkdown(env, accessToken, date, record) {
   const data = await res.json();
   if (!res.ok || !data.id) throw new Error('Vault新規作成失敗: ' + JSON.stringify(data));
   return data;
+}
+
+// 既存ファイルの内容を丸ごと置き換える（PATCH）。
+async function overwriteVaultFile(accessToken, fileId, content) {
+  const res = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'text/markdown' },
+    body: content,
+  });
+  const data = await res.json();
+  if (!res.ok || !data.id) throw new Error('Vault更新失敗: ' + JSON.stringify(data));
+  return data;
+}
+
+// Google Drive API v3。指定フォルダ内に同名ファイルがあれば内容を更新（PATCH）、
+// なければ新規作成（multipart POST）。同日再実行しても重複作成しない。
+async function writeVaultMarkdown(env, accessToken, date, record) {
+  const folderId = env.GOOGLE_VAULT_FOLDER_ID;
+  const filename = `${date}.md`;
+  const content = buildVaultMarkdown(date, record);
+  const existing = await findVaultFile(accessToken, folderId, filename);
+  if (existing) return overwriteVaultFile(accessToken, existing.id, content);
+  return createVaultFile(accessToken, folderId, filename, content);
 }
