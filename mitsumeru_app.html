@@ -1210,6 +1210,7 @@
     <div class="section-title">① ミツメル行動監査サマリー</div>
     <button class="btn-primary" onclick="generateEvening()" style="margin-bottom:12px;">翌日戦略を生成する</button>
     <div class="loading-text" id="output-loading">Claude が分析中です...</div>
+    <div id="output-tomorrow-message" style="display:none;background:#fff8e8;border:1px solid #e8d090;border-radius:8px;padding:12px 14px;margin-bottom:10px;font-size:13px;line-height:1.8;color:#3a3020;"></div>
     <div class="output-box" id="output-markdown"></div>
     <div id="output-copy-row" style="display:none;flex-direction:column;gap:8px;margin-top:10px;">
       <div style="display:flex;gap:8px;">
@@ -1829,6 +1830,9 @@ function callClaude(prompt, onSuccess, onError) {
     let demoText;
     if (prompt.includes('【参謀からの一言】')) {
       demoText = DEMO_MORNING_TEXT;
+    } else if (prompt.includes('===TOMORROW_MESSAGE===')) {
+      // 柱B（2026-07-22）：統合後のrunAIEveningAnalysisプロンプト（10マーカー形式）
+      demoText = DEMO_EVENING_FULL_TEXT;
     } else if (prompt.includes('===CALENDAR===')) {
       demoText = DEMO_CALENDAR_TEXT;
     } else if (prompt.includes('【1】本日のP')) {
@@ -2606,12 +2610,19 @@ function buildDelayWithFlags(delayText, history) {
   }).join('\n');
 }
 
-// AIによるアイゼンハワー分類
-async function runAICalendarAnalysis(tomorrow, delayWithFlags, hp, mp, eveSummary) {
-  const hpNum = parseInt(hp), mpNum = parseInt(mp);
+// AIによるアイゼンハワー分類＋翌日戦略ナラティブ
+// 柱B（2026-07-22・リサーチ設計案採用、private.htmlと同一構成）：
+// 旧：runAICalendarAnalysis（①分類）→ 結果をgenerateEvening内の第2プロンプトへ埋め込み、という
+// 2回呼び出し構成だった（②が①に依存するため順番に呼ぶ必要があった）。
+// 新：①②とも同じ入力データから同一呼び出し内で同時生成させることで統合し、重複入力を1回に削減。
+async function runAIEveningAnalysis(promptContext) {
+  const { tomorrow, delayWithFlags, hp, mp, eveSummary, endHP, endMP, counts,
+          lvBaseFormatted, dateStr, p, v, g, debugText, supplement, notebooklm, close } = promptContext;
+
+  const hpNum = parseInt(endHP), mpNum = parseInt(endMP);
   const isLowEnergy = (!isNaN(hpNum) && hpNum <= 70) || (!isNaN(mpNum) && mpNum <= 70);
   const limitNote = isLowEnergy
-    ? `※夜の締め後 HP=${hp}/MP=${mp} で低エネルギー。明日の追加タスクは最大2つまでに絞ること。`
+    ? `※夜の締め後 HP=${endHP}/MP=${endMP} で低エネルギー。明日の追加タスクは最大2つまでに絞ること。`
     : '';
 
   const prompt = `あなたはFusion Partners代表の「SuccessOS 統合経営参謀」です。
@@ -2624,12 +2635,26 @@ ${tomorrow || 'なし'}
 【先送りタスクリスト（⚠️は3日以上の長期先送り）】
 ${delayWithFlags || 'なし'}
 
-【明日に持ち越すエネルギー（夜の締め後）】HP:${hp}/100 MP:${mp}/100
+【明日に持ち越すエネルギー（夜の締め後）】HP:${endHP}/100 MP:${endMP}/100
 ${limitNote}
 
-上の「今日の終わり方（消耗・成長・デバッグ結果）」を必ず踏まえ、明日の負荷を調整してください。
-上記に明記されていない予定・出来事を創作しないこと（「明日の確定アポ」に無いものを勝手に補わない）。
-以下の区切りマーカーを必ず使い、各セクションを出力してください。他のテキストは不要です。
+指定日：${dateStr}
+HP:${hp}→${endHP}/100　MP:${mp}→${endMP}/100　本日ポモ:${counts.pomo}ポモ　LV:${lvBaseFormatted}
+P（事実）：${p}
+V（ノイズ）：${v}
+G（気づき）：${g}
+デバッグ評価（役割/委譲/動機/資産/余白）：${debugText}
+HP/MP消耗内訳：ポモ${close.pomoTotal}個→HP-${close.hpFromPomo}${close.mpFromPomo ? `/MP-${close.mpFromPomo}` : ''}、ノイズ${close.noiseCount}件→MP-${close.mpFromNoise}、デバッグ✕${close.cntBatsu}/△${close.cntSankaku}→HP-${close.hpFromDebug}/MP-${close.mpFromDebug}、Try100 ${close.try100Done}件→MP+${close.mpFromTry100}
+補足・追記：${supplement || 'なし'}
+${notebooklm ? `NotebookLMからの気づき（ディープリサーチ・音声解説で得た視点。この観点も踏まえて明日の戦略を考えてください）：${notebooklm}` : ''}
+
+以下のルールを厳守してください：
+- 客観的な事実のみ抽出。感情的な脚色・推測・ハルシネーション禁止。マークダウン装飾禁止（#・##・太字の多用禁止）
+- 該当事実がない場合は「特になし」と明記。語尾は「です・ます」調
+- 上の「今日の終わり方（消耗・成長・デバッグ結果）」を必ず踏まえ、明日の負荷を調整すること
+- 上記に明記されていない予定・出来事を創作しないこと（「明日の確定アポ」に無いものを勝手に補わない）
+
+以下の区切りマーカーを必ず使い、10セクションすべてを出力してください。他のテキストは不要です。
 
 ===CALENDAR===
 確定アポ以外で①急・重要なタスクのみ。形式：HHMM ポモ数 タスク内容（1行1件）
@@ -2641,16 +2666,43 @@ ${limitNote}
 ④先送り3日以上（損切り提案）を箇条書き
 ===COMMENT===
 伴走コメント2〜3文。必ず「今日の終わり方」を根拠として具体的に引用して評価する（例：MPが○○まで落ちた／デバッグ✕が△件あった／Try100を△件達成した、等の事実を挙げ、だから明日をこう設計した、と述べる）。
+===SUMMARY_P===
+今日完了したこと・実施したことの事実のみ
+===SUMMARY_V===
+浮き彫りになった問題・懸念・保留事項
+===SUMMARY_G===
+今後の戦略やFusion OS構築に繋がる視点
+===TOMORROW_PLAN===
+ポモ数は必ず数字で記載し省略禁止。以下の形式：
+最優先タスク（急重度①）：内容（Xポモ）
+重要タスク（急重度②）：内容（Xポモ）
+軽微タスク（急重度③）：内容（Xポモ）
+保留・将来タスク（急重度④）：内容（ポモ未定）
+（①翌日必達・急用で重要／②翌日中・重要だが急用でない／③今週中・急用だが重要でない／④将来対応）
+===TOMORROW_MESSAGE===
+以下の形式で必ず記載してください：
+HP：${endHP}/100　MP：${endMP}/100　LV：${lvBaseFormatted}
+根拠：デバッグ評価（役割/委譲/動機/資産/余白の〇△✕）・ポモ数・ノイズ件数など上記の具体的な数値を引用して、HP/MPがこの値になった要因を1〜2文で記載（例：ポモ12個でHP-24、デバッグ✕2件でHP-6/MP-16、など）
+明日への一言：3〜5文。以下のトーンで書くこと：
+・上から目線の励ましは禁止。同志として隣に立つ言葉を使う
+・今日のHP/MP数値・デバッグ結果・ポモ数・ノイズ内容を読んで、この人だけに向けた言葉にする
+・具体的に書くが、根拠は必ず上記データのみ。データにない事実を作って熱量を演出しないこと
+・ユーモアを1つ自然に入れる
+・比喩より事実ベースの言葉を使う
+・アウェアファイより熱く、上司より近い同志のトーン
 ===END===`;
 
   return new Promise(resolve => {
     callClaude(prompt,
       text => resolve(parseAICalendarSections(text)),
-      ()   => resolve(null)
+      ()   => resolve(null),
+      8000
     );
   });
 }
 
+// 統合後は10セクション。既存フィールド名（calendar/review/delegate/cutloss/comment）は
+// カレンダーCSV生成コードとの互換のためそのまま維持し、新規5フィールドを追加する。
 function parseAICalendarSections(text) {
   const get = (from, to) => {
     const re = new RegExp('===' + from + '===\\s*([\\s\\S]*?)(?:===' + to + '===|$)');
@@ -2662,7 +2714,12 @@ function parseAICalendarSections(text) {
     review:   get('REVIEW','DELEGATE'),
     delegate: get('DELEGATE','CUTLOSS'),
     cutloss:  get('CUTLOSS','COMMENT'),
-    comment:  get('COMMENT','END')
+    comment:  get('COMMENT','SUMMARY_P'),
+    summaryP: get('SUMMARY_P','SUMMARY_V'),
+    summaryV: get('SUMMARY_V','SUMMARY_G'),
+    summaryG: get('SUMMARY_G','TOMORROW_PLAN'),
+    tomorrowPlan:    get('TOMORROW_PLAN','TOMORROW_MESSAGE'),
+    tomorrowMessage: get('TOMORROW_MESSAGE','END')
   };
 }
 
@@ -2756,9 +2813,16 @@ HP: ${hp}→${endHP} ／ MP: ${mp}→${endMP}
   loading.style.display = 'block';
   mdBox.classList.remove('visible'); csvBox.classList.remove('visible'); delayCsvBox.classList.remove('visible');
   if (commentBox) { commentBox.style.display='none'; commentBox.textContent=''; }
+  const tomorrowBoxReset = document.getElementById('output-tomorrow-message');
+  if (tomorrowBoxReset) { tomorrowBoxReset.style.display='none'; tomorrowBoxReset.textContent=''; }
 
-  // ① AI分類（アイゼンハワー）を先に実行
-  const aiResult = await runAICalendarAnalysis(tomorrow, delayWithFlags, endHP, endMP, eveSummary);
+  const lvBaseFormatted = `${formatLV(close.lvBase + close.todayPts)}（本日+${lv}pt、${counts.pomo}ポモ）`;
+
+  // 柱B（2026-07-22）：カレンダー分類＋ナラティブを1回のAPI呼び出しへ統合
+  const aiResult = await runAIEveningAnalysis({
+    tomorrow, delayWithFlags, hp, mp, eveSummary, endHP, endMP, counts,
+    lvBaseFormatted, dateStr, p, v, g, debugText, supplement, notebooklm, close
+  });
 
   // ② 確定アポ CSV（確定アポ + AI①）
   const { events: confirmedEvents } = parseSchedule(tomorrow);
@@ -2823,69 +2887,38 @@ HP: ${hp}→${endHP} ／ MP: ${mp}→${endMP}
     commentBox.style.display = 'block';
   }
 
-  // ④ メインサマリー生成
-  const aiScheduleSuggestion = aiResult ? `【AI提案スケジュール（①急・重要）】\n${aiResult.calendar||'なし'}\n\n【要検討リスト】\n②今週中:${aiResult.review||'なし'}\n③委任:${aiResult.delegate||'なし'}\n④損切り:${aiResult.cutloss||'なし'}` : '';
+  // ④ メインサマリー表示（柱B：統合呼び出しの結果からここで組み立てる。2回目のAPI呼び出しは無し）
+  loading.style.display = 'none';
 
-  const prompt = `あなたは今日の記録を読んで、明日の行動戦略を生成する専門AIです。
+  if (!aiResult) {
+    mdBox.textContent = 'エラー：AIからの応答を取得できませんでした。しばらくしてからもう一度お試しください。';
+    mdBox.classList.add('visible');
+    return;
+  }
 
-以下のルールを厳守してください：
-- 客観的な事実のみ抽出
-- 感情的な脚色・推測・ハルシネーション禁止
-- マークダウン装飾禁止（#・##・太字の多用禁止）
-- 該当事実がない場合は「特になし」と明記
-- 語尾は「です・ます」調
+  // QA指摘対応（private.htmlと同様・2026-07-21）：欠落セクションの検知。
+  const _aiSectionKeys = ['calendar','review','delegate','cutloss','comment','summaryP','summaryV','summaryG','tomorrowPlan','tomorrowMessage'];
+  const _missingSections = _aiSectionKeys.filter(k => !aiResult[k]);
+  if (_missingSections.length > 0) {
+    console.warn('[ミツメル AI生成] 欠落セクション:', _missingSections);
+  }
 
----
-指定日：${dateStr}
-HP:${hp}→${endHP}/100　MP:${mp}→${endMP}/100　本日ポモ:${counts.pomo}ポモ(+${lv}pt)　LV:${formatLV(close.lvBase)}→${formatLV(close.lvBase + close.todayPts)}
-
-P（事実）：${p}
-V（ノイズ）：${v}
-G（気づき）：${g}
-デバッグ評価（役割/委譲/動機/資産/余白）：${debugText}
-HP/MP消耗内訳：ポモ${close.pomoTotal}個→HP-${close.hpFromPomo}${close.mpFromPomo ? `/MP-${close.mpFromPomo}` : ''}、ノイズ${close.noiseCount}件→MP-${close.mpFromNoise}、デバッグ✕${close.cntBatsu}/△${close.cntSankaku}→HP-${close.hpFromDebug}/MP-${close.mpFromDebug}、Try100 ${close.try100Done}件→MP+${close.mpFromTry100}
-
-補足・追記：${supplement || 'なし'}
-明日の確定アポ：${tomorrow || 'なし'}
-先送りタスク（フラグ付き）：${delayWithFlags || 'なし'}
-${notebooklm ? `NotebookLMからの気づき（ディープリサーチ・音声解説で得た視点。この観点も踏まえて明日の戦略を考えてください）：${notebooklm}` : ''}
-${aiScheduleSuggestion ? '\n' + aiScheduleSuggestion : ''}
----
-
-【1】本日のP（実施事項）
-今日完了したこと・実施したことの事実のみ
+  // 既存の【1】〜【5】形式を再構成する（copyForNotebookLM・copyTextForKeep等、
+  // output-markdownの全文コピーに依存する既存機能との互換性を保つため）
+  const text = `【1】本日のP（実施事項）
+${aiResult.summaryP || '特になし'}
 
 【2】本日のV（ノイズ・ボトルネック）
-浮き彫りになった問題・懸念・保留事項
+${aiResult.summaryV || '特になし'}
 
 【3】本日のG（気づき・アイデア・Tryの種）
-今後の戦略やFusion OS構築に繋がる視点
+${aiResult.summaryG || '特になし'}
 
 【4】明日の行動戦略
-ポモ数は必ず数字で記載し省略禁止：
-
-最優先タスク（急重度①）：内容（Xポモ）
-重要タスク（急重度②）：内容（Xポモ）
-軽微タスク（急重度③）：内容（Xポモ）
-保留・将来タスク（急重度④）：内容（ポモ未定）
-
-急重度の定義：
-①翌日必達・急用で重要
-②翌日中・重要だが急用でない
-③今週中・急用だが重要でない
-④将来対応
+${aiResult.tomorrowPlan || '特になし'}
 
 【5】本日のステータスと明日への一言
-以下の形式で必ず記載してください：
-HP：${endHP}/100　MP：${endMP}/100　LV：${formatLV(close.lvBase + close.todayPts)}（本日+${lv}pt、${counts.pomo}ポモ）
-根拠：デバッグ評価（役割/委譲/動機/資産/余白の〇△✕）・ポモ数・ノイズ件数など上記の具体的な数値を引用して、HP/MPがこの値になった要因を1〜2文で記載（例：ポモ12個でHP-24、デバッグ✕2件でHP-6/MP-16、など）
-明日への一言：3〜5文。以下のトーンで書くこと：
-・上から目線の励ましは禁止。同志として隣に立つ言葉を使う
-・今日のHP/MP数値・デバッグ結果・ポモ数・ノイズ内容を読んで、この人だけに向けた言葉にする
-・具体的に書くが、根拠は必ず上記データのみ。データにない事実を作って熱量を演出しないこと
-・ユーモアを1つ自然に入れる
-・比喩より事実ベースの言葉を使う
-・アウェアファイより熱く、上司より近い同志のトーン
+${aiResult.tomorrowMessage || '特になし'}
 
 ---
 【明日のVault管理Codeへの指示】
@@ -2895,31 +2928,34 @@ HP：${endHP}/100　MP：${endMP}/100　LV：${formatLV(close.lvBase + close.tod
 ・アーカイブ移動：[済みファイルがあれば記載。なければ「なし」]
 ・session_log追記：[今日のサマリーを1行で記載]`;
 
-  callClaude(prompt,
-    text => {
-      loading.style.display = 'none';
-      mdBox.textContent = text;
-      mdBox.classList.add('visible');
-      const outputPayload = { text, _ts: Date.now() };
-      localStorage.setItem(lsKey('output'), JSON.stringify(outputPayload));
-      cloudSave('output', outputPayload);
-      const _bsHP = typeof close.endHP === 'number' ? close.endHP : 50;
-      const _bsMP = typeof close.endMP === 'number' ? close.endMP : 50;
-      const _burnout = Math.min(100, Math.round((100-_bsHP)*0.3 + (100-_bsMP)*0.4 + close.noiseCount*5 + close.cntBatsu*8));
-      const _modeLevel = _bsHP>=60&&_bsMP>=60 ? 'normal' : (_bsHP>=40||_bsMP>=40 ? 'dblock' : 'minimal');
-      const _headline = (text.match(/明日への一言[：:]([^\n]+)/) || [])[1]?.trim().slice(0,60) || '';
-      cloudSaveFusionOSStatus({ hp: _bsHP, mp: _bsMP, mode_level: _modeLevel,
-        mode: _modeLevel==='normal'?'通常モード':_modeLevel==='dblock'?'D-blockモード':'2分タスクモード',
-        burnout_score: _burnout, noise_count: close.noiseCount, debug_x_count: close.cntBatsu,
-        pomo_total: close.pomoTotal, strategy_headline: _headline });
-      showOutputCopyBtns();
-    },
-    err => {
-      loading.style.display = 'none';
-      mdBox.textContent = 'エラー：' + err;
-      mdBox.classList.add('visible');
-    }
-  );
+  mdBox.textContent = _missingSections.length >= 5
+    ? `⚠️ 一部の項目がうまく生成されませんでした。お手数ですが「翌日戦略を生成する」をもう一度お試しください。\n\n${text}`
+    : text;
+  mdBox.classList.add('visible');
+
+  // 柱B：「明日への一言」を最も目立つ位置に固定表示（private.htmlと同様）
+  const tomorrowBox = document.getElementById('output-tomorrow-message');
+  if (tomorrowBox && aiResult.tomorrowMessage) {
+    tomorrowBox.textContent = '🌙 ' + aiResult.tomorrowMessage;
+    tomorrowBox.style.display = 'block';
+  } else if (tomorrowBox && _missingSections.includes('tomorrowMessage')) {
+    tomorrowBox.textContent = '⚠️ 「明日への一言」が生成されませんでした。再生成をお試しください。';
+    tomorrowBox.style.display = 'block';
+  }
+
+  const outputPayload = { text, _ts: Date.now() };
+  localStorage.setItem(lsKey('output'), JSON.stringify(outputPayload));
+  cloudSave('output', outputPayload);
+  const _bsHP = typeof close.endHP === 'number' ? close.endHP : 50;
+  const _bsMP = typeof close.endMP === 'number' ? close.endMP : 50;
+  const _burnout = Math.min(100, Math.round((100-_bsHP)*0.3 + (100-_bsMP)*0.4 + close.noiseCount*5 + close.cntBatsu*8));
+  const _modeLevel = _bsHP>=60&&_bsMP>=60 ? 'normal' : (_bsHP>=40||_bsMP>=40 ? 'dblock' : 'minimal');
+  const _headline = (text.match(/明日への一言[：:]([^\n]+)/) || [])[1]?.trim().slice(0,60) || '';
+  cloudSaveFusionOSStatus({ hp: _bsHP, mp: _bsMP, mode_level: _modeLevel,
+    mode: _modeLevel==='normal'?'通常モード':_modeLevel==='dblock'?'D-blockモード':'2分タスクモード',
+    burnout_score: _burnout, noise_count: close.noiseCount, debug_x_count: close.cntBatsu,
+    pomo_total: close.pomoTotal, strategy_headline: _headline });
+  showOutputCopyBtns();
 }
 
 function copyOutput(id) {
@@ -3388,6 +3424,42 @@ HP：72/100　MP：65/100　LV：LV4/80（本日+40pt、4ポモ）
 ・ダッシュボード更新：スコープ確定完了 / コンテンツ構成ドラフト作成
 ・アーカイブ移動：なし
 ・session_log追記：本日のサマリーを1行で記載`;
+
+// 柱B（2026-07-22）：統合後のrunAIEveningAnalysisは10マーカーを1回の呼び出しで返す。
+// 旧DEMO_CALENDAR_TEXT/DEMO_EVENING_TEXTの内容を1本の10セクション形式へ統合。
+const DEMO_EVENING_FULL_TEXT = `===CALENDAR===
+0900 2 スコープ確定・実装準備
+1400 1 進捗確認・調整
+===REVIEW===
+・コンテンツ前編の仕上げ（今週中）
+・次フェーズの設計メモ作成
+===DELEGATE===
+・定型メール返信（テンプレート化候補）
+・資料整理（仕組み化できる作業）
+===CUTLOSS===
+（なし）
+===COMMENT===
+今日の消耗は想定内だった。MPがほどよく残っている状態で夜を迎えられた。明日は設計に集中できる日なので、朝一番に今日やること・やらないことを決めてから動き出すといい。余白を意図的に作ることで、午後のアウトプットが生きる。
+===SUMMARY_P===
+・最優先プロジェクトのスコープ確定（2ポモ）
+・コンテンツ構成ドラフト作成（1ポモ）
+・Claude壁打ちセッション・方針確定（1ポモ）
+===SUMMARY_V===
+・返事待ち案件が頭に残り、集中が一部分散した
+・タスクの優先順位づけで設計より実装に入りすぎる場面があった
+===SUMMARY_G===
+・「設計に徹する」というアーキテクト・シフトの原則を今日の現場で再確認できた
+・仕組み化の余地があるルーティンを1つ特定。来週中にテンプレート化する
+===TOMORROW_PLAN===
+最優先タスク（急重度①）：確定事項の実装着手（3ポモ）
+重要タスク（急重度②）：コンテンツ前編完成・投稿（2ポモ）
+軽微タスク（急重度③）：進捗確認メール送信（1ポモ）
+保留・将来タスク（急重度④）：次期システム連携設計（ポモ未定）
+===TOMORROW_MESSAGE===
+HP：72/100　MP：65/100　LV：LV4/80（本日+40pt、4ポモ）
+根拠：ポモ4個でHP-8、ノイズ2件でMP-10、デバッグ△1件でMP-4。Try100達成2件でMP+6。消耗は想定内で、Try100が下支えしている。
+明日への一言：今日の手応えはちゃんとある。同じテンポで明日も入れ。HPもMPも十分残っている——むしろ今週一番動ける日かもしれない。「できそうな気がする」じゃなくて「やる」で入ろう。うまくいかなくてもミツメルがいる。
+===END===`;
 
 function checkDemoOrApiKey() {
   if (!apiKey) apiKey = localStorage.getItem('mitsumeru_api_key') || '';
