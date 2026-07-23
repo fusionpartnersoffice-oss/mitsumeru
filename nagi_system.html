@@ -227,6 +227,7 @@ tr:hover td{background:rgba(79,195,247,0.03);}
     <button class="btn btn-success btn-sm" onclick="autoSyncAll()" style="background:var(--accent2);border-color:var(--accent2);">🔄 診断データを同期</button>
     <button class="btn btn-secondary btn-sm" onclick="openModal('modal-bulk-import')">📥 手動インポート</button>
     <button class="btn btn-secondary btn-sm" onclick="openModal('modal-data')">⚙ データ管理</button>
+    <button class="btn btn-secondary btn-sm" onclick="exportNagiToVault()" title="この端末に保存されている凪のデータをMarkdownファイルとして書き出します">📤 Vaultへ書き出す</button>
     <button class="btn btn-warn btn-sm" onclick="loadSample()">📊 サンプル</button>
     <button class="btn btn-secondary btn-sm" id="nagi-api-btn" onclick="nagiSetApiKey()">🔑 API</button>
     <button class="btn btn-primary btn-sm" onclick="openNagiAdvice()" style="background:linear-gradient(135deg,#7b61ff,#4fc3f7);border:none;">🤖 AI経営アドバイス</button>
@@ -3483,6 +3484,45 @@ function printAll(){
   };
   window.addEventListener('afterprint',restore);
   setTimeout(()=>window.print(),200);
+}
+
+// ════════════════════════════════════════════════════
+//  Vaultへの手動書き出し（2026-07-23・設計承認・柴山さん承認）
+//  凪はKV/Worker同期機構を持たず全データがこの端末のlocalStorageのみに存在するため、
+//  「押した時点のこの端末の内容」をMarkdownファイルとしてダウンロードする方式にした
+//  （自動・定期実行はスコープ外。設計との理解復唱どおり）。
+// ════════════════════════════════════════════════════
+function exportNagiToVault(){
+  const keys = Object.keys(localStorage).filter(k => k.startsWith('nagi_')).sort();
+  if (keys.length === 0) { alert('書き出せるデータがありません。'); return; }
+
+  const now = new Date();
+  const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  const timeStr = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+  let body = `# 凪システム データ書き出し（${dateStr}）\n\n`;
+  body += `- 作成者：柴山さん（凪システム画面の「📤 Vaultへ書き出す」ボタン）／作成日時：${dateStr} ${timeStr}\n`;
+  body += `- ステータス：現行・手動書き出し（自動・定期実行ではありません。押した時点のこの端末のデータです）\n`;
+  body += `- 読み方：①読むだけでよい\n\n---\n\n`;
+
+  keys.forEach(k => {
+    let parsed;
+    try { parsed = JSON.parse(localStorage.getItem(k)); }
+    catch (e) { parsed = localStorage.getItem(k); }
+    body += `## ${k}\n\n\`\`\`json\n${JSON.stringify(parsed, null, 2)}\n\`\`\`\n\n`;
+  });
+
+  const blob = new Blob([body], { type: 'text/markdown;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `凪システム_データ書き出し_${dateStr}.md`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  alert(`書き出しました（${keys.length}件のデータ）。\nダウンロードフォルダに保存された「凪システム_データ書き出し_${dateStr}.md」を、Obsidian Vaultの好きな場所へ移動してください。`);
 }
 
 // ════════════════════════════════════════════════════
