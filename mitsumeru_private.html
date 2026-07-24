@@ -2603,10 +2603,12 @@ function syncToGoogleCalendar() {
 // Secret未設定時はWorker側で無音スキップされる。失敗しても既存機能には一切影響させない。
 function syncToVault() {
   const date = targetDate || localDateStr(new Date());
+  // 2026-07-24是正：/sync-vaultにトークン確認を追加したのに合わせ、既存呼び出し元も同時に送信対応する
+  // （実装安全原則v1原則⑤：認証追加は既存利用者を洗い出してから切替・切替と同時に更新）
   fetch(`${SYNC_URL}/sync-vault`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ date }),
+    body: JSON.stringify({ date, token: getPrivateToken() }),
   }).catch(() => {});
 }
 

@@ -491,12 +491,20 @@ async function handleSyncVault(request, env) {
     return new Response(JSON.stringify({ ok: true, skipped: true, reason: 'Vault書き出しが未設定です（Secret未登録）' }), { status: 200, headers });
   }
 
-  let date;
+  let date, token;
   try {
     const body = await request.json();
     date = body.date || jstDateStr();
+    token = body.token;
   } catch (e) {
     date = jstDateStr();
+  }
+
+  // 2026-07-24是正（実装安全原則v1原則③）：private_プレフィックスのKVデータ
+  // （private_morning_/private_evening_/private_memos_）を読み取ってDriveへ書き出す処理なのに
+  // トークン確認が抜けていた。他のprivate_系エンドポイント（/sync-vault-note等）と同じ基準にする。
+  if (!env.PRIVATE_ACCESS_TOKEN || token !== env.PRIVATE_ACCESS_TOKEN) {
+    return new Response(JSON.stringify({ ok: false, error: 'private data requires a valid token' }), { status: 401, headers });
   }
 
   try {
