@@ -640,11 +640,15 @@ async function handleInboxDrop(request, env) {
 
 // 日次記録をMarkdownに変換する（プロファイルキーには一切触れない。G2の戻り値のみを使用）
 // YAMLの値として安全な形にする（コロン・引用符等を含む場合はダブルクォートで囲む）
+// QA指摘（2026-07-24・ラット実測）：旧実装は`"`のみエスケープし、改行・バックスラッシュを
+// 放置していたため、それらを含む値でYAMLパース不能になっていた（deficient indentation／
+// unknown escape sequence）。JSON.stringify()はYAML1.2の厳密なサブセットである
+// JSON文字列リテラルを生成するため、js-yaml等のYAML1.2パーサで確実に読める。
 function yamlSafe(v) {
   if (v === null || v === undefined || v === '') return 'null';
   const s = String(v);
   if (/^-?\d+(\.\d+)?$/.test(s)) return s; // 数値はそのまま
-  return '"' + s.replace(/"/g, '\\"') + '"';
+  return JSON.stringify(s);
 }
 
 function buildVaultMarkdown(date, record) {
