@@ -66,6 +66,11 @@ export default {
       return handleGetVaultNote(request, env);
     }
 
+    // ===== 入力箱（ミツメルv9・2026-07-24・設計発注）：マルチデバイス投入 =====
+    if (url.pathname === '/inbox-drop' && request.method === 'POST') {
+      return handleInboxDrop(request, env);
+    }
+
     // ===== アクセス解析（簡易・自前実装）：案件0の原因切り分け用（2026-07-14） =====
     // 個人情報・IPアドレス等は一切記録しない。ページ名＋日付ごとの匿名カウントのみ。
     if (url.pathname === '/pv' && request.method === 'GET') {
@@ -584,6 +589,53 @@ async function handleGetVaultNote(request, env) {
 
   const list = await kv.list({ prefix: 'private_dokusho_memo_' });
   return new Response(JSON.stringify({ ok: true, keys: list.keys.map(k => k.name) }), { status: 200, headers });
+}
+
+// ═══════════════════════════════════════════════
+//  入力箱（ミツメルv9・2026-07-24・設計発注）：マルチデバイスからの投入を1本の窓口で受ける。
+//  2026-07-24時点：Google Drive直接アップロード（OAuth2/drive.file方式）は認証情報は
+//  取得済みだがトークン交換エンドポイント未実装のため、暫定でKV保存にする
+//  （読書メモ機能と同じ判断・理由）。OAuth2実装完了後、Drive書き込みへ移行予定。
+// ═══════════════════════════════════════════════
+const INBOX_MAX_FILE_BYTES = 5 * 1024 * 1024; // base64換算前のおおよその上限（5MB）
+
+async function handleInboxDrop(request, env) {
+  const headers = { ...CORS_HEADERS, 'Content-Type': 'application/json' };
+
+  let body;
+  try { body = await request.json(); }
+  catch (e) { return new Response(JSON.stringify({ ok: false, error: 'リクエストの形式が不正です' }), { status: 400, headers }); }
+
+  const { token, text, fileName, fileType, fileData } = body;
+
+  // private_ プレフィックスキーを使うため、安全装置④（2026-07-19）と同じ基準でトークン必須にする
+  if (!env.PRIVATE_ACCESS_TOKEN || token !== env.PRIVATE_ACCESS_TOKEN) {
+    return new Response(JSON.stringify({ ok: false, error: 'private data requires a valid token' }), { status: 401, headers });
+  }
+  if (!text && !fileData) {
+    return new Response(JSON.stringify({ ok: false, error: 'textかfileDataのいずれかが必要です' }), { status: 400, headers });
+  }
+  if (fileData && fileData.length > INBOX_MAX_FILE_BYTES * 1.4) {
+    // base64はおよそ4/3に膨らむため、余裕を見て1.4倍で判定
+    return new Response(JSON.stringify({ ok: false, error: 'ファイルサイズが大きすぎます（5MBまで）' }), { status: 400, headers });
+  }
+
+  try {
+    const kv = getKV(env);
+    const now = Date.now();
+    const key = 'private_inbox_' + now + '_' + Math.random().toString(36).slice(2, 8);
+    const record = {
+      text: text || '',
+      fileName: fileName || null,
+      fileType: fileType || null,
+      fileData: fileData || null, // base64。Drive移行後はここにfileIdのみ持つ設計に変える想定
+      ts: new Date(now).toISOString(),
+    };
+    await kv.put(key, JSON.stringify(record));
+    return new Response(JSON.stringify({ ok: true, key }), { status: 200, headers });
+  } catch (e) {
+    return new Response(JSON.stringify({ ok: false, error: e.message }), { status: 500, headers });
+  }
 }
 
 // 日次記録をMarkdownに変換する（プロファイルキーには一切触れない。G2の戻り値のみを使用）
