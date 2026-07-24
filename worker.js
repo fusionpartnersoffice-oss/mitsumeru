@@ -639,21 +639,43 @@ async function handleInboxDrop(request, env) {
 }
 
 // 日次記録をMarkdownに変換する（プロファイルキーには一切触れない。G2の戻り値のみを使用）
+// YAMLの値として安全な形にする（コロン・引用符等を含む場合はダブルクォートで囲む）
+function yamlSafe(v) {
+  if (v === null || v === undefined || v === '') return 'null';
+  const s = String(v);
+  if (/^-?\d+(\.\d+)?$/.test(s)) return s; // 数値はそのまま
+  return '"' + s.replace(/"/g, '\\"') + '"';
+}
+
 function buildVaultMarkdown(date, record) {
   const morning = record.morning || {};
   const evening = record.evening || {};
   const want = morning['m-want'] || '（記載なし）';
-  const hp = morning['hp-val'] || '—';
-  const mp = morning['mp-val'] || '—';
+  const hp = morning['hp-val'] || '';
+  const mp = morning['mp-val'] || '';
+  const lvBase = morning['lv-base'] !== undefined ? morning['lv-base'] : '';
   const supplement = evening['e-supplement'] || '（記載なし）';
 
-  return `# ミツメル日次記録 ${date}
+  // frontmatter（ミツメルv9・2026-07-24・Dataview対応。設計書§1-3準拠）：
+  // hp/mp/lvを数値のままYAMLへ入れることで、Obsidian側で「今月のHP推移」等を
+  // Dataviewクエリで即座に集計できるようにする。値が無い項目はnullにし、集計側で除外可能にする。
+  const frontmatter = `---
+date: ${date}
+hp: ${yamlSafe(hp)}
+mp: ${yamlSafe(mp)}
+lv: ${yamlSafe(lvBase)}
+type: mitsumeru-daily
+---`;
+
+  return `${frontmatter}
+
+# ミツメル日次記録 ${date}
 
 - 作成者：mitsumeru-sync Worker（自動書き出し）／作成日時：${date}
 - ステータス：日次ログ（自動生成・上書きなし）
 
 ## ステータス
-HP：${hp}／MP：${mp}
+HP：${hp || '—'}／MP：${mp || '—'}
 
 ## 今日の一言
 ${want}
