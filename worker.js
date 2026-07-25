@@ -99,6 +99,11 @@ export default {
       return handleInboxDrop(request, env);
     }
 
+    // ===== 朝プロンプトVault連携（2026-07-26・設計発注・柴山さん承認） =====
+    if (url.pathname === '/vault-morning-context' && request.method === 'POST') {
+      return handleVaultMorningContext(request, env);
+    }
+
     // ===== アクセス解析（簡易・自前実装）：案件0の原因切り分け用（2026-07-14） =====
     // 個人情報・IPアドレス等は一切記録しない。ページ名＋日付ごとの匿名カウントのみ。
     if (url.pathname === '/pv' && request.method === 'GET') {
@@ -965,4 +970,89 @@ async function writeVaultMarkdown(env, accessToken, date, record, folderId) {
   const existing = await findVaultFile(accessToken, dailyFolderId, filename);
   if (existing) return overwriteVaultFile(accessToken, existing.id, content);
   return createVaultFile(accessToken, dailyFolderId, filename, content);
+}
+
+// buildVaultMarkdownが出力するMarkdown本文から、frontmatter数値とセクション本文を読み戻す
+// （朝プロンプトVault連携・2026-07-26設計指示）。書き出し側のフォーマットに依存するので
+// buildVaultMarkdown側のセクション名を変えたらここも合わせて直すこと。
+function parseVaultMarkdown(content) {
+  const fmMatch = content.match(/^---\n([\s\S]*?)\n---/);
+  const fm = {};
+  if (fmMatch) {
+    fmMatch[1].split('\n').forEach(line => {
+      const m = line.match(/^(\w+):\s*(.*)$/);
+      if (m) fm[m[1]] = m[2].replace(/^"|"$/g, '');
+    });
+  }
+  const section = (name) => {
+    const re = new RegExp(`## ${name}\\n([\\s\\S]*?)(\\n## |$)`);
+    const m = content.match(re);
+    return m ? m[1].trim() : '';
+  };
+  return {
+    hp: fm.hp !== undefined && fm.hp !== 'null' ? fm.hp : null,
+    mp: fm.mp !== undefined && fm.mp !== 'null' ? fm.mp : null,
+    want: section('今日の一言'),
+    supplement: section('補足'),
+    tomorrow: section('明日の設計'),
+    delay: section('先送りタスク'),
+  };
+}
+
+// 朝プロンプトVault連携：「ミツメル日次記録」フォルダ内から最新（今日以外）のファイルを探し、
+// HP/MP・前回の記録内容・前回との間隔（日数）を返す。ファイルが1件もない/前回記録がなければnoneを返す。
+async function handleVaultMorningContext(request, env) {
+  const headers = { ...CORS_HEADERS, 'Content-Type': 'application/json' };
+  let token, today;
+  try {
+    const body = await request.json();
+    token = body.token;
+    today = body.date || jstDateStr();
+  } catch (e) {
+    return new Response(JSON.stringify({ ok: false, error: 'リクエストの形式が不正です' }), { status: 400, headers });
+  }
+  if (!env.PRIVATE_ACCESS_TOKEN || token !== env.PRIVATE_ACCESS_TOKEN) {
+    return new Response(JSON.stringify({ ok: false, error: 'private data requires a valid token' }), { status: 401, headers });
+  }
+
+  const kv = getKV(env);
+  const oauthFolderId = await kv.get('vault_oauth_folder');
+  if (!oauthFolderId) {
+    return new Response(JSON.stringify({ ok: true, none: true, reason: 'Vault連携が未セットアップです' }), { status: 200, headers });
+  }
+
+  try {
+    const accessToken = await getVaultAccessToken(env);
+    const dailyFolder = await findOrCreateFolder(accessToken, oauthFolderId, 'ミツメル日次記録');
+    const query = encodeURIComponent(`'${dailyFolder.id}' in parents and trashed=false and mimeType='text/markdown'`);
+    const listRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=${query}&orderBy=name desc&pageSize=5&fields=files(id,name)`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    const listData = await listRes.json();
+    if (!listRes.ok) throw new Error('一覧取得失敗: ' + JSON.stringify(listData));
+
+    const todayFilename = `${today}.md`;
+    const prev = (listData.files || []).find(f => f.name !== todayFilename && /^\d{4}-\d{2}-\d{2}\.md$/.test(f.name));
+    if (!prev) {
+      return new Response(JSON.stringify({ ok: true, none: true, reason: '前回の記録がまだありません' }), { status: 200, headers });
+    }
+
+    const contentRes = await fetch(`https://www.googleapis.com/drive/v3/files/${prev.id}?alt=media`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    const content = await contentRes.text();
+    const parsed = parseVaultMarkdown(content);
+    const prevDate = prev.name.replace('.md', '');
+    const daysSince = Math.round((new Date(today) - new Date(prevDate)) / 86400000);
+
+    return new Response(JSON.stringify({
+      ok: true, none: false,
+      prevDate, daysSince,
+      hp: parsed.hp, mp: parsed.mp,
+      want: parsed.want, supplement: parsed.supplement,
+      tomorrow: parsed.tomorrow, delay: parsed.delay,
+    }), { status: 200, headers });
+  } catch (e) {
+    return new Response(JSON.stringify({ ok: false, error: e.message }), { status: 500, headers });
+  }
 }
