@@ -80,9 +80,11 @@ export default {
         return new Response(JSON.stringify({ ok: false, error: 'private data requires a valid token' }), { status: 401, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
       }
       try {
-        const accessToken = await getGoogleAccessToken(env, 'https://www.googleapis.com/auth/drive.file');
-        const folderId = env.GOOGLE_VAULT_FOLDER_ID;
-        const res = await fetch(`https://www.googleapis.com/drive/v3/files/${folderId}?fields=id,name,parents,webViewLink`, {
+        // fileId指定時はOAuth2トークンでその実体（実地検証用・2026-07-25）、未指定時は従来通りサービスアカウントでGOOGLE_VAULT_FOLDER_IDを確認
+        const fileIdParam = url.searchParams.get('fileId');
+        const accessToken = fileIdParam ? await getVaultAccessToken(env) : await getGoogleAccessToken(env, 'https://www.googleapis.com/auth/drive.file');
+        const folderId = fileIdParam || env.GOOGLE_VAULT_FOLDER_ID;
+        const res = await fetch(`https://www.googleapis.com/drive/v3/files/${folderId}?fields=id,name,parents,webViewLink,modifiedTime`, {
           headers: { Authorization: `Bearer ${accessToken}` },
         });
         const data = await res.json();
@@ -826,6 +828,13 @@ function buildVaultMarkdown(date, record) {
   const mp = morning['mp-val'] || '';
   const lvBase = morning['lv-base'] !== undefined ? morning['lv-base'] : '';
   const supplement = evening['e-supplement'] || '（記載なし）';
+  // 2026-07-25設計指示（B案）：夜タブの生テキストも書き出す（AI生成ナラティブ自体は
+  // 現状KV未保存のため対象外・A案として別途検討中）
+  const tomorrow = evening['e-tomorrow'] || '（記載なし）';
+  const delay = evening['e-delay'] || '（記載なし）';
+  const try100 = evening['e-try100'] || '（記載なし）';
+  const feedback = evening['e-feedback'] || '（記載なし）';
+  const notebooklm = evening['e-notebooklm'] || '（記載なし）';
 
   // frontmatter（ミツメルv9・2026-07-24・Dataview対応。設計書§1-3準拠）：
   // hp/mp/lvを数値のままYAMLへ入れることで、Obsidian側で「今月のHP推移」等を
@@ -853,6 +862,21 @@ ${want}
 
 ## 補足
 ${supplement}
+
+## 明日の設計
+${tomorrow}
+
+## 先送りタスク
+${delay}
+
+## Try100
+${try100}
+
+## SuccessOSへのフィードバック
+${feedback}
+
+## NotebookLMのまとめコメント
+${notebooklm}
 `;
 }
 
@@ -933,9 +957,12 @@ async function overwriteVaultFile(accessToken, fileId, content) {
 // Google Drive API v3。指定フォルダ内に同名ファイルがあれば内容を更新（PATCH）、
 // なければ新規作成（multipart POST）。同日再実行しても重複作成しない。
 async function writeVaultMarkdown(env, accessToken, date, record, folderId) {
+  // 2026-07-25設計指示：Vault直下に散らからないよう専用サブフォルダへ集約する（Picker再選択不要）
+  const dailyFolder = await findOrCreateFolder(accessToken, folderId, 'ミツメル日次記録');
+  const dailyFolderId = dailyFolder.id;
   const filename = `${date}.md`;
   const content = buildVaultMarkdown(date, record);
-  const existing = await findVaultFile(accessToken, folderId, filename);
+  const existing = await findVaultFile(accessToken, dailyFolderId, filename);
   if (existing) return overwriteVaultFile(accessToken, existing.id, content);
-  return createVaultFile(accessToken, folderId, filename, content);
+  return createVaultFile(accessToken, dailyFolderId, filename, content);
 }
