@@ -66,6 +66,27 @@ export default {
       return handleGetVaultNote(request, env);
     }
 
+    // ===== 一時デバッグ：GOOGLE_VAULT_FOLDER_IDの実体確認（2026-07-25・設計依頼・確認後撤去予定） =====
+    // 秘密情報のためwrangler secretから値を直接読めず、Drive APIでフォルダ名・親フォルダを
+    // 照会する以外に確認手段が無いための一時的なエンドポイント。読み取り専用・書き込みなし。
+    if (url.pathname === '/debug-vault-folder' && request.method === 'GET') {
+      const t = url.searchParams.get('token');
+      if (!env.PRIVATE_ACCESS_TOKEN || t !== env.PRIVATE_ACCESS_TOKEN) {
+        return new Response(JSON.stringify({ ok: false, error: 'private data requires a valid token' }), { status: 401, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
+      }
+      try {
+        const accessToken = await getGoogleAccessToken(env, 'https://www.googleapis.com/auth/drive.file');
+        const folderId = env.GOOGLE_VAULT_FOLDER_ID;
+        const res = await fetch(`https://www.googleapis.com/drive/v3/files/${folderId}?fields=id,name,parents,webViewLink`, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        const data = await res.json();
+        return new Response(JSON.stringify({ ok: res.ok, folderId, data }), { status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
+      } catch (e) {
+        return new Response(JSON.stringify({ ok: false, error: e.message }), { status: 500, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
+      }
+    }
+
     // ===== 入力箱（ミツメルv9・2026-07-24・設計発注）：マルチデバイス投入 =====
     if (url.pathname === '/inbox-drop' && request.method === 'POST') {
       return handleInboxDrop(request, env);
@@ -620,10 +641,11 @@ async function handleInboxDrop(request, env) {
     return new Response(JSON.stringify({ ok: false, error: 'ファイルサイズが大きすぎます（5MBまで）' }), { status: 400, headers });
   }
 
+  let key;
   try {
     const kv = getKV(env);
     const now = Date.now();
-    const key = 'private_inbox_' + now + '_' + Math.random().toString(36).slice(2, 8);
+    key = 'private_inbox_' + now + '_' + Math.random().toString(36).slice(2, 8);
     const record = {
       text: text || '',
       fileName: fileName || null,
@@ -632,10 +654,55 @@ async function handleInboxDrop(request, env) {
       ts: new Date(now).toISOString(),
     };
     await kv.put(key, JSON.stringify(record));
-    return new Response(JSON.stringify({ ok: true, key }), { status: 200, headers });
   } catch (e) {
     return new Response(JSON.stringify({ ok: false, error: e.message }), { status: 500, headers });
   }
+
+  // ミツメル3役構想（2026-07-25・設計発注）：KV保存に加え、外出時記録をVaultへも反映する。
+  // KVは既に成功しているため、Vault書き込みが失敗してもリクエスト全体は失敗にしない
+  // （柴山さんの投入操作自体は必ず成功させる。Vault反映は「できれば」の位置づけ）。
+  let vaultResult = { attempted: false };
+  if (text && env.GOOGLE_SERVICE_ACCOUNT_KEY && env.GOOGLE_VAULT_FOLDER_ID) {
+    vaultResult.attempted = true;
+    try {
+      const accessToken = await getGoogleAccessToken(env, 'https://www.googleapis.com/auth/drive.file');
+      const date = jstDateStr();
+      await appendVaultRaw(env, accessToken, date, text);
+      vaultResult.ok = true;
+    } catch (e) {
+      vaultResult.ok = false;
+      vaultResult.error = e.message;
+    }
+  }
+
+  return new Response(JSON.stringify({ ok: true, key, vault: vaultResult }), { status: 200, headers });
+}
+
+// 専用受信フォルダへの追記専用書き込み（ミツメル3役構想・2026-07-25・設計指示）。
+// 既存の共有ファイル（date.md・ダッシュボード等）には一切触れず、
+// 06_ミツメル記録/_受信/<date>_raw.md へ追記するだけの構造にすることで、
+// 同時書き込み競合を構造的に回避する（指示キューの追記パターンと同じ思想）。
+async function appendVaultRaw(env, accessToken, date, text) {
+  const rootId = env.GOOGLE_VAULT_FOLDER_ID;
+  const recordFolder = await findOrCreateFolder(accessToken, rootId, '06_ミツメル記録');
+  const inboxFolder = await findOrCreateFolder(accessToken, recordFolder.id, '_受信');
+  const filename = `${date}_raw.md`;
+
+  const timestamp = new Date().toISOString();
+  const entry = `\n\n---\n\n**${timestamp}**\n\n${text}\n`;
+
+  const existing = await findVaultFile(accessToken, inboxFolder.id, filename);
+  if (existing) {
+    const getRes = await fetch(`https://www.googleapis.com/drive/v3/files/${existing.id}?alt=media`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    const prevContent = getRes.ok ? await getRes.text() : '';
+    return overwriteVaultFile(accessToken, existing.id, prevContent + entry);
+  }
+
+  // frontmatterは最小構成で固定（設計指示）
+  const frontmatter = `---\ndate: ${date}\nsource: mitsumeru\ntype: raw\n---`;
+  return createVaultFile(accessToken, inboxFolder.id, filename, frontmatter + entry);
 }
 
 // 日次記録をMarkdownに変換する（プロファイルキーには一切触れない。G2の戻り値のみを使用）
@@ -687,6 +754,39 @@ ${want}
 ## 補足
 ${supplement}
 `;
+}
+
+// フォルダを名前+親IDで検索する。無ければ新規作成を試みる。
+// 注意（ミツメル3役構想・2026-07-25）：サービスアカウントは個人Drive（非共有ドライブ）に
+// 新規アイテムを作成できない（storageQuotaExceeded）。GOOGLE_VAULT_FOLDER_IDの実体が
+// 共有ドライブでない限り、ここでの新規作成は失敗する。失敗時はエラーメッセージに
+// 「柴山さんご本人が該当フォルダをDrive UIで一度だけ手動作成する」対処法を含める。
+async function findOrCreateFolder(accessToken, parentId, folderName) {
+  const query = encodeURIComponent(
+    `name='${folderName}' and '${parentId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`
+  );
+  const searchRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id,name)`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  const searchData = await searchRes.json();
+  if (!searchRes.ok) throw new Error('フォルダ検索失敗: ' + JSON.stringify(searchData));
+  const existing = (searchData.files || [])[0];
+  if (existing) return existing;
+
+  const createRes = await fetch('https://www.googleapis.com/drive/v3/files?fields=id,name', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: folderName, mimeType: 'application/vnd.google-apps.folder', parents: [parentId] }),
+  });
+  const createData = await createRes.json();
+  if (!createRes.ok || !createData.id) {
+    const isQuota = JSON.stringify(createData).includes('storageQuotaExceeded');
+    const hint = isQuota
+      ? `（サービスアカウントは個人Driveに新規フォルダを作成できません。柴山さんご本人がDrive上で「${folderName}」フォルダを一度だけ手動作成してください）`
+      : '';
+    throw new Error(`フォルダ作成失敗: ${JSON.stringify(createData)}${hint}`);
+  }
+  return createData;
 }
 
 // Google Drive API v3。指定フォルダ内から同名ファイルを検索する（読書メモの追記判定と共用）。
