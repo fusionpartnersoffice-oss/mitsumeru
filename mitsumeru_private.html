@@ -15,6 +15,12 @@
 <script src="vendor/qrcode.min.js"></script>
 <!-- 柱A（共通コア化・2026-07-21）：APIキー管理・Claude API呼び出しの共通処理 -->
 <script src="./mitsumeru_core.js"></script>
+<!-- Vault連携・OAuth2（案B・2026-07-25・設計指示）：Google公式ライブラリ（Google Identity Services・
+     Google Picker API）。柴山さんご本人のGoogleアカウントでの同意取得・フォルダ選択に使う。
+     いずれもGoogle自身がホストする公式スクリプトのため自ホスト化の対象外（アクセストークン等の
+     機密値をやり取りする対象ではなく、認可コード交換自体はWorker側でのみ行う）。 -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://apis.google.com/js/api.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;500&family=Noto+Sans+JP:wght@300;400;500&display=swap');
 
@@ -842,6 +848,16 @@
       <div id="private-token-scan-area" style="display:none;margin-top:10px;"></div>
       <div id="private-token-qr-msg" style="font-size:11px;color:var(--text3);margin-top:6px;"></div>
     </div>
+  </div>
+
+  <div class="section" style="margin-top:12px;border:1px solid var(--gold);background:rgba(184,134,11,0.05);">
+    <div class="section-title" style="color:var(--gold);">📁 Google Driveへの書き出し設定</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.7;">
+      設定すると、毎日の記録（夜の締め・外出時の投入メモ）が、ご自身のGoogle Drive上の指定フォルダへ自動で保存されるようになります。<br>
+      設定は最初の1回だけです。ご自身のGoogleアカウントでの同意と、保存先フォルダの選択が必要です。
+    </p>
+    <button class="btn-primary" id="vault-oauth-setup-btn" onclick="startVaultOAuthSetup()" style="width:100%;">Google Driveに書き出す設定をする</button>
+    <div id="vault-oauth-setup-msg" style="font-size:12px;margin-top:8px;text-align:center;"></div>
   </div>
 
   <div class="section" style="margin-top:12px;">
@@ -2610,6 +2626,99 @@ function syncToVault() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ date, token: getPrivateToken() }),
   }).catch(() => {});
+}
+
+// ===== Vault OAuth2初回セットアップ（案B・2026-07-25・設計指示）=====
+// 設計書 docs\ミツメルVault連携_実装設計方針_20260718.md §3 準拠。
+// GOOGLE_OAUTH_CLIENT_IDは公開値（2026-07-21のConsole伴走で取得済み）。
+const VAULT_OAUTH_CLIENT_ID = '755434055032-79tp2jtfrbv29916pmi0egnu7faim4gu.apps.googleusercontent.com'; // mitsumeru-vault-web・2026-07-25柴山さん作成
+const VAULT_OAUTH_API_KEY = 'AIzaSyCdNHqwcnYQfLPW6GlzwsOkuG9flhJb6Bs'; // Picker用（既存APIキー1流用・Picker API限定+リファラー制限済み）
+
+function setVaultOAuthMsg(text, isError) {
+  const el = document.getElementById('vault-oauth-setup-msg');
+  if (!el) return;
+  el.textContent = text;
+  el.style.color = isError ? 'var(--red)' : 'var(--green)';
+}
+
+async function startVaultOAuthSetup() {
+  const btn = document.getElementById('vault-oauth-setup-btn');
+  if (!getPrivateToken()) {
+    setVaultOAuthMsg('先に上の「アクセストークン」を設定してください。', true);
+    return;
+  }
+  if (typeof google === 'undefined' || !google.accounts) {
+    setVaultOAuthMsg('Googleのライブラリを読み込み中です。少し待ってからもう一度お試しください。', true);
+    return;
+  }
+  if (!VAULT_OAUTH_API_KEY) {
+    setVaultOAuthMsg('Picker用APIキーが未設定です（開発A側の準備待ち）。', true);
+    return;
+  }
+  btn.disabled = true;
+  setVaultOAuthMsg('①保存先フォルダを選ぶウィンドウを開いています…', false);
+
+  try {
+    // ①Picker表示用の一時アクセストークンを取得（drive.fileスコープ・保存はしない）
+    const accessToken = await new Promise((resolve, reject) => {
+      const tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: VAULT_OAUTH_CLIENT_ID,
+        scope: 'https://www.googleapis.com/auth/drive.file',
+        callback: (resp) => resp.access_token ? resolve(resp.access_token) : reject(new Error('トークン取得に失敗しました')),
+      });
+      tokenClient.requestAccessToken();
+    });
+
+    // ②Pickerでフォルダを選択
+    const folderId = await new Promise((resolve, reject) => {
+      gapi.load('picker', () => {
+        const picker = new google.picker.PickerBuilder()
+          .addView(new google.picker.DocsView(google.picker.ViewId.FOLDERS).setSelectFolderEnabled(true).setIncludeFolders(true))
+          .setOAuthToken(accessToken)
+          .setDeveloperKey(VAULT_OAUTH_API_KEY)
+          .setCallback((data) => {
+            if (data.action === google.picker.Action.PICKED) {
+              resolve(data.docs[0].id);
+            } else if (data.action === google.picker.Action.CANCEL) {
+              reject(new Error('フォルダ選択がキャンセルされました。'));
+            }
+          })
+          .build();
+        picker.setVisible(true);
+      });
+    });
+
+    setVaultOAuthMsg('②書き込み許可を確認しています…', false);
+
+    // ③refresh_token用の認可コードを取得（prompt=consentで確実にrefresh_tokenを発行させる）
+    const code = await new Promise((resolve, reject) => {
+      const codeClient = google.accounts.oauth2.initCodeClient({
+        client_id: VAULT_OAUTH_CLIENT_ID,
+        scope: 'https://www.googleapis.com/auth/drive.file',
+        ux_mode: 'popup',
+        callback: (resp) => resp.code ? resolve(resp.code) : reject(new Error('認可コード取得に失敗しました')),
+      });
+      codeClient.requestCode();
+    });
+
+    setVaultOAuthMsg('③サーバーへ設定を保存しています…', false);
+
+    const res = await fetch(`${SYNC_URL}/vault-oauth-setup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, folderId, token: getPrivateToken() }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      setVaultOAuthMsg('✓ 設定できました。これから毎日の記録が自動でVaultへ保存されます。', false);
+    } else {
+      setVaultOAuthMsg('設定できませんでした：' + (data.error || '不明なエラー'), true);
+    }
+  } catch (e) {
+    setVaultOAuthMsg('設定できませんでした：' + e.message, true);
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 function calcSleepHP() {

@@ -54,6 +54,11 @@ export default {
       return handleSyncVault(request, env);
     }
 
+    // ===== Vault用OAuth2初回セットアップ（案B・2026-07-25・柴山さん厳命） =====
+    if (url.pathname === '/vault-oauth-setup' && request.method === 'POST') {
+      return handleVaultOAuthSetup(request, env);
+    }
+
     // ===== 読書メモ（口述記録の拡張・2026-07-21・柴山さん指示）：本ごとにVaultへ音声メモを蓄積 =====
     if (url.pathname === '/sync-vault-note' && request.method === 'POST') {
       return handleSyncVaultNote(request, env);
@@ -449,6 +454,83 @@ async function getGoogleAccessToken(env, scope) {
   return data.access_token;
 }
 
+// ── G1-Vault：柴山さんご本人のOAuth2（案B・2026-07-25・設計指示）──
+// サービスアカウントは個人Driveに書き込み容量を持たない（storageQuotaExceeded・実測確認済み）
+// ため、Vault書き込みだけは柴山さんご本人のOAuth2 refresh_tokenで行う。
+// カレンダー用のgetGoogleAccessToken（サービスアカウントJWT）は一切変更しない
+// （設計書§4：回帰リスクの封じ込め）。
+async function getVaultAccessToken(env) {
+  const kv = getKV(env);
+  const refreshToken = await kv.get('vault_oauth_refresh');
+  if (!refreshToken) {
+    throw new Error('Vault用OAuth2が未設定です（初回セットアップが必要）');
+  }
+  if (!env.GOOGLE_OAUTH_CLIENT_ID || !env.GOOGLE_OAUTH_CLIENT_SECRET) {
+    throw new Error('GOOGLE_OAUTH_CLIENT_ID/SECRETが未設定です');
+  }
+  const res = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      client_id: env.GOOGLE_OAUTH_CLIENT_ID,
+      client_secret: env.GOOGLE_OAUTH_CLIENT_SECRET,
+      refresh_token: refreshToken,
+      grant_type: 'refresh_token',
+    }).toString(),
+  });
+  const data = await res.json();
+  if (!data.access_token) {
+    throw new Error('Vaultアクセストークン更新失敗: ' + (data.error_description || data.error || JSON.stringify(data)));
+  }
+  return data.access_token;
+}
+
+// 初回セットアップ：フロントが取得した認可コードをrefresh_tokenへ交換しKVへ保存する。
+// POST { code, folderId, token }（tokenはPRIVATE_ACCESS_TOKEN）
+async function handleVaultOAuthSetup(request, env) {
+  const headers = { ...CORS_HEADERS, 'Content-Type': 'application/json' };
+  let body;
+  try { body = await request.json(); }
+  catch (e) { return new Response(JSON.stringify({ ok: false, error: 'リクエストの形式が不正です' }), { status: 400, headers }); }
+
+  const { code, folderId, token } = body;
+  if (!env.PRIVATE_ACCESS_TOKEN || token !== env.PRIVATE_ACCESS_TOKEN) {
+    return new Response(JSON.stringify({ ok: false, error: 'private data requires a valid token' }), { status: 401, headers });
+  }
+  if (!code || !folderId) {
+    return new Response(JSON.stringify({ ok: false, error: 'codeとfolderIdは必須です' }), { status: 400, headers });
+  }
+  if (!env.GOOGLE_OAUTH_CLIENT_ID || !env.GOOGLE_OAUTH_CLIENT_SECRET) {
+    return new Response(JSON.stringify({ ok: false, error: 'GOOGLE_OAUTH_CLIENT_ID/SECRETが未設定です' }), { status: 500, headers });
+  }
+
+  try {
+    // 技術判断②（設計書§2）：Web applicationクライアント（confidential client）のため
+    // client_secretを含めた4パラメータでの交換が必須。省略するとinvalid_clientになる。
+    const res = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        code,
+        client_id: env.GOOGLE_OAUTH_CLIENT_ID,
+        client_secret: env.GOOGLE_OAUTH_CLIENT_SECRET,
+        redirect_uri: 'postmessage',
+        grant_type: 'authorization_code',
+      }).toString(),
+    });
+    const data = await res.json();
+    if (!data.refresh_token) {
+      return new Response(JSON.stringify({ ok: false, error: 'refresh_token取得失敗: ' + (data.error_description || data.error || JSON.stringify(data)) }), { status: 502, headers });
+    }
+    const kv = getKV(env);
+    await kv.put('vault_oauth_refresh', data.refresh_token);
+    await kv.put('vault_oauth_folder', folderId);
+    return new Response(JSON.stringify({ ok: true }), { status: 200, headers });
+  } catch (e) {
+    return new Response(JSON.stringify({ ok: false, error: e.message }), { status: 500, headers });
+  }
+}
+
 // ── G3-カレンダー：カレンダー書き込みアダプタ ──
 // 同じ日に複数回実行されても重複作成しないよう、拡張プロパティ(mitsumeru_date)で既存イベントを検索し、
 // あれば更新（PATCH）、なければ新規作成（POST）する。
@@ -512,11 +594,6 @@ async function writeCalendarEvent(env, accessToken, date, record) {
 async function handleSyncVault(request, env) {
   const headers = { ...CORS_HEADERS, 'Content-Type': 'application/json' };
 
-  // Secret未設定時は無音でスキップする（エラーにしない。カレンダー連携と同じパターン）
-  if (!env.GOOGLE_SERVICE_ACCOUNT_KEY || !env.GOOGLE_VAULT_FOLDER_ID) {
-    return new Response(JSON.stringify({ ok: true, skipped: true, reason: 'Vault書き出しが未設定です（Secret未登録）' }), { status: 200, headers });
-  }
-
   let date, token;
   try {
     const body = await request.json();
@@ -533,11 +610,26 @@ async function handleSyncVault(request, env) {
     return new Response(JSON.stringify({ ok: false, error: 'private data requires a valid token' }), { status: 401, headers });
   }
 
+  // 案B（2026-07-25・設計指示）：柴山さんご本人のOAuth2 refresh_tokenを優先する
+  // （サービスアカウントは個人Driveに書き込み容量を持たないため・実測確認済み）。
+  // OAuth2初回セットアップが済んでいなければ、旧サービスアカウント方式へフォールバックする
+  // （設計書§5：GOOGLE_VAULT_FOLDER_IDは当面残す）。
+  const kv = getKV(env);
+  const oauthFolderId = await kv.get('vault_oauth_folder');
+  const useOAuth = !!oauthFolderId;
+
+  if (!useOAuth && (!env.GOOGLE_SERVICE_ACCOUNT_KEY || !env.GOOGLE_VAULT_FOLDER_ID)) {
+    return new Response(JSON.stringify({ ok: true, skipped: true, reason: 'Vault書き出しが未設定です（OAuth2未セットアップ・Secret未登録）' }), { status: 200, headers });
+  }
+
   try {
     const record = await getPrivateDailyRecord(env, date);          // G2（カレンダー連携と共通）
-    const accessToken = await getGoogleAccessToken(env, 'https://www.googleapis.com/auth/drive.file'); // G1（スコープのみ変更）
-    const file = await writeVaultMarkdown(env, accessToken, date, record); // G3-Vault
-    return new Response(JSON.stringify({ ok: true, date, fileId: file.id }), { status: 200, headers });
+    const accessToken = useOAuth
+      ? await getVaultAccessToken(env)                                                  // G1-Vault（柴山さんOAuth2）
+      : await getGoogleAccessToken(env, 'https://www.googleapis.com/auth/drive.file');   // 旧方式フォールバック
+    const folderId = useOAuth ? oauthFolderId : env.GOOGLE_VAULT_FOLDER_ID;
+    const file = await writeVaultMarkdown(env, accessToken, date, record, folderId); // G3-Vault
+    return new Response(JSON.stringify({ ok: true, date, fileId: file.id, method: useOAuth ? 'oauth2' : 'service_account' }), { status: 200, headers });
   } catch (e) {
     return new Response(JSON.stringify({ ok: false, error: e.message }), { status: 500, headers });
   }
@@ -661,14 +753,23 @@ async function handleInboxDrop(request, env) {
   // ミツメル3役構想（2026-07-25・設計発注）：KV保存に加え、外出時記録をVaultへも反映する。
   // KVは既に成功しているため、Vault書き込みが失敗してもリクエスト全体は失敗にしない
   // （柴山さんの投入操作自体は必ず成功させる。Vault反映は「できれば」の位置づけ）。
+  // 案B（2026-07-25）：OAuth2セットアップ済みならそちらを優先、未セットアップなら旧方式へフォールバック。
   let vaultResult = { attempted: false };
-  if (text && env.GOOGLE_SERVICE_ACCOUNT_KEY && env.GOOGLE_VAULT_FOLDER_ID) {
+  const kvForVault = getKV(env);
+  const oauthFolderIdForInbox = await kvForVault.get('vault_oauth_folder');
+  const canUseOAuthForInbox = !!oauthFolderIdForInbox;
+  const canUseServiceAccountForInbox = !!(env.GOOGLE_SERVICE_ACCOUNT_KEY && env.GOOGLE_VAULT_FOLDER_ID);
+  if (text && (canUseOAuthForInbox || canUseServiceAccountForInbox)) {
     vaultResult.attempted = true;
     try {
-      const accessToken = await getGoogleAccessToken(env, 'https://www.googleapis.com/auth/drive.file');
+      const accessToken = canUseOAuthForInbox
+        ? await getVaultAccessToken(env)
+        : await getGoogleAccessToken(env, 'https://www.googleapis.com/auth/drive.file');
+      const rootId = canUseOAuthForInbox ? oauthFolderIdForInbox : env.GOOGLE_VAULT_FOLDER_ID;
       const date = jstDateStr();
-      await appendVaultRaw(env, accessToken, date, text);
+      await appendVaultRaw(accessToken, rootId, date, text);
       vaultResult.ok = true;
+      vaultResult.method = canUseOAuthForInbox ? 'oauth2' : 'service_account';
     } catch (e) {
       vaultResult.ok = false;
       vaultResult.error = e.message;
@@ -682,8 +783,7 @@ async function handleInboxDrop(request, env) {
 // 既存の共有ファイル（date.md・ダッシュボード等）には一切触れず、
 // 06_ミツメル記録/_受信/<date>_raw.md へ追記するだけの構造にすることで、
 // 同時書き込み競合を構造的に回避する（指示キューの追記パターンと同じ思想）。
-async function appendVaultRaw(env, accessToken, date, text) {
-  const rootId = env.GOOGLE_VAULT_FOLDER_ID;
+async function appendVaultRaw(accessToken, rootId, date, text) {
   const recordFolder = await findOrCreateFolder(accessToken, rootId, '06_ミツメル記録');
   const inboxFolder = await findOrCreateFolder(accessToken, recordFolder.id, '_受信');
   const filename = `${date}_raw.md`;
@@ -832,8 +932,7 @@ async function overwriteVaultFile(accessToken, fileId, content) {
 
 // Google Drive API v3。指定フォルダ内に同名ファイルがあれば内容を更新（PATCH）、
 // なければ新規作成（multipart POST）。同日再実行しても重複作成しない。
-async function writeVaultMarkdown(env, accessToken, date, record) {
-  const folderId = env.GOOGLE_VAULT_FOLDER_ID;
+async function writeVaultMarkdown(env, accessToken, date, record, folderId) {
   const filename = `${date}.md`;
   const content = buildVaultMarkdown(date, record);
   const existing = await findVaultFile(accessToken, folderId, filename);
