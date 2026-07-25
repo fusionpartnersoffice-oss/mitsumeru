@@ -2815,6 +2815,14 @@ async function calcMorning() {
   const _hour = new Date().getHours();
   const timeOfDay = _hour < 11 ? '朝' : _hour < 15 ? '昼' : _hour < 19 ? '夕方' : '夜';
 
+  // AIコメント視点ローテーション（2026-07-26設計指示・柴山さんのマンネリ懸念対応）：
+  // 日付から機械的に計算し、新しい保存領域は作らない（設計書「決定方法」準拠）。
+  const TODAY_LENS_LIST = ['成果・進捗', '休息・回復', '気づき・学び', 'つながり', '将来・目標'];
+  const _now = new Date();
+  const _startOfYear = new Date(_now.getFullYear(), 0, 0);
+  const _dayOfYear = Math.floor((_now - _startOfYear) / 86400000);
+  const todayLens = TODAY_LENS_LIST[_dayOfYear % 5];
+
   const prompt = `あなたはFusion Partners代表・柴山靖章の専属「SuccessOS 統合経営参謀」です。
 柴山さんのことを深く知る唯一の参謀として、今朝の状態を読み、的確な言葉と決断を返してください。
 
@@ -2822,6 +2830,8 @@ async function calcMorning() {
 ${getProfileText()}
 
 【現在時間帯】${timeOfDay}（実際の入力時刻を基準に自然な声かけをすること。「朝タブ」の名称や「おはよう」に固執しない）
+
+【今日の視点】${todayLens}（この視点を主軸に一言を組み立てること。他の視点に触れてもよいが、主役はこの視点にすること）
 
 ${vaultContextText}
 
