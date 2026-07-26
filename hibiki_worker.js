@@ -396,6 +396,8 @@ async function handleLiteUsageCheck(request, env) {
 }
 
 // ===== Stripe署名検証（Web Crypto API） =====
+const WEBHOOK_TOLERANCE_SEC = 300; // Stripe公式推奨のリプレイ許容幅（5分）
+
 async function verifyStripeSignature(payload, sigHeader, secret) {
   try {
     const parts = sigHeader.split(',').reduce((acc, part) => {
@@ -406,6 +408,10 @@ async function verifyStripeSignature(payload, sigHeader, secret) {
     const timestamp = parts['t'];
     const v1 = parts['v1'];
     if (!timestamp || !v1) return false;
+
+    // リプレイ攻撃対策：タイムスタンプが現在時刻から許容幅を超えて乖離していれば拒否
+    const nowSec = Math.floor(Date.now() / 1000);
+    if (Math.abs(nowSec - Number(timestamp)) > WEBHOOK_TOLERANCE_SEC) return false;
 
     const signed = `${timestamp}.${payload}`;
     const key = await crypto.subtle.importKey(
