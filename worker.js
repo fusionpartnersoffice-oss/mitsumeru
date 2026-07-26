@@ -455,8 +455,15 @@ async function getGoogleAccessToken(env, scope) {
 // ため、Vault書き込みだけは柴山さんご本人のOAuth2 refresh_tokenで行う。
 // カレンダー用のgetGoogleAccessToken（サービスアカウントJWT）は一切変更しない
 // （設計書§4：回帰リスクの封じ込め）。
+// API呼び出し削減①（2026-07-26・設計発注）：アクセストークンはGoogle側で通常1時間有効なのに
+// 呼び出しのたびに毎回リフレッシュしていた（calcMorning()1回の押下で最大3回重複）。
+// KVに55分（3300秒）TTLでキャッシュし、有効期限内は再リフレッシュしない。
+// キャッシュミス・TTL切れ時は従来どおりリフレッシュするため、フォールバック動作は変えていない。
 async function getVaultAccessToken(env) {
   const kv = getKV(env);
+  const cached = await kv.get('vault_access_token_cache');
+  if (cached) return cached;
+
   const refreshToken = await kv.get('vault_oauth_refresh');
   if (!refreshToken) {
     throw new Error('Vault用OAuth2が未設定です（初回セットアップが必要）');
@@ -478,6 +485,7 @@ async function getVaultAccessToken(env) {
   if (!data.access_token) {
     throw new Error('Vaultアクセストークン更新失敗: ' + (data.error_description || data.error || JSON.stringify(data)));
   }
+  await kv.put('vault_access_token_cache', data.access_token, { expirationTtl: 3300 });
   return data.access_token;
 }
 
@@ -922,6 +930,23 @@ async function findOrCreateFolder(accessToken, parentId, folderName) {
   return createData;
 }
 
+// API呼び出し削減②（2026-07-26・設計発注）：「ミツメル日次記録」フォルダは一度作られたら
+// 基本的に変わらないのに、/sync-vault・/vault-morning-context・/vault-learning-logの
+// 3ハンドラがそれぞれ個別にfindOrCreateFolder()を呼び、calcMorning()1回の押下で
+// 同じフォルダ検索が最大3回重複していた。KVに6時間TTLでフォルダIDをキャッシュする
+// （フォルダが手動で作り直された場合は最大6時間で自然に検出・再解決される）。
+// 既知の限界：キャッシュ有効期間中にフォルダが削除・作り直された場合は追従できない
+// （手動でのフォルダ再作成は稀な運用操作のため許容し、複雑な404検知・再試行は入れていない）。
+async function getCachedDailyFolderId(env, accessToken, parentId, folderName) {
+  const kv = getKV(env);
+  const cacheKey = 'vault_folder_id_cache_' + parentId + '_' + folderName;
+  const cached = await kv.get(cacheKey);
+  if (cached) return cached;
+  const folder = await findOrCreateFolder(accessToken, parentId, folderName);
+  await kv.put(cacheKey, folder.id, { expirationTtl: 21600 });
+  return folder.id;
+}
+
 // Google Drive API v3。指定フォルダ内から同名ファイルを検索する（読書メモの追記判定と共用）。
 async function findVaultFile(accessToken, folderId, filename) {
   const query = encodeURIComponent(`name='${filename}' and '${folderId}' in parents and trashed=false`);
@@ -967,8 +992,7 @@ async function overwriteVaultFile(accessToken, fileId, content) {
 // なければ新規作成（multipart POST）。同日再実行しても重複作成しない。
 async function writeVaultMarkdown(env, accessToken, date, record, folderId) {
   // 2026-07-25設計指示：Vault直下に散らからないよう専用サブフォルダへ集約する（Picker再選択不要）
-  const dailyFolder = await findOrCreateFolder(accessToken, folderId, 'ミツメル日次記録');
-  const dailyFolderId = dailyFolder.id;
+  const dailyFolderId = await getCachedDailyFolderId(env, accessToken, folderId, 'ミツメル日次記録');
   const filename = `${date}.md`;
   const content = buildVaultMarkdown(date, record);
   const existing = await findVaultFile(accessToken, dailyFolderId, filename);
@@ -1027,8 +1051,8 @@ async function handleVaultMorningContext(request, env) {
 
   try {
     const accessToken = await getVaultAccessToken(env);
-    const dailyFolder = await findOrCreateFolder(accessToken, oauthFolderId, 'ミツメル日次記録');
-    const query = encodeURIComponent(`'${dailyFolder.id}' in parents and trashed=false and mimeType='text/markdown'`);
+    const dailyFolderId = await getCachedDailyFolderId(env, accessToken, oauthFolderId, 'ミツメル日次記録');
+    const query = encodeURIComponent(`'${dailyFolderId}' in parents and trashed=false and mimeType='text/markdown'`);
     const listRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=${query}&orderBy=name desc&pageSize=5&fields=files(id,name)`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
@@ -1084,9 +1108,9 @@ async function handleVaultLearningLog(request, env) {
 
   try {
     const accessToken = await getVaultAccessToken(env);
-    const dailyFolder = await findOrCreateFolder(accessToken, oauthFolderId, 'ミツメル日次記録');
+    const dailyFolderId = await getCachedDailyFolderId(env, accessToken, oauthFolderId, 'ミツメル日次記録');
     const filename = '_柴山さんプロファイル_学習ログ.md';
-    const found = await findVaultFile(accessToken, dailyFolder.id, filename);
+    const found = await findVaultFile(accessToken, dailyFolderId, filename);
     if (!found) {
       return new Response(JSON.stringify({ ok: true, none: true }), { status: 200, headers });
     }
