@@ -2719,6 +2719,13 @@ function setVaultOAuthMsg(text, isError) {
 
 async function startVaultOAuthSetup() {
   const btn = document.getElementById('vault-oauth-setup-btn');
+  // 開発Bの指摘（2026-07-26）：この関数だけテストモードガードが漏れていた。
+  // vault_oauth_refresh/vault_oauth_folderは本番のOAuth2設定そのものであり、
+  // テストモード中に実行すると本番のVault連携自体を破壊しうるため、実行自体をブロックする。
+  if (isTestMode()) {
+    setVaultOAuthMsg('テストモード中はGoogle Drive連携のセットアップを実行できません（本番設定の保護のため）。', true);
+    return;
+  }
   if (!getPrivateToken()) {
     setVaultOAuthMsg('先に上の「アクセストークン」を設定してください。', true);
     return;
