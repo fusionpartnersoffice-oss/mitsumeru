@@ -844,6 +844,18 @@ function buildVaultMarkdown(date, record) {
   const feedback = evening['e-feedback'] || '（記載なし）';
   const notebooklm = evening['e-notebooklm'] || '（記載なし）';
 
+  // 2026-07-26設計指示：随時メモ（日中の記録）もVaultへ反映する
+  const memoTagLabel = { HP: '体調', P: '実績', V: 'ノイズ', G: '思考' };
+  const memoList = (record.memos && Array.isArray(record.memos.data)) ? record.memos.data : [];
+  const memosText = memoList.length
+    ? memoList.map(m => {
+        const label = memoTagLabel[m.tag] || m.tag || '';
+        const time = m.time ? `${m.time.slice(0,2)}:${m.time.slice(2,4)}` : '';
+        const pomo = m.pomos ? `（P${m.pomos}）` : '';
+        return `- [${time}] #${label}${pomo} ${m.content || ''}`;
+      }).join('\n')
+    : '（記載なし）';
+
   // frontmatter（ミツメルv9・2026-07-24・Dataview対応。設計書§1-3準拠）：
   // hp/mp/lvを数値のままYAMLへ入れることで、Obsidian側で「今月のHP推移」等を
   // Dataviewクエリで即座に集計できるようにする。値が無い項目はnullにし、集計側で除外可能にする。
@@ -867,6 +879,9 @@ HP：${hp || '—'}／MP：${mp || '—'}
 
 ## 今日の一言
 ${want}
+
+## 随時メモ
+${memosText}
 
 ## 補足
 ${supplement}

@@ -1540,6 +1540,8 @@ function saveMemos() {
   const payload = { data: memos, _ts: Date.now() };
   localStorage.setItem(lsKey('memos'), JSON.stringify(payload));
   cloudSave('memos', payload);
+  // 設計指示（2026-07-26）：随時メモも数秒後にVaultへ反映する（日中の情報反映手段の拡充）
+  syncToVaultDebouncedFromMorning();
 }
 function insertIntoTextarea(id, text) {
   const el = document.getElementById(id);
