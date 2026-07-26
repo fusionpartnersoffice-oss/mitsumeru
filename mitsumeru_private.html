@@ -1231,25 +1231,9 @@
 
   <div class="section">
     <div class="section-title">明日の設計</div>
-    <div class="section-title" style="font-size:13px;margin-bottom:8px;">📅 先行予定マップ</div>
-    <p style="font-size:12px;color:var(--text2);margin-bottom:10px;">複数日分の確定アポを一覧管理します。</p>
-    <div style="overflow-x:auto;">
-      <table id="advance-schedule-table" style="width:100%;border-collapse:collapse;font-size:12px;">
-        <thead>
-          <tr style="background:var(--bg2);border-bottom:1px solid var(--border);">
-            <th style="padding:6px 4px;text-align:center;color:var(--text2);font-weight:500;min-width:80px;">日付</th>
-            <th style="padding:6px 4px;text-align:center;color:var(--text2);font-weight:500;min-width:72px;">開始</th>
-            <th style="padding:6px 4px;text-align:center;color:var(--text2);font-weight:500;min-width:72px;">終了</th>
-            <th style="padding:6px 4px;text-align:center;color:var(--text2);font-weight:500;min-width:50px;">ポモ数</th>
-            <th style="padding:6px 4px;text-align:center;color:var(--text2);font-weight:500;min-width:80px;">急重度</th>
-            <th style="padding:6px 4px;text-align:left;color:var(--text2);font-weight:500;">内容</th>
-            <th style="padding:6px 4px;text-align:center;color:var(--text2);font-weight:500;min-width:36px;"></th>
-          </tr>
-        </thead>
-        <tbody id="advance-schedule-body"></tbody>
-      </table>
-    </div>
-    <button onclick="addAdvanceRow()" style="margin-top:10px;margin-bottom:16px;padding:6px 14px;border-radius:6px;border:0.5px solid var(--border);background:var(--bg2);font-size:12px;cursor:pointer;color:var(--text);">＋ 行を追加</button>
+    <!-- 是正（2026-07-26・柴山さん本人指示）：「先行予定マップ」UIを撤去。
+         Googleカレンダーへ直接登録する運用のため、ここでの入力は二重登録になる。
+         過去に保存されたadvanceScheduleデータ（KV/localStorage）は削除していない。 -->
     <div class="field">
       <label>遅延イベント（先送りタスク）</label>
       <div style="display:flex;gap:8px;align-items:flex-start;">
@@ -1302,11 +1286,10 @@
     </div>
   </div>
 
-  <div class="section">
-    <div class="section-title">② 明日のカレンダーCSV</div>
-    <div class="output-box" id="output-csv"></div>
-    <button class="btn-secondary" onclick="downloadCSV('calendar')" style="margin-top:10px;">カレンダーCSVをダウンロード</button>
-  </div>
+  <!-- 是正（2026-07-26・柴山さん本人指示）：「② 明日のカレンダーCSV」UIを撤去。
+       Googleカレンダーへ直接登録する運用のため、CSVダウンロードは二重登録の原因になる。
+       内部のcalendarCSV生成・cloudSave('calendar',...)自体は残す（他機能が参照する可能性を
+       壊さないため）が、表示・ダウンロード導線はここで止める。 -->
 
   <div class="section">
     <div class="section-title">③ 先送りカレンダーCSV</div>
@@ -3517,7 +3500,7 @@ HP: ${hp}→${endHP} ／ MP: ${mp}→${endMP}
   const delayCsvBox = document.getElementById('output-delay-csv');
 
   loading.style.display = 'block';
-  mdBox.classList.remove('visible'); csvBox.classList.remove('visible'); delayCsvBox.classList.remove('visible');
+  mdBox.classList.remove('visible'); if (csvBox) csvBox.classList.remove('visible'); delayCsvBox.classList.remove('visible');
 
   // 柱B（2026-07-21）：カレンダー分類＋ナレーションを1回のAPI呼び出しへ統合
   // 7日間トレンド・プロファイルは、旧②プロンプトでのみ使っていたが、統合呼び出しでも必要なため先に計算する
@@ -3566,20 +3549,11 @@ HP: ${hp}→${endHP} ／ MP: ${mp}→${endMP}
       csvRows.push(`"【①急重要】${e.title}（${e.pomos}ポモ）",${e.date},${e.start},${e.date},${e.end},False,"AI判断：急・重要"`);
     });
   }
-  // 先行予定マップを calendarCSV に追加（重複除去）
-  const advSeenKeys = new Set();
-  getAdvanceScheduleData().filter(r => r.date && r.content && /^\d{4}-\d{2}-\d{2}$/.test(r.date)).forEach(r => {
-    const dedupKey = r.date + '|' + r.content.trim() + '|' + (r.startHour || '') + ':' + (r.startMinute || '');
-    if (advSeenKeys.has(dedupKey)) return;
-    advSeenKeys.add(dedupKey);
-    const d = r.date.replace(/-/g, '/');
-    const sh = r.startHour ? r.startHour + ':' + (r.startMinute || '00') : '';
-    const eh = r.endHour   ? r.endHour   + ':' + (r.endMinute   || '00') : '';
-    const allDay = sh ? 'False' : 'True';
-    const label = '【先行予定】' + r.content + (r.pomo ? '（' + r.pomo + 'ポモ）' : '') + (r.priority || '');
-    const c = (r.content || '').replace(/"/g, '""');
-    csvRows.push('"' + label + '",' + d + ',' + sh + ',' + d + ',' + eh + ',' + allDay + ',"' + c + '"');
-  });
+  // 是正（2026-07-26・柴山さん本人指示）：先行予定マップはGoogleカレンダーへ直接登録する
+  // 運用に切り替えたため、ミツメル側のCSV生成に混ぜると二重登録になる。この関数からは
+  // 撤去する（UIも同時に撤去・夜タブ参照）。AI①急重要タスクのCSV化（すぐ上のブロック）は
+  // 今回のスコープ外のため維持する。過去に保存されたadvanceScheduleデータ自体（KV/localStorage）
+  // は消していない。
   calendarCSV = csvRows.join('\n');
   const calendarPayload = { csv: calendarCSV, _ts: Date.now() };
   localStorage.setItem(lsKey('calendar'), JSON.stringify(calendarPayload));
@@ -3608,7 +3582,7 @@ HP: ${hp}→${endHP} ／ MP: ${mp}→${endMP}
   localStorage.setItem(lsKey('delay'), JSON.stringify(delayPayload));
   cloudSave('delay', delayPayload);
 
-  csvBox.textContent = calendarCSV; csvBox.classList.add('visible');
+  if (csvBox) { csvBox.textContent = calendarCSV; csvBox.classList.add('visible'); }
   delayCsvBox.textContent = delayCSV; delayCsvBox.classList.add('visible');
 
   // ④ メインサマリー表示（柱B：統合呼び出しの結果からここで組み立てる。2回目のAPI呼び出しは無し）
