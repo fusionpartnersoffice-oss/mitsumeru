@@ -175,12 +175,12 @@ select option{background:var(--card);}
   <!-- 営業提案診断（F-1〜F-3・響・施設向け軽量版） -->
   <div class="tab-panel" id="tab-sales">
     <div class="module-title">🎯 営業提案診断（施設向け軽量版）</div>
-    <div class="module-desc">弦（`yuzuru_map.html`）で見つけた見込み先の情報（判定根拠・出典・定員数等）を入力すると、氷山モデルの型（①事実→②仮説→③アプローチ文言）でアプローチ文言の下書きを生成します。<b>このタブのデータ（<code>hibiki_facility_{id}</code>）は運用標準書タブのデータとは別の器として保存されます。</b></div>
+    <div class="module-desc">弦（`yuzuru_map.html`）で見つけた見込み先の情報（判定根拠・出典・定員数等）を入力すると、氷山モデルの型（①事実→②仮説→③アプローチ文言）でアプローチ文言の下書きを生成します。<b>このタブのデータは運用標準書タブのデータとは別に保存されます。</b></div>
 
     <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:16px;">
       <div class="module-title" style="font-size:.85rem;">F-2：弦からの入力データ</div>
-      <div class="form-group"><label>判定根拠（弦の reason・自由記述）</label><textarea id="sl-reason" placeholder="例：定員750名（通所介護の候補内での定員規模：上位）"></textarea></div>
-      <div class="form-group"><label>出典・注記（弦の sourceNote・自由記述）</label><input type="text" id="sl-sourceNote" placeholder="例：新規指定分のみ（令和3年度）"></div>
+      <div class="form-group"><label>判定根拠（自由記述）</label><textarea id="sl-reason" placeholder="例：定員750名（通所介護の候補内での定員規模：上位）"></textarea></div>
+      <div class="form-group"><label>出典・注記（自由記述）</label><input type="text" id="sl-sourceNote" placeholder="例：新規指定分のみ（令和3年度）"></div>
       <div class="form-row3">
         <div class="form-group"><label>定員数</label><input type="number" id="sl-capacity" placeholder="例：750"></div>
         <div class="form-group"><label>施設種別</label><input type="text" id="sl-facilityType" placeholder="例：通所介護"></div>
