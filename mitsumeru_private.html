@@ -2628,7 +2628,9 @@ function closeImgPreview() {
 
 function setApiKey() {
   // PRIVATE版：設定タブのAPIキー欄を使用
-  switchTab('settings');
+  // 是正（2026-07-26・実利用テストで発見）：タブIDは'settings'ではなく'profile'。
+  // 呼ばれれば screen-settings が存在せずnull参照で例外になっていた。
+  switchTab('profile');
   setTimeout(() => document.getElementById('private-api-key-input')?.focus(), 100);
 }
 
