@@ -158,6 +158,39 @@
     border-bottom: 0.5px solid var(--border);
   }
 
+  /* UI/UX棚卸しPhase2④⑤（2026-07-26・設計発注・柴山さん承認）：性質の異なる情報
+     （診断／認証設定）を折りたたみでグルーピングするための見た目のみの追加。
+     inputやvalueには一切触れない。ネイティブ<details>を使い、開閉のためのJSは書かない。 */
+  .section-group {
+    margin-bottom: 12px;
+  }
+  .section-group > summary {
+    cursor: pointer;
+    list-style: none;
+    background: var(--bg2);
+    border: 0.5px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text2);
+  }
+  .section-group > summary::-webkit-details-marker { display: none; }
+  .section-group > summary::before { content: '▸ '; }
+  .section-group[open] > summary::before { content: '▾ '; }
+  .section-group[open] > summary {
+    border-radius: 8px 8px 0 0;
+    margin-bottom: 12px;
+  }
+  .section-group > .section:first-of-type { margin-top: 0; }
+
+  .section-hint {
+    font-size: 12px;
+    color: var(--text2);
+    margin: -8px 0 12px;
+    line-height: 1.6;
+  }
+
   .field { margin-bottom: 14px; }
   .field:last-child { margin-bottom: 0; }
 
@@ -735,108 +768,119 @@
     </div>
   </div>
 
-  <div class="section">
-    <div class="section-title">⚔️ LSRP（サイコパシー判定）</div>
-    <div class="field">
-      <label>判定結果</label>
-      <select id="p-lsrp">
-        <option value="">選択してください</option>
-        <option value="安全圏：適合ピース">★☆☆ 安全圏：適合ピース</option>
-        <option value="要注意：観察対象">★★☆ 要注意：観察対象</option>
-        <option value="危険：組織の猛毒">★★★ 危険：組織の猛毒</option>
-      </select>
-    </div>
-  </div>
+  <!-- UI/UX棚卸しPhase2④⑤（2026-07-26・設計発注・柴山さん承認）：診断5種を折りたたみ
+       グループへまとめ、各見出しに平易な一言説明を追加。data-id・value・inputは無変更、
+       見た目とグルーピングのみの変更。 -->
+  <details class="section-group">
+    <summary>🧭 心理診断（LSRP・RC・エゴグラム・エニアグラム）</summary>
 
-  <div class="section">
-    <div class="section-title">🔰 RC判定（組織適応）</div>
-    <div class="field">
-      <label>判定結果</label>
-      <select id="p-rc">
-        <option value="">選択してください</option>
-        <option value="安全（凪）">★☆☆ 安全（凪）✅</option>
-        <option value="注意（I-U-）">★★☆ 注意（I-U-）他者否定</option>
-        <option value="依存（I-U+）">★★☆ 依存（I-U+）自律欠如</option>
-        <option value="危険（I+U-）">★★★ 危険（I+U-）組織破壊</option>
-      </select>
+    <div class="section">
+      <div class="section-title">⚔️ LSRP（サイコパシー判定）</div>
+      <div class="section-hint">組織の中で、どう見られやすいかの傾向</div>
+      <div class="field">
+        <label>判定結果</label>
+        <select id="p-lsrp">
+          <option value="">選択してください</option>
+          <option value="安全圏：適合ピース">★☆☆ 安全圏：適合ピース</option>
+          <option value="要注意：観察対象">★★☆ 要注意：観察対象</option>
+          <option value="危険：組織の猛毒">★★★ 危険：組織の猛毒</option>
+        </select>
+      </div>
     </div>
-  </div>
 
-  <div class="section">
-    <div class="section-title">🧠 エゴグラム（心理状態）</div>
-    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px;">
-      <div style="text-align:center;">
-        <div style="font-size:11px;color:var(--text3);margin-bottom:4px;">CP</div>
-        <input type="number" id="p-cp" min="0" max="10" value="8" style="width:100%;text-align:center;padding:6px 4px;">
-      </div>
-      <div style="text-align:center;">
-        <div style="font-size:11px;color:var(--text3);margin-bottom:4px;">NP</div>
-        <input type="number" id="p-np" min="0" max="10" value="2" style="width:100%;text-align:center;padding:6px 4px;">
-      </div>
-      <div style="text-align:center;">
-        <div style="font-size:11px;color:var(--text3);margin-bottom:4px;">A</div>
-        <input type="number" id="p-a" min="0" max="10" value="3" style="width:100%;text-align:center;padding:6px 4px;">
-      </div>
-      <div style="text-align:center;">
-        <div style="font-size:11px;color:var(--text3);margin-bottom:4px;">FC</div>
-        <input type="number" id="p-fc" min="0" max="10" value="5" style="width:100%;text-align:center;padding:6px 4px;">
-      </div>
-      <div style="text-align:center;">
-        <div style="font-size:11px;color:var(--text3);margin-bottom:4px;">AC</div>
-        <input type="number" id="p-ac" min="0" max="10" value="8" style="width:100%;text-align:center;padding:6px 4px;">
+    <div class="section">
+      <div class="section-title">🔰 RC判定（組織適応）</div>
+      <div class="section-hint">組織になじみやすいかどうかの傾向</div>
+      <div class="field">
+        <label>判定結果</label>
+        <select id="p-rc">
+          <option value="">選択してください</option>
+          <option value="安全（凪）">★☆☆ 安全（凪）✅</option>
+          <option value="注意（I-U-）">★★☆ 注意（I-U-）他者否定</option>
+          <option value="依存（I-U+）">★★☆ 依存（I-U+）自律欠如</option>
+          <option value="危険（I+U-）">★★★ 危険（I+U-）組織破壊</option>
+        </select>
       </div>
     </div>
-    <div id="ego-bar" style="font-size:12px;color:var(--text2);line-height:2;background:var(--bg2);border-radius:6px;padding:10px;font-family:monospace;"></div>
-  </div>
 
-  <div class="section">
-    <div class="section-title">🎭 エニアグラム（キャラクタークラス）</div>
-    <div class="field">
-      <label>第1位</label>
-      <select id="p-enea1">
-        <option value="">選択してください</option>
-        <option value="001(完全主義者)">完全主義者</option>
-        <option value="002(献身家)">献身家</option>
-        <option value="003(達成者)" selected>達成者</option>
-        <option value="004(個人主義者)">個人主義者</option>
-        <option value="005(研究者)">研究者</option>
-        <option value="006(忠実家)">忠実家</option>
-        <option value="007(楽天家)">楽天家</option>
-        <option value="008(挑戦者)">挑戦者</option>
-        <option value="009(調停者)">調停者</option>
-      </select>
+    <div class="section">
+      <div class="section-title">🧠 エゴグラム（心理状態）</div>
+      <div class="section-hint">5つの性格の傾向のバランス（CP：きびしさ／NP：やさしさ／A：冷静さ／FC：自由さ／AC：まわりに合わせる度合い）</div>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px;">
+        <div style="text-align:center;">
+          <div style="font-size:11px;color:var(--text3);margin-bottom:4px;">CP</div>
+          <input type="number" id="p-cp" min="0" max="10" value="8" style="width:100%;text-align:center;padding:6px 4px;">
+        </div>
+        <div style="text-align:center;">
+          <div style="font-size:11px;color:var(--text3);margin-bottom:4px;">NP</div>
+          <input type="number" id="p-np" min="0" max="10" value="2" style="width:100%;text-align:center;padding:6px 4px;">
+        </div>
+        <div style="text-align:center;">
+          <div style="font-size:11px;color:var(--text3);margin-bottom:4px;">A</div>
+          <input type="number" id="p-a" min="0" max="10" value="3" style="width:100%;text-align:center;padding:6px 4px;">
+        </div>
+        <div style="text-align:center;">
+          <div style="font-size:11px;color:var(--text3);margin-bottom:4px;">FC</div>
+          <input type="number" id="p-fc" min="0" max="10" value="5" style="width:100%;text-align:center;padding:6px 4px;">
+        </div>
+        <div style="text-align:center;">
+          <div style="font-size:11px;color:var(--text3);margin-bottom:4px;">AC</div>
+          <input type="number" id="p-ac" min="0" max="10" value="8" style="width:100%;text-align:center;padding:6px 4px;">
+        </div>
+      </div>
+      <div id="ego-bar" style="font-size:12px;color:var(--text2);line-height:2;background:var(--bg2);border-radius:6px;padding:10px;font-family:monospace;"></div>
     </div>
-    <div class="field">
-      <label>第2位</label>
-      <select id="p-enea2">
-        <option value="">選択してください</option>
-        <option value="001(完全主義者)">完全主義者</option>
-        <option value="002(献身家)">献身家</option>
-        <option value="003(達成者)">達成者</option>
-        <option value="004(個人主義者)">個人主義者</option>
-        <option value="005(研究者)">研究者</option>
-        <option value="006(忠実家)">忠実家</option>
-        <option value="007(楽天家)">楽天家</option>
-        <option value="008(挑戦者)">挑戦者</option>
-        <option value="009(調停者)" selected>調停者</option>
-      </select>
+
+    <div class="section">
+      <div class="section-title">🎭 エニアグラム（キャラクタークラス）</div>
+      <div class="section-hint">9タイプの性格分類のうち、自分に近い順番</div>
+      <div class="field">
+        <label>第1位</label>
+        <select id="p-enea1">
+          <option value="">選択してください</option>
+          <option value="001(完全主義者)">完全主義者</option>
+          <option value="002(献身家)">献身家</option>
+          <option value="003(達成者)" selected>達成者</option>
+          <option value="004(個人主義者)">個人主義者</option>
+          <option value="005(研究者)">研究者</option>
+          <option value="006(忠実家)">忠実家</option>
+          <option value="007(楽天家)">楽天家</option>
+          <option value="008(挑戦者)">挑戦者</option>
+          <option value="009(調停者)">調停者</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>第2位</label>
+        <select id="p-enea2">
+          <option value="">選択してください</option>
+          <option value="001(完全主義者)">完全主義者</option>
+          <option value="002(献身家)">献身家</option>
+          <option value="003(達成者)">達成者</option>
+          <option value="004(個人主義者)">個人主義者</option>
+          <option value="005(研究者)">研究者</option>
+          <option value="006(忠実家)">忠実家</option>
+          <option value="007(楽天家)">楽天家</option>
+          <option value="008(挑戦者)">挑戦者</option>
+          <option value="009(調停者)" selected>調停者</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>第3位</label>
+        <select id="p-enea3">
+          <option value="">選択してください</option>
+          <option value="001(完全主義者)">完全主義者</option>
+          <option value="002(献身家)">献身家</option>
+          <option value="003(達成者)">達成者</option>
+          <option value="004(個人主義者)">個人主義者</option>
+          <option value="005(研究者)">研究者</option>
+          <option value="006(忠実家)">忠実家</option>
+          <option value="007(楽天家)">楽天家</option>
+          <option value="008(挑戦者)">挑戦者</option>
+          <option value="009(調停者)">調停者</option>
+        </select>
+      </div>
     </div>
-    <div class="field">
-      <label>第3位</label>
-      <select id="p-enea3">
-        <option value="">選択してください</option>
-        <option value="001(完全主義者)">完全主義者</option>
-        <option value="002(献身家)">献身家</option>
-        <option value="003(達成者)">達成者</option>
-        <option value="004(個人主義者)">個人主義者</option>
-        <option value="005(研究者)">研究者</option>
-        <option value="006(忠実家)">忠実家</option>
-        <option value="007(楽天家)">楽天家</option>
-        <option value="008(挑戦者)">挑戦者</option>
-        <option value="009(調停者)">調停者</option>
-      </select>
-    </div>
-  </div>
+  </details>
 
   <div class="section">
     <div class="section-title">📝 キャリアアンカー・強み・弱み</div>
@@ -867,55 +911,61 @@
   <button class="btn-primary" onclick="saveProfile()">プロファイルを保存する</button>
   <div id="profile-saved" style="display:none;text-align:center;color:var(--green);font-size:13px;margin-top:10px;">✓ 保存しました。以降のアドバイスに反映されます。</div>
 
-  <div class="section" style="margin-top:12px;border:1px solid var(--gold);background:rgba(184,134,11,0.05);">
-    <div class="section-title" style="color:var(--gold);">🔑 APIキー（PRIVATE版）</div>
-    <p style="font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.7;">ミツメル（mitsumeru_app.html）で設定済みなら入力不要です。<br>未設定の場合のみここで入力してください。</p>
-    <div class="field">
-      <input type="password" id="private-api-key-input" placeholder="sk-ant-..." style="font-family:monospace;font-size:12px;">
-    </div>
-    <button class="btn-primary" onclick="saveApiKeyFromSettings()">APIキーを保存する</button>
-    <div id="private-api-key-saved" style="display:none;color:var(--green);font-size:12px;margin-top:6px;text-align:center;">✓ 保存しました</div>
-  </div>
+  <!-- UI/UX棚卸しPhase2④（2026-07-26・設計発注・柴山さん承認）：認証・連携系4ブロックを
+       折りたたみグループへまとめる。ボタン・入力・onclick等は無変更、見た目のみの変更。 -->
+  <details class="section-group" style="margin-top:12px;">
+    <summary>🔧 接続・同期設定（APIキー／トークン／Drive／クラウド同期）</summary>
 
-  <div class="section" style="margin-top:12px;border:1px solid var(--gold);background:rgba(184,134,11,0.05);">
-    <div class="section-title" style="color:var(--gold);">🔒 アクセストークン（PRIVATE版・クラウド同期用）</div>
-    <p style="font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.7;">2026-07-19より、専用版のデータ保護のため必須になりました。設計・秘書からお渡しされた文字列を入力してください。未設定だとクラウド同期（保存・読み込み）が動きません。</p>
-    <div class="field">
-      <input type="password" id="private-access-token-input" placeholder="アクセストークンを貼り付け" style="font-family:monospace;font-size:12px;">
-    </div>
-    <button class="btn-primary" onclick="savePrivateTokenFromSettings()">トークンを保存する</button>
-    <div id="private-access-token-saved" style="display:none;color:var(--green);font-size:12px;margin-top:6px;text-align:center;">✓ 保存しました</div>
-
-    <div style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(184,134,11,0.25);">
-      <div style="font-size:12px;color:var(--text2);margin-bottom:8px;">別の端末（携帯等）へ同じトークンを渡す場合は、QRコードでも設定できます。</div>
-      <div style="display:flex;gap:8px;">
-        <button class="btn-secondary" onclick="showPrivateTokenQR()" style="flex:1;">📱 QRで表示する</button>
-        <button class="btn-secondary" onclick="startPrivateTokenQRScan()" style="flex:1;">📷 QRを読み取る</button>
+    <div class="section" style="border:1px solid var(--gold);background:rgba(184,134,11,0.05);">
+      <div class="section-title" style="color:var(--gold);">🔑 APIキー（PRIVATE版）</div>
+      <p style="font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.7;">ミツメル（mitsumeru_app.html）で設定済みなら入力不要です。<br>未設定の場合のみここで入力してください。</p>
+      <div class="field">
+        <input type="password" id="private-api-key-input" placeholder="sk-ant-..." style="font-family:monospace;font-size:12px;">
       </div>
-      <div id="private-token-qr-area" style="display:none;margin-top:10px;text-align:center;"></div>
-      <div id="private-token-scan-area" style="display:none;margin-top:10px;"></div>
-      <div id="private-token-qr-msg" style="font-size:11px;color:var(--text3);margin-top:6px;"></div>
+      <button class="btn-primary" onclick="saveApiKeyFromSettings()">APIキーを保存する</button>
+      <div id="private-api-key-saved" style="display:none;color:var(--green);font-size:12px;margin-top:6px;text-align:center;">✓ 保存しました</div>
     </div>
-  </div>
 
-  <div class="section" style="margin-top:12px;border:1px solid var(--gold);background:rgba(184,134,11,0.05);">
-    <div class="section-title" style="color:var(--gold);">📁 Google Driveへの書き出し設定</div>
-    <p style="font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.7;">
-      設定すると、毎日の記録（夜の締め・外出時の投入メモ）が、ご自身のGoogle Drive上の指定フォルダへ自動で保存されるようになります。<br>
-      設定は最初の1回だけです。ご自身のGoogleアカウントでの同意と、保存先フォルダの選択が必要です。
-    </p>
-    <button class="btn-primary" id="vault-oauth-setup-btn" onclick="startVaultOAuthSetup()" style="width:100%;">Google Driveに書き出す設定をする</button>
-    <div id="vault-oauth-setup-msg" style="font-size:12px;margin-top:8px;text-align:center;"></div>
-  </div>
+    <div class="section" style="margin-top:12px;border:1px solid var(--gold);background:rgba(184,134,11,0.05);">
+      <div class="section-title" style="color:var(--gold);">🔒 アクセストークン（PRIVATE版・クラウド同期用）</div>
+      <p style="font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.7;">2026-07-19より、専用版のデータ保護のため必須になりました。設計・秘書からお渡しされた文字列を入力してください。未設定だとクラウド同期（保存・読み込み）が動きません。</p>
+      <div class="field">
+        <input type="password" id="private-access-token-input" placeholder="アクセストークンを貼り付け" style="font-family:monospace;font-size:12px;">
+      </div>
+      <button class="btn-primary" onclick="savePrivateTokenFromSettings()">トークンを保存する</button>
+      <div id="private-access-token-saved" style="display:none;color:var(--green);font-size:12px;margin-top:6px;text-align:center;">✓ 保存しました</div>
 
-  <div class="section" style="margin-top:12px;">
-    <div class="section-title">☁️ クラウド同期</div>
-    <p style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.7;">KVを正典として、最新データを強制取得します。<br>別デバイスで入力した内容を反映したい時に使います。</p>
-    <button class="btn-secondary" onclick="forceSyncFromCloud()" style="margin-bottom:8px;">☁️ 今すぐ同期（KVから取得）</button>
-    <button class="btn-secondary" onclick="testWorkerConnection()" style="margin-bottom:8px;">🔌 Worker接続テスト</button>
-    <div id="worker-test-result" style="display:none;padding:10px 12px;border-radius:6px;font-size:12px;line-height:1.7;margin-bottom:8px;"></div>
-    <div style="font-size:11px;color:var(--text3);">対象日：<span id="sync-target-date"></span></div>
-  </div>
+      <div style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(184,134,11,0.25);">
+        <div style="font-size:12px;color:var(--text2);margin-bottom:8px;">別の端末（携帯等）へ同じトークンを渡す場合は、QRコードでも設定できます。</div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn-secondary" onclick="showPrivateTokenQR()" style="flex:1;">📱 QRで表示する</button>
+          <button class="btn-secondary" onclick="startPrivateTokenQRScan()" style="flex:1;">📷 QRを読み取る</button>
+        </div>
+        <div id="private-token-qr-area" style="display:none;margin-top:10px;text-align:center;"></div>
+        <div id="private-token-scan-area" style="display:none;margin-top:10px;"></div>
+        <div id="private-token-qr-msg" style="font-size:11px;color:var(--text3);margin-top:6px;"></div>
+      </div>
+    </div>
+
+    <div class="section" style="margin-top:12px;border:1px solid var(--gold);background:rgba(184,134,11,0.05);">
+      <div class="section-title" style="color:var(--gold);">📁 Google Driveへの書き出し設定</div>
+      <p style="font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.7;">
+        設定すると、毎日の記録（夜の締め・外出時の投入メモ）が、ご自身のGoogle Drive上の指定フォルダへ自動で保存されるようになります。<br>
+        設定は最初の1回だけです。ご自身のGoogleアカウントでの同意と、保存先フォルダの選択が必要です。
+      </p>
+      <button class="btn-primary" id="vault-oauth-setup-btn" onclick="startVaultOAuthSetup()" style="width:100%;">Google Driveに書き出す設定をする</button>
+      <div id="vault-oauth-setup-msg" style="font-size:12px;margin-top:8px;text-align:center;"></div>
+    </div>
+
+    <div class="section" style="margin-top:12px;">
+      <div class="section-title">☁️ クラウド同期</div>
+      <p style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.7;">KVを正典として、最新データを強制取得します。<br>別デバイスで入力した内容を反映したい時に使います。</p>
+      <button class="btn-secondary" onclick="forceSyncFromCloud()" style="margin-bottom:8px;">☁️ 今すぐ同期（KVから取得）</button>
+      <button class="btn-secondary" onclick="testWorkerConnection()" style="margin-bottom:8px;">🔌 Worker接続テスト</button>
+      <div id="worker-test-result" style="display:none;padding:10px 12px;border-radius:6px;font-size:12px;line-height:1.7;margin-bottom:8px;"></div>
+      <div style="font-size:11px;color:var(--text3);">対象日：<span id="sync-target-date"></span></div>
+    </div>
+  </details>
 </div>
 
 <!-- 朝モード -->
