@@ -3080,12 +3080,19 @@ async function startVaultOAuthSetup() {
 
     setVaultOAuthMsg('②書き込み許可を確認しています…', false);
 
-    // ③refresh_token用の認可コードを取得（prompt=consentで確実にrefresh_tokenを発行させる）
+    // ③refresh_token用の認可コードを取得
+    // 2026-07-26是正：このコメントは元々「prompt=consentで確実にrefresh_tokenを発行させる」と
+    // 書いていたが、実際のコードには`prompt`パラメータが指定されていなかった（コメントと実装の
+    // 食い違い＝今日何度も見た技術的負債と同じパターン）。ダッシュボード自動反映の実装中に発見。
+    // 初回セットアップ時はたまたま初回同意だったためrefresh_tokenが返っていたが、既に許可済みの
+    // scopeへの再認可では、prompt指定が無いとGoogle側がrefresh_tokenを省略することがある
+    // （実機で確認済み）。明示的に`prompt:'consent'`を指定し、毎回確実に発行させる。
     const code = await new Promise((resolve, reject) => {
       const codeClient = google.accounts.oauth2.initCodeClient({
         client_id: VAULT_OAUTH_CLIENT_ID,
         scope: 'https://www.googleapis.com/auth/drive.file',
         ux_mode: 'popup',
+        prompt: 'consent',
         callback: (resp) => resp.code ? resolve(resp.code) : reject(new Error('認可コード取得に失敗しました')),
       });
       codeClient.requestCode();
@@ -3181,12 +3188,14 @@ async function startDashboardFileSetup() {
     // ファイルへの許可が反映されないと判明（実機で404を確認・原因特定済み）。
     // startVaultOAuthSetup()と同じく、選択直後にauthorization codeを取得し、
     // サーバー側でrefresh_tokenを発行し直す（この時のcode交換に今回選んだファイルへの
-    // 許可が含まれる）。
+    // 許可が含まれる）。既に許可済みのscopeへの再認可だとrefresh_tokenが省略されうるため
+    // （実機で1回目の再試行時に確認済み）、`prompt:'consent'`で確実に発行させる。
     const code = await new Promise((resolve, reject) => {
       const codeClient = google.accounts.oauth2.initCodeClient({
         client_id: VAULT_OAUTH_CLIENT_ID,
         scope: 'https://www.googleapis.com/auth/drive.file',
         ux_mode: 'popup',
+        prompt: 'consent',
         callback: (resp) => resp.code ? resolve(resp.code) : reject(new Error('認可コード取得に失敗しました')),
       });
       codeClient.requestCode();
