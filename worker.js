@@ -112,6 +112,11 @@ export default {
       return handleVaultMorningContext(request, env);
     }
 
+    // ===== 「育つ仕組み」：サルベージ週次学習ログの読み込み（2026-07-26・設計発注） =====
+    if (url.pathname === '/vault-learning-log' && request.method === 'POST') {
+      return handleVaultLearningLog(request, env);
+    }
+
     // ===== アクセス解析（簡易・自前実装）：案件0の原因切り分け用（2026-07-14） =====
     // 個人情報・IPアドレス等は一切記録しない。ページ名＋日付ごとの匿名カウントのみ。
     if (url.pathname === '/pv' && request.method === 'GET') {
@@ -1084,5 +1089,51 @@ async function handleVaultMorningContext(request, env) {
     }), { status: 200, headers });
   } catch (e) {
     return new Response(JSON.stringify({ ok: false, error: e.message }), { status: 500, headers });
+  }
+}
+
+// 「育つ仕組み」（2026-07-26設計指示）：サルベージが週次で更新する学習ログを読み込む。
+// ファイルがまだ無い・空の場合はエラーにせずnone:trueで静かにスキップする（設計書の指示通り）。
+async function handleVaultLearningLog(request, env) {
+  const headers = { ...CORS_HEADERS, 'Content-Type': 'application/json' };
+  let token;
+  try {
+    const body = await request.json();
+    token = body.token;
+  } catch (e) {
+    return new Response(JSON.stringify({ ok: false, error: 'リクエストの形式が不正です' }), { status: 400, headers });
+  }
+  if (!env.PRIVATE_ACCESS_TOKEN || token !== env.PRIVATE_ACCESS_TOKEN) {
+    return new Response(JSON.stringify({ ok: false, error: 'private data requires a valid token' }), { status: 401, headers });
+  }
+
+  const kv = getKV(env);
+  const oauthFolderId = await kv.get('vault_oauth_folder');
+  if (!oauthFolderId) {
+    return new Response(JSON.stringify({ ok: true, none: true }), { status: 200, headers });
+  }
+
+  try {
+    const accessToken = await getVaultAccessToken(env);
+    const dailyFolder = await findOrCreateFolder(accessToken, oauthFolderId, 'ミツメル日次記録');
+    const filename = '_柴山さんプロファイル_学習ログ.md';
+    const found = await findVaultFile(accessToken, dailyFolder.id, filename);
+    if (!found) {
+      return new Response(JSON.stringify({ ok: true, none: true }), { status: 200, headers });
+    }
+    const contentRes = await fetch(`https://www.googleapis.com/drive/v3/files/${found.id}?alt=media`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    const content = (await contentRes.text()).trim();
+    if (!content) {
+      return new Response(JSON.stringify({ ok: true, none: true }), { status: 200, headers });
+    }
+    // 直近5件程度に絞る（サルベージ側の書式に依存しすぎないよう、末尾の一定量だけを渡す）
+    const lines = content.split('\n').filter(l => l.trim());
+    const recent = lines.slice(-10).join('\n');
+    return new Response(JSON.stringify({ ok: true, none: false, text: recent }), { status: 200, headers });
+  } catch (e) {
+    // 読み込み失敗時も朝プロンプト自体は止めない（設計書：エラーにしない）
+    return new Response(JSON.stringify({ ok: true, none: true, error: e.message }), { status: 200, headers });
   }
 }

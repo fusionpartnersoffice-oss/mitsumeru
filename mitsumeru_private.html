@@ -1957,6 +1957,26 @@ function saveApiKeyFromSettings() {
 function getPrivateToken() {
   return localStorage.getItem('mitsumeru_private_access_token') || '';
 }
+
+// 「育つ仕組み」（2026-07-26設計指示）：サルベージが週次で更新する学習ログを取得し、
+// プロンプトへ埋め込む文字列を組み立てる。ファイル無し・取得失敗時は空文字を返す
+// （設計書の指示通りエラーにせず静かにスキップ、朝・夜プロンプト共通で使う）。
+async function fetchLearningLogText() {
+  try {
+    const token = getPrivateToken();
+    if (!token) return '';
+    const res = await fetch(`${SYNC_URL}/vault-learning-log`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
+    });
+    const data = await res.json();
+    if (data.ok && !data.none && data.text) {
+      return `\n【最近分かってきたこと】（サルベージが週次で更新）\n${data.text}`;
+    }
+  } catch (e) {}
+  return '';
+}
 function savePrivateTokenFromSettings() {
   const token = (document.getElementById('private-access-token-input') || {value:''}).value.trim();
   if (!token) return;
@@ -2891,6 +2911,8 @@ async function calcMorning() {
     }
   } catch (e) { vaultContext = null; }
 
+  const learningLogText = await fetchLearningLogText();
+
   let vaultContextText = '【前回記録】Vault連携が未設定、または取得できませんでした（無視して通常通り進めてよい）';
   if (vaultContext && vaultContext.ok) {
     if (vaultContext.none) {
@@ -2918,6 +2940,7 @@ async function calcMorning() {
 
 【柴山靖章 プロファイル】
 ${getProfileText()}
+${learningLogText}
 
 【補助情報（自然に絡む場合だけ触れてよい。毎回すべて盛り込もうとしないこと）】
 ・現在時間帯：${timeOfDay}（「朝タブ」の名称や「おはよう」に固執しない）
@@ -3253,9 +3276,10 @@ HP: ${hp}→${endHP} ／ MP: ${mp}→${endMP}
   const _eEnea1 = (_ep.enea && _ep.enea[0]) ? _ep.enea[0] : '未設定';
   const lvBaseFormatted = `${formatLV(close.lvBase + close.todayPts)}（本日+${lv}pt、${counts.pomo}ポモ）`;
 
+  const learningLogTextEvening = await fetchLearningLogText();
   const aiResult = await runAIEveningAnalysis({
     tomorrow, delayWithFlags, hp, mp, eveSummary,
-    profileText: getProfileText(), p, v, g, debugText,
+    profileText: getProfileText() + learningLogTextEvening, p, v, g, debugText,
     endHP, endMP, counts, lvBaseFormatted, dateStr, trend7,
     must: _eMust, never: _eNever, ego: _eEgo, enea1: _eEnea1, supplement
   });
