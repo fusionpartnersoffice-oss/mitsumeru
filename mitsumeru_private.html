@@ -3730,6 +3730,22 @@ ${_tomorrowIchigon}
   const outputPayload = { text, _ts: Date.now() };
   localStorage.setItem(lsKey('output'), JSON.stringify(outputPayload));
   cloudSave('output', outputPayload);
+
+  // ダッシュボード自動反映（2026-07-26・設計発注）：失敗してもgenerateEvening()全体は
+  // 失敗にしない（画面の出力生成は必ず成功させる）。ダッシュボードファイル未設定
+  // （vault_dashboard_file_id無し）の場合はサーバー側で静かにスキップされる。
+  try {
+    const _top1Match = (aiResult.tomorrowPlan || '').match(/最優先タスク（急重度①）[：:]\s*([^\n]+)/);
+    const _top1 = _top1Match ? _top1Match[1].trim() : '';
+    await fetch(`${SYNC_URL}/vault-dashboard-write`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ichigon: _tomorrowIchigon, top1: _top1, token: getPrivateToken() }),
+    });
+  } catch (e) {
+    console.warn('[ミツメル] ダッシュボードへの自動反映に失敗しました（無視して続行します）:', e);
+  }
+
   const _bsHP = typeof close.endHP === 'number' ? close.endHP : 50;
   const _bsMP = typeof close.endMP === 'number' ? close.endMP : 50;
   // バーンアウトV2（睡眠・コース・ポモ・7日トレンド加味）

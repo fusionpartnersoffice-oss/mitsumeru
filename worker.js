@@ -64,6 +64,11 @@ export default {
       return handleVaultDashboardSetup(request, env);
     }
 
+    // ===== ダッシュボード自動反映：本文書き込み（2026-07-26・設計発注） =====
+    if (url.pathname === '/vault-dashboard-write' && request.method === 'POST') {
+      return handleVaultDashboardWrite(request, env);
+    }
+
     // ===== 読書メモ（口述記録の拡張・2026-07-21・柴山さん指示）：本ごとにVaultへ音声メモを蓄積 =====
     if (url.pathname === '/sync-vault-note' && request.method === 'POST') {
       return handleSyncVaultNote(request, env);
@@ -568,6 +573,61 @@ async function handleVaultDashboardSetup(request, env) {
     const kv = getKV(env);
     await kv.put('vault_dashboard_file_id', fileId);
     return new Response(JSON.stringify({ ok: true, fileId }), { status: 200, headers });
+  } catch (e) {
+    return new Response(JSON.stringify({ ok: false, error: e.message }), { status: 500, headers });
+  }
+}
+
+// ダッシュボード自動反映：本文書き込み（2026-07-26・設計発注）。
+// vault_dashboard_file_id（Pickerでファイル自体を選んでもらった結果）が未設定なら、
+// 設定前の利用者に影響を与えないよう静かにスキップする。マーカー間だけを差し替える方式で、
+// 「次の面接の準備」「判断待ち」等の既存セクションには一切触れない。
+const DASHBOARD_BLOCK_START = '<!-- MITSUMERU_TODAY_START -->';
+const DASHBOARD_BLOCK_END = '<!-- MITSUMERU_TODAY_END -->';
+const DASHBOARD_INSERT_ANCHOR = '## 🗂 入口';
+
+async function handleVaultDashboardWrite(request, env) {
+  const headers = { ...CORS_HEADERS, 'Content-Type': 'application/json' };
+  let body;
+  try { body = await request.json(); }
+  catch (e) { return new Response(JSON.stringify({ ok: false, error: 'リクエストの形式が不正です' }), { status: 400, headers }); }
+
+  const { ichigon, top1, token } = body;
+  if (!env.PRIVATE_ACCESS_TOKEN || token !== env.PRIVATE_ACCESS_TOKEN) {
+    return new Response(JSON.stringify({ ok: false, error: 'private data requires a valid token' }), { status: 401, headers });
+  }
+
+  try {
+    const kv = getKV(env);
+    const fileId = await kv.get('vault_dashboard_file_id');
+    if (!fileId) {
+      return new Response(JSON.stringify({ ok: true, skipped: true, reason: 'ダッシュボードファイル未設定' }), { status: 200, headers });
+    }
+
+    const accessToken = await getVaultAccessToken(env);
+    const getRes = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!getRes.ok) throw new Error('ダッシュボード読み込み失敗: ' + (await getRes.text()));
+    let content = await getRes.text();
+
+    const today = jstDateStr();
+    const lines = [`## 🎯 今日の一手（ミツメルより・${today}更新）`];
+    if (ichigon) lines.push(`- 明日への一言：${ichigon}`);
+    if (top1) lines.push(`- 最優先：${top1}`);
+    const block = `${DASHBOARD_BLOCK_START}\n${lines.join('\n')}\n${DASHBOARD_BLOCK_END}`;
+
+    const markerRe = new RegExp(DASHBOARD_BLOCK_START.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '[\\s\\S]*?' + DASHBOARD_BLOCK_END.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+    if (markerRe.test(content)) {
+      content = content.replace(markerRe, block);
+    } else if (content.includes(DASHBOARD_INSERT_ANCHOR)) {
+      content = content.replace(DASHBOARD_INSERT_ANCHOR, `${block}\n\n${DASHBOARD_INSERT_ANCHOR}`);
+    } else {
+      content = content.trimEnd() + '\n\n' + block + '\n';
+    }
+
+    await overwriteVaultFile(accessToken, fileId, content);
+    return new Response(JSON.stringify({ ok: true }), { status: 200, headers });
   } catch (e) {
     return new Response(JSON.stringify({ ok: false, error: e.message }), { status: 500, headers });
   }
