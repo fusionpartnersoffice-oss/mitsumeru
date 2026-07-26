@@ -270,6 +270,7 @@ function getLSRPLabel(total){
   return {label,cls,short,reason,display:`${label}（${reason}）`};
 }
 function getPMStyle(p,m){
+  if(p==null && m==null) return {label:'─（未実施）',cls:''};
   const pp=n(p)>20, mm=n(m)>20;
   if(pp&&mm) return {label:'PM型',cls:''};
   if(pp&&!mm) return {label:'Pm型',cls:''};
@@ -332,15 +333,16 @@ function renderStaffList(){
     const pm=getPMStyle(s.p,s.m);
     const rc=getRCStatus(s.ego);
     const lsrpL=getLSRPLabel(s.lsrp?.total||0);
+    const egoAssessed = !!s.ego;
     const ego=s.ego||{};
     return `<tr>
       <td>${off?.name||'─'}</td>
       <td style="font-weight:600;">${s.name}</td>
       <td><span class="tag">${s.role}</span></td>
-      <td>${n(s.task)}</td><td>${n(s.social)}</td>
+      <td>${s.task==null?'─（未実施）':n(s.task)}</td><td>${s.social==null?'─（未実施）':n(s.social)}</td>
       <td style="font-weight:700;">${pm.label}</td>
-      <td>${n(ego.CP)}</td><td>${n(ego.NP)}</td><td>${n(ego.A)}</td><td>${n(ego.FC)}</td><td>${n(ego.AC)}</td>
-      <td class="${rc.cls}" style="font-weight:600;">${rc.display}</td>
+      <td>${egoAssessed?n(ego.CP):'─'}</td><td>${egoAssessed?n(ego.NP):'─'}</td><td>${egoAssessed?n(ego.A):'─'}</td><td>${egoAssessed?n(ego.FC):'─'}</td><td>${egoAssessed?n(ego.AC):'─'}</td>
+      <td class="${rc.cls}" style="font-weight:600;">${egoAssessed?rc.display:'─（診断未実施）'}</td>
       <td class="${lsrpL.cls}">${lsrpL.display}</td>
       <td><button class="btn btn-secondary btn-xs" onclick="openStaffDetail('${s.id}')">詳細</button></td>
     </tr>`;
@@ -354,6 +356,7 @@ function openStaffDetail(staffId){
   const pm=getPMStyle(s.p,s.m);
   const rc=getRCStatus(s.ego);
   const lsrpL=getLSRPLabel(s.lsrp?.total||0);
+  const egoAssessed = !!s.ego;
   const ego=s.ego||{};
   const enn=s.enn||[];
   document.getElementById('detail-section').style.display='block';
@@ -365,15 +368,17 @@ function openStaffDetail(staffId){
     <div class="grid-2">
       <div>
         <div style="font-size:0.75rem;color:var(--sub);margin-bottom:6px;">🧭 チームアセスメント</div>
-        <div>Task：${n(s.task)} ／ Social：${n(s.social)}</div>
-        <div style="margin-top:6px;">PMスタイル：<span style="font-weight:700;">${pm.label}</span>（P:${n(s.p)} M:${n(s.m)}）</div>
+        <div>Task：${s.task==null?'─（未実施）':n(s.task)} ／ Social：${s.social==null?'─（未実施）':n(s.social)}</div>
+        <div style="margin-top:6px;">PMスタイル：<span style="font-weight:700;">${pm.label}</span>（P:${s.p==null?'─':n(s.p)} M:${s.m==null?'─':n(s.m)}）</div>
         <div style="margin-top:10px;font-size:0.75rem;color:var(--sub);">🔮 エニアグラム</div>
         <div>${ennLabel(enn)}</div>
       </div>
       <div>
         <div style="font-size:0.75rem;color:var(--sub);margin-bottom:6px;">🧠 エゴグラム × RC判定</div>
-        <div>CP:${n(ego.CP)} NP:${n(ego.NP)} A:${n(ego.A)} FC:${n(ego.FC)} AC:${n(ego.AC)}</div>
-        <div class="${rc.cls}" style="margin-top:6px;font-weight:700;">${rc.display}</div>
+        ${egoAssessed
+          ? `<div>CP:${n(ego.CP)} NP:${n(ego.NP)} A:${n(ego.A)} FC:${n(ego.FC)} AC:${n(ego.AC)}</div>
+        <div class="${rc.cls}" style="margin-top:6px;font-weight:700;">${rc.display}</div>`
+          : `<div style="color:var(--sub);">─（診断未実施）</div>`}
         <div style="font-size:0.75rem;color:var(--sub);margin-top:10px;">⚠️ LSRP（反社会傾向スコア）</div>
         <div style="font-size:1.4rem;font-weight:700;" class="${lsrpL.cls}">${s.lsrp?.total||0}</div>
         <div class="${lsrpL.cls}">${lsrpL.display}</div>
@@ -404,7 +409,10 @@ function confirmAddStaff(){
   const role=document.getElementById('new-staff-role').value;
   if(!corpId||!officeId||!name){ alert('法人・事業所・氏名を入力してください'); return; }
   const allStaff=getAllStaff();
-  allStaff.push({id:uid(), corpId, officeId, name, role, cp:0,np:0,a:0,fc:0,ac:0, ego:{CP:0,NP:0,A:0,FC:0,AC:0}, task:0,social:0,p:0,m:0, lsrp:null, enn:[], transferHistory:[]});
+  // 診断（エゴグラム・TA・PM）は候補者管理経由の採用データでのみ埋まる仕様のため、
+  // 手動追加時はnull（未実施）のままにする。0で埋めると「実測でゼロ」と区別がつかなくなるため
+  // （2026-07-26・設計指摘：ミツメルの心理診断未使用バグと同種のリスクとして是正）。
+  allStaff.push({id:uid(), corpId, officeId, name, role, ego:null, task:null,social:null,p:null,m:null, lsrp:null, enn:[], transferHistory:[]});
   save('nagi_staff', allStaff);
   closeModal('modal-add-staff');
   renderStaffList();
@@ -461,7 +469,9 @@ function renderMaps(){
   const offices=getAllOffices();
   const staff=currentStaffScope();
   const taPts=offices.map(o=>{
-    const st=getStaffByOffice(o.id);
+    // 診断未実施（task/social=null）のスタッフはゼロとして平均に混ぜず除外する
+    // （混ぜると事業所平均が実測より低く見える・2026-07-26是正）
+    const st=getStaffByOffice(o.id).filter(s=>s.task!=null||s.social!=null);
     if(!st.length) return null;
     const avgTask=st.reduce((a,s)=>a+n(s.task),0)/st.length;
     const avgSoc=st.reduce((a,s)=>a+n(s.social),0)/st.length;
@@ -472,7 +482,8 @@ function renderMaps(){
     quad:['自己満足\nM2','弾力的\nM4','機能不全\nM1','駆り立てられた\nM3'],
     qcol:['#ffa726','#81c784','#ef5350','#4fc3f7'],
   });
-  const mgrs=staff.filter(s=>s.role==='管理者クラス'||s.role==='リーダークラス');
+  // 診断未実施（p/m=null）の管理者は(0,0)へ誤表示しないよう除外する（2026-07-26是正）
+  const mgrs=staff.filter(s=>(s.role==='管理者クラス'||s.role==='リーダークラス')&&(s.p!=null||s.m!=null));
   const pmPts=mgrs.map(s=>({x:n(s.p),y:n(s.m),label:(s.name||'').split(' ')[0],col:'#ffb74d'}));
   drawCross('chart-pm-map',pmPts,{
     xLabel:'P行動 →',yLabel:'M行動 ↑',
