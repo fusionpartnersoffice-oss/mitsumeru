@@ -1291,11 +1291,10 @@
        内部のcalendarCSV生成・cloudSave('calendar',...)自体は残す（他機能が参照する可能性を
        壊さないため）が、表示・ダウンロード導線はここで止める。 -->
 
-  <div class="section">
-    <div class="section-title">③ 先送りカレンダーCSV</div>
-    <div class="output-box" id="output-delay-csv"></div>
-    <button class="btn-secondary" onclick="downloadCSV('delay')" style="margin-top:10px;">先送りCSVをダウンロード</button>
-  </div>
+  <!-- 是正（2026-07-26・柴山さん本人指示）：「③ 先送りカレンダーCSV」UIを撤去。
+       機械的な自動フラグ付け（長期先送り検知）・CSV化は実質使われておらず増え続けるだけ、
+       との本人評価。先送り状況を踏まえた判断はAIのreview/delegate/cutloss（③今日の行動評価・
+       _block3Parts）が既に担っており新規実装は不要。e-delay入力欄自体は維持する。 -->
 
   <div class="section">
     <div class="section-title">📅 過去の記録</div>
@@ -3299,7 +3298,7 @@ function buildDelayWithFlags(delayText, history) {
 // 2回呼び出し構成だった（②が①に依存するため順番に呼ぶ必要があった）。
 // 新：①②とも同じ入力データから同一呼び出し内で同時生成させることで統合し、重複入力（endHP/endMP等）を1回に削減。
 async function runAIEveningAnalysis(promptContext) {
-  const { tomorrow, delayWithFlags, hp, mp, eveSummary, profileText, p, v, g, debugText,
+  const { tomorrow, delay, hp, mp, eveSummary, profileText, p, v, g, debugText,
           endHP, endMP, counts, lvBaseFormatted, dateStr, trend7, must, never, ego, enea1, rc, supplement } = promptContext;
 
   const hpNum = parseInt(endHP), mpNum = parseInt(endMP);
@@ -3319,8 +3318,8 @@ ${eveSummary || ''}
 【明日の確定アポ】
 ${tomorrow || 'なし'}
 
-【先送りタスクリスト（⚠️は3日以上の長期先送り）】
-${delayWithFlags || 'なし'}
+【先送りタスクリスト】
+${delay || 'なし'}
 
 【明日に持ち越すエネルギー（夜の締め後）】HP:${endHP}/100 MP:${endMP}/100
 ${limitNote}
@@ -3477,30 +3476,20 @@ HP: ${hp}→${endHP} ／ MP: ${mp}→${endMP}
 
   const tomorrowDate = new Date(); tomorrowDate.setDate(tomorrowDate.getDate() + 1);
   const tomorrowDateStr = `${tomorrowDate.getFullYear()}/${String(tomorrowDate.getMonth()+1).padStart(2,'0')}/${String(tomorrowDate.getDate()).padStart(2,'0')}`;
-  const delayDate2 = new Date(); delayDate2.setDate(delayDate2.getDate() + 2);
-  const delayDateStr = `${delayDate2.getFullYear()}/${String(delayDate2.getMonth()+1).padStart(2,'0')}/${String(delayDate2.getDate()).padStart(2,'0')}`;
 
-  // 遅延履歴を更新し、フラグ付きリストを生成
-  const delayHistory = delay.trim() ? updateDelayHistory(delay) : getDelayHistory();
-  const delayWithFlags = buildDelayWithFlags(delay, delayHistory);
-
-  // 繰り返しタスク確認メッセージ
-  const repeatedTasks = delay.split('\n').filter(l=>l.trim()).filter(t => {
-    const h = delayHistory[t.trim()]; return h && (h.delayDays||0) >= 3;
-  });
-  if (repeatedTasks.length > 0) {
-    const msg = repeatedTasks.map(t => `・${t.trim()}（${(delayHistory[t.trim()]?.delayDays||0)}日先送り）`).join('\n');
-    if (!confirm(`以下のタスクが長期先送りです。本当に必要ですか？\n\n${msg}\n\nOK → そのまま続ける　キャンセル → 夜タブに戻って整理する`)) return;
-  }
+  // 是正（2026-07-26・柴山さん本人指示）：先送りの機械的な自動フラグ付け（何日連続で
+  // 出てきたかの履歴追跡・3日以上での警告確認モーダル）を撤去。「明日へ何を持ち越すかは
+  // 柴山さんご自身が判断する」前提に統一し、AIへは生のdelayテキストをそのまま渡す。
+  // getDelayHistory()/updateDelayHistory()/buildDelayWithFlags()の関数定義・過去に保存された
+  // delay_historyデータ（KV/localStorage）自体は削除しない（呼び出しを止めるのみ）。
 
   switchTab('output');
   const loading = document.getElementById('output-loading');
   const mdBox = document.getElementById('output-markdown');
   const csvBox = document.getElementById('output-csv');
-  const delayCsvBox = document.getElementById('output-delay-csv');
 
   loading.style.display = 'block';
-  mdBox.classList.remove('visible'); if (csvBox) csvBox.classList.remove('visible'); delayCsvBox.classList.remove('visible');
+  mdBox.classList.remove('visible'); if (csvBox) csvBox.classList.remove('visible');
 
   // 柱B（2026-07-21）：カレンダー分類＋ナレーションを1回のAPI呼び出しへ統合
   // 7日間トレンド・プロファイルは、旧②プロンプトでのみ使っていたが、統合呼び出しでも必要なため先に計算する
@@ -3531,7 +3520,7 @@ HP: ${hp}→${endHP} ／ MP: ${mp}→${endMP}
 
   const learningLogTextEvening = await fetchLearningLogText();
   const aiResult = await runAIEveningAnalysis({
-    tomorrow, delayWithFlags, hp, mp, eveSummary,
+    tomorrow, delay, hp, mp, eveSummary,
     profileText: getProfileText() + learningLogTextEvening, p, v, g, debugText,
     endHP, endMP, counts, lvBaseFormatted, dateStr, trend7,
     must: _eMust, never: _eNever, ego: _eEgo, enea1: _eEnea1, rc: _eRc, supplement
@@ -3559,31 +3548,11 @@ HP: ${hp}→${endHP} ／ MP: ${mp}→${endMP}
   localStorage.setItem(lsKey('calendar'), JSON.stringify(calendarPayload));
   cloudSave('calendar', calendarPayload);
 
-  // ③ 要検討リスト CSV（②③④）
-  let delayRows = ['Subject,Start Date,Start Time,End Date,End Time,All Day Event,Description'];
-  if (aiResult) {
-    const addSection = (label, text) => {
-      if (!text) return;
-      text.split('\n').filter(l=>l.trim()).forEach(line => {
-        const t = line.replace(/^[・\-\*]\s*/,'').trim();
-        delayRows.push(`"${label}：${t}",${delayDateStr},,,,True,"${label}"`);
-      });
-    };
-    addSection('②重要・今週中', aiResult.review);
-    addSection('③委任・簡略化', aiResult.delegate);
-    addSection('④損切り検討', aiResult.cutloss);
-  } else if (delay.trim()) {
-    delay.split('\n').filter(l=>l.trim()).forEach(line => {
-      delayRows.push(`"【先送り】${line.trim()}",${delayDateStr},,,,True,"本日未完了"`);
-    });
-  }
-  delayCSV = delayRows.join('\n');
-  const delayPayload = { csv: delayCSV, _ts: Date.now() };
-  localStorage.setItem(lsKey('delay'), JSON.stringify(delayPayload));
-  cloudSave('delay', delayPayload);
+  // 是正（2026-07-26・柴山さん本人指示）：「③ 要検討リスト CSV」（delayRows/delayCSV生成・
+  // output-delay-csvへの表示）を撤去。review/delegate/cutlossはこの下の_block3Partsで
+  // テキストとして表示されるため、CSV化は不要（機械的な自動化を減らす方針）。
 
   if (csvBox) { csvBox.textContent = calendarCSV; csvBox.classList.add('visible'); }
-  delayCsvBox.textContent = delayCSV; delayCsvBox.classList.add('visible');
 
   // ④ メインサマリー表示（柱B：統合呼び出しの結果からここで組み立てる。2回目のAPI呼び出しは無し）
   loading.style.display = 'none';
