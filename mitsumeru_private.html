@@ -1865,6 +1865,61 @@ function getPrivateToken() {
 // 発注・実装されたが、実際にやっていることは同じ（AIへ渡す補足情報を1つ増やす）。
 // これを1つの関数にまとめ、新しい補足情報を今後追加する時はこの関数の中に1行足すだけで
 // 済むようにする。UIタブ・保存先は無変更（設計書v10 §2②準拠）。
+const TODAY_LENS_LIST = ['成果・進捗', '休息・回復', '気づき・学び', 'つながり', '将来・目標'];
+const LENS_HISTORY_KEY = 'mitsumeru_lens_history';
+const LENS_HISTORY_WINDOW_DAYS = 14;
+
+// Fitbod式・視点ローテーション（2026-07-26設計発注）：日付の機械的な剰余ではなく、
+// 直近14日間の出現回数が最も少ない視点を優先して選ぶ。localStorageのみで完結し
+// Vault/KV・サーバー通信には一切触れない。履歴が空の初回は日付剰余へフォールバック。
+function selectTodayLens(dateStr) {
+  let history = [];
+  try {
+    history = JSON.parse(localStorage.getItem(LENS_HISTORY_KEY) || '[]');
+    if (!Array.isArray(history)) history = [];
+  } catch (e) { history = []; }
+
+  // 同じ日付に既に記録済みならそれをそのまま返す（1日1件・重複push防止）
+  const existing = history.find(h => h.date === dateStr);
+  if (existing && TODAY_LENS_LIST.includes(existing.lens)) return existing.lens;
+
+  const cutoff = new Date(dateStr);
+  cutoff.setDate(cutoff.getDate() - LENS_HISTORY_WINDOW_DAYS);
+  const recent = history.filter(h => h.date && new Date(h.date) >= cutoff && new Date(h.date) < new Date(dateStr));
+
+  let chosen;
+  if (recent.length === 0) {
+    // 履歴なし（初回）：急な偏りを避けるため、従来の日付剰余ロジックへフォールバック
+    const d = new Date(dateStr);
+    const startOfYear = new Date(d.getFullYear(), 0, 0);
+    const dayOfYear = Math.floor((d - startOfYear) / 86400000);
+    chosen = TODAY_LENS_LIST[dayOfYear % TODAY_LENS_LIST.length];
+  } else {
+    // 出現回数が最少の視点を選ぶ。同数の場合は最後に出た日が最も古い（＝一番出ていない）方を優先
+    const counts = {};
+    const lastSeen = {};
+    TODAY_LENS_LIST.forEach(l => { counts[l] = 0; lastSeen[l] = ''; });
+    recent.forEach(h => {
+      if (counts[h.lens] !== undefined) {
+        counts[h.lens] += 1;
+        if (h.date > lastSeen[h.lens]) lastSeen[h.lens] = h.date;
+      }
+    });
+    chosen = TODAY_LENS_LIST.slice().sort((a, b) => {
+      if (counts[a] !== counts[b]) return counts[a] - counts[b];
+      return (lastSeen[a] || '').localeCompare(lastSeen[b] || '');
+    })[0];
+  }
+
+  history.push({ date: dateStr, lens: chosen });
+  // 肥大化防止：ウィンドウ幅の3倍を超えたら古い順に間引く
+  const maxEntries = LENS_HISTORY_WINDOW_DAYS * 3;
+  if (history.length > maxEntries) history = history.slice(history.length - maxEntries);
+  try { localStorage.setItem(LENS_HISTORY_KEY, JSON.stringify(history)); } catch (e) { /* 保存失敗は無視・次回また試みる */ }
+
+  return chosen;
+}
+
 async function buildMorningContext(dateForVault) {
   const context = {};
 
@@ -1882,12 +1937,8 @@ async function buildMorningContext(dateForVault) {
     }
   } catch (e) { context.vaultContext = null; }
 
-  // ②視点ローテーション（日付から機械的に計算。新しい保存領域は作らない）
-  const TODAY_LENS_LIST = ['成果・進捗', '休息・回復', '気づき・学び', 'つながり', '将来・目標'];
-  const now = new Date();
-  const startOfYear = new Date(now.getFullYear(), 0, 0);
-  const dayOfYear = Math.floor((now - startOfYear) / 86400000);
-  context.todayLens = TODAY_LENS_LIST[dayOfYear % 5];
+  // ②視点ローテーション（Fitbod式・2026-07-26設計発注：直近の使用頻度が低い視点を優先）
+  context.todayLens = selectTodayLens(dateForVault || localDateStr(new Date()));
 
   // ③育つ仕組み（学習ログ・1日1回キャッシュは fetchLearningLogText 内で処理済み）
   context.learningLogText = await fetchLearningLogText();
