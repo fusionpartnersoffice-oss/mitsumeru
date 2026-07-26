@@ -36,6 +36,14 @@ if (isTestMode()) {
     banner.textContent = '🧪 テストモード（test_キーへ書き込み中・本番データは保護されています）';
     banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#b8860b;color:#fff;text-align:center;font-size:12px;padding:4px;';
     document.body.prepend(banner);
+    // UI/UX棚卸しPhase2（2026-07-26・設計発注）：このバナーはposition:fixed;top:0のため、
+    // 実際にはヘッダー（position:sticky;top:0）のロゴ部分を覆い隠していた（375px幅で実測：
+    // バナー0-42px・ロゴ14-46pxで完全重複）。文言・警告としての目立たせ方は変更せず、
+    // バナーの実測高さぶんだけbodyを押し下げて重なりを解消する。狭幅で折返し行数が
+    // 変わってもズレないよう、リサイズ時にも再計測する。
+    const adjustBodyOffset = () => { document.body.style.paddingTop = banner.offsetHeight + 'px'; };
+    adjustBodyOffset();
+    window.addEventListener('resize', adjustBodyOffset);
   });
 }
 
