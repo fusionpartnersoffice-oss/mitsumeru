@@ -19,6 +19,13 @@
     .demo-badge{background:#ff6f00;color:#fff;font-size:10px;font-weight:bold;padding:2px 7px;border-radius:4px;letter-spacing:.5px;white-space:nowrap;}
     .stat{font-size:12px;background:rgba(255,255,255,.12);padding:3px 10px;border-radius:20px;white-space:nowrap;}
     .stat span{font-weight:bold;font-size:15px;margin-right:2px;}
+    /* 弦監査Phase2C（2026-07-26・設計発注）：フィルタ3ブロックの折りたたみ化。
+       地図・マーカー描画ロジックには触れず、レイアウトのみで完結させる。 */
+    #filterPanel{flex-shrink:0;background:#161b22;}
+    #filterPanelSummary{cursor:pointer;list-style:none;padding:8px 16px;font-size:12px;color:#c9d1d9;font-weight:bold;background:#0d1117;border-bottom:1px solid #30363d;}
+    #filterPanelSummary::-webkit-details-marker{display:none;}
+    #filterPanelSummary::before{content:'▸ ';color:#8b949e;}
+    #filterPanel[open] #filterPanelSummary::before{content:'▾ ';}
     #controls{background:#161b22;padding:6px 16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;border-bottom:1px solid #30363d;flex-shrink:0;}
     #controls label{font-size:12px;color:#8b949e;}
     #controls select{font-size:12px;padding:3px 8px;border-radius:5px;border:1px solid #30363d;background:#21262d;color:#c9d1d9;}
@@ -95,6 +102,14 @@
     .client-ref-row-hdr{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#e6edf3;margin-bottom:4px;}
     .client-ref-row-meta{font-size:10px;color:#8b949e;margin-bottom:5px;}
     .client-ref-row select{width:100%;font-size:11px;padding:4px 6px;border-radius:4px;border:1px solid #30363d;background:#21262d;color:#c9d1d9;font-family:inherit;cursor:pointer;}
+
+    /* 弦監査Phase2C（2026-07-26・設計発注）：狭幅スマホでは営業先リスト（#sidebar・
+       固定300px幅）が画面幅の大半を占め、地図がほぼ表示されなくなっていた実測を踏まえた
+       対応。地図を主役にし、リストは折りたたみ内のCSVボタン等で代替可能なため、狭幅時は
+       非表示にする（マーカークリックでの詳細確認・地図自体の操作は従来通り可能）。 */
+    @media (max-width: 700px) {
+      #sidebar{display:none;}
+    }
   </style>
 </head>
 <body>
@@ -109,6 +124,13 @@
   <button id="client-mode-btn" class="client-mode-btn" onclick="toggleClientMode()">🏢 クライアント中心抽出</button>
   <div style="margin-left:auto;font-size:11px;color:rgba(255,255,255,.5)">Fusion Partners © 2026</div>
 </div>
+<!-- 弦監査Phase2C（2026-07-26・設計発注）：狭幅（375px級スマホ）だと、この下の3つの
+     フィルタ行（#controls・#type-controls・#ref-controls）がwrapして画面の大半を占め、
+     肝心の地図が実測45px程度まで潰れる問題が見つかった（@media クエリが元々一つも無かった
+     ことをコードで確認済み）。地図描画ロジックには一切触れず、この3ブロックを<details>で
+     折りたたみ可能にし、狭幅時はデフォルト閉じておくことで地図の表示領域を確保する。 -->
+<details id="filterPanel" open>
+<summary id="filterPanelSummary">🔍 絞り込み条件</summary>
 <div id="controls">
   <label>県：<select id="prefFilter">
     <option value="ALL">すべて（東海3県）</option>
@@ -150,6 +172,17 @@
   <label class="ref-master"><input type="checkbox" id="refMasterToggle" checked>📍 紹介元レイヤー表示</label>
   <div class="ref-toggle" id="ref-category-toggles"></div>
 </div>
+</details>
+<script>
+// 弦監査Phase2C（2026-07-26・設計発注）：狭幅スマホでは初期表示から折りたたんでおき、
+// フィルタ行に画面を占領されず地図が最初から見える状態にする。デスクトップ（700px超）は
+// 従来通り開いた状態のまま（挙動を変えない）。
+(function() {
+  if (window.innerWidth <= 700) {
+    document.getElementById('filterPanel').open = false;
+  }
+})();
+</script>
 <div id="body">
   <div id="sidebar">
     <div id="sidebar-header">
