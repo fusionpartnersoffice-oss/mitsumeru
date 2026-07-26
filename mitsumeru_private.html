@@ -730,6 +730,7 @@
     </div>
 
     <button class="btn-primary" onclick="addMemo()">追加する</button>
+    <span id="memo-editing-badge" style="display:none;font-size:12px;color:var(--accent);margin-left:8px;">✏️ 編集中（保存し直すには「追加する」を押してください）　<a href="#" onclick="cancelEditMemo();return false;" style="color:var(--text3);text-decoration:underline;">キャンセル</a></span>
   </div>
 
   <div class="section" id="memo-today-panel">
@@ -1395,6 +1396,11 @@ function lsKey(type, date) {
 
 let memos = [];
 let selectedTag = 'HP';
+// 是正（2026-07-26・設計指摘）：editMemo()がsplice()直後にsaveMemos()を呼ばず、
+// 編集を完了せずに離脱すると当該メモが保存済みデータから消失する構造だった（今朝の
+// 実データ消失と同種の「保存タイミングのズレ」）。編集中はmemos配列を一切変更せず、
+// このindexだけを保持し、addMemo()側で「新規追加」か「上書き」かを判定する方式に変更。
+let editingMemoIndex = null;
 // ========================================
 // PRIVATE版：APIキーはlocalStorageから自動取得
 // 手動上書きしたい場合のみ下記に設定
@@ -2671,7 +2677,17 @@ function addMemo() {
   const pomos = selectedTag === 'P' ? counts['memo-pomo'] : null;
   const timeStr = time ? time.replace(':','') : '';
   const imgUrl = document.getElementById('memo-image-url').value.trim() || null;
-  memos.push({ tag: selectedTag, time: timeStr, pomos, content, image: imgUrl });
+  const newMemo = { tag: selectedTag, time: timeStr, pomos, content, image: imgUrl };
+  // 是正（2026-07-26）：編集中（editingMemoIndex !== null）なら新規追加ではなく上書きにする。
+  // 編集開始時にsplice()していないため、ここに来るまでmemos配列は常に完全な状態を保っている。
+  if (editingMemoIndex !== null) {
+    memos[editingMemoIndex] = newMemo;
+    editingMemoIndex = null;
+    const badge = document.getElementById('memo-editing-badge');
+    if (badge) badge.style.display = 'none';
+  } else {
+    memos.push(newMemo);
+  }
   saveMemos();
   renderMemos();
   updateEveningMemoPreview();
@@ -2679,6 +2695,19 @@ function addMemo() {
   document.getElementById('memo-content').value = '';
   counts['memo-pomo'] = 0;
   document.getElementById('memo-pomo-count').textContent = '0';
+  document.getElementById('memo-image-url').value = '';
+  setNowTime();
+}
+
+// 編集中の状態を破棄し、フォームを元に戻す（memos配列は編集開始時から一度も変更していないため安全）
+function cancelEditMemo() {
+  editingMemoIndex = null;
+  const badge = document.getElementById('memo-editing-badge');
+  if (badge) badge.style.display = 'none';
+  document.getElementById('memo-content').value = '';
+  counts['memo-pomo'] = 0;
+  document.getElementById('memo-pomo-count').textContent = '0';
+  document.getElementById('memo-pomo-field').style.display = 'none';
   document.getElementById('memo-image-url').value = '';
   setNowTime();
 }
@@ -2787,10 +2816,13 @@ function editMemo(i) {
   } else {
     document.getElementById('memo-pomo-field').style.display = 'none';
   }
-  // 元のメモを削除
-  memos.splice(i, 1);
-  renderMemos();
-  calcAutoCount();
+  if (m.image) document.getElementById('memo-image-url').value = m.image;
+  // 是正（2026-07-26）：ここでmemos配列を変更しない。編集完了（addMemo）まではmemos配列は
+  // 一切手を付けず、「編集中の対象」だけをeditingMemoIndexで覚えておく。
+  // タブを離れる・編集を放棄しても、addMemo()を経由しない限りデータは消えない。
+  editingMemoIndex = i;
+  const badge = document.getElementById('memo-editing-badge');
+  if (badge) badge.style.display = 'inline';
   // フォームにスクロール
   document.getElementById('memo-content').scrollIntoView({ behavior: 'smooth' });
   document.getElementById('memo-content').focus();
@@ -2798,6 +2830,12 @@ function editMemo(i) {
 
 function deleteMemo(i) {
   memos.splice(i, 1);
+  // 是正（2026-07-26）：削除で配列のインデックスがずれるため、編集中の対象がある場合は
+  // 追随させる（削除された本人を編集中ならキャンセル、それより後ろなら1つ繰り上げる）
+  if (editingMemoIndex !== null) {
+    if (editingMemoIndex === i) { cancelEditMemo(); }
+    else if (editingMemoIndex > i) { editingMemoIndex -= 1; }
+  }
   saveMemos();
   renderMemos();
   calcAutoCount();
@@ -2805,6 +2843,9 @@ function deleteMemo(i) {
 
 function clearMemos() {
   if (confirm('本日のメモをリセットしますか？')) {
+    editingMemoIndex = null;
+    const badge = document.getElementById('memo-editing-badge');
+    if (badge) badge.style.display = 'none';
     memos = [];
     saveMemos();
     renderMemos();
@@ -2916,6 +2957,10 @@ function closeDayHPMP() {
 // G連携基盤・G3-カレンダー：夜の締めのタイミングでGoogleカレンダーへ自動書き出し（柴山さんご本人専用）。
 // Secret未設定時はWorker側で無音スキップされる。失敗しても既存機能には一切影響させない。
 function syncToGoogleCalendar() {
+  // 原則6（2026-07-26・実装安全原則v2・設計指摘）：syncToVault()・startVaultOAuthSetup()には
+  // 既にテストモードガードがあったのに、同じ夜の締め処理から呼ばれる本関数だけ漏れていた。
+  // テストモード中は本物のGoogleカレンダーへの書き込みを止める。
+  if (isTestMode()) { console.warn('[テストモード] Googleカレンダーへの複製をスキップしました'); return; }
   const date = targetDate || localDateStr(new Date());
   fetch(`${SYNC_URL}/sync-calendar`, {
     method: 'POST',
@@ -3947,7 +3992,12 @@ async function testWorkerConnection() {
   resultEl.style.color = 'var(--text2)';
   resultEl.textContent = '\u63A5\u7D9A\u30C6\u30B9\u30C8\u4E2D...';
 
-  const testKey = encodeURIComponent('__ping_test__');
+  // 是正（2026-07-26・設計指摘）：生キー（プレフィックス無し）で本番KVへ直接PUTしていた。
+  // この接続テストは疎通確認だけが目的でprivate_データを一切必要としないため、
+  // kvPrefix()（private_/test_の切替）ではなく常時test_固定にする——通常モード時に
+  // kvPrefix()を使うとprivate_扱いになりトークン必須（401）になってしまい、
+  // このテスト自体がトークン無指定のまま失敗する新たな不具合を生むため。
+  const testKey = encodeURIComponent('test___ping_test__');
   const testPayload = JSON.stringify({ ping: true, _ts: Date.now() });
   const results = [];
 
