@@ -50,16 +50,19 @@ function mitsumeruPromptApiKey(storageKey) {
 // CORS回避のためのブラウザセキュリティ無効化案内が不要）。
 // 省略時は直接fetch（旧方式・過渡的に残す。3ファイル全てプロキシ統一後は
 // このオプション自体を撤去する想定。設計：06_イノベーション\ミツメル_共通コア化_柱A設計書_v1_20260721.md）
-function mitsumeruCallClaude(storageKey, promptText, onSuccess, onError, maxTokens, proxyUrl) {
+function mitsumeruCallClaude(storageKey, promptText, onSuccess, onError, maxTokens, proxyUrl, temperature) {
   maxTokens = maxTokens || 4000;
   const key = mitsumeruGetApiKey(storageKey);
   if (!key) { onError(MITSUMERU_MSG.apiKeyNotConfigured); return; }
+
+  // 2026-07-26設計指摘：temperature省略時は指定しない（既存の呼び出し元・挙動を変えないため）
+  const bodyExtra = (temperature !== undefined && temperature !== null) ? { temperature } : {};
 
   const request = proxyUrl
     ? fetch(`${proxyUrl}/analyze-proxy`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ apikey: key, promptText, maxTokens })
+        body: JSON.stringify({ apikey: key, promptText, maxTokens, ...bodyExtra })
       })
     : fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
@@ -72,7 +75,8 @@ function mitsumeruCallClaude(storageKey, promptText, onSuccess, onError, maxToke
         body: JSON.stringify({
           model: 'claude-sonnet-4-6',
           max_tokens: maxTokens,
-          messages: [{ role: 'user', content: promptText }]
+          messages: [{ role: 'user', content: promptText }],
+          ...bodyExtra
         })
       });
 

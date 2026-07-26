@@ -82,8 +82,16 @@ export default {
       try {
         // fileId指定時はOAuth2トークンでその実体（実地検証用・2026-07-25）、未指定時は従来通りサービスアカウントでGOOGLE_VAULT_FOLDER_IDを確認
         const fileIdParam = url.searchParams.get('fileId');
+        const wantContent = url.searchParams.get('content') === '1';
         const accessToken = fileIdParam ? await getVaultAccessToken(env) : await getGoogleAccessToken(env, 'https://www.googleapis.com/auth/drive.file');
         const folderId = fileIdParam || env.GOOGLE_VAULT_FOLDER_ID;
+        if (wantContent && fileIdParam) {
+          const contentRes = await fetch(`https://www.googleapis.com/drive/v3/files/${fileIdParam}?alt=media`, {
+            headers: { Authorization: `Bearer ${accessToken}` },
+          });
+          const text = await contentRes.text();
+          return new Response(text, { status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'text/plain; charset=utf-8' } });
+        }
         const res = await fetch(`https://www.googleapis.com/drive/v3/files/${folderId}?fields=id,name,parents,webViewLink,modifiedTime`, {
           headers: { Authorization: `Bearer ${accessToken}` },
         });
@@ -297,13 +305,17 @@ async function handleAnalyzeProxy(request, env) {
   try { body = await request.json(); }
   catch { return new Response(JSON.stringify({ error: 'invalid JSON' }), { status: 400, headers }); }
 
-  const { apikey, promptText, maxTokens = 4000 } = body;
+  const { apikey, promptText, maxTokens = 4000, temperature } = body;
   if (!apikey || !String(apikey).startsWith('sk-ant-')) {
     return new Response(JSON.stringify({ error: '有効なAnthropic APIキー（sk-ant-...）が必要です' }), { status: 401, headers });
   }
   if (!promptText || typeof promptText !== 'string') {
     return new Response(JSON.stringify({ error: 'promptText（文字列）が必要です' }), { status: 400, headers });
   }
+
+  // 2026-07-26設計指摘：出力の揺れを抑えるためtemperatureを転送可能にする（省略時はAnthropic既定値）
+  const claudeBody = { model: 'claude-sonnet-4-6', max_tokens: maxTokens, messages: [{ role: 'user', content: promptText }] };
+  if (temperature !== undefined && temperature !== null) claudeBody.temperature = temperature;
 
   const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -312,7 +324,7 @@ async function handleAnalyzeProxy(request, env) {
       'x-api-key': String(apikey).substring(0, 200),
       'anthropic-version': '2023-06-01',
     },
-    body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: maxTokens, messages: [{ role: 'user', content: promptText }] }),
+    body: JSON.stringify(claudeBody),
   });
 
   const data = await claudeRes.json().catch(() => ({}));
