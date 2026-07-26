@@ -1281,10 +1281,6 @@
     <div class="loading-text" id="output-loading">Claude が分析中です...</div>
     <div class="output-box" id="output-markdown"></div>
     <div id="output-copy-row" style="display:none;flex-direction:column;gap:8px;margin-top:10px;">
-      <div style="display:flex;gap:8px;">
-        <button class="btn-secondary" id="copy-nlm-btn" onclick="copyForNotebookLM()" style="flex:1;">📋 NotebookLMにコピー</button>
-        <button class="btn-secondary" id="copy-keep-btn" onclick="copyTextForKeep()" style="flex:1;">📋 テキスト版でコピー（Keep用）</button>
-      </div>
       <button id="copy-daily-btn" class="btn-secondary" onclick="copySummaryBox('output-markdown','copy-daily-btn')" style="width:100%;">📋 今日のまとめをコピー</button>
     </div>
   </div>
@@ -3681,19 +3677,6 @@ function copySummaryBox(boxId, btnId) {
   });
 }
 
-function copyForNotebookLM() {
-  const text = document.getElementById('output-markdown').textContent;
-  if (!text) { alert('まだ出力がありません。「翌日戦略を生成する」を実行してください。'); return; }
-  navigator.clipboard.writeText(text).then(() => {
-    const btn = document.getElementById('copy-nlm-btn');
-    const orig = btn.textContent;
-    btn.textContent = 'コピーしました ✓';
-    btn.style.color = 'var(--green)';
-    btn.style.borderColor = 'var(--green)';
-    setTimeout(() => { btn.textContent = orig; btn.style.color = ''; btn.style.borderColor = ''; }, 2500);
-  });
-}
-
 function downloadAsText() {
   const text = document.getElementById('output-markdown').textContent;
   if (!text) { alert('まだ出力がありません。'); return; }
@@ -3703,21 +3686,6 @@ function downloadAsText() {
   link.href = URL.createObjectURL(blob);
   link.download = `mitsumeru_${dateStr}.txt`;
   link.click();
-}
-
-// テキスト版をクリップボードへコピー（Google Keep等への貼り付け用）
-function copyTextForKeep() {
-  const text = document.getElementById('output-markdown').textContent;
-  if (!text) { alert('まだ出力がありません。「翌日戦略を生成する」を実行してください。'); return; }
-  navigator.clipboard.writeText(text).then(() => {
-    const btn = document.getElementById('copy-keep-btn');
-    if (!btn) return;
-    const orig = btn.textContent;
-    btn.textContent = 'コピーしました ✓';
-    btn.style.color = 'var(--green)';
-    btn.style.borderColor = 'var(--green)';
-    setTimeout(() => { btn.textContent = orig; btn.style.color = ''; btn.style.borderColor = ''; }, 2500);
-  });
 }
 
 function downloadHTML() {
