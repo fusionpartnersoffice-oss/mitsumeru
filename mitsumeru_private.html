@@ -2869,43 +2869,11 @@ async function calcMorning() {
   const _mustText = _p.must || '未設定';
   const _neverText = _p.never || '未設定';
 
-  // 朝プロンプトVault連携（2026-07-26設計指示）：前回記録との間隔・内容をVaultから取得
-  let vaultContext = null;
-  try {
-    const _token = getPrivateToken();
-    if (_token) {
-      const _res = await fetch(`${SYNC_URL}/vault-morning-context`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ date: targetDate || localDateStr(new Date()), token: _token }),
-      });
-      vaultContext = await _res.json();
-    }
-  } catch (e) { vaultContext = null; }
-
-  const learningLogText = await fetchLearningLogText();
-
-  let vaultContextText = '【前回記録】Vault連携が未設定、または取得できませんでした（無視して通常通り進めてよい）';
-  if (vaultContext && vaultContext.ok) {
-    if (vaultContext.none) {
-      vaultContextText = `【前回記録】${vaultContext.reason || 'まだ記録がありません（初回）'}`;
-    } else {
-      vaultContextText = `【前回記録との間隔】${vaultContext.daysSince}日ぶりです（前回：${vaultContext.prevDate}）
-【前回の記録】HP:${vaultContext.hp ?? '—'}／MP:${vaultContext.mp ?? '—'}／今日の一言:${vaultContext.want || 'なし'}／補足:${vaultContext.supplement || 'なし'}`;
-    }
-  }
-
-  // 時間帯判定（2026-07-26設計指示）：実際の入力時刻に応じた自然な声かけのため
-  const _hour = new Date().getHours();
-  const timeOfDay = _hour < 11 ? '朝' : _hour < 15 ? '昼' : _hour < 19 ? '夕方' : '夜';
-
-  // AIコメント視点ローテーション（2026-07-26設計指示・柴山さんのマンネリ懸念対応）：
-  // 日付から機械的に計算し、新しい保存領域は作らない（設計書「決定方法」準拠）。
-  const TODAY_LENS_LIST = ['成果・進捗', '休息・回復', '気づき・学び', 'つながり', '将来・目標'];
-  const _now = new Date();
-  const _startOfYear = new Date(_now.getFullYear(), 0, 0);
-  const _dayOfYear = Math.floor((_now - _startOfYear) / 86400000);
-  const todayLens = TODAY_LENS_LIST[_dayOfYear % 5];
+  // v10・ContextBuilder（2026-07-26設計発注）：前回記録・視点ローテーション・育つ仕組みを
+  // buildMorningContext()の1呼び出しに統合（旧：3箇所で個別に発注・実装されていた）。
+  const morningContext = await buildMorningContext(targetDate || localDateStr(new Date()));
+  const vaultContextText = formatVaultContextText(morningContext.vaultContext);
+  const { todayLens, learningLogText, timeOfDay } = morningContext;
 
   const prompt = `あなたはFusion Partners代表・柴山靖章の専属「SuccessOS 統合経営参謀」です。
 柴山さんのことを深く知る唯一の参謀として、今朝の状態を読み、的確な言葉と決断を返してください。
@@ -2937,23 +2905,10 @@ HP: ${hpAdj}/100、MP: ${mp}/100
 書き出しは、いきなり分析結果を突きつけない一言を置いてから本題に入ること。**ただし固定の決まり文句にしないこと——「今日の一言、見ました」のような同じ言い回しを毎回繰り返さない。** 今日の一言の具体的な内容や今朝の状態に応じて、書き出しの言葉自体をその都度変えること。ワンクッションは1文の中に収め、行数を増やさないこと
 
 **厳守事項（事実制約・最優先・違反禁止）**：
-・上記【今朝の状態】【柴山靖章プロファイル】【前回記録】に明記されていない出来事（今日・今夜の予定、会う相手、第三者との関係等）を創作しないこと
-・プロファイルの項目（エゴグラム・エニアグラム等）が「未設定」の場合はそのまま「未設定」として扱い、別の具体的な値をでっち上げないこと
-・「怒り」「不安」等の感情を、ノイズ・今日の一言のテキストに明記されていないのに決めつけて断定しないこと
-・**柴山さんの言葉選び・表現そのものを分析・評価しないこと。**（NG例：「『準備する』という動詞を選んでいるのは正しい使い方だ」「その言葉選びに芯の強さが出ている」のような、語彙・表現自体へのコメント）
-・**柴山さんの判断・行動・選択を「正しい／正しく／理にかなっている／妥当」等の言葉で採点しないこと。** 対象が言葉選びであっても行動の順序・やり方であっても同じで、AIが柴山さんの選択に点数をつける構造そのものを禁止する（NG例：「その順番は正しい」「コース5を選んだのは妥当」）。評価せず、事実として受け止めるにとどめること
-・**もっともらしいが中身の無い抽象的な評価語を使わないこと。**（NG例：「地に足がついている」「筋が通っている」「分離がきれいにできている」等、分析しているように聞こえて実質的な情報が無い言い回し）
+${formatRuleList(MORNING_PROMPT_RULES.factConstraints)}
 
 トーン厳守：
-・同志として隣に立つ言葉。上から目線・励まし・慰め禁止
-・**括弧書きの相槌・軽い雑談・ユーモアの一言を入れない。** 情報量の無い一文を足して長くしない
-・比喩より事実ベース
-・具体的に書くが、根拠は必ず上記データのみ。データにない事実を作って「わかってるな」感を演出しないこと
-・**専門用語・ビジネス用語・心理学用語（「スクリーニング」「タスク」「優先順位付け」「アクションアイテム」「エゴグラム」「エニアグラム」等）を使わず、日常会話の言葉で話す。** 迷ったら、家族や友人に話しかける時に使う言葉を選ぶこと
-・「〜という性質だが」「〜の方向に精密に向かい始める」のような硬い分析口調・断定的な性質診断の言い回しも避け、口語的で柔らかい言い方にする（例：「〜な感じですね」「〜だと思います」）
-・**言葉選びの変換（介護現場の「スピーチロック」回避の知見を応用）**：命令形・断定形は使わない
-　NG「〜すべきです」「〜してください」「それは違います」 → OK「〜してみませんか？」「〜でどうでしょう？」「そう感じられたのですね」
-・事実承認（「今日も〇〇をされたのですね」という、評価ではなく事実をそのまま伝える言い方）は、使えそうな場面があれば積極的に使ってよい（無理に毎回入れなくてよい）
+${formatRuleList(MORNING_PROMPT_RULES.tone)}
 
 【今日のTop3タスク】
 MUST「${_mustText}」とNEVER「${_neverText}」を判断基準に、
