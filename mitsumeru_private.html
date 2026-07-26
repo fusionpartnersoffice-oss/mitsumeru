@@ -3016,6 +3016,12 @@ function syncToGoogleCalendar() {
 // GOOGLE_OAUTH_CLIENT_IDは公開値（2026-07-21のConsole伴走で取得済み）。
 const VAULT_OAUTH_CLIENT_ID = '755434055032-79tp2jtfrbv29916pmi0egnu7faim4gu.apps.googleusercontent.com'; // mitsumeru-vault-web・2026-07-25柴山さん作成
 const VAULT_OAUTH_API_KEY = 'AIzaSyCdNHqwcnYQfLPW6GIzwsOkuG9fIhJb6Bs'; // Picker用（既存APIキー1流用・Picker API限定+リファラー制限済み・.fusionos_keysのファイルからコピー確認済み）
+// 2026-07-26発見：drive.fileスコープでPicker経由の既存ファイルを後から読み書きするには、
+// PickerBuilder.setAppId()（Cloud Projectのプロジェクト番号）が必須（WebSearchで裏取り済み）。
+// これが無いと、Pickerでファイルを選んでも許可が正しく記録されず、後のGETが404になる。
+// フォルダ選択（新規ファイル作成のみ）はこれが無くても動くため、今まで表面化していなかった。
+// VAULT_OAUTH_CLIENT_IDの命名規則（{project番号}-{ランダム文字列}.apps.googleusercontent.com）から抽出。
+const VAULT_OAUTH_APP_ID = '755434055032';
 
 function setVaultOAuthMsg(text, isError) {
   const el = document.getElementById('vault-oauth-setup-msg');
@@ -3066,6 +3072,7 @@ async function startVaultOAuthSetup() {
           .addView(new google.picker.DocsView(google.picker.ViewId.FOLDERS).setSelectFolderEnabled(true).setIncludeFolders(true))
           .setOAuthToken(accessToken)
           .setDeveloperKey(VAULT_OAUTH_API_KEY)
+          .setAppId(VAULT_OAUTH_APP_ID)
           .setCallback((data) => {
             if (data.action === google.picker.Action.PICKED) {
               resolve(data.docs[0].id);
@@ -3170,6 +3177,7 @@ async function startDashboardFileSetup() {
           .addView(new google.picker.DocsView(google.picker.ViewId.DOCS))
           .setOAuthToken(accessToken)
           .setDeveloperKey(VAULT_OAUTH_API_KEY)
+          .setAppId(VAULT_OAUTH_APP_ID)
           .setCallback((data) => {
             if (data.action === google.picker.Action.PICKED) {
               resolve(data.docs[0].id);
