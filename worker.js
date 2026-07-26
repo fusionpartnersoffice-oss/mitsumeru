@@ -166,6 +166,9 @@ export default {
       t => key.startsWith(t + '_v') && /^v[a-z0-9]+_/.test(key.slice(t.length + 1))
     );
     const isLegacyBareDateKey = !isVisitorScopedKey && LEGACY_DATE_KEY_TYPES.some(t => key.startsWith(t + '_'));
+    // 原則6（2026-07-26・実装安全原則v2）：test_ プレフィックスは意図的にこのガード対象外。
+    // テストモード時、フロントは保存先をprivate_からtest_へ強制的に差し替えるため、
+    // 本物のトークンでテストしても書き込み先が物理的に本番データ領域に到達しない設計。
     if (key.startsWith('private_') || key === 'profile_global' || key === 'lv_global' || isLegacyBareDateKey) {
       const token = url.searchParams.get('token');
       if (!env.PRIVATE_ACCESS_TOKEN || token !== env.PRIVATE_ACCESS_TOKEN) {

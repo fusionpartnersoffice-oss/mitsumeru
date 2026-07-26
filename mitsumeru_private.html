@@ -1412,12 +1412,34 @@ function showSyncStatus(state) {
 // ===== Cloudflare KV =====
 const SYNC_URL = 'https://mitsumeru-sync.fusion-partners-office.workers.dev';
 
+// 原則6（2026-07-26・実装安全原則v2・インシデント再発防止）：
+// テストモード時は保存先キーのプレフィックスをprivate_からtest_へ強制的に差し替える。
+// 「気をつける」ではなく構造的に本番データへ書き込めなくする。URLパラメータ?testmode=1
+// またはlocalStorageフラグで有効化。実機検証時は必ずこれを有効にしてから行うこと。
+function isTestMode() {
+  try {
+    if (new URLSearchParams(location.search).get('testmode') === '1') return true;
+  } catch (e) {}
+  return localStorage.getItem('mitsumeru_test_mode') === '1';
+}
+function kvPrefix() { return isTestMode() ? 'test_' : 'private_'; }
+
+if (isTestMode()) {
+  console.warn('[テストモード] 保存先はtest_プレフィックスに切り替わっています。本番データへは書き込まれません。');
+  window.addEventListener('DOMContentLoaded', () => {
+    const banner = document.createElement('div');
+    banner.textContent = '🧪 テストモード（test_キーへ書き込み中・本番データは保護されています）';
+    banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#b8860b;color:#fff;text-align:center;font-size:12px;padding:4px;';
+    document.body.prepend(banner);
+  });
+}
+
 // 安全装置①（2026-07-03）：プライベート版はKV側も'private_'プレフィックスの専用キー空間を使う。
 // 本番mitsumeru_app.htmlと物理的にキーが分離されているため、安全装置②（isProductionHostガード）は
 // このファイルでは不要（app.html側にのみ残す。ローカル実行かどうかに関わらずプライベート版専用の
 // KV領域にしか書き込まないため、本番データに影響する経路が存在しない）。
 async function cloudSave(type, data, date) {
-  const key = 'private_' + type + '_' + (date || targetDate);
+  const key = kvPrefix() + type + '_' + (date || targetDate);
   showSyncStatus('saving');
   try {
     const res = await fetch(`${SYNC_URL}?key=${encodeURIComponent(key)}&token=${encodeURIComponent(getPrivateToken())}`, {
@@ -1443,7 +1465,7 @@ function cloudSaveDebounced(type, data, date, delay = 1500) {
 
 async function cloudSaveGlobal(type, data) {
   try {
-    await fetch(`${SYNC_URL}?key=${encodeURIComponent('private_' + type + '_global')}&token=${encodeURIComponent(getPrivateToken())}`, {
+    await fetch(`${SYNC_URL}?key=${encodeURIComponent(kvPrefix() + type + '_global')}&token=${encodeURIComponent(getPrivateToken())}`, {
       method: 'PUT', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({...data, _ts: Date.now()})
     });
@@ -1453,7 +1475,7 @@ async function cloudSaveGlobal(type, data) {
 async function cloudSaveFusionOSStatus(data) {
   const date = targetDate || localDateStr(new Date());
   try {
-    await fetch(`${SYNC_URL}?key=${encodeURIComponent('private_fusionos_status_' + date)}&token=${encodeURIComponent(getPrivateToken())}`, {
+    await fetch(`${SYNC_URL}?key=${encodeURIComponent(kvPrefix() + 'fusionos_status_' + date)}&token=${encodeURIComponent(getPrivateToken())}`, {
       method: 'PUT', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({...data, source: 'mitsumeru_private', date, _ts: Date.now()})
     });
@@ -1462,7 +1484,7 @@ async function cloudSaveFusionOSStatus(data) {
 
 async function cloudLoadGlobal(type) {
   try {
-    const res = await fetch(`${SYNC_URL}?key=${encodeURIComponent('private_' + type + '_global')}&token=${encodeURIComponent(getPrivateToken())}`);
+    const res = await fetch(`${SYNC_URL}?key=${encodeURIComponent(kvPrefix() + type + '_global')}&token=${encodeURIComponent(getPrivateToken())}`);
     if (!res.ok) return null;
     const json = await res.json();
     if (!json.value) return null;
@@ -1471,7 +1493,7 @@ async function cloudLoadGlobal(type) {
 }
 
 async function cloudLoad(type, date) {
-  const key = 'private_' + type + '_' + (date || targetDate);
+  const key = kvPrefix() + type + '_' + (date || targetDate);
   try {
     const res = await fetch(`${SYNC_URL}?key=${encodeURIComponent(key)}&token=${encodeURIComponent(getPrivateToken())}`);
     if (!res.ok) return null;
@@ -1486,7 +1508,7 @@ async function cloudLoad(type, date) {
 // この区別を必要としないため契約を変えず、区別が要る forceSyncFromCloud() 専用に
 // authFailedを持つ新関数を用意する（既存呼び出し箇所への影響を避けるため）。
 async function cloudLoadStatus(type, date) {
-  const key = 'private_' + type + '_' + (date || targetDate);
+  const key = kvPrefix() + type + '_' + (date || targetDate);
   try {
     const res = await fetch(`${SYNC_URL}?key=${encodeURIComponent(key)}&token=${encodeURIComponent(getPrivateToken())}`);
     if (res.status === 401) return { ok: false, authFailed: true, value: null };
