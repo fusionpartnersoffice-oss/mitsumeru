@@ -2862,12 +2862,18 @@ async function calcMorning() {
   // 「今日のモードを判定する」ボタン押下という明示的な完了アクションからは、デバウンスせず即座に呼ぶ。
   syncToVault();
 
-  // プロファイルからMUST/NEVERを直接取得（エゴグラム/エニアグラムはgetProfileText()の
-  // プロファイル本文側に既に含まれており、一言のプロンプト本文で個別言及しなくなったため撤去）
+  // プロファイルからMUST/NEVER/LSRP/キャリアアンカーを直接取得
+  // （エゴグラム/エニアグラムはgetProfileText()のプロファイル本文側に既に含まれており、
+  // 一言のプロンプト本文で個別言及しなくなったため撤去）
   const _profileSaved = localStorage.getItem('mitsumeru_private_profile');
   const _p = _profileSaved ? JSON.parse(_profileSaved) : {};
   const _mustText = _p.must || '未設定';
   const _neverText = _p.never || '未設定';
+  // 2026-07-26設計指摘：LSRP・RC・キャリアアンカーは値を渡すだけで使用を強制していなかった
+  // ため、AIが無視しても気づけない状態だった（柴山さん指摘）。エゴグラム/エニアグラムの
+  // 「必ず1回具体的に言及」と同格の強制参照項目にする。
+  const _lsrpText = _p.lsrp || '未設定';
+  const _anchorText = _p.anchor || '未設定';
 
   // v10・ContextBuilder（2026-07-26設計発注）：前回記録・視点ローテーション・育つ仕組みを
   // buildMorningContext()の1呼び出しに統合（旧：3箇所で個別に発注・実装されていた）。
@@ -2915,7 +2921,9 @@ MUST「${_mustText}」とNEVER「${_neverText}」を判断基準に、
 コース${courseVal}（${course.name}）の柴山さんが今日「これだけはやる」3つを決めてください。
 D-blockモードなら最小限の具体行動、通常モード以上なら積極的に。
 タスクは「〇〇する」で終わる物理的な動作レベルで書いてください。
-**厳守**：ミツメル自体の操作（記録する・入力する・振り返る等）をタスクとして提案しないこと。柴山さんの実生活・実務上の行動のみを対象にする。`;
+**厳守**：ミツメル自体の操作（記録する・入力する・振り返る等）をタスクとして提案しないこと。柴山さんの実生活・実務上の行動のみを対象にする。
+- LSRP（${_lsrpText}）を意思決定の癖・リスクの取り方の傾向として、Top3タスクの組み立てか上記【参謀からの一言】のどちらかで必ず1回具体的に反映すること
+- キャリアアンカー（${_anchorText}）を「柴山さんにとって譲れないもの」として、Top3タスクの選定理由（なぜこの3つを選んだか）に必ず1回具体的に反映すること`;
 
   const loading = document.getElementById('morning-loading');
   const advice = document.getElementById('morning-advice');
@@ -2979,7 +2987,7 @@ function buildDelayWithFlags(delayText, history) {
 // 新：①②とも同じ入力データから同一呼び出し内で同時生成させることで統合し、重複入力（endHP/endMP等）を1回に削減。
 async function runAIEveningAnalysis(promptContext) {
   const { tomorrow, delayWithFlags, hp, mp, eveSummary, profileText, p, v, g, debugText,
-          endHP, endMP, counts, lvBaseFormatted, dateStr, trend7, must, never, ego, enea1, supplement } = promptContext;
+          endHP, endMP, counts, lvBaseFormatted, dateStr, trend7, must, never, ego, enea1, rc, supplement } = promptContext;
 
   const hpNum = parseInt(endHP), mpNum = parseInt(endMP);
   const isLowEnergy = (!isNaN(hpNum) && hpNum <= 70) || (!isNaN(mpNum) && mpNum <= 70);
@@ -3022,6 +3030,7 @@ G（気づき）：${g}
 - 説明的・事務的な言い回しを避け、柴山さんご本人が実際に使う生きた言い回しに近づけること（分析の正確さ・具体性は犠牲にしない）
 - 明日の行動戦略のタスク優先順位はMUST「${must}」に照らして判断すること。NEVER「${never}」に反する提案は絶対にしないこと
 - エゴグラム（${ego}）またはエニアグラム第1位（${enea1}）を、V(ノイズ)分析かTOMORROW_MESSAGEで必ず1回具体的に言及すること
+- RC（${rc}）を組織適応の傾向として、TOMORROW_PLAN（翌日の設計・戦略立案）で必ず1回具体的に反映すること
 - トーン厳守：同志として隣に立つ言葉（上から目線・励まし・慰め禁止）。命令形・断定形は「〜してみませんか」「〜でどうでしょう」に変換すること
 
 以下の区切りマーカーを必ず使い、10セクションすべてを出力してください。他のテキストは不要です。
@@ -3202,6 +3211,9 @@ HP: ${hp}→${endHP} ／ MP: ${mp}→${endMP}
   const _eNever = _ep.never || '未設定';
   const _eEgo = _ep.ego ? `CP:${_ep.ego.cp} NP:${_ep.ego.np} A:${_ep.ego.a} FC:${_ep.ego.fc} AC:${_ep.ego.ac}` : '未設定';
   const _eEnea1 = (_ep.enea && _ep.enea[0]) ? _ep.enea[0] : '未設定';
+  // 2026-07-26設計指摘：RCも値を渡すだけで使用を強制していなかった。エゴグラム/エニアグラムと
+  // 同格の強制参照項目にする（組織適応の傾向として翌日の設計・戦略立案で反映）。
+  const _eRc = _ep.rc || '未設定';
   const lvBaseFormatted = `${formatLV(close.lvBase + close.todayPts)}（本日+${lv}pt、${counts.pomo}ポモ）`;
 
   const learningLogTextEvening = await fetchLearningLogText();
@@ -3209,7 +3221,7 @@ HP: ${hp}→${endHP} ／ MP: ${mp}→${endMP}
     tomorrow, delayWithFlags, hp, mp, eveSummary,
     profileText: getProfileText() + learningLogTextEvening, p, v, g, debugText,
     endHP, endMP, counts, lvBaseFormatted, dateStr, trend7,
-    must: _eMust, never: _eNever, ego: _eEgo, enea1: _eEnea1, supplement
+    must: _eMust, never: _eNever, ego: _eEgo, enea1: _eEnea1, rc: _eRc, supplement
   });
 
   // ② 確定アポ CSV（確定アポ + AI①）
