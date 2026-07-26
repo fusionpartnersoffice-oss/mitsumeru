@@ -338,9 +338,9 @@
 
   .status-card .label { font-size: 11px; color: var(--text3); margin-bottom: 4px; }
   .status-card .value { font-size: 26px; font-weight: 500; font-family: 'Noto Sans JP', sans-serif; }
-  .hp-val { color: #1a7a52; }
-  .mp-val { color: #1a5a9a; }
-  .lv-val { color: #8a6a1a; }
+  .hp-val { color: #148053; }
+  .mp-val { color: #1359a0; }
+  .lv-val { color: #906c14; }
 
   .mode-badge {
     text-align: center;
@@ -609,7 +609,7 @@
     <div style="font-size:13px;line-height:1.9;color:var(--text2);">
 
       <div style="background:#e8f5ee;border-radius:8px;padding:14px;margin-bottom:16px;border:0.5px solid #a8dfc4;">
-        <p style="font-weight:500;color:#1a7a52;margin-bottom:8px;">🔑 さいしょに1回だけ</p>
+        <p style="font-weight:500;color:#148053;margin-bottom:8px;">🔑 さいしょに1回だけ</p>
         <p>右上の「🔑 API」を押して、キーを貼り付けてください。</p>
         <p>ボタンが緑になれば、準備完了です。</p>
         <p style="color:var(--text2);font-size:12px;margin-top:6px;">※キーは console.anthropic.com で取れます（sk-ant- で始まります）</p>
@@ -635,7 +635,7 @@
 
       <p style="font-weight:500;color:var(--text);margin-bottom:6px;">📝 随時メモ（日中）</p>
       <p>気づいたら、種類を選んですぐ書いてください。</p>
-      <p><span style="color:#1a5a9a;font-weight:500;">🛡️体調</span>／<span style="color:#1a7a52;font-weight:500;">⚡やったこと</span>／<span style="color:var(--red);font-weight:500;">🔥削られたこと</span>／<span style="color:var(--gold);font-weight:500;">💡気づき</span></p>
+      <p><span style="color:#1359a0;font-weight:500;">🛡️体調</span>／<span style="color:#148053;font-weight:500;">⚡やったこと</span>／<span style="color:var(--red);font-weight:500;">🔥削られたこと</span>／<span style="color:var(--gold);font-weight:500;">💡気づき</span></p>
       <p style="color:var(--text3);font-size:12px;">写真も一緒に貼れます。</p>
 
       <div style="height:1px;background:var(--border);margin:14px 0;"></div>
@@ -713,7 +713,7 @@
     <div class="field">
       <label>タグを選択</label>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
-        <button class="tag-btn active" onclick="selectTag(this,'HP')" style="flex:1;padding:10px;border-radius:6px;border:0.5px solid var(--border);background:var(--bg2);font-size:13px;font-weight:500;cursor:pointer;color:#1a5a9a;">🛡️ #体調</button>
+        <button class="tag-btn active" onclick="selectTag(this,'HP')" style="flex:1;padding:10px;border-radius:6px;border:0.5px solid var(--border);background:var(--bg2);font-size:13px;font-weight:500;cursor:pointer;color:#1359a0;">🛡️ #体調</button>
         <button class="tag-btn" onclick="selectTag(this,'P')" style="flex:1;padding:10px;border-radius:6px;border:0.5px solid var(--border);background:var(--bg);font-size:13px;font-weight:500;cursor:pointer;color:var(--text2);">⚡ #実績</button>
         <button class="tag-btn" onclick="selectTag(this,'V')" style="flex:1;padding:10px;border-radius:6px;border:0.5px solid var(--border);background:var(--bg);font-size:13px;font-weight:500;cursor:pointer;color:var(--text2);">🌊 #ノイズ</button>
         <button class="tag-btn" onclick="selectTag(this,'G')" style="flex:1;padding:10px;border-radius:6px;border:0.5px solid var(--border);background:var(--bg);font-size:13px;font-weight:500;cursor:pointer;color:var(--text2);">💡 #思考</button>
@@ -1128,11 +1128,11 @@
       </div>
       <div style="background:var(--bg2);border:0.5px solid var(--border);border-radius:6px;padding:10px;text-align:center;">
         <div style="font-size:11px;color:var(--text3);margin-bottom:4px;">#P ポモ合計</div>
-        <div style="font-size:22px;font-weight:500;color:#1a7a52;" id="auto-pomo-count">0</div>
+        <div style="font-size:22px;font-weight:500;color:#148053;" id="auto-pomo-count">0</div>
       </div>
       <div style="background:var(--bg2);border:0.5px solid var(--border);border-radius:6px;padding:10px;text-align:center;">
         <div style="font-size:11px;color:var(--text3);margin-bottom:4px;">LV（累積）</div>
-        <div style="font-size:20px;font-weight:500;color:#8a6a1a;" id="auto-lv">LV1/0</div>
+        <div style="font-size:20px;font-weight:500;color:#906c14;" id="auto-lv">LV1/0</div>
       </div>
     </div>
     <div class="field">
@@ -1312,7 +1312,7 @@
 
   <div class="section">
     <div class="section-title">③ 先送りカレンダーCSV</div>
-    <div id="ai-calendar-comment" style="display:none;background:#e8f5ee;border:0.5px solid #a8dfc4;border-radius:6px;padding:10px 14px;font-size:12px;color:#1a5a2a;margin-bottom:10px;line-height:1.7;"></div>
+    <div id="ai-calendar-comment" style="display:none;background:#e8f5ee;border:0.5px solid #a8dfc4;border-radius:6px;padding:10px 14px;font-size:12px;color:#166028;margin-bottom:10px;line-height:1.7;"></div>
     <div class="output-box" id="output-delay-csv"></div>
     <button class="btn-secondary" onclick="downloadCSV('delay')" style="margin-top:10px;">先送りCSVをダウンロード</button>
   </div>
@@ -2413,10 +2413,10 @@ function callClaude(prompt, onSuccess, onError, maxTokens) {
 }
 
 const courseData = {
-  1: { name: '超甘口', desc: '寝てるだけでOK', bg: '#e8f0fe', color: '#1a5a9a' },
+  1: { name: '超甘口', desc: '寝てるだけでOK', bg: '#e8f0fe', color: '#1359a0' },
   2: { name: '甘口', desc: 'D-block・2分タスクのみ', bg: '#fff3cd', color: '#8a6a00' },
-  3: { name: '中辛', desc: 'いつもより少なめで動く', bg: '#e8f5ee', color: '#1a7a52' },
-  4: { name: '辛口', desc: '通常モード', bg: '#fff0e8', color: '#c05a00' },
+  3: { name: '中辛', desc: 'いつもより少なめで動く', bg: '#e8f5ee', color: '#148053' },
+  4: { name: '辛口', desc: '通常モード', bg: '#fff0e8', color: '#c25a00' },
   5: { name: '激辛', desc: '全力モード', bg: '#fde8e8', color: 'var(--red)' },
   6: { name: '地獄', desc: '締め切り・本番前', bg: '#2a1a1a', color: '#ff6644' },
 };
@@ -2751,7 +2751,7 @@ function updateEveningMemoPreview() {
     preview.innerHTML = '<span style="color:var(--text3);font-size:12px;">随時メモがありません。随時メモタブから追加してください。</span>';
     return;
   }
-  const tagColors = { HP: '#1a5a9a', P: '#1a7a52', V: 'var(--red)', G: 'var(--gold)' };
+  const tagColors = { HP: '#1359a0', P: '#148053', V: 'var(--red)', G: 'var(--gold)' };
   preview.innerHTML = memos.map(m => `
     <div style="display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:0.5px solid var(--border);">
       <span style="color:${tagColors[m.tag]};font-weight:500;min-width:44px;font-size:12px;">${tagIcons[m.tag]}#${tagLabels[m.tag]}</span>
@@ -2772,7 +2772,7 @@ function renderMemos() {
     renderMemoTodaySummary();
     return;
   }
-  const tagColors = { HP: '#1a5a9a', P: '#1a7a52', V: 'var(--red)', G: 'var(--gold)' };
+  const tagColors = { HP: '#1359a0', P: '#148053', V: 'var(--red)', G: 'var(--gold)' };
   list.innerHTML = memos.map((m, i) => `
     <div style="display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:0.5px solid var(--border);">
       <span style="color:${tagColors[m.tag]};font-weight:500;min-width:44px;font-size:12px;">${tagIcons[m.tag]}#${tagLabels[m.tag]}</span>
@@ -3382,10 +3382,14 @@ HP：${endHP}/100　MP：${endMP}/100　LV：${lvBaseFormatted}
 明日への一言：分量は固定しない（目安1〜3文、迷ったら短い方）。今日のP・Gの中で最も印象的なものを最初の1文で拾い、最後にもう1文「明日は〜してみませんか」という提案の形で添えてよい
 ===END===`;
 
+  // 是正（2026-07-26・設計指摘）：失敗理由を握りつぶしていたため、実際のエラー原因
+  // （APIキー未設定／ネットワーク障害／レート制限等）に関わらず画面には常に同じ
+  // 一般的なメッセージしか出ず、原因の切り分けができなかった。callClaude()のonErrorが
+  // 渡すメッセージをそのまま保持してgenerateEvening()側で表示する。
   return new Promise(resolve => {
     callClaude(prompt,
       text => resolve(parseAICalendarSections(text)),
-      ()   => resolve(null),
+      (errMsg) => resolve({ __error: errMsg || 'AIからの応答を取得できませんでした' }),
       8000
     );
   });
@@ -4078,7 +4082,7 @@ async function testWorkerConnection() {
   const allOk = results.every(r => r.startsWith('\u2705'));
   resultEl.style.background = allOk ? '#e8f5ee' : '#fff3cd';
   resultEl.style.border    = allOk ? '0.5px solid #a8dfc4' : '0.5px solid #ffd970';
-  resultEl.style.color     = allOk ? '#1a5a2a' : '#7a5a00';
+  resultEl.style.color     = allOk ? '#166028' : '#7a5a00';
   resultEl.textContent = results.join('\n');
 
   if (!allOk) {
