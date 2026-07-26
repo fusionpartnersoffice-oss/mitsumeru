@@ -2721,8 +2721,11 @@ function syncToGoogleCalendar() {
   }).catch(() => {});
 }
 
-// G連携基盤・G3-Vault：夜の締めのタイミングでVault（Google Drive）へ自動書き出し（柴山さんご本人専用）。
-// Secret未設定時はWorker側で無音スキップされる。失敗しても既存機能には一切影響させない。
+// G連携基盤・G3-Vault：Vault（Google Drive）へ自動書き出し（柴山さんご本人専用）。
+// 2026-07-26是正：呼び出し元は夜の締め(closeDayHPMP)だけでなく、朝(calcMorning)・
+// 随時メモ(saveMemos)からも呼ばれる（単一障害点の解消のため3箇所化。呼び出し元は各関数の
+// コメント参照）。「夜のみ」という古い説明は実態と合わなくなったため削除。
+// Secret未設定・OAuth2未セットアップ時はWorker側で無音スキップされる。失敗しても既存機能には一切影響させない。
 function syncToVault() {
   // 原則6（2026-07-26・実装安全原則v2）：テストモード中はVaultへの複製も必ずスキップする。
   // KVはtest_プレフィックスで分離済みだが、Vault（Google Drive）は分離の仕組みが無いため、
