@@ -3175,12 +3175,29 @@ async function startDashboardFileSetup() {
       });
     });
 
-    setDashboardSetupMsg('サーバーへ設定を保存しています…', false);
+    setDashboardSetupMsg('②書き込み許可を確認しています…', false);
+
+    // 2026-07-26是正：Pickerでのファイル選択だけでは、既存のrefresh_tokenにその
+    // ファイルへの許可が反映されないと判明（実機で404を確認・原因特定済み）。
+    // startVaultOAuthSetup()と同じく、選択直後にauthorization codeを取得し、
+    // サーバー側でrefresh_tokenを発行し直す（この時のcode交換に今回選んだファイルへの
+    // 許可が含まれる）。
+    const code = await new Promise((resolve, reject) => {
+      const codeClient = google.accounts.oauth2.initCodeClient({
+        client_id: VAULT_OAUTH_CLIENT_ID,
+        scope: 'https://www.googleapis.com/auth/drive.file',
+        ux_mode: 'popup',
+        callback: (resp) => resp.code ? resolve(resp.code) : reject(new Error('認可コード取得に失敗しました')),
+      });
+      codeClient.requestCode();
+    });
+
+    setDashboardSetupMsg('③サーバーへ設定を保存しています…', false);
 
     const res = await fetch(`${SYNC_URL}/vault-dashboard-setup`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fileId, token: getPrivateToken() }),
+      body: JSON.stringify({ fileId, code, token: getPrivateToken() }),
     });
     const data = await res.json();
     if (data.ok) {

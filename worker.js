@@ -561,7 +561,7 @@ async function handleVaultDashboardSetup(request, env) {
   try { body = await request.json(); }
   catch (e) { return new Response(JSON.stringify({ ok: false, error: 'リクエストの形式が不正です' }), { status: 400, headers }); }
 
-  const { fileId, token } = body;
+  const { fileId, code, token } = body;
   if (!env.PRIVATE_ACCESS_TOKEN || token !== env.PRIVATE_ACCESS_TOKEN) {
     return new Response(JSON.stringify({ ok: false, error: 'private data requires a valid token' }), { status: 401, headers });
   }
@@ -571,8 +571,35 @@ async function handleVaultDashboardSetup(request, env) {
 
   try {
     const kv = getKV(env);
+
+    // 2026-07-26是正：Pickerでのファイル選択だけではrefresh_tokenに許可が反映されない
+    // （実機で404を確認・原因特定済み）。handleVaultOAuthSetup()と同じcode交換を行い、
+    // 今回選んだファイルへの許可を含む新しいrefresh_tokenへ更新する。
+    if (code) {
+      if (!env.GOOGLE_OAUTH_CLIENT_ID || !env.GOOGLE_OAUTH_CLIENT_SECRET) {
+        return new Response(JSON.stringify({ ok: false, error: 'GOOGLE_OAUTH_CLIENT_ID/SECRETが未設定です' }), { status: 500, headers });
+      }
+      const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          code,
+          client_id: env.GOOGLE_OAUTH_CLIENT_ID,
+          client_secret: env.GOOGLE_OAUTH_CLIENT_SECRET,
+          redirect_uri: 'postmessage',
+          grant_type: 'authorization_code',
+        }).toString(),
+      });
+      const tokenData = await tokenRes.json();
+      if (!tokenData.refresh_token) {
+        return new Response(JSON.stringify({ ok: false, error: 'refresh_token取得失敗: ' + (tokenData.error_description || tokenData.error || JSON.stringify(tokenData)) }), { status: 502, headers });
+      }
+      await kv.put('vault_oauth_refresh', tokenData.refresh_token);
+      await kv.delete('vault_access_token_cache'); // 古いキャッシュ済みアクセストークンを無効化し、次回は新しいrefresh_tokenで取り直させる
+    }
+
     await kv.put('vault_dashboard_file_id', fileId);
-    return new Response(JSON.stringify({ ok: true, fileId }), { status: 200, headers });
+    return new Response(JSON.stringify({ ok: true, fileId, refreshTokenUpdated: !!code }), { status: 200, headers });
   } catch (e) {
     return new Response(JSON.stringify({ ok: false, error: e.message }), { status: 500, headers });
   }
