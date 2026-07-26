@@ -600,16 +600,24 @@ async function handleVaultDashboardWrite(request, env) {
   try {
     const kv = getKV(env);
     const fileId = await kv.get('vault_dashboard_file_id');
+    console.log('[dashboard-write] fileId=', fileId);
     if (!fileId) {
       return new Response(JSON.stringify({ ok: true, skipped: true, reason: 'ダッシュボードファイル未設定' }), { status: 200, headers });
     }
 
     const accessToken = await getVaultAccessToken(env);
+    console.log('[dashboard-write] accessToken取得OK・長さ=', accessToken ? accessToken.length : 0);
     const getRes = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
-    if (!getRes.ok) throw new Error('ダッシュボード読み込み失敗: ' + (await getRes.text()));
+    console.log('[dashboard-write] GET status=', getRes.status);
+    if (!getRes.ok) {
+      const errText = await getRes.text();
+      console.error('[dashboard-write] GET失敗:', errText);
+      throw new Error('ダッシュボード読み込み失敗(' + getRes.status + '): ' + errText);
+    }
     let content = await getRes.text();
+    console.log('[dashboard-write] 読み込んだ本文の長さ=', content.length);
 
     const today = jstDateStr();
     const lines = [`## 🎯 今日の一手（ミツメルより・${today}更新）`];
@@ -626,9 +634,11 @@ async function handleVaultDashboardWrite(request, env) {
       content = content.trimEnd() + '\n\n' + block + '\n';
     }
 
-    await overwriteVaultFile(accessToken, fileId, content);
+    const writeResult = await overwriteVaultFile(accessToken, fileId, content);
+    console.log('[dashboard-write] 書き込み成功 fileId=', writeResult.id);
     return new Response(JSON.stringify({ ok: true }), { status: 200, headers });
   } catch (e) {
+    console.error('[dashboard-write] 例外:', e.message, e.stack);
     return new Response(JSON.stringify({ ok: false, error: e.message }), { status: 500, headers });
   }
 }
@@ -710,9 +720,39 @@ async function handleDebugDashboardLookup(request, env) {
     });
     const data = await res.json();
     if (!res.ok) throw new Error('Drive検索失敗: ' + JSON.stringify(data));
+
+    // 追加診断（2026-07-26・404原因調査）：このリフレッシュトークン経由のアクセストークンが
+    // 実際に何を見えているか（全件・件数のみ）を確認する。読み取り専用。
+    const allRes = await fetch(`https://www.googleapis.com/drive/v3/files?pageSize=20&fields=files(id,name)`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    const allData = await allRes.json();
+
+    // このアクセストークンがどのGoogleアカウントのものかも確認（アカウント取り違えの切り分け用）
+    let tokenOwnerEmail = null;
+    try {
+      const infoRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?access_token=${accessToken}`);
+      const infoData = await infoRes.json();
+      tokenOwnerEmail = infoData.email || infoData.error || null;
+    } catch (e) { tokenOwnerEmail = 'tokeninfo取得失敗: ' + e.message; }
+
+    // 保存済みの目的のfileIdへ、直接GETできるかも合わせて確認
+    const dashboardFileId = await kv.get('vault_dashboard_file_id');
+    let directGetStatus = null;
+    if (dashboardFileId) {
+      const directRes = await fetch(`https://www.googleapis.com/drive/v3/files/${dashboardFileId}?fields=id,name,parents`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      directGetStatus = { status: directRes.status, body: await directRes.json() };
+    }
+
     return new Response(JSON.stringify({
       ok: true, oauthSetup: true, grantedRootFolderId: oauthFolderId,
       found: (data.files || []).length > 0, files: data.files || [],
+      tokenOwnerEmail,
+      visibleFileCount: (allData.files || []).length,
+      visibleFileSample: (allData.files || []).slice(0, 20),
+      dashboardFileId, directGetStatus,
     }), { status: 200, headers });
   } catch (e) {
     return new Response(JSON.stringify({ ok: false, error: e.message }), { status: 500, headers });
