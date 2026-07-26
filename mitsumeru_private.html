@@ -1961,21 +1961,41 @@ function getPrivateToken() {
 // 「育つ仕組み」（2026-07-26設計指示）：サルベージが週次で更新する学習ログを取得し、
 // プロンプトへ埋め込む文字列を組み立てる。ファイル無し・取得失敗時は空文字を返す
 // （設計書の指示通りエラーにせず静かにスキップ、朝・夜プロンプト共通で使う）。
+// キャッシュ化（2026-07-26・設計指示・複雑さ削減）：学習ログはサルベージが週次でしか更新しない
+// データなのに、キャッシュが無く朝/夜プロンプト生成のたびに毎回Google APIへ最大4回の逐次
+// リクエストが発生していた（開発Bレビュー指摘）。1日1回だけ実際に取りに行き、同日中の
+// 2回目以降はlocalStorageのキャッシュを使う。
+const LEARNING_LOG_CACHE_KEY = 'mitsumeru_private_learning_log_cache';
 async function fetchLearningLogText() {
+  const today = localDateStr(new Date());
   try {
-    const token = getPrivateToken();
-    if (!token) return '';
-    const res = await fetch(`${SYNC_URL}/vault-learning-log`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token }),
-    });
-    const data = await res.json();
-    if (data.ok && !data.none && data.text) {
-      return `\n【最近分かってきたこと】（サルベージが週次で更新）\n${data.text}`;
+    const cached = JSON.parse(localStorage.getItem(LEARNING_LOG_CACHE_KEY) || 'null');
+    if (cached && cached.date === today) {
+      return cached.text || '';
     }
   } catch (e) {}
-  return '';
+
+  let result = '';
+  try {
+    const token = getPrivateToken();
+    if (token) {
+      const res = await fetch(`${SYNC_URL}/vault-learning-log`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token }),
+      });
+      const data = await res.json();
+      if (data.ok && !data.none && data.text) {
+        result = `\n【最近分かってきたこと】（サルベージが週次で更新）\n${data.text}`;
+      }
+    }
+  } catch (e) {}
+
+  // 取得結果が空でも「今日は確認済み」としてキャッシュする（同日中の再フェッチを防ぐため）
+  try {
+    localStorage.setItem(LEARNING_LOG_CACHE_KEY, JSON.stringify({ date: today, text: result }));
+  } catch (e) {}
+  return result;
 }
 function savePrivateTokenFromSettings() {
   const token = (document.getElementById('private-access-token-input') || {value:''}).value.trim();
