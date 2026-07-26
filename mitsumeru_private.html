@@ -38,7 +38,17 @@
     --red: #c0392b;
     --gold: #b8860b;
     --card: #faf7f2;
+    /* ビジュアル改善案2（2026-07-26・設計発注・柴山さん承認）：タブごとの色分け。
+       ステータス色（--green/--red・警告バナー等）には触れず、タブの「今どこにいるか」を
+       示す控えめな差し色のみを追加する。data-tab属性はswitchTab()が付与（下記参照）。 */
+    --tab-color: var(--accent);
   }
+  body[data-tab="morning"]  { --tab-color: #b8860b; }
+  body[data-tab="memo"]     { --tab-color: #4a6b8a; }
+  body[data-tab="evening"]  { --tab-color: #2c3e6e; }
+  body[data-tab="output"]   { --tab-color: #2d7a52; }
+  body[data-tab="profile"]  { --tab-color: #5a5048; }
+  body[data-tab="tools"]    { --tab-color: #2a7a7a; }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -97,7 +107,11 @@
     color: var(--text3);
     letter-spacing: 1px;
     border-bottom: 2px solid transparent;
-    transition: all 0.2s;
+    /* ビジュアル改善案2（2026-07-26）：実機検証で発見・是正——`transition: all`が
+       var(--tab-color)依存のborder-bottom-colorを巻き込み、data-tab切替時に
+       カスタムプロパティの補間に失敗して透明のまま固まる不具合があった。
+       トランジション対象をカスタムプロパティに依存しないプロパティへ限定して回避する。 */
+    transition: color 0.2s, background-color 0.2s;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -132,7 +146,8 @@
 
   .mode-tab.active {
     color: var(--text);
-    border-bottom-color: var(--accent);
+    border-bottom-color: var(--tab-color);
+    border-bottom-width: 3px;
     background: var(--bg);
     font-weight: 500;
   }
@@ -360,7 +375,7 @@
   .btn-primary {
     width: 100%;
     padding: 14px;
-    background: var(--text);
+    background: var(--tab-color);
     color: var(--bg);
     border: none;
     border-radius: 6px;
@@ -549,7 +564,7 @@
   .consent-overlay.active { display: flex; }
 </style>
 </head>
-<body>
+<body data-tab="morning">
 
 <!-- PRIVATE版：デモ・同意オーバーレイなし -->
 
@@ -2572,6 +2587,8 @@ function switchTab(tab) {
   });
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-'+tab).classList.add('active');
+  // ビジュアル改善案2（2026-07-26・設計発注）：タブごとの色分け。class付与のみ、他ロジックは無変更。
+  document.body.setAttribute('data-tab', tab);
   if (tab === 'profile') updateEgoBar();
 }
 
