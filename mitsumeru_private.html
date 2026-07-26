@@ -1533,6 +1533,13 @@ function showSyncStatus(state) {
     el.textContent = 'オフライン — 復帰時に自動同期';
     el.className = 'sync-badge sync-warn';
     syncPending = true;
+  } else if (state === 'authfailed') {
+    // 是正（2026-07-26・設計指摘）：起動時のcloudLoad()が401等で失敗しても、これまで
+    // 利用者に見える通知が一切無く「別端末の内容が反映されていないだけ」に見えていた
+    // （実際はトークン不一致等で読み込み自体が拒否されていた可能性）。自動で消さない
+    // （syncedのような3秒消去はしない＝見落とし防止）。
+    el.textContent = '⚠️ 同期に失敗しています（トークンをご確認ください）';
+    el.className = 'sync-badge sync-warn';
   }
 }
 
@@ -1827,11 +1834,20 @@ window.addEventListener('DOMContentLoaded', async function() {
   loadProfile();
 
   // ② KVから最新を取得してタイムスタンプで上書き判断
-  const [kvMemos, kvMorning, kvEvening, kvProfile, kvLV, kvOutput, kvCalendar, kvDelay] = await Promise.all([
-    cloudLoad('memos'), cloudLoad('morning'), cloudLoad('evening'),
-    cloudLoadGlobal('profile'), cloudLoadGlobal('lv'),
-    cloudLoad('output'), cloudLoad('calendar'), cloudLoad('delay')
+  // 是正（2026-07-26・設計指摘）：起動時の読み込みはcloudLoad()（401等の失敗を静かにnullへ
+  // 変換する）を使っており、トークン不一致等で読み込みが拒否されても利用者に一切見えなかった
+  // （「別端末の内容が反映されない」に見えるが、実際は認証エラーという可能性を潰す）。
+  // 401を区別できるcloudLoadStatus()（既存・手動同期ボタンで使用中）に統一する。
+  const [stMemos, stMorning, stEvening, stOutput, stCalendar, stDelay] = await Promise.all([
+    cloudLoadStatus('memos'), cloudLoadStatus('morning'), cloudLoadStatus('evening'),
+    cloudLoadStatus('output'), cloudLoadStatus('calendar'), cloudLoadStatus('delay')
   ]);
+  const [kvProfile, kvLV] = await Promise.all([cloudLoadGlobal('profile'), cloudLoadGlobal('lv')]);
+  const kvMemos = stMemos.value, kvMorning = stMorning.value, kvEvening = stEvening.value;
+  const kvOutput = stOutput.value, kvCalendar = stCalendar.value, kvDelay = stDelay.value;
+  if ([stMemos, stMorning, stEvening, stOutput, stCalendar, stDelay].some(s => s.authFailed)) {
+    showSyncStatus('authfailed');
+  }
 
   const bestMorning = newerOf(lsMorning, kvMorning);
   if (bestMorning !== lsMorning && kvMorning) {
