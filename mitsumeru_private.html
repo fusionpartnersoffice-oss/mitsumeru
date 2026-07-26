@@ -2692,7 +2692,18 @@ function syncToVault() {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ date, token: getPrivateToken() }),
-  }).catch(() => {});
+  }).then(async res => {
+    // 設計指摘（2026-07-26）：黙って失敗させない。HTTPエラー・レスポンス内のok:false も
+    // console.errorへ残す（.catchはネットワーク層の失敗しか捕捉できず、401等のHTTPエラーや
+    // {ok:false}レスポンスは今まで完全に握りつぶされていた）。
+    let body = null;
+    try { body = await res.json(); } catch (e) {}
+    if (!res.ok || (body && body.ok === false)) {
+      console.error('[syncToVault] Vaultへの複製に失敗しました:', res.status, body);
+    }
+  }).catch(e => {
+    console.error('[syncToVault] Vaultへの複製で通信エラー:', e.message);
+  });
 }
 
 // 単一障害点の解消（2026-07-26設計指示・柴山さん厳命）：朝入力もデバウンスでVaultへ複製する
