@@ -2462,6 +2462,7 @@ function renderMemos() {
   const list = document.getElementById('memo-list');
   if (memos.length === 0) {
     list.innerHTML = '<span style="color:var(--text3);font-size:12px;">まだメモがありません</span>';
+    renderMemoTodaySummary();
     return;
   }
   const tagColors = { HP: '#1a5a9a', P: '#1a7a52', V: '#c0392b', G: '#b8860b' };
