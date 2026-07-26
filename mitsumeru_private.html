@@ -3611,8 +3611,13 @@ HP: ${hp}→${endHP} ／ MP: ${mp}→${endMP}
   // ④ メインサマリー表示（柱B：統合呼び出しの結果からここで組み立てる。2回目のAPI呼び出しは無し）
   loading.style.display = 'none';
 
-  if (!aiResult) {
-    mdBox.textContent = 'エラー：AIからの応答を取得できませんでした。しばらくしてからもう一度お試しください。';
+  if (!aiResult || aiResult.__error) {
+    // 是正（2026-07-26）：実際の失敗理由（APIキー未設定／ネットワーク障害等）を表示する。
+    // 生成が失敗した場合、この関数はここで終了しcloudSave('output',...)まで到達しない
+    // （出力する本文が実在しないため。KVに何もできていないのは正しい状態だが、
+    // 「なぜ生成できなかったか」が見えないと、利用者からは同期が壊れているように見える）。
+    const reason = (aiResult && aiResult.__error) ? aiResult.__error : 'AIからの応答を取得できませんでした。しばらくしてからもう一度お試しください。';
+    mdBox.textContent = `エラー：${reason}`;
     mdBox.classList.add('visible');
     return;
   }
