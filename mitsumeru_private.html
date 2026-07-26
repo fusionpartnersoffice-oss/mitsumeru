@@ -1292,8 +1292,6 @@
     <div class="section-title">① 今日のまとめと明日への言葉</div>
     <button class="btn-primary" onclick="generateEvening()" style="margin-bottom:12px;">翌日戦略を生成する</button>
     <div class="loading-text" id="output-loading">Claude が分析中です...</div>
-    <!-- 柱B（2026-07-21・リサーチ設計案）：「明日への一言」を最も目立つ位置に固定表示 -->
-    <div id="output-tomorrow-message" style="display:none;background:#fff8e8;border:1px solid #e8d090;border-radius:8px;padding:12px 14px;margin-bottom:10px;font-size:13px;line-height:1.8;color:#3a3020;"></div>
     <div class="output-box" id="output-markdown"></div>
     <div id="output-copy-row" style="display:none;flex-direction:column;gap:8px;margin-top:10px;">
       <div style="display:flex;gap:8px;">
@@ -1312,7 +1310,6 @@
 
   <div class="section">
     <div class="section-title">③ 先送りカレンダーCSV</div>
-    <div id="ai-calendar-comment" style="display:none;background:#e8f5ee;border:0.5px solid #a8dfc4;border-radius:6px;padding:10px 14px;font-size:12px;color:#166028;margin-bottom:10px;line-height:1.7;"></div>
     <div class="output-box" id="output-delay-csv"></div>
     <button class="btn-secondary" onclick="downloadCSV('delay')" style="margin-top:10px;">先送りCSVをダウンロード</button>
   </div>
@@ -3518,13 +3515,9 @@ HP: ${hp}→${endHP} ／ MP: ${mp}→${endMP}
   const mdBox = document.getElementById('output-markdown');
   const csvBox = document.getElementById('output-csv');
   const delayCsvBox = document.getElementById('output-delay-csv');
-  const commentBox = document.getElementById('ai-calendar-comment');
 
   loading.style.display = 'block';
   mdBox.classList.remove('visible'); csvBox.classList.remove('visible'); delayCsvBox.classList.remove('visible');
-  if (commentBox) { commentBox.style.display='none'; commentBox.textContent=''; }
-  const tomorrowBoxReset = document.getElementById('output-tomorrow-message');
-  if (tomorrowBoxReset) { tomorrowBoxReset.style.display='none'; tomorrowBoxReset.textContent=''; }
 
   // 柱B（2026-07-21）：カレンダー分類＋ナレーションを1回のAPI呼び出しへ統合
   // 7日間トレンド・プロファイルは、旧②プロンプトでのみ使っていたが、統合呼び出しでも必要なため先に計算する
@@ -3618,12 +3611,6 @@ HP: ${hp}→${endHP} ／ MP: ${mp}→${endMP}
   csvBox.textContent = calendarCSV; csvBox.classList.add('visible');
   delayCsvBox.textContent = delayCSV; delayCsvBox.classList.add('visible');
 
-  // 伴走コメント表示
-  if (aiResult && aiResult.comment && commentBox) {
-    commentBox.textContent = '💬 ' + aiResult.comment;
-    commentBox.style.display = 'block';
-  }
-
   // ④ メインサマリー表示（柱B：統合呼び出しの結果からここで組み立てる。2回目のAPI呼び出しは無し）
   loading.style.display = 'none';
 
@@ -3648,22 +3635,45 @@ HP: ${hp}→${endHP} ／ MP: ${mp}→${endMP}
     console.warn('[ミツメル AI生成] 欠落セクション:', _missingSections);
   }
 
-  // 既存の【1】〜【5】形式を再構成する（copyForNotebookLM・copyTextForKeep等、
-  // output-markdownの全文コピーに依存する既存機能との互換性を保つため）
-  const text = `【1】本日のP（実施事項）
+  // 柴山さんご本人の指摘（2026-07-26）：「明日への一言」ボックスが【5】と、
+  // 「💬コメント」ボックスが本文と重複表示され、アドバイスが分散して読みにくい状態だった。
+  // AI側のプロンプト・区切りマーカー（===TOMORROW_MESSAGE===等）・CSV・保存キーは無変更のまま、
+  // 表示だけを柴山さんご本人提案の4ブロック（①数値②今日のトピックス③行動評価④明日の戦略）へ
+  // 再構成する。TOMORROW_MESSAGEは1つのAI出力の中に「HP/MP/LV」「根拠」「明日への一言」が
+  // 地続きの文章として含まれる仕様のため、①と④で二重に出さないよう、ここで「明日への一言：」
+  // 以降を抜き出して④専用にし、①は既存の確定値（endHP/endMP/lvBaseFormatted）を使う。
+  const _tomorrowIchigonMatch = (aiResult.tomorrowMessage || '').match(/明日への一言[：:]\s*([\s\S]*)/);
+  const _tomorrowIchigon = _tomorrowIchigonMatch ? _tomorrowIchigonMatch[1].trim() : (aiResult.tomorrowMessage || '特になし');
+  const _tomorrowReasonMatch = (aiResult.tomorrowMessage || '').match(/根拠[：:]\s*([^\n]+)/);
+  const _tomorrowReason = _tomorrowReasonMatch ? _tomorrowReasonMatch[1].trim() : '';
+
+  const _block3Parts = [];
+  if (aiResult.review)   _block3Parts.push(`今週中にやること：\n${aiResult.review}`);
+  if (aiResult.delegate) _block3Parts.push(`委任・簡略化候補：\n${aiResult.delegate}`);
+  if (aiResult.cutloss)  _block3Parts.push(`損切り検討：\n${aiResult.cutloss}`);
+  _block3Parts.push(`伴走コメント：\n${aiResult.comment || '特になし'}`);
+
+  const text = `①HP/MP/LVの数値
+HP：${endHP}/100　MP：${endMP}/100　LV：${lvBaseFormatted}${_tomorrowReason ? `\n根拠：${_tomorrowReason}` : ''}
+
+②今日のトピックス
+実施したこと（P）：
 ${aiResult.summaryP || '特になし'}
 
-【2】本日のV（ノイズ・ボトルネック）
+ノイズ・懸念（V）：
 ${aiResult.summaryV || '特になし'}
 
-【3】本日のG（気づき・アイデア・Tryの種）
+気づき・視点（G）：
 ${aiResult.summaryG || '特になし'}
 
-【4】明日の行動戦略
+③今日の行動評価
+${_block3Parts.join('\n\n')}
+
+④明日の戦略
 ${aiResult.tomorrowPlan || '特になし'}
 
-【5】本日のステータスと明日への一言
-${aiResult.tomorrowMessage || '特になし'}
+明日への一言：
+${_tomorrowIchigon}
 
 ---
 【明日のVault管理Codeへの指示】
@@ -3678,16 +3688,6 @@ ${aiResult.tomorrowMessage || '特になし'}
     ? `⚠️ 一部の項目がうまく生成されませんでした。お手数ですが「翌日戦略を生成する」をもう一度お試しください。\n\n${text}`
     : text;
   mdBox.classList.add('visible');
-
-  // 柱B（リサーチ設計案）：「明日への一言」を最も目立つ位置に固定表示
-  const tomorrowBox = document.getElementById('output-tomorrow-message');
-  if (tomorrowBox && aiResult.tomorrowMessage) {
-    tomorrowBox.textContent = '🌙 ' + aiResult.tomorrowMessage;
-    tomorrowBox.style.display = 'block';
-  } else if (tomorrowBox && _missingSections.includes('tomorrowMessage')) {
-    tomorrowBox.textContent = '⚠️ 「明日への一言」が生成されませんでした。再生成をお試しください。';
-    tomorrowBox.style.display = 'block';
-  }
 
   const outputPayload = { text, _ts: Date.now() };
   localStorage.setItem(lsKey('output'), JSON.stringify(outputPayload));
