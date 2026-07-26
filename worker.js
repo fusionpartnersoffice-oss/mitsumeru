@@ -59,6 +59,11 @@ export default {
       return handleVaultOAuthSetup(request, env);
     }
 
+    // ===== ダッシュボード自動反映：ファイル選択の保存（2026-07-26・設計発注） =====
+    if (url.pathname === '/vault-dashboard-setup' && request.method === 'POST') {
+      return handleVaultDashboardSetup(request, env);
+    }
+
     // ===== 読書メモ（口述記録の拡張・2026-07-21・柴山さん指示）：本ごとにVaultへ音声メモを蓄積 =====
     if (url.pathname === '/sync-vault-note' && request.method === 'POST') {
       return handleSyncVaultNote(request, env);
@@ -537,6 +542,32 @@ async function handleVaultOAuthSetup(request, env) {
     await kv.put('vault_oauth_refresh', data.refresh_token);
     await kv.put('vault_oauth_folder', folderId);
     return new Response(JSON.stringify({ ok: true }), { status: 200, headers });
+  } catch (e) {
+    return new Response(JSON.stringify({ ok: false, error: e.message }), { status: 500, headers });
+  }
+}
+
+// ダッシュボード自動反映：Pickerでファイル自体を選んでもらった結果（fileId）をKVへ保存する
+// だけの単純なエンドポイント（2026-07-26・設計発注）。drive.fileスコープはフォルダ選択だけでは
+// 既存ファイルへアクセスできない（WebSearchで裏取り済み）ため、ファイル単位で権限を得る。
+async function handleVaultDashboardSetup(request, env) {
+  const headers = { ...CORS_HEADERS, 'Content-Type': 'application/json' };
+  let body;
+  try { body = await request.json(); }
+  catch (e) { return new Response(JSON.stringify({ ok: false, error: 'リクエストの形式が不正です' }), { status: 400, headers }); }
+
+  const { fileId, token } = body;
+  if (!env.PRIVATE_ACCESS_TOKEN || token !== env.PRIVATE_ACCESS_TOKEN) {
+    return new Response(JSON.stringify({ ok: false, error: 'private data requires a valid token' }), { status: 401, headers });
+  }
+  if (!fileId) {
+    return new Response(JSON.stringify({ ok: false, error: 'fileIdは必須です' }), { status: 400, headers });
+  }
+
+  try {
+    const kv = getKV(env);
+    await kv.put('vault_dashboard_file_id', fileId);
+    return new Response(JSON.stringify({ ok: true, fileId }), { status: 200, headers });
   } catch (e) {
     return new Response(JSON.stringify({ ok: false, error: e.message }), { status: 500, headers });
   }

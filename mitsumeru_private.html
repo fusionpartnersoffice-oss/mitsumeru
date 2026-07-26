@@ -982,6 +982,18 @@
       </p>
       <button class="btn-primary" id="vault-oauth-setup-btn" onclick="startVaultOAuthSetup()" style="width:100%;">Google Driveに書き出す設定をする</button>
       <div id="vault-oauth-setup-msg" style="font-size:12px;margin-top:8px;text-align:center;"></div>
+
+      <!-- ダッシュボード自動反映（2026-07-26・設計発注）：drive.fileスコープはフォルダ選択だけでは
+           フォルダ内の既存ファイルへアクセスできない仕様のため、ファイル自体を直接選んでもらう
+           専用の設定を追加する（上のフォルダ設定とは別物・既存の初回セットアップには触れない）。 -->
+      <div style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(184,134,11,0.25);">
+        <p style="font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.7;">
+          設定すると、翌日戦略を生成するたびに「今日の一手」が代表ダッシュボードへ自動で反映されます。<br>
+          既存のファイルを直接選ぶ必要があるため、上のフォルダ設定とは別に、もう1回だけ設定してください。
+        </p>
+        <button class="btn-secondary" id="vault-dashboard-setup-btn" onclick="startDashboardFileSetup()" style="width:100%;">ダッシュボードファイルを選ぶ</button>
+        <div id="vault-dashboard-setup-msg" style="font-size:12px;margin-top:8px;text-align:center;"></div>
+      </div>
     </div>
 
     <div class="section" style="margin-top:12px;">
@@ -3094,6 +3106,90 @@ async function startVaultOAuthSetup() {
     }
   } catch (e) {
     setVaultOAuthMsg('設定できませんでした：' + e.message, true);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ダッシュボード自動反映（2026-07-26・設計発注）：drive.fileスコープの仕様確認済み
+// （フォルダ選択だけではフォルダ内の既存ファイルへアクセスできない）。ファイル自体を
+// Pickerで直接選んでもらい、fileIdをKVへ保存する。上のstartVaultOAuthSetup()（初回の
+// フォルダ設定・refresh_token発行）とは完全に別物・そちらの処理には一切触れない。
+function setDashboardSetupMsg(text, isError) {
+  const el = document.getElementById('vault-dashboard-setup-msg');
+  if (!el) return;
+  el.textContent = text;
+  el.style.color = isError ? 'var(--red)' : 'var(--green)';
+}
+
+async function startDashboardFileSetup() {
+  const btn = document.getElementById('vault-dashboard-setup-btn');
+  // 既存のstartVaultOAuthSetup()と同じ安全装置：テストモード中は本番のKV設定を書き換えない。
+  if (isTestMode()) {
+    setDashboardSetupMsg('テストモード中はダッシュボードファイルの設定を実行できません（本番設定の保護のため）。', true);
+    return;
+  }
+  if (!getPrivateToken()) {
+    setDashboardSetupMsg('先に上の「アクセストークン」を設定してください。', true);
+    return;
+  }
+  if (typeof google === 'undefined' || !google.accounts) {
+    setDashboardSetupMsg('Googleのライブラリを読み込み中です。少し待ってからもう一度お試しください。', true);
+    return;
+  }
+  if (!VAULT_OAUTH_API_KEY) {
+    setDashboardSetupMsg('Picker用APIキーが未設定です。', true);
+    return;
+  }
+  btn.disabled = true;
+  setDashboardSetupMsg('ファイルを選ぶウィンドウを開いています…', false);
+
+  try {
+    // 既に初回セットアップ（フォルダ選択・refresh_token発行）が済んでいる前提のため、
+    // Picker表示用のアクセストークンだけを新規取得する（drive.fileスコープ・保存はしない）。
+    const accessToken = await new Promise((resolve, reject) => {
+      const tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: VAULT_OAUTH_CLIENT_ID,
+        scope: 'https://www.googleapis.com/auth/drive.file',
+        callback: (resp) => resp.access_token ? resolve(resp.access_token) : reject(new Error('トークン取得に失敗しました')),
+      });
+      tokenClient.requestAccessToken();
+    });
+
+    // フォルダではなく、ファイル自体を選んでもらう（google.picker.ViewId.DOCSは既定でファイル一覧を表示する）。
+    const fileId = await new Promise((resolve, reject) => {
+      gapi.load('picker', () => {
+        const picker = new google.picker.PickerBuilder()
+          .addView(new google.picker.DocsView(google.picker.ViewId.DOCS))
+          .setOAuthToken(accessToken)
+          .setDeveloperKey(VAULT_OAUTH_API_KEY)
+          .setCallback((data) => {
+            if (data.action === google.picker.Action.PICKED) {
+              resolve(data.docs[0].id);
+            } else if (data.action === google.picker.Action.CANCEL) {
+              reject(new Error('ファイル選択がキャンセルされました。'));
+            }
+          })
+          .build();
+        picker.setVisible(true);
+      });
+    });
+
+    setDashboardSetupMsg('サーバーへ設定を保存しています…', false);
+
+    const res = await fetch(`${SYNC_URL}/vault-dashboard-setup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fileId, token: getPrivateToken() }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      setDashboardSetupMsg('✓ 設定できました。次回「翌日戦略を生成する」から自動反映されます。', false);
+    } else {
+      setDashboardSetupMsg('設定できませんでした：' + (data.error || '不明なエラー'), true);
+    }
+  } catch (e) {
+    setDashboardSetupMsg('設定できませんでした：' + e.message, true);
   } finally {
     btn.disabled = false;
   }
