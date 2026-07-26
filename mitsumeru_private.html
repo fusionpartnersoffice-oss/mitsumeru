@@ -1545,8 +1545,11 @@ function saveMemos() {
   const payload = { data: memos, _ts: Date.now() };
   localStorage.setItem(lsKey('memos'), JSON.stringify(payload));
   cloudSave('memos', payload);
-  // 設計指示（2026-07-26）：随時メモも数秒後にVaultへ反映する（日中の情報反映手段の拡充）
-  syncToVaultDebouncedFromMorning();
+  // 設計指示（2026-07-26）：随時メモもVaultへ反映する（日中の情報反映手段の拡充）。
+  // 是正：saveMemos()は「追加する」「削除」「リセット」いずれも単発の明示的操作であり
+  // 連続入力ではないため、デバウンスの必要性が無い一方、直後にタブを閉じるリスクは朝入力と同じ。
+  // debounceを使わず即座に呼ぶ。
+  syncToVault();
 }
 function insertIntoTextarea(id, text) {
   const el = document.getElementById(id);
@@ -1708,8 +1711,6 @@ function saveMorning() {
   data['lv-base'] = getLVBase();
   localStorage.setItem(lsKey('morning'), JSON.stringify(data));
   cloudSaveDebounced('morning', data);
-  // 単一障害点の解消（2026-07-26設計指示）：朝入力もVaultへデバウンス複製する（従来は夜のみ）
-  syncToVaultDebouncedFromMorning();
 }
 
 // ===== UI復元ヘルパー =====
@@ -2706,15 +2707,6 @@ function syncToVault() {
   });
 }
 
-// 単一障害点の解消（2026-07-26設計指示・柴山さん厳命）：朝入力もデバウンスでVaultへ複製する
-// （従来は夜の締め時のみ）。連続入力のたびに毎回叩かないよう、cloudSaveDebouncedと同じ発想で
-// 入力が止まってから1回だけ呼ぶ。
-let _syncToVaultMorningTimer = null;
-function syncToVaultDebouncedFromMorning(delay = 2000) {
-  clearTimeout(_syncToVaultMorningTimer);
-  _syncToVaultMorningTimer = setTimeout(syncToVault, delay);
-}
-
 // ===== Vault OAuth2初回セットアップ（案B・2026-07-25・設計指示）=====
 // 設計書 docs\ミツメルVault連携_実装設計方針_20260718.md §3 準拠。
 // GOOGLE_OAUTH_CLIENT_IDは公開値（2026-07-21のConsole伴走で取得済み）。
@@ -2870,6 +2862,11 @@ async function calcMorning() {
   document.getElementById('morning-result').style.display = 'block';
   saveMorning();
   cloudSaveFusionOSStatus({ hp: hpAdj, mp, mode_level: mode, mode: modeText });
+  // 単一障害点の解消・是正（2026-07-26）：当初saveMorning()側にデバウンス呼び出しを入れていたが、
+  // saveMorning()はスライダーのoninput等で高頻度に呼ばれるため、最後の操作から2秒以内にタブを
+  // 閉じると発火しない欠陥があった（実際に発生・柴山さんの朝データがVaultへ複製されなかった）。
+  // 「今日のモードを判定する」ボタン押下という明示的な完了アクションからは、デバウンスせず即座に呼ぶ。
+  syncToVault();
 
   // プロファイルからMUST/NEVER/エゴグラム/エニアグラムを直接取得
   const _profileSaved = localStorage.getItem('mitsumeru_private_profile');
