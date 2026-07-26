@@ -24,20 +24,26 @@
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://apis.google.com/js/api.js"></script>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;500&family=Noto+Sans+JP:wght@300;400;500&display=swap');
+  /* 2026-07-26全面刷新①：明朝(Noto Serif JP)を全廃しゴシック(Noto Sans JP)へ統一したため、
+     Serif側の読み込みを削除（フォント読み込みの軽量化）。500/700も見出しの強調に使うため追加。 */
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap');
 
   :root {
-    --bg: #f5f1ea;
-    --bg2: #ede8df;
-    --border: #c8b89a;
-    --text: #3a3028;
-    --text2: #6a5a4a;
-    --text3: #9a8a7a;
-    --accent: #8a7a6a;
+    /* 2026-07-26全面刷新①（柴山さん厳命・設計判断確定）：和紙・クリームトーンから
+       明るいニュートラル地へ、アクセントは藍(#2c3e6e・今日のタブ色分けで「夜」に
+       使っている色と同一)を基調に格上げ。--green/--red/--goldは②で調整するため
+       ここでは意図的に据え置き（色相・意味の対応関係を壊さないため）。 */
+    --bg: #f7f7f9;
+    --bg2: #eef0f3;
+    --border: #dcdfe4;
+    --text: #24242c;
+    --text2: #55565f;
+    --text3: #93949c;
+    --accent: #2c3e6e;
     --green: #2d7a52;
     --red: #c0392b;
     --gold: #b8860b;
-    --card: #faf7f2;
+    --card: #ffffff;
     /* ビジュアル改善案2（2026-07-26・設計発注・柴山さん承認）：タブごとの色分け。
        ステータス色（--green/--red・警告バナー等）には触れず、タブの「今どこにいるか」を
        示す控えめな差し色のみを追加する。data-tab属性はswitchTab()が付与（下記参照）。 */
@@ -61,7 +67,9 @@
   }
 
   .header {
-    background: var(--text);
+    /* 2026-07-26全面刷新①：藍(--accent)を基調アクセントとして前面に出すため、
+       ヘッダー背景を中立色(--text)から--accentへ変更。 */
+    background: var(--accent);
     color: var(--bg);
     padding: 20px 24px 16px;
     position: sticky;
@@ -73,9 +81,9 @@
   }
 
   .header h1 {
-    font-family: 'Noto Serif JP', serif;
+    font-family: 'Noto Sans JP', sans-serif;
     font-size: 20px;
-    font-weight: 400;
+    font-weight: 500;
     letter-spacing: 4px;
     white-space: nowrap;
   }
@@ -329,7 +337,7 @@
   }
 
   .status-card .label { font-size: 11px; color: var(--text3); margin-bottom: 4px; }
-  .status-card .value { font-size: 26px; font-weight: 500; font-family: 'Noto Serif JP', serif; }
+  .status-card .value { font-size: 26px; font-weight: 500; font-family: 'Noto Sans JP', sans-serif; }
   .hp-val { color: #1a7a52; }
   .mp-val { color: #1a5a9a; }
   .lv-val { color: #8a6a1a; }
@@ -524,9 +532,9 @@
     text-align: center;
   }
   .demo-card h2 {
-    font-family: 'Noto Serif JP', serif;
+    font-family: 'Noto Sans JP', sans-serif;
     font-size: 18px;
-    font-weight: 400;
+    font-weight: 500;
     letter-spacing: 3px;
     margin-bottom: 12px;
     color: var(--text);
@@ -594,7 +602,7 @@
 <div id="help-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:200;overflow-y:auto;padding:20px;">
   <div style="background:var(--card);border-radius:12px;max-width:640px;margin:0 auto;padding:24px;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
-      <h2 style="font-family:'Noto Serif JP',serif;font-size:16px;font-weight:400;letter-spacing:3px;">取扱手順書</h2>
+      <h2 style="font-family:'Noto Sans JP',sans-serif;font-size:16px;font-weight:500;letter-spacing:3px;">取扱手順書</h2>
       <button onclick="toggleHelp()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text3);">✕</button>
     </div>
 
@@ -4159,7 +4167,7 @@ function openScanWithConsent() {
 <!-- スキャンインポートモーダル -->
 <div id="scan-import-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:300;align-items:center;justify-content:center;padding:20px;">
   <div style="background:var(--card);border-radius:12px;max-width:560px;width:100%;padding:24px;">
-    <div style="font-family:'Noto Serif JP',serif;font-size:16px;margin-bottom:12px;">📥 スキャン結果をインポート</div>
+    <div style="font-family:'Noto Sans JP',sans-serif;font-size:16px;font-weight:500;margin-bottom:12px;">📥 スキャン結果をインポート</div>
     <p style="font-size:12px;color:var(--text2);margin-bottom:10px;">ミツメルスキャンの「結果をコピー（JSON）」ボタンで取得したJSONをここに貼り付けてください。</p>
     <textarea id="scan-import-json" rows="10" style="width:100%;font-size:11px;font-family:monospace;padding:10px;border:0.5px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);resize:vertical;" placeholder='{"lsrp":{...}}'></textarea>
     <div style="display:flex;gap:10px;margin-top:14px;">
