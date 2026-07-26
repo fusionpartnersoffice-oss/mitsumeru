@@ -15,6 +15,8 @@
 <script src="vendor/qrcode.min.js"></script>
 <!-- 柱A（共通コア化・2026-07-21）：APIキー管理・Claude API呼び出しの共通処理 -->
 <script src="./mitsumeru_core.js"></script>
+<!-- v10フルモデルチェンジ①DataLayer統合（2026-07-26・設計発注）：保存・複製・テストモード分離を1箇所に集約 -->
+<script src="./mitsumeru_datalayer.js"></script>
 <!-- Vault連携・OAuth2（案B・2026-07-25・設計指示）：Google公式ライブラリ（Google Identity Services・
      Google Picker API）。柴山さんご本人のGoogleアカウントでの同意取得・フォルダ選択に使う。
      いずれもGoogle自身がホストする公式スクリプトのため自ホスト化の対象外（アクセストークン等の
@@ -1417,112 +1419,9 @@ function showSyncStatus(state) {
 // ===== Cloudflare KV =====
 const SYNC_URL = 'https://mitsumeru-sync.fusion-partners-office.workers.dev';
 
-// 原則6（2026-07-26・実装安全原則v2・インシデント再発防止）：
-// テストモード時は保存先キーのプレフィックスをprivate_からtest_へ強制的に差し替える。
-// 「気をつける」ではなく構造的に本番データへ書き込めなくする。URLパラメータ?testmode=1
-// またはlocalStorageフラグで有効化。実機検証時は必ずこれを有効にしてから行うこと。
-function isTestMode() {
-  try {
-    if (new URLSearchParams(location.search).get('testmode') === '1') return true;
-  } catch (e) {}
-  return localStorage.getItem('mitsumeru_test_mode') === '1';
-}
-function kvPrefix() { return isTestMode() ? 'test_' : 'private_'; }
-
-if (isTestMode()) {
-  console.warn('[テストモード] 保存先はtest_プレフィックスに切り替わっています。本番データへは書き込まれません。');
-  window.addEventListener('DOMContentLoaded', () => {
-    const banner = document.createElement('div');
-    banner.textContent = '🧪 テストモード（test_キーへ書き込み中・本番データは保護されています）';
-    banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#b8860b;color:#fff;text-align:center;font-size:12px;padding:4px;';
-    document.body.prepend(banner);
-  });
-}
-
-// 安全装置①（2026-07-03）：プライベート版はKV側も'private_'プレフィックスの専用キー空間を使う。
-// 本番mitsumeru_app.htmlと物理的にキーが分離されているため、安全装置②（isProductionHostガード）は
-// このファイルでは不要（app.html側にのみ残す。ローカル実行かどうかに関わらずプライベート版専用の
-// KV領域にしか書き込まないため、本番データに影響する経路が存在しない）。
-async function cloudSave(type, data, date) {
-  const key = kvPrefix() + type + '_' + (date || targetDate);
-  showSyncStatus('saving');
-  try {
-    const res = await fetch(`${SYNC_URL}?key=${encodeURIComponent(key)}&token=${encodeURIComponent(getPrivateToken())}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({...data, _ts: Date.now()})
-    });
-    if (res.ok) { showSyncStatus('synced'); }
-    else { showSyncStatus('failed'); }
-  } catch(e) {
-    showSyncStatus(navigator.onLine ? 'failed' : 'offline');
-  }
-}
-
-// 朝夜タブの自由記述欄は1文字入力ごとにcloudSaveが発火しKV書き込みが過多になるため、
-// 入力停止後1.5秒待ってから最後の内容のみ書き込む（localStorageは即時保存のまま変更なし）
-const _cloudSaveDebounceTimers = {};
-function cloudSaveDebounced(type, data, date, delay = 1500) {
-  const key = type + '_' + (date || targetDate);
-  clearTimeout(_cloudSaveDebounceTimers[key]);
-  _cloudSaveDebounceTimers[key] = setTimeout(() => cloudSave(type, data, date), delay);
-}
-
-async function cloudSaveGlobal(type, data) {
-  try {
-    await fetch(`${SYNC_URL}?key=${encodeURIComponent(kvPrefix() + type + '_global')}&token=${encodeURIComponent(getPrivateToken())}`, {
-      method: 'PUT', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({...data, _ts: Date.now()})
-    });
-  } catch(e) {}
-}
-
-async function cloudSaveFusionOSStatus(data) {
-  const date = targetDate || localDateStr(new Date());
-  try {
-    await fetch(`${SYNC_URL}?key=${encodeURIComponent(kvPrefix() + 'fusionos_status_' + date)}&token=${encodeURIComponent(getPrivateToken())}`, {
-      method: 'PUT', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({...data, source: 'mitsumeru_private', date, _ts: Date.now()})
-    });
-  } catch(e) {}
-}
-
-async function cloudLoadGlobal(type) {
-  try {
-    const res = await fetch(`${SYNC_URL}?key=${encodeURIComponent(kvPrefix() + type + '_global')}&token=${encodeURIComponent(getPrivateToken())}`);
-    if (!res.ok) return null;
-    const json = await res.json();
-    if (!json.value) return null;
-    return typeof json.value === 'string' ? JSON.parse(json.value) : json.value;
-  } catch(e) { return null; }
-}
-
-async function cloudLoad(type, date) {
-  const key = kvPrefix() + type + '_' + (date || targetDate);
-  try {
-    const res = await fetch(`${SYNC_URL}?key=${encodeURIComponent(key)}&token=${encodeURIComponent(getPrivateToken())}`);
-    if (!res.ok) return null;
-    const json = await res.json();
-    if (!json.value) return null;
-    return typeof json.value === 'string' ? JSON.parse(json.value) : json.value;
-  } catch(e) { return null; }
-}
-
-// 設計指摘（2026-07-20）：cloudLoad()は「401等の失敗」と「200だがデータが無いだけ」を
-// どちらもnullで返すため区別できない。既存のcloudLoad()呼び出し箇所（他に6箇所）は
-// この区別を必要としないため契約を変えず、区別が要る forceSyncFromCloud() 専用に
-// authFailedを持つ新関数を用意する（既存呼び出し箇所への影響を避けるため）。
-async function cloudLoadStatus(type, date) {
-  const key = kvPrefix() + type + '_' + (date || targetDate);
-  try {
-    const res = await fetch(`${SYNC_URL}?key=${encodeURIComponent(key)}&token=${encodeURIComponent(getPrivateToken())}`);
-    if (res.status === 401) return { ok: false, authFailed: true, value: null };
-    if (!res.ok) return { ok: false, authFailed: false, value: null };
-    const json = await res.json();
-    if (!json.value) return { ok: true, authFailed: false, value: null };
-    return { ok: true, authFailed: false, value: typeof json.value === 'string' ? JSON.parse(json.value) : json.value };
-  } catch(e) { return { ok: false, authFailed: false, value: null }; }
-}
+// v10フルモデルチェンジ①DataLayer統合（2026-07-26・設計発注）：
+// isTestMode・kvPrefix・cloudSave系・cloudLoad系・syncToVaultは
+// mitsumeru_datalayer.js（<head>で読み込み済み）へ移設。定義はそちらを参照。
 
 // タイムスタンプが新しい方を返す
 function newerOf(a, b) {
@@ -1961,6 +1860,84 @@ function getPrivateToken() {
 // 「育つ仕組み」（2026-07-26設計指示）：サルベージが週次で更新する学習ログを取得し、
 // プロンプトへ埋め込む文字列を組み立てる。ファイル無し・取得失敗時は空文字を返す
 // （設計書の指示通りエラーにせず静かにスキップ、朝・夜プロンプト共通で使う）。
+// ===== v10・ContextBuilder（2026-07-26設計発注）=====
+// 「前回記録取得」「視点ローテーション」「育つ仕組み」は、今日別々のタイミングで別々に
+// 発注・実装されたが、実際にやっていることは同じ（AIへ渡す補足情報を1つ増やす）。
+// これを1つの関数にまとめ、新しい補足情報を今後追加する時はこの関数の中に1行足すだけで
+// 済むようにする。UIタブ・保存先は無変更（設計書v10 §2②準拠）。
+async function buildMorningContext(dateForVault) {
+  const context = {};
+
+  // ①前回記録（Vault）
+  context.vaultContext = null;
+  try {
+    const token = getPrivateToken();
+    if (token) {
+      const res = await fetch(`${SYNC_URL}/vault-morning-context`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date: dateForVault, token }),
+      });
+      context.vaultContext = await res.json();
+    }
+  } catch (e) { context.vaultContext = null; }
+
+  // ②視点ローテーション（日付から機械的に計算。新しい保存領域は作らない）
+  const TODAY_LENS_LIST = ['成果・進捗', '休息・回復', '気づき・学び', 'つながり', '将来・目標'];
+  const now = new Date();
+  const startOfYear = new Date(now.getFullYear(), 0, 0);
+  const dayOfYear = Math.floor((now - startOfYear) / 86400000);
+  context.todayLens = TODAY_LENS_LIST[dayOfYear % 5];
+
+  // ③育つ仕組み（学習ログ・1日1回キャッシュは fetchLearningLogText 内で処理済み）
+  context.learningLogText = await fetchLearningLogText();
+
+  // ④時間帯（実際の入力時刻に応じた自然な声かけのため）
+  const hour = new Date().getHours();
+  context.timeOfDay = hour < 11 ? '朝' : hour < 15 ? '昼' : hour < 19 ? '夕方' : '夜';
+
+  return context;
+}
+
+// vaultContextを文言化する（元のcalcMorning内ロジックをそのまま関数化・文言は無変更）
+function formatVaultContextText(vaultContext) {
+  if (vaultContext && vaultContext.ok) {
+    if (vaultContext.none) {
+      return `【前回記録】${vaultContext.reason || 'まだ記録がありません（初回）'}`;
+    }
+    return `【前回記録との間隔】${vaultContext.daysSince}日ぶりです（前回：${vaultContext.prevDate}）
+【前回の記録】HP:${vaultContext.hp ?? '—'}／MP:${vaultContext.mp ?? '—'}／今日の一言:${vaultContext.want || 'なし'}／補足:${vaultContext.supplement || 'なし'}`;
+  }
+  return '【前回記録】Vault連携が未設定、または取得できませんでした（無視して通常通り進めてよい）';
+}
+
+// 朝プロンプトの厳守事項・トーン規定を構造化データから機械的に組み立てる（v10設計指示）。
+// 今日何度も継ぎ足した手書きの禁止事項リストを、配列への追記1行で済む形に変える。
+// 文言はこれまでの手書き版と完全に同一（今回はリグレッションを避けるための純粋なリファクタリング）。
+const MORNING_PROMPT_RULES = {
+  factConstraints: [
+    '上記【今朝の状態】【柴山靖章プロファイル】【前回記録】に明記されていない出来事（今日・今夜の予定、会う相手、第三者との関係等）を創作しないこと',
+    'プロファイルの項目（エゴグラム・エニアグラム等）が「未設定」の場合はそのまま「未設定」として扱い、別の具体的な値をでっち上げないこと',
+    '「怒り」「不安」等の感情を、ノイズ・今日の一言のテキストに明記されていないのに決めつけて断定しないこと',
+    '**柴山さんの言葉選び・表現そのものを分析・評価しないこと。**（NG例：「『準備する』という動詞を選んでいるのは正しい使い方だ」「その言葉選びに芯の強さが出ている」のような、語彙・表現自体へのコメント）',
+    '**柴山さんの判断・行動・選択を「正しい／正しく／理にかなっている／妥当」等の言葉で採点しないこと。** 対象が言葉選びであっても行動の順序・やり方であっても同じで、AIが柴山さんの選択に点数をつける構造そのものを禁止する（NG例：「その順番は正しい」「コース5を選んだのは妥当」）。評価せず、事実として受け止めるにとどめること',
+    '**もっともらしいが中身の無い抽象的な評価語を使わないこと。**（NG例：「地に足がついている」「筋が通っている」「分離がきれいにできている」等、分析しているように聞こえて実質的な情報が無い言い回し）',
+  ],
+  tone: [
+    '同志として隣に立つ言葉。上から目線・励まし・慰め禁止',
+    '**括弧書きの相槌・軽い雑談・ユーモアの一言を入れない。** 情報量の無い一文を足して長くしない',
+    '比喩より事実ベース',
+    '具体的に書くが、根拠は必ず上記データのみ。データにない事実を作って「わかってるな」感を演出しないこと',
+    '**専門用語・ビジネス用語・心理学用語（「スクリーニング」「タスク」「優先順位付け」「アクションアイテム」「エゴグラム」「エニアグラム」等）を使わず、日常会話の言葉で話す。** 迷ったら、家族や友人に話しかける時に使う言葉を選ぶこと',
+    '「〜という性質だが」「〜の方向に精密に向かい始める」のような硬い分析口調・断定的な性質診断の言い回しも避け、口語的で柔らかい言い方にする（例：「〜な感じですね」「〜だと思います」）',
+    '**言葉選びの変換（介護現場の「スピーチロック」回避の知見を応用）**：命令形・断定形は使わない\n　NG「〜すべきです」「〜してください」「それは違います」 → OK「〜してみませんか？」「〜でどうでしょう？」「そう感じられたのですね」',
+    '事実承認（「今日も〇〇をされたのですね」という、評価ではなく事実をそのまま伝える言い方）は、使えそうな場面があれば積極的に使ってよい（無理に毎回入れなくてよい）',
+  ],
+};
+function formatRuleList(rules) {
+  return rules.map(r => '・' + r).join('\n');
+}
+
 // キャッシュ化（2026-07-26・設計指示・複雑さ削減）：学習ログはサルベージが週次でしか更新しない
 // データなのに、キャッシュが無く朝/夜プロンプト生成のたびに毎回Google APIへ最大4回の逐次
 // リクエストが発生していた（開発Bレビュー指摘）。1日1回だけ実際に取りに行き、同日中の
@@ -2721,36 +2698,8 @@ function syncToGoogleCalendar() {
   }).catch(() => {});
 }
 
-// G連携基盤・G3-Vault：Vault（Google Drive）へ自動書き出し（柴山さんご本人専用）。
-// 2026-07-26是正：呼び出し元は夜の締め(closeDayHPMP)だけでなく、朝(calcMorning)・
-// 随時メモ(saveMemos)からも呼ばれる（単一障害点の解消のため3箇所化。呼び出し元は各関数の
-// コメント参照）。「夜のみ」という古い説明は実態と合わなくなったため削除。
-// Secret未設定・OAuth2未セットアップ時はWorker側で無音スキップされる。失敗しても既存機能には一切影響させない。
-function syncToVault() {
-  // 原則6（2026-07-26・実装安全原則v2）：テストモード中はVaultへの複製も必ずスキップする。
-  // KVはtest_プレフィックスで分離済みだが、Vault（Google Drive）は分離の仕組みが無いため、
-  // ここで止めない限りテストデータが本物のVaultファイルを上書きしてしまう。
-  if (isTestMode()) { console.warn('[テストモード] Vaultへの複製をスキップしました'); return; }
-  const date = targetDate || localDateStr(new Date());
-  // 2026-07-24是正：/sync-vaultにトークン確認を追加したのに合わせ、既存呼び出し元も同時に送信対応する
-  // （実装安全原則v1原則⑤：認証追加は既存利用者を洗い出してから切替・切替と同時に更新）
-  fetch(`${SYNC_URL}/sync-vault`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ date, token: getPrivateToken() }),
-  }).then(async res => {
-    // 設計指摘（2026-07-26）：黙って失敗させない。HTTPエラー・レスポンス内のok:false も
-    // console.errorへ残す（.catchはネットワーク層の失敗しか捕捉できず、401等のHTTPエラーや
-    // {ok:false}レスポンスは今まで完全に握りつぶされていた）。
-    let body = null;
-    try { body = await res.json(); } catch (e) {}
-    if (!res.ok || (body && body.ok === false)) {
-      console.error('[syncToVault] Vaultへの複製に失敗しました:', res.status, body);
-    }
-  }).catch(e => {
-    console.error('[syncToVault] Vaultへの複製で通信エラー:', e.message);
-  });
-}
+// v10フルモデルチェンジ①DataLayer統合（2026-07-26・設計発注）：
+// syncToVault()はmitsumeru_datalayer.jsへ移設。呼び出し元（朝・随時メモ・夜の3箇所）は無変更。
 
 // ===== Vault OAuth2初回セットアップ（案B・2026-07-25・設計指示）=====
 // 設計書 docs\ミツメルVault連携_実装設計方針_20260718.md §3 準拠。
