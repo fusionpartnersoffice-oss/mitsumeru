@@ -86,6 +86,13 @@ export default {
       return handleVaultLearningLog(request, env);
     }
 
+    // ===== 【一時】ダッシュボード自動反映のOAuth許可範囲確認用（2026-07-26・確認後に撤去予定） =====
+    // 読み取り専用。書き込みは一切行わない。00_代表ダッシュボード.mdが現在のOAuth許可範囲内で
+    // 見えるか（drive.fileスコープでアクセス可能か）だけを確認する。
+    if (url.pathname === '/debug-dashboard-lookup' && request.method === 'POST') {
+      return handleDebugDashboardLookup(request, env);
+    }
+
     // ===== アクセス解析（簡易・自前実装）：案件0の原因切り分け用（2026-07-14） =====
     // 個人情報・IPアドレス等は一切記録しない。ページ名＋日付ごとの匿名カウントのみ。
     if (url.pathname === '/pv' && request.method === 'GET') {
@@ -587,6 +594,38 @@ async function writeCalendarEvent(env, accessToken, date, record) {
     throw new Error('カレンダー書き込み失敗: ' + JSON.stringify(data));
   }
   return data;
+}
+
+// 【一時】ダッシュボード自動反映（2026-07-26・設計発注）のOAuth許可範囲確認用。
+// 読み取り専用（Drive files.list・検索のみ）。確認完了後、この関数と上のルーティングは撤去する。
+async function handleDebugDashboardLookup(request, env) {
+  const headers = { ...CORS_HEADERS, 'Content-Type': 'application/json' };
+  let token;
+  try { token = (await request.json()).token; } catch (e) { token = null; }
+  if (!env.PRIVATE_ACCESS_TOKEN || token !== env.PRIVATE_ACCESS_TOKEN) {
+    return new Response(JSON.stringify({ ok: false, error: 'private data requires a valid token' }), { status: 401, headers });
+  }
+  try {
+    const kv = getKV(env);
+    const oauthFolderId = await kv.get('vault_oauth_folder');
+    if (!oauthFolderId) {
+      return new Response(JSON.stringify({ ok: true, oauthSetup: false, reason: 'OAuth2未セットアップ' }), { status: 200, headers });
+    }
+    const accessToken = await getVaultAccessToken(env);
+    // フォルダ範囲を限定せず名前だけで検索。drive.fileスコープでアクセス可能なファイルのみ返る。
+    const query = encodeURIComponent(`name='00_代表ダッシュボード.md' and trashed=false`);
+    const res = await fetch(`https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id,name,parents)`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error('Drive検索失敗: ' + JSON.stringify(data));
+    return new Response(JSON.stringify({
+      ok: true, oauthSetup: true, grantedRootFolderId: oauthFolderId,
+      found: (data.files || []).length > 0, files: data.files || [],
+    }), { status: 200, headers });
+  } catch (e) {
+    return new Response(JSON.stringify({ ok: false, error: e.message }), { status: 500, headers });
+  }
 }
 
 // ═══════════════════════════════════════════════

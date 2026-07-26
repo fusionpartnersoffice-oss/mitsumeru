@@ -383,7 +383,10 @@
   .btn-primary {
     width: 100%;
     padding: 14px;
-    background: var(--tab-color);
+    /* 2026-07-26訂正（設計発注・柴山さん評価「中途半端」を受けて）：ボタン背景は
+       タブごとに変わるvar(--tab-color)ではなく、藍(--accent)固定に戻す。タブの
+       色分けは.mode-tab.activeの下線のみに縮小し、主要な操作要素は藍で統一する。 */
+    background: var(--accent);
     color: var(--bg);
     border: none;
     border-radius: 6px;
