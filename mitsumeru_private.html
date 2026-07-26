@@ -1289,7 +1289,7 @@
 <!-- 出力モード -->
 <div id="screen-output" class="screen">
   <div class="section">
-    <div class="section-title">① ミツメル行動監査サマリー</div>
+    <div class="section-title">① 今日のまとめと明日への言葉</div>
     <button class="btn-primary" onclick="generateEvening()" style="margin-bottom:12px;">翌日戦略を生成する</button>
     <div class="loading-text" id="output-loading">Claude が分析中です...</div>
     <!-- 柱B（2026-07-21・リサーチ設計案）：「明日への一言」を最も目立つ位置に固定表示 -->
@@ -1300,7 +1300,7 @@
         <button class="btn-secondary" id="copy-nlm-btn" onclick="copyForNotebookLM()" style="flex:1;">📋 NotebookLMにコピー</button>
         <button class="btn-secondary" id="copy-keep-btn" onclick="copyTextForKeep()" style="flex:1;">📋 テキスト版でコピー（Keep用）</button>
       </div>
-      <button id="copy-daily-btn" class="btn-secondary" onclick="copySummaryBox('output-markdown','copy-daily-btn')" style="width:100%;">📋 日次監査サマリーをコピー</button>
+      <button id="copy-daily-btn" class="btn-secondary" onclick="copySummaryBox('output-markdown','copy-daily-btn')" style="width:100%;">📋 今日のまとめをコピー</button>
     </div>
   </div>
 
@@ -3831,7 +3831,7 @@ function downloadHTML() {
 <h2>随時メモ（画像含む）</h2>
 <div class="card">${memoHTML}</div>
 
-<h2>行動監査サマリー</h2>
+<h2>今日のまとめ</h2>
 <div class="card"><pre>${summary}</pre></div>
 
 <p style="font-size:11px;color:#9a8a7a;text-align:center;margin-top:24px;">Fusion Partners — ミツメル ${dateStr}</p>
