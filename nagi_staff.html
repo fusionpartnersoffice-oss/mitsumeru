@@ -102,8 +102,15 @@ td{padding:6px 8px;border-bottom:1px solid var(--border);white-space:nowrap;}
     <div class="table-wrap">
       <table>
         <thead><tr>
-          <th>事業所</th><th>氏名</th><th>役割</th><th>Task</th><th>Social</th><th>PM</th>
-          <th>CP</th><th>NP</th><th>A</th><th>FC</th><th>AC</th>
+          <th>事業所</th><th>氏名</th><th>役割</th>
+          <th title="TA（交流分析）：仕事の進め方の傾向">行動面</th>
+          <th title="TA（交流分析）：人との関わり方の傾向">対人面</th>
+          <th title="PM理論に基づくリーダーシップの型">リーダー型</th>
+          <th title="エゴグラム CP：きびしさ（批判的な親）">きびしさ</th>
+          <th title="エゴグラム NP：やさしさ（保護的な親）">やさしさ</th>
+          <th title="エゴグラム A：冷静さ（大人）">冷静さ</th>
+          <th title="エゴグラム FC：自由さ（自由な子ども）">自由さ</th>
+          <th title="エゴグラム AC：まわりに合わせる度合い（順応した子ども）">協調性</th>
           <th>RC判定（理由）</th><th>LSRP判定（理由）</th><th>操作</th>
         </tr></thead>
         <tbody id="staff-tbody"></tbody>
@@ -121,11 +128,11 @@ td{padding:6px 8px;border-bottom:1px solid var(--border);white-space:nowrap;}
 <div class="page" id="page-map">
   <div class="grid-2">
     <div class="section">
-      <div class="section-title">🗺 TAマップ（事業所平均・Task×Social）</div>
+      <div class="section-title">🗺 対人関係マップ（事業所平均・行動面×対人面）</div>
       <div class="card" id="chart-ta-map"></div>
     </div>
     <div class="section">
-      <div class="section-title">🎯 PMマップ（管理者・P行動×M行動）</div>
+      <div class="section-title">🎯 リーダー型マップ（管理者・P行動×M行動）</div>
       <div class="card" id="chart-pm-map"></div>
     </div>
   </div>
@@ -142,7 +149,12 @@ td{padding:6px 8px;border-bottom:1px solid var(--border);white-space:nowrap;}
       <table>
         <thead><tr>
           <th>受検日</th><th>法人</th><th>事業所</th><th>氏名</th>
-          <th>LSRP</th><th>RC</th><th>EG:CP</th><th>EG:NP</th><th>EG:A</th><th>EG:FC</th><th>EG:AC</th>
+          <th title="反社会傾向スコア">LSRP</th><th title="組織適応の判定">RC</th>
+          <th title="エゴグラム：きびしさ（批判的な親）">きびしさ</th>
+          <th title="エゴグラム：やさしさ（保護的な親）">やさしさ</th>
+          <th title="エゴグラム：冷静さ（大人）">冷静さ</th>
+          <th title="エゴグラム：自由さ（自由な子ども）">自由さ</th>
+          <th title="エゴグラム：まわりに合わせる度合い（順応した子ども）">協調性</th>
           <th>エニアTop1</th><th>採否判断</th>
         </tr></thead>
         <tbody id="candidate-tbody"></tbody>
@@ -270,12 +282,14 @@ function getLSRPLabel(total){
   return {label,cls,short,reason,display:`${label}（${reason}）`};
 }
 function getPMStyle(p,m){
+  // 2026-07-26専門用語露出の是正：PM理論の型名（PM型/Pm型/pM型/pm型）を平易な言葉へ。
+  // 判定ロジック（閾値20）・p/mの値自体は無変更、表示ラベルのみ変更。
   if(p==null && m==null) return {label:'─（未実施）',cls:''};
   const pp=n(p)>20, mm=n(m)>20;
-  if(pp&&mm) return {label:'PM型',cls:''};
-  if(pp&&!mm) return {label:'Pm型',cls:''};
-  if(!pp&&mm) return {label:'pM型',cls:''};
-  return {label:'pm型',cls:''};
+  if(pp&&mm) return {label:'両立型（目標も配慮も高い）',cls:''};
+  if(pp&&!mm) return {label:'目標重視型',cls:''};
+  if(!pp&&mm) return {label:'配慮重視型',cls:''};
+  return {label:'要育成型',cls:''};
 }
 function ennLabel(enn){
   if(!enn||!enn.length) return '─';
@@ -368,15 +382,15 @@ function openStaffDetail(staffId){
     <div class="grid-2">
       <div>
         <div style="font-size:0.75rem;color:var(--sub);margin-bottom:6px;">🧭 チームアセスメント</div>
-        <div>Task：${s.task==null?'─（未実施）':n(s.task)} ／ Social：${s.social==null?'─（未実施）':n(s.social)}</div>
-        <div style="margin-top:6px;">PMスタイル：<span style="font-weight:700;">${pm.label}</span>（P:${s.p==null?'─':n(s.p)} M:${s.m==null?'─':n(s.m)}）</div>
+        <div>行動面：${s.task==null?'─（未実施）':n(s.task)} ／ 対人面：${s.social==null?'─（未実施）':n(s.social)}</div>
+        <div style="margin-top:6px;">リーダー型：<span style="font-weight:700;">${pm.label}</span>（P:${s.p==null?'─':n(s.p)} M:${s.m==null?'─':n(s.m)}）</div>
         <div style="margin-top:10px;font-size:0.75rem;color:var(--sub);">🔮 エニアグラム</div>
         <div>${ennLabel(enn)}</div>
       </div>
       <div>
         <div style="font-size:0.75rem;color:var(--sub);margin-bottom:6px;">🧠 エゴグラム × RC判定</div>
         ${egoAssessed
-          ? `<div>CP:${n(ego.CP)} NP:${n(ego.NP)} A:${n(ego.A)} FC:${n(ego.FC)} AC:${n(ego.AC)}</div>
+          ? `<div>きびしさ:${n(ego.CP)} やさしさ:${n(ego.NP)} 冷静さ:${n(ego.A)} 自由さ:${n(ego.FC)} 協調性:${n(ego.AC)}</div>
         <div class="${rc.cls}" style="margin-top:6px;font-weight:700;">${rc.display}</div>`
           : `<div style="color:var(--sub);">─（診断未実施）</div>`}
         <div style="font-size:0.75rem;color:var(--sub);margin-top:10px;">⚠️ LSRP（反社会傾向スコア）</div>
@@ -478,7 +492,7 @@ function renderMaps(){
     return {x:avgTask,y:avgSoc,label:o.name,col:'#4fc3f7'};
   }).filter(Boolean);
   drawCross('chart-ta-map',taPts,{
-    xLabel:'Task（タスク）→',yLabel:'Social（社会性）↑',
+    xLabel:'行動面 →',yLabel:'対人面 ↑',
     quad:['自己満足\nM2','弾力的\nM4','機能不全\nM1','駆り立てられた\nM3'],
     qcol:['#ffa726','#81c784','#ef5350','#4fc3f7'],
   });
@@ -488,7 +502,7 @@ function renderMaps(){
   drawCross('chart-pm-map',pmPts,{
     xLabel:'P行動 →',yLabel:'M行動 ↑',
     xMax:40,yMax:40,xMid:20,yMid:20,
-    quad:['pM型','PM型','pm型','Pm型'],
+    quad:['配慮重視型','両立型','要育成型','目標重視型'],
     qcol:['#4fc3f7','#81c784','#8fa3b8','#ffa726'],
   });
 }
