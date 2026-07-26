@@ -3714,10 +3714,27 @@ HP: ${hp}→${endHP} ／ MP: ${mp}→${endMP}
   // 再構成する。TOMORROW_MESSAGEは1つのAI出力の中に「HP/MP/LV」「根拠」「明日への一言」が
   // 地続きの文章として含まれる仕様のため、①と④で二重に出さないよう、ここで「明日への一言：」
   // 以降を抜き出して④専用にし、①は既存の確定値（endHP/endMP/lvBaseFormatted）を使う。
-  const _tomorrowIchigonMatch = (aiResult.tomorrowMessage || '').match(/明日への一言[：:]\s*([\s\S]*)/);
-  const _tomorrowIchigon = _tomorrowIchigonMatch ? _tomorrowIchigonMatch[1].trim() : (aiResult.tomorrowMessage || '特になし');
-  const _tomorrowReasonMatch = (aiResult.tomorrowMessage || '').match(/根拠[：:]\s*([^\n]+)/);
-  const _tomorrowReason = _tomorrowReasonMatch ? _tomorrowReasonMatch[1].trim() : '';
+  // 2026-07-26是正（実機で発見）：AIが「明日への一言：」というラベル自体を省略し、
+  // 根拠の直後にそのまま文章を続けるケースがあった。ラベルが見つからない場合、旧ロジックは
+  // tomorrowMessage全体（HP/MP/LVの行を含む）を丸ごと「明日への一言」として扱ってしまい、
+  // ①と④に同じ内容が重複表示される不具合があった。ラベル無し時は、HP/MP/LVの行と
+  // 「根拠：」の行を取り除いた残りを「明日への一言」とみなすようフォールバックを堅牢化する。
+  function splitTomorrowMessage(msg) {
+    if (!msg) return { reason: '', ichigon: '' };
+    const labeledMatch = msg.match(/明日への一言[：:]\s*([\s\S]*)/);
+    const reasonMatch = msg.match(/根拠[：:]\s*([^\n]+)/);
+    const reason = reasonMatch ? reasonMatch[1].trim() : '';
+    if (labeledMatch) {
+      return { reason, ichigon: labeledMatch[1].trim() };
+    }
+    // ラベル無し：HP/MP/LVの行・根拠の行を除いた残りをichigonとする
+    let remaining = msg
+      .replace(/^HP[：:][^\n]*\n?/m, '')
+      .replace(/根拠[：:][^\n]*\n?/, '')
+      .trim();
+    return { reason, ichigon: remaining || msg.trim() };
+  }
+  const { reason: _tomorrowReason, ichigon: _tomorrowIchigon } = splitTomorrowMessage(aiResult.tomorrowMessage || '');
 
   const _block3Parts = [];
   if (aiResult.review)   _block3Parts.push(`今週中にやること：\n${aiResult.review}`);
