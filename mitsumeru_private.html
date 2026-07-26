@@ -1956,7 +1956,12 @@ function getPrivateToken() {
 // 発注・実装されたが、実際にやっていることは同じ（AIへ渡す補足情報を1つ増やす）。
 // これを1つの関数にまとめ、新しい補足情報を今後追加する時はこの関数の中に1行足すだけで
 // 済むようにする。UIタブ・保存先は無変更（設計書v10 §2②準拠）。
-const TODAY_LENS_LIST = ['成果・進捗', '休息・回復', '気づき・学び', 'つながり', '将来・目標'];
+// ICF「今日は何も足さない」（2026-07-26設計発注・リサーチ提案②）：コーチングの「間」を
+// 尊重し、行動の後押し・問いを一切添えない特別な視点。SILENT_LENSとして通常の5視点と
+// 区別できるようにし、選ばれた時だけプロンプトの締め方を実際に変える（calcMorning()側で分岐）。
+// リストに加えるだけでは機能しない——ここに足すのはあくまで「選ばれる対象に含める」ため。
+const SILENT_LENS = '今日は何も足さない';
+const TODAY_LENS_LIST = ['成果・進捗', '休息・回復', '気づき・学び', 'つながり', '将来・目標', SILENT_LENS];
 const LENS_HISTORY_KEY = 'mitsumeru_lens_history';
 const LENS_HISTORY_WINDOW_DAYS = 14;
 
@@ -2011,11 +2016,78 @@ function selectTodayLens(dateStr) {
   return chosen;
 }
 
-async function buildMorningContext(dateForVault) {
-  const context = {};
+// Replika型「ふと思い出す」（2026-07-26設計発注・リサーチ提案①）：新規の記憶機構は作らず、
+// 既存の日別メモ保存（lsLoad/cloudLoad('memos', dateStr)）をloadPastRecords()と同じ手順で
+// 読むだけで実現する。5〜10日前のノイズ(V)・気づき(G)タグ付きメモから1件を、直近14日で
+// まだ思い出させていないものを優先して選ぶ（視点ローテーションの重複回避と同じ考え方）。
+// 候補が無い・全部使用済みの場合は静かにスキップ（nullを返す）。Vault/KV書き込みは行わない。
+const RECALL_HISTORY_KEY = 'mitsumeru_recall_history';
+const RECALL_WINDOW_MIN_DAYS = 5;
+const RECALL_WINDOW_MAX_DAYS = 10;
+const RECALL_AVOID_REPEAT_DAYS = 14;
 
-  // ①前回記録（Vault）
-  context.vaultContext = null;
+async function getRecallMemo(dateStr) {
+  // 同じ日に複数回呼ばれても選び直さない（視点ローテーションと同じ日次一貫性。
+  // 実機検証で「同日内の再呼び出しで毎回別のメモが選ばれる」不具合を発見し、ここで是正）
+  let existingHistory = [];
+  try {
+    existingHistory = JSON.parse(localStorage.getItem(RECALL_HISTORY_KEY) || '[]');
+    if (!Array.isArray(existingHistory)) existingHistory = [];
+  } catch (e) { existingHistory = []; }
+  const already = existingHistory.find(h => h.usedOn === dateStr);
+  if (already) return { date: already.date, content: already.content };
+
+  const candidates = [];
+  for (let offset = RECALL_WINDOW_MIN_DAYS; offset <= RECALL_WINDOW_MAX_DAYS; offset++) {
+    const d = new Date(dateStr);
+    d.setDate(d.getDate() - offset);
+    const ds = localDateStr(d);
+    let memosObj = null;
+    try {
+      const lsMm = lsLoad('memos', ds);
+      const kvMm = await cloudLoad('memos', ds);
+      memosObj = newerOf(lsMm, kvMm);
+    } catch (e) { memosObj = null; }
+    const arr = memosObj && Array.isArray(memosObj.data) ? memosObj.data : [];
+    arr.forEach(m => {
+      if ((m.tag === 'V' || m.tag === 'G') && m.content && m.content.trim()) {
+        candidates.push({ date: ds, tag: m.tag, content: m.content.trim() });
+      }
+    });
+  }
+  if (!candidates.length) return null;
+
+  let history = existingHistory;
+
+  const cutoff = new Date(dateStr);
+  cutoff.setDate(cutoff.getDate() - RECALL_AVOID_REPEAT_DAYS);
+  const recentlyUsedKeys = new Set(
+    history.filter(h => h.usedOn && new Date(h.usedOn) >= cutoff).map(h => h.date + '|' + h.content)
+  );
+  const fresh = candidates.filter(c => !recentlyUsedKeys.has(c.date + '|' + c.content));
+  const pool = fresh.length ? fresh : candidates; // 全部使用済みでも、他に候補が無ければ仕方なく再掲
+
+  const chosen = pool[Math.floor(Math.random() * pool.length)];
+
+  history.push({ usedOn: dateStr, date: chosen.date, content: chosen.content });
+  const maxEntries = 60;
+  if (history.length > maxEntries) history = history.slice(history.length - maxEntries);
+  try { localStorage.setItem(RECALL_HISTORY_KEY, JSON.stringify(history)); } catch (e) { /* 保存失敗は無視・次回また試みる */ }
+
+  return chosen;
+}
+
+// キャッシュ化③（2026-07-26・設計発注・API呼び出し削減）：前回記録（vaultContext）は
+// 「前回（＝今日以外の直近の記録）」を指すため、同じ日のうちは何度「判定する」を押しても
+// 結果が変わらない。学習ログ（fetchLearningLogText）と同じ考え方で、対象日1回だけ実際に
+// 取得し、同日中の2回目以降はlocalStorageのキャッシュを使う。
+const VAULT_CONTEXT_CACHE_KEY = 'mitsumeru_private_vault_context_cache';
+async function fetchVaultContext(dateForVault) {
+  try {
+    const cached = JSON.parse(localStorage.getItem(VAULT_CONTEXT_CACHE_KEY) || 'null');
+    if (cached && cached.date === dateForVault) return cached.value;
+  } catch (e) {}
+  let value = null;
   try {
     const token = getPrivateToken();
     if (token) {
@@ -2024,9 +2096,18 @@ async function buildMorningContext(dateForVault) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ date: dateForVault, token }),
       });
-      context.vaultContext = await res.json();
+      value = await res.json();
     }
-  } catch (e) { context.vaultContext = null; }
+  } catch (e) { value = null; }
+  try { localStorage.setItem(VAULT_CONTEXT_CACHE_KEY, JSON.stringify({ date: dateForVault, value })); } catch (e) {}
+  return value;
+}
+
+async function buildMorningContext(dateForVault) {
+  const context = {};
+
+  // ①前回記録（Vault）
+  context.vaultContext = await fetchVaultContext(dateForVault);
 
   // ②視点ローテーション（Fitbod式・2026-07-26設計発注：直近の使用頻度が低い視点を優先）
   context.todayLens = selectTodayLens(dateForVault || localDateStr(new Date()));
@@ -2037,6 +2118,9 @@ async function buildMorningContext(dateForVault) {
   // ④時間帯（実際の入力時刻に応じた自然な声かけのため）
   const hour = new Date().getHours();
   context.timeOfDay = hour < 11 ? '朝' : hour < 15 ? '昼' : hour < 19 ? '夕方' : '夜';
+
+  // ⑤「ふと思い出す」（Replika型記憶想起・2026-07-26設計発注。読み込みのみ・Vault/KV書き込みなし）
+  context.recallMemo = await getRecallMemo(dateForVault || localDateStr(new Date()));
 
   return context;
 }
@@ -3021,7 +3105,20 @@ async function calcMorning() {
   // buildMorningContext()の1呼び出しに統合（旧：3箇所で個別に発注・実装されていた）。
   const morningContext = await buildMorningContext(targetDate || localDateStr(new Date()));
   const vaultContextText = formatVaultContextText(morningContext.vaultContext);
-  const { todayLens, learningLogText, timeOfDay } = morningContext;
+  const { todayLens, learningLogText, timeOfDay, recallMemo } = morningContext;
+
+  // ICF「今日は何も足さない」（2026-07-26設計発注）：視点がSILENT_LENSの時だけ、
+  // 締めの行動提案・問いを実際にスキップする。リストに加えるだけでは効かないため
+  // ここで明示的に分岐する（設計へ報告済みの通り）。
+  const isSilentLens = (todayLens === SILENT_LENS);
+  const closingInstruction = isSilentLens
+    ? '**今日の視点は「何も足さない」。行動の提案・問いかけを一切添えないこと。** 今日の一言・今朝の状態をそのまま受け止める事実承認・感情の反射だけで終える。「〇〇してみませんか」のような次の一手も、疑問形の問いかけも書かないこと。黙って寄り添う一言で終わってよい'
+    : '**最後の1文は、下記【今日のTop3タスク】の1番目と同じ、具体的な行動を短く示すこと。** 「一手を進めてみませんか」「〜してみませんか」のような中身の無い抽象的な締めで終わらせない。「〇〇する」で終わる、読んだ瞬間に何をすればいいか分かる1文にすること';
+
+  // Replika型「ふと思い出す」（2026-07-26設計発注）：候補が無い時は行自体を出さない（静かにスキップ）
+  const recallLine = recallMemo
+    ? `\n・${recallMemo.date}に書かれていたこと：「${recallMemo.content}」（今日の一言と自然に重なる時だけ触れてよい。無理にこじつけない）`
+    : '';
 
   const prompt = `あなたはFusion Partners代表・柴山靖章の専属「SuccessOS 統合経営参謀」です。
 柴山さんのことを深く知る唯一の参謀として、今朝の状態を読み、的確な言葉と決断を返してください。
@@ -3033,7 +3130,7 @@ ${learningLogText}
 【補助情報（自然に絡む場合だけ触れてよい。毎回すべて盛り込もうとしないこと）】
 ・現在時間帯：${timeOfDay}（「朝タブ」の名称や「おはよう」に固執しない）
 ・今日という日のゆるい着眼点候補：${todayLens}（今日の一言と噛み合う時だけ使ってよい。今日の一言の内容と合わないなら無視すること。強制する主軸ではない）
-・${vaultContextText}
+・${vaultContextText}${recallLine}
 
 【今朝の状態】
 HP: ${hpAdj}/100、MP: ${mp}/100
@@ -3049,7 +3146,7 @@ HP: ${hpAdj}/100、MP: ${mp}/100
 **主役は「今日の一言」への応答、それ一本に絞ること。** 補助情報（時間帯・視点候補・前回記録）は、今日の一言の内容と自然に噛み合う時だけ軽く触れてよい添え物であり、毎回全部使おうとしないこと。
 ・「今日の一言」に内容がある場合 → その内容への共感・事実承認（今日の一言をそのまま受け止める）を中心に据える
 ・「今日の一言」が空欄・簡潔な場合 → 今朝の状態（ノイズ・モード）を評価せず、事実としてそのまま観察して伝える。**「あえて書かなかった」「多くを語らないという判断」のような、書かれていない意図をこちらで作り出さないこと。単に「今日は多くを語らない日」として、それ以上の意味づけをせずに扱う**
-**最後の1文は、下記【今日のTop3タスク】の1番目と同じ、具体的な行動を短く示すこと。** 「一手を進めてみませんか」「〜してみませんか」のような中身の無い抽象的な締めで終わらせない。「〇〇する」で終わる、読んだ瞬間に何をすればいいか分かる1文にすること
+${closingInstruction}
 書き出しは、いきなり分析結果を突きつけない一言を置いてから本題に入ること。**ただし固定の決まり文句にしないこと——「今日の一言、見ました」のような同じ言い回しを毎回繰り返さない。** 今日の一言の具体的な内容や今朝の状態に応じて、書き出しの言葉自体をその都度変えること。ワンクッションは1文の中に収め、行数を増やさないこと
 
 **厳守事項（事実制約・最優先・違反禁止）**：
