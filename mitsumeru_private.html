@@ -1854,24 +1854,29 @@ window.addEventListener('DOMContentLoaded', async function() {
   }
 
   // 出力・CSV をKVから復元（別端末同期）
+  // 是正（2026-07-26・設計指摘）：直前①（ローカル復元）で既にmdBox等へローカル内容を
+  // 表示済みのため、旧来の「!mdBox.textContent（空欄なら上書き）」判定は、その端末で
+  // 過去に一度でも出力を生成していれば常にfalseになり、他端末で新しく生成されたKV側の
+  // 内容が絶対に反映されない構造だった。「newerOf()で比較した結果、KV側が勝った時だけ
+  // 上書きする」に変更する（bestOutput !== lsOutput を表示・保存の両方で判定基準にする）。
   const bestOutput = newerOf(lsOutput, kvOutput);
   if (bestOutput && bestOutput.text) {
     const mdBox = document.getElementById('output-markdown');
-    if (mdBox && !mdBox.textContent) { mdBox.textContent = bestOutput.text; mdBox.classList.add('visible'); showOutputCopyBtns(); }
+    if (mdBox && bestOutput !== lsOutput) { mdBox.textContent = bestOutput.text; mdBox.classList.add('visible'); showOutputCopyBtns(); }
     if (bestOutput !== lsOutput) localStorage.setItem(lsKey('output'), JSON.stringify(bestOutput));
   }
   const bestCalendar = newerOf(lsCalendar, kvCalendar);
   if (bestCalendar && bestCalendar.csv) {
     calendarCSV = bestCalendar.csv;
     const csvBox = document.getElementById('output-csv');
-    if (csvBox && !csvBox.textContent) { csvBox.textContent = calendarCSV; csvBox.classList.add('visible'); }
+    if (csvBox && bestCalendar !== lsCalendar) { csvBox.textContent = calendarCSV; csvBox.classList.add('visible'); }
     if (bestCalendar !== lsCalendar) localStorage.setItem(lsKey('calendar'), JSON.stringify(bestCalendar));
   }
   const bestDelay = newerOf(lsDelay, kvDelay);
   if (bestDelay && bestDelay.csv) {
     delayCSV = bestDelay.csv;
     const dBox = document.getElementById('output-delay-csv');
-    if (dBox && !dBox.textContent) { dBox.textContent = delayCSV; dBox.classList.add('visible'); }
+    if (dBox && bestDelay !== lsDelay) { dBox.textContent = delayCSV; dBox.classList.add('visible'); }
     if (bestDelay !== lsDelay) localStorage.setItem(lsKey('delay'), JSON.stringify(bestDelay));
   }
 
