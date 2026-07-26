@@ -71,37 +71,6 @@ export default {
       return handleGetVaultNote(request, env);
     }
 
-    // ===== 一時デバッグ：GOOGLE_VAULT_FOLDER_IDの実体確認（2026-07-25・設計依頼・確認後撤去予定） =====
-    // 秘密情報のためwrangler secretから値を直接読めず、Drive APIでフォルダ名・親フォルダを
-    // 照会する以外に確認手段が無いための一時的なエンドポイント。読み取り専用・書き込みなし。
-    if (url.pathname === '/debug-vault-folder' && request.method === 'GET') {
-      const t = url.searchParams.get('token');
-      if (!env.PRIVATE_ACCESS_TOKEN || t !== env.PRIVATE_ACCESS_TOKEN) {
-        return new Response(JSON.stringify({ ok: false, error: 'private data requires a valid token' }), { status: 401, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
-      }
-      try {
-        // fileId指定時はOAuth2トークンでその実体（実地検証用・2026-07-25）、未指定時は従来通りサービスアカウントでGOOGLE_VAULT_FOLDER_IDを確認
-        const fileIdParam = url.searchParams.get('fileId');
-        const wantContent = url.searchParams.get('content') === '1';
-        const accessToken = fileIdParam ? await getVaultAccessToken(env) : await getGoogleAccessToken(env, 'https://www.googleapis.com/auth/drive.file');
-        const folderId = fileIdParam || env.GOOGLE_VAULT_FOLDER_ID;
-        if (wantContent && fileIdParam) {
-          const contentRes = await fetch(`https://www.googleapis.com/drive/v3/files/${fileIdParam}?alt=media`, {
-            headers: { Authorization: `Bearer ${accessToken}` },
-          });
-          const text = await contentRes.text();
-          return new Response(text, { status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'text/plain; charset=utf-8' } });
-        }
-        const res = await fetch(`https://www.googleapis.com/drive/v3/files/${folderId}?fields=id,name,parents,webViewLink,modifiedTime`, {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        });
-        const data = await res.json();
-        return new Response(JSON.stringify({ ok: res.ok, folderId, data }), { status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
-      } catch (e) {
-        return new Response(JSON.stringify({ ok: false, error: e.message }), { status: 500, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
-      }
-    }
-
     // ===== 入力箱（ミツメルv9・2026-07-24・設計発注）：マルチデバイス投入 =====
     if (url.pathname === '/inbox-drop' && request.method === 'POST') {
       return handleInboxDrop(request, env);
