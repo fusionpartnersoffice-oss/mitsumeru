@@ -22201,6 +22201,26 @@ const REFERRAL_DATA = [
   { id:'sd743', name:'紀宝町社協ケアプランサービス', category:'相談支援事業所', pref:'三重県', addr:'南牟婁郡紀宝町鵜殿1074番地1', phone:'0735-32-0957', lat:33.7370321, lon:136.015952, approxLocation:true, source:'https://www.pref.mie.lg.jp/SHOHO/HP/60549032672_00024.htm' },
   { id:'sd744', name:'指定特定相談支援事業所　てとて', category:'相談支援事業所', pref:'三重県', addr:'南牟婁郡紀宝町井内字大山409番地5', phone:'0735-33-1007', lat:33.7325783, lon:136.0105045, approxLocation:true, source:'https://www.pref.mie.lg.jp/SHOHO/HP/60549032672_00024.htm' }
 ];
+
+// 弦システム監査（2026-07-26・設計発注）：REFERRAL_DATA 807件中516件（64%・257グループ）が
+// 施設名・住所・電話番号・座標・カテゴリ・出典URLまで完全一致する重複であると判明（部分一致と
+// 完全一致の件数が一致＝内容が食い違う「紛らわしい重複」は0件、実測確認済み）。CSV出力・
+// 密度分析（getClientNearbyReferrals）の件数が実態の最大2倍近くに水増しされていた。
+// 元データ（REFERRAL_DATA）自体は書き換えない（何が読み込まれた生データかを後から検証できる
+// ようにするため）。表示・集計側でこの重複排除済み配列を使う。
+function dedupeReferrals(list) {
+  const seen = new Set();
+  const result = [];
+  for (const r of list) {
+    const key = [r.name, r.addr, r.phone, r.lat, r.lon, r.category, r.source].join('|');
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(r);
+  }
+  return result;
+}
+const REFERRAL_DATA_DEDUPED = dedupeReferrals(REFERRAL_DATA);
+
 const STATUS_COLORS = {"未接触": "#546e7a", "接触済": "#1565c0", "提案中": "#e65100", "成約": "#2e7d32"};
 const STATUS_LIST   = ["未接触", "接触済", "提案中", "成約"];
 const RANK_COLOR    = {A:"#e53935",B:"#fb8c00",C:"#1e88e5"};
@@ -22384,7 +22404,7 @@ function getVisibleReferrals() {
   const masterOn = document.getElementById('refMasterToggle').checked;
   if (!masterOn) return [];
   const pv = document.getElementById('prefFilter').value;
-  return REFERRAL_DATA.filter(r => {
+  return REFERRAL_DATA_DEDUPED.filter(r => {
     const cat = REFERRAL_CATEGORIES[r.category];
     if (!cat || !cat.available) return false;
     if (!refCategoryState[r.category]) return false;
@@ -22796,7 +22816,7 @@ function onClientRadiusChange(value) {
 
 // --- 抽出ロジック ---
 function getClientNearbyReferrals(client) {
-  return REFERRAL_DATA
+  return REFERRAL_DATA_DEDUPED
     .filter(r => {
       const cat = REFERRAL_CATEGORIES[r.category];
       if (!cat || !cat.available) return false;
@@ -22962,7 +22982,9 @@ renderClientSelectOptions();
 // 営業先関係管理（yuzuru_sales_log.html）への読み取り専用参照用キャッシュ。
 // REFERRAL_DATAはこのファイル内の静的JS配列でlocalStorageに存在しないため、
 // 他ファイルから参照できるようロード時に複製する（この配列自体は変更しない）。
-try { localStorage.setItem('yuzuru_referral_data_cache', JSON.stringify(REFERRAL_DATA)); } catch (e) {}
+// 2026-07-26弦監査：重複排除済み（REFERRAL_DATA_DEDUPED）を渡し、訪問先一覧に
+// 同一施設が2重に出ないようにする。
+try { localStorage.setItem('yuzuru_referral_data_cache', JSON.stringify(REFERRAL_DATA_DEDUPED)); } catch (e) {}
 </script>
 </body>
 </html>
