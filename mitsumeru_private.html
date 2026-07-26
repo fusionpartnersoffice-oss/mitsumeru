@@ -656,6 +656,11 @@
     <button class="btn-primary" onclick="addMemo()">追加する</button>
   </div>
 
+  <div class="section" id="memo-today-panel">
+    <div class="section-title">📊 今日の積み上げ</div>
+    <div id="memo-today-summary" style="font-size:13px;color:var(--text2);line-height:1.8;"></div>
+  </div>
+
   <div class="section">
     <div class="section-title">本日のメモ一覧</div>
     <div id="memo-list" style="font-size:13px;color:var(--text2);line-height:2;">
@@ -2474,6 +2479,37 @@ function renderMemos() {
     </div>
   `).join('');
   updateEveningMemoPreview();
+  renderMemoTodaySummary();
+}
+
+// 「今日の積み上げ」軽量パネル（2026-07-26設計指示・AI不使用・既存memos配列の集計のみ）
+function renderMemoTodaySummary() {
+  const el = document.getElementById('memo-today-summary');
+  if (!el) return;
+  if (memos.length === 0) {
+    el.innerHTML = '<span style="color:var(--text3);font-size:12px;">まだ本日のメモがありません</span>';
+    return;
+  }
+  const counts_ = { P: 0, V: 0, G: 0 };
+  let pomoTotal = 0;
+  memos.forEach(m => {
+    if (counts_[m.tag] !== undefined) counts_[m.tag]++;
+    if (m.pomos) pomoTotal += m.pomos;
+  });
+  const recent = memos.slice(-3).reverse();
+  const recentHtml = recent.map(m => {
+    const t = m.time ? `${m.time.substring(0,2)}:${m.time.substring(2,4)}` : '--:--';
+    return `<div style="font-size:12px;color:var(--text2);padding:2px 0;">[${t}] ${tagIcons[m.tag]||''}${m.content}</div>`;
+  }).join('');
+  el.innerHTML = `
+    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:8px;">
+      <span>⚡実績 ${counts_.P}件</span>
+      <span>🌊ノイズ ${counts_.V}件</span>
+      <span>💡気づき ${counts_.G}件</span>
+      <span>🍅ポモ合計 ${pomoTotal}</span>
+    </div>
+    <div style="border-top:0.5px solid var(--border);padding-top:6px;">${recentHtml}</div>
+  `;
 }
 
 function editMemo(i) {
