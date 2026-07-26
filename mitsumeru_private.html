@@ -67,12 +67,14 @@
     font-size: 20px;
     font-weight: 400;
     letter-spacing: 4px;
+    white-space: nowrap;
   }
 
   .header span {
     font-size: 11px;
     color: var(--border);
     letter-spacing: 2px;
+    white-space: nowrap;
   }
 
   .mode-tabs {
@@ -96,6 +98,36 @@
     letter-spacing: 1px;
     border-bottom: 2px solid transparent;
     transition: all 0.2s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* UI/UX棚卸しPhase1（2026-07-26・設計発注）：狭幅（375px級スマホ）でヘッダー・
+     タブが折り返み崩れる問題への対応。文言・機能は無変更、余白/文字サイズのみ縮小。 */
+  @media (max-width: 400px) {
+    .header {
+      padding: 14px 12px 12px;
+      gap: 8px;
+    }
+    .header h1 {
+      font-size: 16px;
+      letter-spacing: 2px;
+    }
+    .header span {
+      font-size: 9px;
+      letter-spacing: 1px;
+      padding: 2px 4px !important;
+    }
+    .header button, .header a {
+      padding: 4px 8px !important;
+      font-size: 10px !important;
+    }
+    .mode-tab {
+      padding: 12px 2px;
+      font-size: 11px;
+      letter-spacing: 0;
+    }
   }
 
   .mode-tab.active {
@@ -604,6 +636,15 @@
 <div id="date-rollover-bar" style="display:none;background:#fff3cd;border:0.5px solid #ffd970;color:#8a6a00;padding:9px 12px;font-size:13px;text-align:center;border-radius:6px;margin:8px 16px;line-height:1.5;">
   日付が変わりました（<span id="rollover-date"></span>）。宵越し入力でなければ切り替えてください。
   <button onclick="jumpToToday()" style="margin-left:8px;background:#8a6a00;color:#fff;border:none;border-radius:5px;padding:4px 12px;cursor:pointer;font-size:12px;font-weight:500;">今日に切り替える</button>
+</div>
+
+<!-- APIキー未設定バナー（UI/UX棚卸しPhase1・2026-07-26）：従来はposition:fixedで
+     bottom:80pxに浮かせていたため、スクロール位置によっては下の入力欄（体調・気分
+     スライダー等）に重なって表示されていた。日付ロールオーバーバナーと同じ「通常の
+     文書内フロー」に変更し、常に他要素の上に重ならないようにする。文言・表示条件・
+     消える挙動（5秒後に自動で隠れる）は変更しない。 -->
+<div id="apikey-missing-bar" style="display:none;background:#fff3cd;border:0.5px solid #ffd970;color:#8a6a00;padding:9px 12px;font-size:13px;text-align:center;border-radius:6px;margin:8px 16px;line-height:1.5;">
+  ⚠ APIキーが未設定です。設定タブ → APIキーで設定してください。
 </div>
 
 <!-- 随時メモ -->
@@ -2273,11 +2314,11 @@ loadProfile();
 updateSyncTargetDisplay();
 // PRIVATE版：同意・デモ不要。APIキーのみ確認
 if (!getApiKey()) {
-  const notice = document.createElement('div');
-  notice.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#b8860b;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;z-index:999;';
-  notice.textContent = '⚠ APIキーが未設定です。設定タブ → APIキーで設定してください。';
-  document.body.appendChild(notice);
-  setTimeout(() => notice.remove(), 5000);
+  const notice = document.getElementById('apikey-missing-bar');
+  if (notice) {
+    notice.style.display = 'block';
+    setTimeout(() => { notice.style.display = 'none'; }, 5000);
+  }
 }
 
 // ===== 日付ロールオーバー検知（日付キーのズレ再発防止）=====
