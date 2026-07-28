@@ -101,6 +101,11 @@ export default {
       return handleVaultLearningLog(request, env);
     }
 
+    // ===== ダンプボックス：種類を問わずファイルをVaultへ放り込む（2026-07-28・設計発注・柴山さん承認） =====
+    if (url.pathname === '/vault-inbox-upload' && request.method === 'POST') {
+      return handleVaultInboxUpload(request, env);
+    }
+
     // ===== 【一時】ダッシュボード自動反映のOAuth許可範囲確認用（2026-07-26・確認後に撤去予定） =====
     // 読み取り専用。書き込みは一切行わない。00_代表ダッシュボード.mdが現在のOAuth許可範囲内で
     // 見えるか（drive.fileスコープでアクセス可能か）だけを確認する。
@@ -620,6 +625,60 @@ async function handleVaultDashboardSetup(request, env) {
 const DASHBOARD_BLOCK_START = '<!-- MITSUMERU_TODAY_START -->';
 const DASHBOARD_BLOCK_END = '<!-- MITSUMERU_TODAY_END -->';
 const DASHBOARD_INSERT_ANCHOR = '## 🗂 入口';
+
+// ダンプボックス：種類を問わずファイルをVaultの00_inboxフォルダへアップロードする（2026-07-28・設計発注）。
+// 「放り込むだけで完結する」がゴール。整理は別作業（対象外）。
+const DUMPBOX_MAX_FILE_BYTES = 12 * 1024 * 1024; // 生ファイルの目安上限（12MB・柴山さんのスマホ写真事情を踏まえ5MBから引き上げ）
+
+async function handleVaultInboxUpload(request, env) {
+  const headers = { ...CORS_HEADERS, 'Content-Type': 'application/json' };
+  let body;
+  try { body = await request.json(); }
+  catch (e) { return new Response(JSON.stringify({ ok: false, error: 'リクエストの形式が不正です' }), { status: 400, headers }); }
+
+  const { fileName, mimeType, fileData, token } = body;
+  if (!env.PRIVATE_ACCESS_TOKEN || token !== env.PRIVATE_ACCESS_TOKEN) {
+    return new Response(JSON.stringify({ ok: false, error: 'private data requires a valid token' }), { status: 401, headers });
+  }
+  if (!fileName || !fileData) {
+    return new Response(JSON.stringify({ ok: false, error: 'fileNameとfileDataは必須です' }), { status: 400, headers });
+  }
+  // base64はおよそ4/3に膨らむため、余裕を見て1.4倍で判定（既存の/inbox-dropと同じ考え方）
+  if (fileData.length > DUMPBOX_MAX_FILE_BYTES * 1.4) {
+    return new Response(JSON.stringify({ ok: false, error: 'ファイルサイズが大きすぎます（12MBまで）' }), { status: 400, headers });
+  }
+
+  try {
+    const kv = getKV(env);
+    const oauthFolderId = await kv.get('vault_oauth_folder');
+    if (!oauthFolderId) {
+      return new Response(JSON.stringify({ ok: false, error: 'Vaultの書き出し先フォルダが未設定です（設定タブでフォルダを選んでください）' }), { status: 400, headers });
+    }
+
+    const accessToken = await getVaultAccessToken(env);
+    const inboxFolder = await findOrCreateFolder(accessToken, oauthFolderId, '00_inbox');
+
+    // 衝突を構造的に回避するため、ファイル名の先頭にタイムスタンプを付与する
+    // （同名ファイルでもDriveは別ファイルとして共存するため上書き判定は行わない＝ダンプボックスの性質上、都度別ファイルとして残すのが自然）
+    const now = new Date();
+    const jstMs = now.getTime() + 9 * 60 * 60 * 1000;
+    const jst = new Date(jstMs);
+    const stamp = `${jst.getUTCFullYear()}${String(jst.getUTCMonth() + 1).padStart(2, '0')}${String(jst.getUTCDate()).padStart(2, '0')}_${String(jst.getUTCHours()).padStart(2, '0')}${String(jst.getUTCMinutes()).padStart(2, '0')}${String(jst.getUTCSeconds()).padStart(2, '0')}`;
+    const safeName = String(fileName).replace(/[\\/:*?"<>|]/g, '_');
+    const finalName = `${stamp}_${safeName}`;
+
+    const binary = atob(fileData);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+
+    const result = await createVaultBinaryFile(accessToken, inboxFolder.id, finalName, mimeType, bytes);
+    console.log('[inbox-upload] 作成成功 fileId=', result.id, ' name=', finalName);
+    return new Response(JSON.stringify({ ok: true, fileId: result.id, fileName: finalName }), { status: 200, headers });
+  } catch (e) {
+    console.error('[inbox-upload] 例外:', e.message, e.stack);
+    return new Response(JSON.stringify({ ok: false, error: e.message }), { status: 500, headers });
+  }
+}
 
 async function handleVaultDashboardWrite(request, env) {
   const headers = { ...CORS_HEADERS, 'Content-Type': 'application/json' };
@@ -1232,6 +1291,33 @@ async function createVaultFile(accessToken, folderId, filename, content) {
   });
   const data = await res.json();
   if (!res.ok || !data.id) throw new Error('Vault新規作成失敗: ' + JSON.stringify(data));
+  return data;
+}
+
+// ダンプボックス用：任意のmimeType・バイナリ内容で新規ファイルを作成する（multipart POST）。
+// createVaultFile()はテキスト（mimeType固定・文字列content前提）専用のため、
+// 画像・PDF・音声等のバイナリを扱うために汎用化した別関数として新設（2026-07-28）。
+async function createVaultBinaryFile(accessToken, folderId, filename, mimeType, bytes) {
+  const boundary = 'mitsumeru_vault_boundary_bin';
+  const metadata = { name: filename, parents: [folderId], mimeType: mimeType || 'application/octet-stream' };
+  const encoder = new TextEncoder();
+  const head = encoder.encode(
+    `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n` +
+    `--${boundary}\r\nContent-Type: ${metadata.mimeType}\r\n\r\n`
+  );
+  const tail = encoder.encode(`\r\n--${boundary}--`);
+  const body = new Uint8Array(head.length + bytes.length + tail.length);
+  body.set(head, 0);
+  body.set(bytes, head.length);
+  body.set(tail, head.length + bytes.length);
+
+  const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': `multipart/related; boundary=${boundary}` },
+    body,
+  });
+  const data = await res.json();
+  if (!res.ok || !data.id) throw new Error('Vaultバイナリ新規作成失敗: ' + JSON.stringify(data));
   return data;
 }
 

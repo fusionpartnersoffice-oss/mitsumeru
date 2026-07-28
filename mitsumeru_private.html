@@ -994,6 +994,18 @@
         <button class="btn-secondary" id="vault-dashboard-setup-btn" onclick="startDashboardFileSetup()" style="width:100%;">ダッシュボードファイルを選ぶ</button>
         <div id="vault-dashboard-setup-msg" style="font-size:12px;margin-top:8px;text-align:center;"></div>
       </div>
+
+      <!-- ダンプボックス（2026-07-28・設計発注・柴山さん承認）：種類を問わずファイルをVaultの00_inboxへ
+           放り込むだけで完結する箱。整理は別作業（対象外）。上のフォルダ設定が済んでいれば追加の同意は不要。 -->
+      <div style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(184,134,11,0.25);">
+        <p style="font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.7;">
+          画像・PDF・音声メモなど、種類を問わずここに放り込むと、Vaultの「00_inbox」フォルダへ自動で保存されます（1ファイル12MBまで）。<br>
+          整理は後で構いません。まずは放り込むだけで完結します。
+        </p>
+        <input type="file" id="dumpbox-file-input" multiple style="display:none;" onchange="handleDumpboxFiles(this.files)">
+        <button class="btn-secondary" id="dumpbox-btn" onclick="document.getElementById('dumpbox-file-input').click()" style="width:100%;">📥 ファイルを放り込む</button>
+        <div id="dumpbox-msg" style="font-size:12px;margin-top:8px;text-align:center;"></div>
+      </div>
     </div>
 
     <div class="section" style="margin-top:12px;">
@@ -3268,6 +3280,88 @@ async function startDashboardFileSetup() {
     setDashboardSetupMsg('設定できませんでした：' + e.message, true);
   } finally {
     btn.disabled = false;
+  }
+}
+
+// ダンプボックス（2026-07-28・設計発注・柴山さん承認）：種類を問わずファイルをVaultの00_inboxへ
+// 放り込むだけで完結する箱。上のフォルダ設定（vault_oauth_folder）が既に許可済みであれば、
+// drive.fileスコープの仕様上、その配下にアプリが新規作成するファイル・フォルダには自動的に
+// アクセス権が及ぶため、Picker再選択・追加の同意は不要（setAppId問題は既存ファイル選択に固有の制限）。
+const DUMPBOX_MAX_FILE_BYTES = 12 * 1024 * 1024; // サーバー側と同じ上限（12MB）
+
+function setDumpboxMsg(text, isError) {
+  const el = document.getElementById('dumpbox-msg');
+  if (!el) return;
+  el.textContent = text;
+  el.style.color = isError ? 'var(--red)' : 'var(--green)';
+}
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(',')[1] || '');
+    reader.onerror = () => reject(new Error('ファイルの読み込みに失敗しました'));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function handleDumpboxFiles(fileList) {
+  const btn = document.getElementById('dumpbox-btn');
+  const input = document.getElementById('dumpbox-file-input');
+  if (isTestMode()) {
+    setDumpboxMsg('テストモード中はアップロードできません（本番Vaultの保護のため）。', true);
+    input.value = '';
+    return;
+  }
+  if (!getPrivateToken()) {
+    setDumpboxMsg('先に上の「アクセストークン」を設定してください。', true);
+    input.value = '';
+    return;
+  }
+  const files = Array.from(fileList || []);
+  if (!files.length) return;
+
+  const tooBig = files.filter(f => f.size > DUMPBOX_MAX_FILE_BYTES);
+  if (tooBig.length) {
+    setDumpboxMsg(`サイズが大きすぎるファイルがあります（12MBまで）：${tooBig.map(f => f.name).join('、')}`, true);
+    input.value = '';
+    return;
+  }
+
+  btn.disabled = true;
+  let okCount = 0;
+  const errors = [];
+  for (const file of files) {
+    setDumpboxMsg(`送信中…（${okCount + errors.length + 1}/${files.length}）${file.name}`, false);
+    try {
+      const fileData = await fileToBase64(file);
+      const res = await fetch(`${SYNC_URL}/vault-inbox-upload`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fileName: file.name,
+          mimeType: file.type || 'application/octet-stream',
+          fileData,
+          token: getPrivateToken(),
+        }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        okCount++;
+      } else {
+        errors.push(`${file.name}：${data.error || '不明なエラー'}`);
+      }
+    } catch (e) {
+      errors.push(`${file.name}：${e.message}`);
+    }
+  }
+
+  input.value = '';
+  btn.disabled = false;
+  if (!errors.length) {
+    setDumpboxMsg(`✓ ${okCount}件、Vaultへ送りました。`, false);
+  } else {
+    setDumpboxMsg(`${okCount}件成功／失敗：${errors.join('　')}　※失敗分はもう一度お試しください`, true);
   }
 }
 
