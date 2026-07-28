@@ -69,6 +69,11 @@ export default {
       return handleVaultDashboardWrite(request, env);
     }
 
+    // ===== ダッシュボード自動反映：本文読み込み（2026-07-28・設計発注・柴山さん実害報告） =====
+    if (url.pathname === '/vault-dashboard-read' && request.method === 'POST') {
+      return handleVaultDashboardRead(request, env);
+    }
+
     // ===== 読書メモ（口述記録の拡張・2026-07-21・柴山さん指示）：本ごとにVaultへ音声メモを蓄積 =====
     if (url.pathname === '/sync-vault-note' && request.method === 'POST') {
       return handleSyncVaultNote(request, env);
@@ -670,6 +675,60 @@ async function handleVaultDashboardWrite(request, env) {
   } catch (e) {
     console.error('[dashboard-write] 例外:', e.message, e.stack);
     return new Response(JSON.stringify({ ok: false, error: e.message }), { status: 500, headers });
+  }
+}
+
+// ダッシュボード自動反映：本文読み込み（2026-07-28・設計発注）。
+// 経緯：ダッシュボードへの「書き込み」だけを作り、朝・夜プロンプトがダッシュボードの
+// 「🚨次の面接」「🧭今の物差し」を「読みに行く」配線が存在しなかった（データの鮮度の
+// 問題ではなく配線漏れ）。全文を渡すとプロンプトが長くなりすぎるため、この2セクションだけを
+// 見出し単位で切り出して返す。読み取り専用。ダッシュボードファイル未設定時は静かにnoneを返す。
+async function handleVaultDashboardRead(request, env) {
+  const headers = { ...CORS_HEADERS, 'Content-Type': 'application/json' };
+  let token;
+  try { token = (await request.json()).token; } catch (e) { token = null; }
+  if (!env.PRIVATE_ACCESS_TOKEN || token !== env.PRIVATE_ACCESS_TOKEN) {
+    return new Response(JSON.stringify({ ok: false, error: 'private data requires a valid token' }), { status: 401, headers });
+  }
+  try {
+    const kv = getKV(env);
+    const fileId = await kv.get('vault_dashboard_file_id');
+    if (!fileId) {
+      return new Response(JSON.stringify({ ok: true, none: true, reason: 'ダッシュボードファイル未設定' }), { status: 200, headers });
+    }
+    const accessToken = await getVaultAccessToken(env);
+    const getRes = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!getRes.ok) {
+      const errText = await getRes.text();
+      throw new Error('ダッシュボード読み込み失敗(' + getRes.status + '): ' + errText);
+    }
+    const content = await getRes.text();
+
+    // 見出し（## で始まる行）単位でセクションを切り出す。次の「## 」または文末までを本文とする。
+    const extractSection = (headingSubstring) => {
+      const lines = content.split('\n');
+      const startIdx = lines.findIndex(l => l.startsWith('## ') && l.includes(headingSubstring));
+      if (startIdx === -1) return null;
+      const rest = lines.slice(startIdx + 1);
+      const endIdx = rest.findIndex(l => l.startsWith('## '));
+      const body = (endIdx === -1 ? rest : rest.slice(0, endIdx)).join('\n').trim();
+      return { heading: lines[startIdx].replace(/^##\s*/, ''), body };
+    };
+
+    const interviews = extractSection('次の面接');
+    const yardstick = extractSection('今の物差し');
+
+    return new Response(JSON.stringify({
+      ok: true, none: false,
+      interviews: interviews ? interviews.body : null,
+      yardstick: yardstick ? yardstick.body : null,
+    }), { status: 200, headers });
+  } catch (e) {
+    // 設計書の方針（学習ログ・前回記録と同じ）：読み込み失敗時もプロンプト生成自体は
+    // 止めない。ok:trueのままnoneで返し、呼び出し元は「取得できなかった」として無視できるようにする。
+    return new Response(JSON.stringify({ ok: true, none: true, error: e.message }), { status: 200, headers });
   }
 }
 
