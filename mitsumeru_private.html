@@ -1147,6 +1147,25 @@
     </div>
   </div>
 
+  <!-- 夜の入眠サポート（2026-07-29・柴山さん本人指示・設計発注）：超軽量な記録→翌朝、
+       淡々と鏡のように返す設計。タップのみで完結し、入力を強制しない。 -->
+  <div class="section">
+    <div class="section-title">今夜のふり返り（任意・タップだけでOK）</div>
+    <div class="field">
+      <label>当てはまるものがあれば（複数可・なければそのままでOK）</label>
+      <div class="checkbox-group" id="e-sleep-checkin-group">
+        <label class="checkbox-item" onclick="toggleCheck(this,event); saveEvening()"><input type="checkbox" value="早めに寝られそう">😴 今日は早めに寝られそう</label>
+        <label class="checkbox-item" onclick="toggleCheck(this,event); saveEvening()"><input type="checkbox" value="寝酒した">🍺 寝酒した</label>
+        <label class="checkbox-item" onclick="toggleCheck(this,event); saveEvening()"><input type="checkbox" value="Kindleから動画に流れた">📱 Kindle→動画に流れた</label>
+        <label class="checkbox-item" onclick="toggleCheck(this,event); saveEvening()"><input type="checkbox" value="その他">その他</label>
+      </div>
+    </div>
+    <div class="field">
+      <label>補足（任意・書かなくてよい）</label>
+      <textarea id="e-sleep-note" oninput="saveEvening()" placeholder="書かなくてOK" style="min-height:40px;"></textarea>
+    </div>
+  </div>
+
   <div class="section">
     <div class="section-title">本日のカウント（随時メモから自動集計）</div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px;">
@@ -1592,13 +1611,15 @@ function insertIntoTextarea(id, text) {
 function saveEvening() {
   const data = { _ts: Date.now() };
   ['e-supplement','e-tomorrow','e-delay','e-try100','e-feedback','e-notebooklm',
-   'd1-reason','d2-reason','d3-reason','d4-reason','d5-reason'].forEach(id => {
+   'd1-reason','d2-reason','d3-reason','d4-reason','d5-reason','e-sleep-note'].forEach(id => {
     const el = document.getElementById(id);
     if (el) data[id] = el.value;
   });
   data['debugScores'] = debugScores;
   data['try100-count'] = counts.try100;
   data['advanceSchedule'] = getAdvanceScheduleData();
+  // 夜の入眠サポート（2026-07-29・柴山さん本人指示）：既存項目は無変更、新規追加のみ
+  data['sleepCheckin'] = Array.from(document.querySelectorAll('#e-sleep-checkin-group .checked input')).map(i => i.value);
   localStorage.setItem(lsKey('evening'), JSON.stringify(data));
   cloudSaveDebounced('evening', data);
 }
@@ -1771,9 +1792,17 @@ function applyMorningData(d) {
 function applyEveningData(d) {
   if (!d) return;
   ['e-supplement','e-tomorrow','e-delay','e-try100','e-feedback','e-notebooklm',
-   'd1-reason','d2-reason','d3-reason','d4-reason','d5-reason'].forEach(id => {
+   'd1-reason','d2-reason','d3-reason','d4-reason','d5-reason','e-sleep-note'].forEach(id => {
     const el = document.getElementById(id); if (el && d[id]!==undefined) el.value=d[id];
   });
+  if (Array.isArray(d.sleepCheckin)) {
+    document.querySelectorAll('#e-sleep-checkin-group .checkbox-item').forEach(label => {
+      const input = label.querySelector('input');
+      const checked = d.sleepCheckin.includes(input.value);
+      input.checked = checked;
+      label.classList.toggle('checked', checked);
+    });
+  }
   if (d['try100-count'] !== undefined) {
     counts.try100 = d['try100-count'];
     const t = document.getElementById('try100-count');
@@ -2216,7 +2245,25 @@ async function buildMorningContext(dateForVault) {
   // ⑥ダッシュボードの面接・物差し状況（2026-07-28設計発注・配線漏れの是正。読み込みのみ）
   context.jobSearchStatus = await fetchJobSearchStatus(dateForVault || localDateStr(new Date()));
 
+  // ⑦夜の入眠サポート（2026-07-29・柴山さん本人指示・設計発注）：前日夜のチェックインを読む。
+  // localStorage参照のみ（trend7と同じ既存パターン）。デバイスをまたぐ場合は取得できないことがある。
+  const baseDate = dateForVault ? new Date(dateForVault) : new Date();
+  const yesterday = new Date(baseDate); yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = localDateStr(yesterday);
+  const yesterdayEvening = lsLoad('evening', yesterdayStr);
+  context.sleepCheckin = (yesterdayEvening && Array.isArray(yesterdayEvening.sleepCheckin) && yesterdayEvening.sleepCheckin.length)
+    ? { items: yesterdayEvening.sleepCheckin, note: yesterdayEvening['e-sleep-note'] || '' }
+    : null;
+
   return context;
+}
+
+// 前提が崩れた時の挙動（未入力・スキップの日は前日分に一切言及しない）
+function formatSleepCheckinText(sleepCheckin) {
+  if (!sleepCheckin || !sleepCheckin.items || !sleepCheckin.items.length) return '';
+  const itemsText = sleepCheckin.items.join('、');
+  const noteText = sleepCheckin.note ? `（補足：${sleepCheckin.note}）` : '';
+  return `【昨夜のふり返り】${itemsText}${noteText}`;
 }
 
 // vaultContextを文言化する（元のcalcMorning内ロジックをそのまま関数化・文言は無変更）
@@ -3469,6 +3516,13 @@ async function calcMorning() {
     ? `\n【直近の面接・選考状況（代表ダッシュボードより）】\n${jobSearchStatusText}\n**この情報を必ず踏まえて助言すること。** 面接が既に完了している・選考が進んでいる会社について、まだ応募・検討段階であるかのような的外れな助言（「応募を検討しては」「書類を絞り込め」等）をしないこと。\n**上記の面接・選考状況から内定の有無を判断すること（「内定」という記載が無ければ内定0件として扱う）。内定が0件の間は、MUST/NEVER（防空レーダー15箇条）を「応募を切る基準」として使わないこと。代わりに「面接で何を確認すべきか・どこを見極めるかの下調べ」として使うこと（例：「面接でN-3に該当しないか確認してみませんか」であって、「N-3に該当しそうだから応募を外しましょう」ではない）。内定が出てから初めて絞り込み・除外の話をすること。**\n`
     : '';
 
+  // 夜の入眠サポート（2026-07-29・柴山さん本人指示）：前日夜のチェックインが無い日は
+  // このブロック自体を出さない（無理に埋めない・言及しない）。
+  const sleepCheckinText = formatSleepCheckinText(morningContext.sleepCheckin);
+  const sleepCheckinBlock = sleepCheckinText
+    ? `\n${sleepCheckinText}\n**この記録に触れる時は、説教・指摘・改善の指示をしないこと。**「昨日は〇〇だったね、今日はどうする？」という淡々とした事実の反射と選択肢の提示に留め、寝酒・スマホ依存等について良し悪しを評価する言葉（「よくない」「やめた方がいい」等）を使わないこと。**医学的な助言（薬・アルコールの相互作用、睡眠導入剤の是非等）は一切述べないこと。** 医学的な話題に触れる必要がありそうな場合は「医師や薬剤師に相談してみるのも一つかもしれません」という一般的な水準の言葉に留めること。\n`
+    : '';
+
   const prompt = `あなたはFusion Partners代表・柴山靖章の専属「SuccessOS 統合経営参謀」です。
 柴山さんのことを深く知る唯一の参謀として、今朝の状態を読み、的確な言葉と決断を返してください。
 
@@ -3480,7 +3534,7 @@ ${learningLogText}
 ・現在時間帯：${timeOfDay}（「朝タブ」の名称や「おはよう」に固執しない）
 ・今日という日のゆるい着眼点候補：${todayLens}（今日の一言と噛み合う時だけ使ってよい。今日の一言の内容と合わないなら無視すること。強制する主軸ではない）
 ・${vaultContextText}${recallLine}
-${jobSearchStatusBlock}
+${jobSearchStatusBlock}${sleepCheckinBlock}
 【今朝の状態】
 HP: ${hpAdj}/100、MP: ${mp}/100
 モード: ${modeText}
