@@ -757,6 +757,18 @@
 
     <button class="btn-primary" onclick="addMemo()">追加する</button>
     <span id="memo-editing-badge" style="display:none;font-size:12px;color:var(--accent);margin-left:8px;">✏️ 編集中（保存し直すには「追加する」を押してください）　<a href="#" onclick="cancelEditMemo();return false;" style="color:var(--text3);text-decoration:underline;">キャンセル</a></span>
+
+    <!-- ダンプボックス（2026-07-28・設計発注・柴山さん承認／2026-07-29・柴山さん実機フィードバックにより設定タブから随時メモタブへ移動）：
+         種類を問わずファイルをVaultの00_inboxへ放り込むだけで完結する箱。整理は別作業（対象外）。上のフォルダ設定が済んでいれば追加の同意は不要。 -->
+    <div style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(184,134,11,0.25);">
+      <p style="font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.7;">
+        画像・PDF・音声メモなど、種類を問わずここに放り込むと、Vaultの「00_inbox」フォルダへ自動で保存されます（1ファイル12MBまで）。<br>
+        整理は後で構いません。まずは放り込むだけで完結します。
+      </p>
+      <input type="file" id="dumpbox-file-input" multiple style="display:none;" onchange="handleDumpboxFiles(this.files)">
+      <button class="btn-secondary" id="dumpbox-btn" onclick="document.getElementById('dumpbox-file-input').click()" style="width:100%;">📥 ファイルを放り込む</button>
+      <div id="dumpbox-msg" style="font-size:12px;margin-top:8px;text-align:center;"></div>
+    </div>
   </div>
 
   <div class="section" id="memo-today-panel">
@@ -995,17 +1007,6 @@
         <div id="vault-dashboard-setup-msg" style="font-size:12px;margin-top:8px;text-align:center;"></div>
       </div>
 
-      <!-- ダンプボックス（2026-07-28・設計発注・柴山さん承認）：種類を問わずファイルをVaultの00_inboxへ
-           放り込むだけで完結する箱。整理は別作業（対象外）。上のフォルダ設定が済んでいれば追加の同意は不要。 -->
-      <div style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(184,134,11,0.25);">
-        <p style="font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.7;">
-          画像・PDF・音声メモなど、種類を問わずここに放り込むと、Vaultの「00_inbox」フォルダへ自動で保存されます（1ファイル12MBまで）。<br>
-          整理は後で構いません。まずは放り込むだけで完結します。
-        </p>
-        <input type="file" id="dumpbox-file-input" multiple style="display:none;" onchange="handleDumpboxFiles(this.files)">
-        <button class="btn-secondary" id="dumpbox-btn" onclick="document.getElementById('dumpbox-file-input').click()" style="width:100%;">📥 ファイルを放り込む</button>
-        <div id="dumpbox-msg" style="font-size:12px;margin-top:8px;text-align:center;"></div>
-      </div>
     </div>
 
     <div class="section" style="margin-top:12px;">
