@@ -106,6 +106,16 @@ export default {
       return handleVaultInboxUpload(request, env);
     }
 
+    // ===== 朝刊反応：見出し一覧の読み込み（2026-07-30・柴山さん直命・生成⇔検証ループ） =====
+    if (url.pathname === '/vault-asakan-read' && request.method === 'POST') {
+      return handleVaultAsakanRead(request, env);
+    }
+
+    // ===== 朝刊反応：反応データの書き込み（2026-07-30・柴山さん直命・生成⇔検証ループ） =====
+    if (url.pathname === '/vault-asakan-write' && request.method === 'POST') {
+      return handleVaultAsakanWrite(request, env);
+    }
+
     // ===== 【一時】ダッシュボード自動反映のOAuth許可範囲確認用（2026-07-26・確認後に撤去予定） =====
     // 読み取り専用。書き込みは一切行わない。00_代表ダッシュボード.mdが現在のOAuth許可範囲内で
     // 見えるか（drive.fileスコープでアクセス可能か）だけを確認する。
@@ -788,6 +798,110 @@ async function handleVaultDashboardRead(request, env) {
     // 設計書の方針（学習ログ・前回記録と同じ）：読み込み失敗時もプロンプト生成自体は
     // 止めない。ok:trueのままnoneで返し、呼び出し元は「取得できなかった」として無視できるようにする。
     return new Response(JSON.stringify({ ok: true, none: true, error: e.message }), { status: 200, headers });
+  }
+}
+
+// 朝刊反応：本部が毎朝生成する朝刊（H:...\01_今日のデスク\朝刊_医療福祉_YYYYMMDD.md）の
+// 見出し一覧を読み取る（2026-07-30・柴山さん直命・生成⇔検証ループ）。読み取り専用。
+// 朝刊ファイル自体は他Code（本部）が管理するため、Worker側からは一切書き込まない。
+async function handleVaultAsakanRead(request, env) {
+  const headers = { ...CORS_HEADERS, 'Content-Type': 'application/json' };
+  let token;
+  try { token = (await request.json()).token; } catch (e) { token = null; }
+  if (!env.PRIVATE_ACCESS_TOKEN || token !== env.PRIVATE_ACCESS_TOKEN) {
+    return new Response(JSON.stringify({ ok: false, error: 'private data requires a valid token' }), { status: 401, headers });
+  }
+  try {
+    const kv = getKV(env);
+    const oauthFolderId = await kv.get('vault_oauth_folder');
+    if (!oauthFolderId) {
+      return new Response(JSON.stringify({ ok: true, none: true, reason: 'Vault連携が未設定です' }), { status: 200, headers });
+    }
+    const accessToken = await getVaultAccessToken(env);
+    const deskFolderId = await getCachedDailyFolderId(env, accessToken, oauthFolderId, '01_今日のデスク');
+    const today = jstDateStr().replace(/-/g, '');
+    const filename = `朝刊_医療福祉_${today}.md`;
+    const found = await findVaultFile(accessToken, deskFolderId, filename);
+    if (!found) {
+      // 前提が崩れた時（06:06前・生成失敗）は無理に埋めず、正直に「まだ無い」と返す
+      return new Response(JSON.stringify({ ok: true, none: true, reason: '本日の朝刊はまだ生成されていません' }), { status: 200, headers });
+    }
+    const contentRes = await fetch(`https://www.googleapis.com/drive/v3/files/${found.id}?alt=media`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!contentRes.ok) throw new Error('朝刊読み込み失敗(' + contentRes.status + ')');
+    const content = await contentRes.text();
+
+    // 「### N. 見出し」パターンで見出しを抽出する（本部の朝刊フォーマットに準拠）
+    const headings = [];
+    const re = /^###\s*(\d+)\.\s*(.+)$/gm;
+    let m;
+    while ((m = re.exec(content)) !== null) {
+      headings.push({ index: parseInt(m[1]), heading: m[2].trim() });
+    }
+    return new Response(JSON.stringify({ ok: true, none: false, date: jstDateStr(), headings }), { status: 200, headers });
+  } catch (e) {
+    // 学習ログ・前回記録と同じ方針：読み込み失敗時もok:trueのままnoneで返し、呼び出し元は無視できるようにする
+    return new Response(JSON.stringify({ ok: true, none: true, error: e.message }), { status: 200, headers });
+  }
+}
+
+// 朝刊反応：柴山さんの反応（面白い/普通/違う＋任意の一言）を、本部の朝刊ファイルとは
+// 別ファイル（朝刊反応_YYYYMMDD.md）へ保存する（2026-07-30・設計発注）。
+// 本部が朝刊を再生成する際の競合を避けるため、朝刊ファイル自体には一切書き込まない。
+// 設計：同じ見出しに複数回反応した場合は「最新のみ保持」とする（履歴は残さない）。
+// 理由：翌朝サルベージが読むのは「今の判断」であり、過去の揺れ動きまで保持する必要が
+// 現時点では無く、実装・データ構造とも単純に保てるため（過去の反応を残す設計は、
+// 需要が出てから追加する）。
+async function handleVaultAsakanWrite(request, env) {
+  const headers = { ...CORS_HEADERS, 'Content-Type': 'application/json' };
+  let body;
+  try { body = await request.json(); }
+  catch (e) { return new Response(JSON.stringify({ ok: false, error: 'リクエストの形式が不正です' }), { status: 400, headers }); }
+
+  const { token, reactions } = body;
+  if (!env.PRIVATE_ACCESS_TOKEN || token !== env.PRIVATE_ACCESS_TOKEN) {
+    return new Response(JSON.stringify({ ok: false, error: 'private data requires a valid token' }), { status: 401, headers });
+  }
+  if (!Array.isArray(reactions)) {
+    return new Response(JSON.stringify({ ok: false, error: 'reactionsは配列である必要があります' }), { status: 400, headers });
+  }
+
+  try {
+    const kv = getKV(env);
+    const oauthFolderId = await kv.get('vault_oauth_folder');
+    if (!oauthFolderId) {
+      return new Response(JSON.stringify({ ok: true, skipped: true, reason: 'Vault連携が未設定です' }), { status: 200, headers });
+    }
+    const accessToken = await getVaultAccessToken(env);
+    const deskFolderId = await getCachedDailyFolderId(env, accessToken, oauthFolderId, '01_今日のデスク');
+    const today = jstDateStr();
+    const filename = `朝刊反応_${today.replace(/-/g, '')}.md`;
+
+    const reactionLabel = { good: '👍面白い', neutral: '🤷普通', bad: '👎違う' };
+    const lines = reactions
+      .filter(r => r && r.heading && r.reaction)
+      .map(r => `- [${reactionLabel[r.reaction] || r.reaction}] ${r.heading}${r.note ? `（一言：${r.note}）` : ''}`);
+
+    const content = `---
+date: ${today}
+type: asakan-reaction
+source: mitsumeru
+---
+
+# 朝刊反応 ${today}
+
+${lines.length ? lines.join('\n') : '（反応はまだありません）'}
+`;
+
+    const existing = await findVaultFile(accessToken, deskFolderId, filename);
+    const result = existing
+      ? await overwriteVaultFile(accessToken, existing.id, content)
+      : await createVaultFile(accessToken, deskFolderId, filename, content);
+    return new Response(JSON.stringify({ ok: true, fileId: result.id }), { status: 200, headers });
+  } catch (e) {
+    console.error('[asakan-write] 例外:', e.message, e.stack);
+    return new Response(JSON.stringify({ ok: false, error: e.message }), { status: 500, headers });
   }
 }
 

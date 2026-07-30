@@ -771,6 +771,15 @@
     </div>
   </div>
 
+  <!-- 朝刊反応（2026-07-30・柴山さん直命・生成⇔検証ループ）：本部が毎朝生成する朝刊の見出しへ
+       タップ1つで反応を残せるようにし、サルベージが翌朝拾って情報収集の精度を上げる。入力必須にしない。 -->
+  <div class="section" id="asakan-panel">
+    <div class="section-title">📰 今朝の朝刊、どうでしたか</div>
+    <div id="asakan-list" style="font-size:13px;color:var(--text2);line-height:1.8;">
+      <span style="color:var(--text3);font-size:12px;">読み込み中...</span>
+    </div>
+  </div>
+
   <div class="section" id="memo-today-panel">
     <div class="section-title">📊 今日の積み上げ</div>
     <div id="memo-today-summary" style="font-size:13px;color:var(--text2);line-height:1.8;"></div>
@@ -2223,6 +2232,75 @@ function formatJobSearchStatusText(jobSearchStatus) {
   return parts.join('\n\n');
 }
 
+// 朝刊反応（2026-07-30・柴山さん直命・生成⇔検証ループ）：本部の朝刊見出しへタップで反応を残す。
+// 入力必須にしない（夜の入眠サポートと同じ設計思想）。前提が崩れた時（本日分が未生成）は
+// 無理に埋めず、正直に「まだ生成されていません」と表示する。
+let asakanReactions = {}; // { index: {heading, reaction, note} }
+
+async function loadAsakanPanel() {
+  const box = document.getElementById('asakan-list');
+  if (!box) return;
+  box.innerHTML = '<span style="color:var(--text3);font-size:12px;">読み込み中...</span>';
+  try {
+    const token = getPrivateToken();
+    if (!token) {
+      box.innerHTML = '<span style="color:var(--text3);font-size:12px;">Vault連携が未設定のため表示できません</span>';
+      return;
+    }
+    const res = await fetch(`${SYNC_URL}/vault-asakan-read`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
+    });
+    const data = await res.json();
+    if (!data.ok || data.none) {
+      box.innerHTML = `<span style="color:var(--text3);font-size:12px;">${data.reason || '本日の朝刊はまだ生成されていません'}</span>`;
+      return;
+    }
+    asakanReactions = {};
+    (data.headings || []).forEach(h => { asakanReactions[h.index] = { heading: h.heading, reaction: null, note: '' }; });
+    renderAsakanPanel();
+  } catch (e) {
+    box.innerHTML = '<span style="color:var(--text3);font-size:12px;">読み込みに失敗しました（無視して他の操作を続けてよい）</span>';
+  }
+}
+
+function renderAsakanPanel() {
+  const box = document.getElementById('asakan-list');
+  if (!box) return;
+  const indices = Object.keys(asakanReactions);
+  if (!indices.length) {
+    box.innerHTML = '<span style="color:var(--text3);font-size:12px;">本日の朝刊はまだ生成されていません</span>';
+    return;
+  }
+  box.innerHTML = indices.map(idx => {
+    const r = asakanReactions[idx];
+    const btn = (val, label) => `<button class="btn-secondary" style="padding:6px 10px;font-size:16px;${r.reaction===val ? 'border-color:var(--accent);' : ''}" onclick="setAsakanReaction(${idx},'${val}')">${label}</button>`;
+    return `<div style="margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border);">
+      <div style="margin-bottom:6px;">${r.heading}</div>
+      <div style="display:flex;gap:8px;">${btn('good','👍')}${btn('neutral','🤷')}${btn('bad','👎')}</div>
+    </div>`;
+  }).join('');
+}
+
+function setAsakanReaction(idx, reaction) {
+  if (!asakanReactions[idx]) return;
+  asakanReactions[idx].reaction = reaction;
+  renderAsakanPanel();
+  saveAsakanReactions();
+}
+
+async function saveAsakanReactions() {
+  try {
+    const token = getPrivateToken();
+    if (!token) return;
+    const reactions = Object.values(asakanReactions).filter(r => r.reaction);
+    await fetch(`${SYNC_URL}/vault-asakan-write`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, reactions }),
+    });
+  } catch (e) { /* 保存失敗はタップの妨げにしない。次のタップ・タブ再訪で再送されうる */ }
+}
+
 async function buildMorningContext(dateForVault) {
   const context = {};
 
@@ -2711,6 +2789,7 @@ function switchTab(tab) {
   // ビジュアル改善案2（2026-07-26・設計発注）：タブごとの色分け。class付与のみ、他ロジックは無変更。
   document.body.setAttribute('data-tab', tab);
   if (tab === 'profile') updateEgoBar();
+  if (tab === 'memo') loadAsakanPanel();
 }
 
 function selectTag(btn, tag) {
