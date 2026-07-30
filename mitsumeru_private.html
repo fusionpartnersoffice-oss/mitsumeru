@@ -771,15 +771,6 @@
     </div>
   </div>
 
-  <!-- 朝刊反応（2026-07-30・柴山さん直命・生成⇔検証ループ）：本部が毎朝生成する朝刊の見出しへ
-       タップ1つで反応を残せるようにし、サルベージが翌朝拾って情報収集の精度を上げる。入力必須にしない。 -->
-  <div class="section" id="asakan-panel">
-    <div class="section-title">📰 今朝の朝刊、どうでしたか</div>
-    <div id="asakan-list" style="font-size:13px;color:var(--text2);line-height:1.8;">
-      <span style="color:var(--text3);font-size:12px;">読み込み中...</span>
-    </div>
-  </div>
-
   <div class="section" id="memo-today-panel">
     <div class="section-title">📊 今日の積み上げ</div>
     <div id="memo-today-summary" style="font-size:13px;color:var(--text2);line-height:1.8;"></div>
@@ -1032,6 +1023,16 @@
 <!-- 朝モード -->
 <div id="screen-morning" class="screen active">
   <div class="date-display" id="morning-date"></div>
+
+  <!-- 朝刊反応（2026-07-30・柴山さん直命・生成⇔検証ループ／2026-07-31・設計指示により随時メモタブから
+       朝タブへ移動：朝刊は「朝」タブに置くのが自然という指摘）：本部が毎朝生成する朝刊の見出しへ
+       タップ1つで反応を残せるようにし、サルベージが翌朝拾って情報収集の精度を上げる。入力必須にしない。 -->
+  <div class="section" id="asakan-panel">
+    <div class="section-title">📰 今朝の朝刊、どうでしたか</div>
+    <div id="asakan-list" style="font-size:13px;color:var(--text2);line-height:1.8;">
+      <span style="color:var(--text3);font-size:12px;">読み込み中...</span>
+    </div>
+  </div>
 
   <div class="section">
     <div class="section-title">対象日（宵越し・遅延入力の場合は変更）</div>
@@ -1856,6 +1857,9 @@ window.addEventListener('DOMContentLoaded', async function() {
   applyEveningData(lsEvening);
   if (!lsEvening || !lsEvening.advanceSchedule) initAdvanceSchedule([]);
   applyMemosData(lsMemos);
+  // 朝タブが起動時デフォルトで既にactiveのため、switchTab('morning')が発火しない。
+  // 起動直後の朝刊反応表示のため、ここで明示的に1回呼ぶ（2026-07-31・配置修正時に発見）。
+  loadAsakanPanel();
 
   if (lsOutput && lsOutput.text) {
     const mdBox = document.getElementById('output-markdown');
@@ -2789,7 +2793,7 @@ function switchTab(tab) {
   // ビジュアル改善案2（2026-07-26・設計発注）：タブごとの色分け。class付与のみ、他ロジックは無変更。
   document.body.setAttribute('data-tab', tab);
   if (tab === 'profile') updateEgoBar();
-  if (tab === 'memo') loadAsakanPanel();
+  if (tab === 'morning') loadAsakanPanel();
 }
 
 function selectTag(btn, tag) {
