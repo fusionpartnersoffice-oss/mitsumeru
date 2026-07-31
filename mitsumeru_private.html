@@ -693,8 +693,8 @@
 
 <!-- 日付ロールオーバー検知バナー（日付キーのズレ再発防止） -->
 <div id="date-rollover-bar" style="display:none;background:#fff3cd;border:0.5px solid #ffd970;color:#8a6a00;padding:9px 12px;font-size:13px;text-align:center;border-radius:6px;margin:8px 16px;line-height:1.5;">
-  日付が変わりました（<span id="rollover-date"></span>）。宵越し入力でなければ切り替えてください。
-  <button onclick="jumpToToday()" style="margin-left:8px;background:#8a6a00;color:#fff;border:none;border-radius:5px;padding:4px 12px;cursor:pointer;font-size:12px;font-weight:500;">今日に切り替える</button>
+  日付が変わったので、<span id="rollover-date"></span>の記録に自動で切り替えました。
+  <button onclick="jumpToToday()" style="margin-left:8px;background:#8a6a00;color:#fff;border:none;border-radius:5px;padding:4px 12px;cursor:pointer;font-size:12px;font-weight:500;">了解</button>
 </div>
 
 <!-- APIキー未設定バナー（UI/UX棚卸しPhase1・2026-07-26）：従来はposition:fixedで
@@ -2701,22 +2701,29 @@ if (!getApiKey()) {
 // 「消えた」ように見える。日付が変わったらバナーで通知し、ユーザーが切替を選ぶ。
 // （宵越し入力で手動で過去日を選んでいる時は通知しない）
 let _appToday = TODAY;
-function checkDateRollover() {
+// 2026-08-01是正（柴山さん実害報告・強い指摘）：従来はバナーを出すだけで、「今日に切り替える」を
+// 押すまで前日のデータを表示し続ける作りだった。「いちいち上書きしろというのか」という指摘の通り、
+// 手動確認を挟む設計自体が使いにくかったため、宵越し入力（意図的に過去/未来日を選んでいる時）で
+// なければ自動で切り替えるよう変更する。wasOnTodayの判定ロジックはそのまま安全策として活かす。
+async function checkDateRollover() {
   if (document.hidden) return;
   const fresh = localDateStr(new Date());
   if (fresh === _appToday) return;                 // 日付は変わっていない
   const wasOnToday = (targetDate === _appToday);   // 手動で過去日を選んでいなければ true
   _appToday = fresh;
-  if (wasOnToday) {                                // 「今日」を見ていたのに日付が変わった
+  if (wasOnToday) {                                // 「今日」を見ていたのに日付が変わった → 自動で切り替える
+    await changeTargetDate(fresh);
     const bar = document.getElementById('date-rollover-bar');
     const lbl = document.getElementById('rollover-date');
     if (bar && lbl) { lbl.textContent = fresh; bar.style.display = 'block'; }
   }
 }
 function jumpToToday() {
+  // 2026-08-01是正：切替自体はcheckDateRollover()側で既に自動実行済みのため、
+  // このボタンはバナーを閉じるだけでよい（changeTargetDate()は同じ日付なら早期returnするため
+  // 二重に呼んでも実害はないが、意図を明確にするため呼ばない）。
   const bar = document.getElementById('date-rollover-bar');
   if (bar) bar.style.display = 'none';
-  changeTargetDate(localDateStr(new Date()));
 }
 document.addEventListener('visibilitychange', checkDateRollover);
 window.addEventListener('focus', checkDateRollover);
