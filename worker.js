@@ -819,19 +819,14 @@ async function handleVaultAsakanRead(request, env) {
   try {
     const kv = getKV(env);
     const oauthFolderId = await kv.get('vault_oauth_folder');
-    console.error('[asakan-read] oauthFolderId=', oauthFolderId);
     if (!oauthFolderId) {
       return new Response(JSON.stringify({ ok: true, none: true, reason: 'Vault連携が未設定です' }), { status: 200, headers });
     }
     const accessToken = await getVaultAccessToken(env);
-    console.error('[asakan-read] accessToken取得OK・長さ=', accessToken ? accessToken.length : 0);
     const deskFolderId = await getCachedDailyFolderId(env, accessToken, oauthFolderId, '01_今日のデスク');
-    console.error('[asakan-read] deskFolderId=', deskFolderId);
     const today = jstDateStr().replace(/-/g, '');
     const filename = `朝刊_医療福祉_${today}.md`;
-    console.error('[asakan-read] 検索ファイル名=', filename, ' jstDateStr()=', jstDateStr());
     const found = await findVaultFile(accessToken, deskFolderId, filename);
-    console.error('[asakan-read] findVaultFile結果=', JSON.stringify(found));
     if (!found) {
       // 前提が崩れた時（06:06前・生成失敗）は無理に埋めず、正直に「まだ無い」と返す
       return new Response(JSON.stringify({ ok: true, none: true, reason: '本日の朝刊はまだ生成されていません' }), { status: 200, headers });
@@ -842,14 +837,19 @@ async function handleVaultAsakanRead(request, env) {
     if (!contentRes.ok) throw new Error('朝刊読み込み失敗(' + contentRes.status + ')');
     const content = await contentRes.text();
 
-    // 「### N. 見出し」パターンで見出しを抽出する（本部の朝刊フォーマットに準拠）
+    // 見出し抽出パターン（2026-08-01是正・柴山さん実害報告）：本部が2026-07-31 17:18に
+    // 朝刊を「2本柱化」した際、フォーマットが「### N. 見出し」という番号付きから
+    // 「### [記事タイトル](url)〔タグ〕（出典）」というリンク形式へ変わっていたため、
+    // 旧パターンが1件もマッチせず見出し0件になっていた（`### N.`ではなく`### [`で始まる）。
+    // 番号は本文中に無くなったため、出現順に連番を振る。
     const headings = [];
-    const re = /^###\s*(\d+)\.\s*(.+)$/gm;
+    const re = /^###\s*\[([^\]]+)\]/gm;
     let m;
+    let idx = 0;
     while ((m = re.exec(content)) !== null) {
-      headings.push({ index: parseInt(m[1]), heading: m[2].trim() });
+      idx += 1;
+      headings.push({ index: idx, heading: m[1].trim() });
     }
-    console.error('[asakan-read] 見出し件数=', headings.length);
     return new Response(JSON.stringify({ ok: true, none: false, date: jstDateStr(), headings }), { status: 200, headers });
   } catch (e) {
     console.error('[asakan-read] 例外発生:', e.message, e.stack);
