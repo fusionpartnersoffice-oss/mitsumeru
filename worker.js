@@ -819,14 +819,19 @@ async function handleVaultAsakanRead(request, env) {
   try {
     const kv = getKV(env);
     const oauthFolderId = await kv.get('vault_oauth_folder');
+    console.error('[asakan-read] oauthFolderId=', oauthFolderId);
     if (!oauthFolderId) {
       return new Response(JSON.stringify({ ok: true, none: true, reason: 'Vault連携が未設定です' }), { status: 200, headers });
     }
     const accessToken = await getVaultAccessToken(env);
+    console.error('[asakan-read] accessToken取得OK・長さ=', accessToken ? accessToken.length : 0);
     const deskFolderId = await getCachedDailyFolderId(env, accessToken, oauthFolderId, '01_今日のデスク');
+    console.error('[asakan-read] deskFolderId=', deskFolderId);
     const today = jstDateStr().replace(/-/g, '');
     const filename = `朝刊_医療福祉_${today}.md`;
+    console.error('[asakan-read] 検索ファイル名=', filename, ' jstDateStr()=', jstDateStr());
     const found = await findVaultFile(accessToken, deskFolderId, filename);
+    console.error('[asakan-read] findVaultFile結果=', JSON.stringify(found));
     if (!found) {
       // 前提が崩れた時（06:06前・生成失敗）は無理に埋めず、正直に「まだ無い」と返す
       return new Response(JSON.stringify({ ok: true, none: true, reason: '本日の朝刊はまだ生成されていません' }), { status: 200, headers });
@@ -844,8 +849,10 @@ async function handleVaultAsakanRead(request, env) {
     while ((m = re.exec(content)) !== null) {
       headings.push({ index: parseInt(m[1]), heading: m[2].trim() });
     }
+    console.error('[asakan-read] 見出し件数=', headings.length);
     return new Response(JSON.stringify({ ok: true, none: false, date: jstDateStr(), headings }), { status: 200, headers });
   } catch (e) {
+    console.error('[asakan-read] 例外発生:', e.message, e.stack);
     // 学習ログ・前回記録と同じ方針：読み込み失敗時もok:trueのままnoneで返し、呼び出し元は無視できるようにする
     return new Response(JSON.stringify({ ok: true, none: true, error: e.message }), { status: 200, headers });
   }
