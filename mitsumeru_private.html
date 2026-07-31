@@ -3207,6 +3207,12 @@ const VAULT_OAUTH_API_KEY = 'AIzaSyCdNHqwcnYQfLPW6GIzwsOkuG9fIhJb6Bs'; // Picker
 // フォルダ選択（新規ファイル作成のみ）はこれが無くても動くため、今まで表面化していなかった。
 // VAULT_OAUTH_CLIENT_IDの命名規則（{project番号}-{ランダム文字列}.apps.googleusercontent.com）から抽出。
 const VAULT_OAUTH_APP_ID = '755434055032';
+// 2026-07-31発見（設計→開発B・生成⇔検証ループ／朝刊反応機能で発覚）：drive.fileスコープは
+// アプリ自身がAPI経由で作成・選択したファイルしか可視化しない構造的制約があり、本部が
+// ローカルファイルシステム経由でVaultへ直接書き込む朝刊ファイル（日付ごとに新規生成される
+// ため個別Picker選択が現実的でない）が読めなかった。drive.readonlyを追加し、Vault配下の
+// 既存ファイルを読み取れるようにする（drive.fileは維持＝既存の書き込み機能は無変更）。
+const VAULT_OAUTH_SCOPE = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly';
 
 function setVaultOAuthMsg(text, isError) {
   const el = document.getElementById('vault-oauth-setup-msg');
@@ -3244,7 +3250,7 @@ async function startVaultOAuthSetup() {
     const accessToken = await new Promise((resolve, reject) => {
       const tokenClient = google.accounts.oauth2.initTokenClient({
         client_id: VAULT_OAUTH_CLIENT_ID,
-        scope: 'https://www.googleapis.com/auth/drive.file',
+        scope: VAULT_OAUTH_SCOPE,
         callback: (resp) => resp.access_token ? resolve(resp.access_token) : reject(new Error('トークン取得に失敗しました')),
       });
       tokenClient.requestAccessToken();
@@ -3282,7 +3288,7 @@ async function startVaultOAuthSetup() {
     const code = await new Promise((resolve, reject) => {
       const codeClient = google.accounts.oauth2.initCodeClient({
         client_id: VAULT_OAUTH_CLIENT_ID,
-        scope: 'https://www.googleapis.com/auth/drive.file',
+        scope: VAULT_OAUTH_SCOPE,
         ux_mode: 'popup',
         prompt: 'consent',
         callback: (resp) => resp.code ? resolve(resp.code) : reject(new Error('認可コード取得に失敗しました')),
@@ -3349,7 +3355,7 @@ async function startDashboardFileSetup() {
     const accessToken = await new Promise((resolve, reject) => {
       const tokenClient = google.accounts.oauth2.initTokenClient({
         client_id: VAULT_OAUTH_CLIENT_ID,
-        scope: 'https://www.googleapis.com/auth/drive.file',
+        scope: VAULT_OAUTH_SCOPE,
         callback: (resp) => resp.access_token ? resolve(resp.access_token) : reject(new Error('トークン取得に失敗しました')),
       });
       tokenClient.requestAccessToken();
@@ -3386,7 +3392,7 @@ async function startDashboardFileSetup() {
     const code = await new Promise((resolve, reject) => {
       const codeClient = google.accounts.oauth2.initCodeClient({
         client_id: VAULT_OAUTH_CLIENT_ID,
-        scope: 'https://www.googleapis.com/auth/drive.file',
+        scope: VAULT_OAUTH_SCOPE,
         ux_mode: 'popup',
         prompt: 'consent',
         callback: (resp) => resp.code ? resolve(resp.code) : reject(new Error('認可コード取得に失敗しました')),
