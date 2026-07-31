@@ -1343,13 +1343,23 @@ async function findOrCreateFolder(accessToken, parentId, folderName) {
   const query = encodeURIComponent(
     `name='${folderName}' and '${parentId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`
   );
-  const searchRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id,name)`, {
+  const searchRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id,name,createdTime)`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
   const searchData = await searchRes.json();
   if (!searchRes.ok) throw new Error('フォルダ検索失敗: ' + JSON.stringify(searchData));
-  const existing = (searchData.files || [])[0];
-  if (existing) return existing;
+  const matches = searchData.files || [];
+  if (matches.length) {
+    // 2026-07-31発見（朝刊反応の実データ確認中）：drive.fileスコープ時代に本物フォルダが
+    // 見えなかったことが原因で、同名の空フォルダを誤って新規作成していた実例が見つかった
+    // （01_今日のデスク）。同名が複数見つかった場合は、作成日時が最も古いものを「本物」として
+    // 優先する（後から誤って作られた重複は必ず新しいはずという前提）。1件のみなら従来通り。
+    if (matches.length > 1) {
+      matches.sort((a, b) => new Date(a.createdTime) - new Date(b.createdTime));
+      console.warn(`[findOrCreateFolder] 「${folderName}」が${matches.length}件重複しています。最古のもの(id=${matches[0].id}, createdTime=${matches[0].createdTime})を使用します。`);
+    }
+    return matches[0];
+  }
 
   const createRes = await fetch('https://www.googleapis.com/drive/v3/files?fields=id,name', {
     method: 'POST',
