@@ -2299,10 +2299,16 @@ function formatJobSearchStatusText(jobSearchStatus) {
   return parts.join('\n\n');
 }
 
-// 朝刊反応（2026-07-30・柴山さん直命・生成⇔検証ループ）：本部の朝刊見出しへタップで反応を残す。
-// 入力必須にしない（夜の入眠サポートと同じ設計思想）。前提が崩れた時（本日分が未生成）は
-// 無理に埋めず、正直に「まだ生成されていません」と表示する。
-let asakanReactions = {}; // { index: {heading, reaction, note} }
+// 朝刊反応（2026-07-30・柴山さん直命・生成⇔検証ループ／2026-08-01再設計・柴山さん×設計壁打ち）：
+// タップ式反応（👍/🤷/👎）は蒸留の役に立たないと判断され廃止。見出し＋要約を読み物として並べ、
+// 各項目に自由記述のコメント欄を用意する。コメントは専用の保存先を作らず、既存の随時メモ
+// （#思考タグ）としてそのまま保存する（柴山さんの実際の使い方＝モバイルで一言書く→
+// 後でPCで秘書との壁打ち結果を同じメモに追記する、に既存の随時メモの仕組みが合うため）。
+let asakanItems = {}; // { index: {heading, summary, memoIndex} }
+
+function escapeAsakanHtml(s) {
+  return String(s || '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+}
 
 async function loadAsakanPanel() {
   const box = document.getElementById('asakan-list');
@@ -2320,11 +2326,11 @@ async function loadAsakanPanel() {
     });
     const data = await res.json();
     if (!data.ok || data.none) {
-      box.innerHTML = `<span style="color:var(--text3);font-size:12px;">${data.reason || '本日の朝刊はまだ生成されていません'}</span>`;
+      box.innerHTML = `<span style="color:var(--text3);font-size:12px;">${escapeAsakanHtml(data.reason || '本日の朝刊はまだ生成されていません')}</span>`;
       return;
     }
-    asakanReactions = {};
-    (data.headings || []).forEach(h => { asakanReactions[h.index] = { heading: h.heading, reaction: null, note: '' }; });
+    asakanItems = {};
+    (data.headings || []).forEach(h => { asakanItems[h.index] = { heading: h.heading, summary: h.summary || '', memoIndex: null }; });
     renderAsakanPanel();
   } catch (e) {
     box.innerHTML = '<span style="color:var(--text3);font-size:12px;">読み込みに失敗しました（無視して他の操作を続けてよい）</span>';
@@ -2334,38 +2340,43 @@ async function loadAsakanPanel() {
 function renderAsakanPanel() {
   const box = document.getElementById('asakan-list');
   if (!box) return;
-  const indices = Object.keys(asakanReactions);
+  const indices = Object.keys(asakanItems);
   if (!indices.length) {
     box.innerHTML = '<span style="color:var(--text3);font-size:12px;">本日の朝刊はまだ生成されていません</span>';
     return;
   }
   box.innerHTML = indices.map(idx => {
-    const r = asakanReactions[idx];
-    const btn = (val, label) => `<button class="btn-secondary" style="padding:6px 10px;font-size:16px;${r.reaction===val ? 'border-color:var(--accent);' : ''}" onclick="setAsakanReaction(${idx},'${val}')">${label}</button>`;
+    const it = asakanItems[idx];
+    const existingComment = it.memoIndex !== null && memos[it.memoIndex] ? memos[it.memoIndex].content.replace(/^【朝刊】[^：]*：/, '') : '';
     return `<div style="margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border);">
-      <div style="margin-bottom:6px;">${r.heading}</div>
-      <div style="display:flex;gap:8px;">${btn('good','👍')}${btn('neutral','🤷')}${btn('bad','👎')}</div>
+      <div style="margin-bottom:4px;font-weight:500;">${escapeAsakanHtml(it.heading)}</div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:8px;">${escapeAsakanHtml(it.summary)}</div>
+      <textarea id="asakan-comment-${idx}" placeholder="コメント（任意・書かなくてよい）" style="width:100%;min-height:40px;font-size:13px;padding:6px 8px;border:0.5px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text);" onblur="saveAsakanComment(${idx})">${escapeAsakanHtml(existingComment)}</textarea>
     </div>`;
   }).join('');
 }
 
-function setAsakanReaction(idx, reaction) {
-  if (!asakanReactions[idx]) return;
-  asakanReactions[idx].reaction = reaction;
-  renderAsakanPanel();
-  saveAsakanReactions();
-}
-
-async function saveAsakanReactions() {
-  try {
-    const token = getPrivateToken();
-    if (!token) return;
-    const reactions = Object.values(asakanReactions).filter(r => r.reaction);
-    await fetch(`${SYNC_URL}/vault-asakan-write`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token, reactions }),
-    });
-  } catch (e) { /* 保存失敗はタップの妨げにしない。次のタップ・タブ再訪で再送されうる */ }
+// コメントが書かれた項目だけ、既存の随時メモ（#思考タグ）として保存する。専用の保存先は作らない。
+// 同じ項目に何度も書き直した場合は新規メモを増やさず、既存のメモを上書き更新する。
+function saveAsakanComment(idx) {
+  const it = asakanItems[idx];
+  if (!it) return;
+  const el = document.getElementById(`asakan-comment-${idx}`);
+  const text = el ? el.value.trim() : '';
+  if (!text) return; // 書かない項目があってよい（空なら何もしない・既存メモを消しもしない）
+  const content = `【朝刊】${it.heading}：${text}`;
+  if (it.memoIndex !== null && memos[it.memoIndex]) {
+    memos[it.memoIndex].content = content;
+  } else {
+    const now = new Date();
+    const timeStr = `${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}`;
+    memos.push({ tag: 'G', time: timeStr, pomos: null, content, image: null });
+    it.memoIndex = memos.length - 1;
+  }
+  saveMemos();
+  renderMemos();
+  updateEveningMemoPreview();
+  calcAutoCount();
 }
 
 async function buildMorningContext(dateForVault) {

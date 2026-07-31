@@ -111,10 +111,10 @@ export default {
       return handleVaultAsakanRead(request, env);
     }
 
-    // ===== 朝刊反応：反応データの書き込み（2026-07-30・柴山さん直命・生成⇔検証ループ） =====
-    if (url.pathname === '/vault-asakan-write' && request.method === 'POST') {
-      return handleVaultAsakanWrite(request, env);
-    }
+    // ===== 【廃止済み・2026-08-01】朝刊反応：3択タップ式の反応保存 =====
+    // 柴山さん・設計との壁打ちにより、タップ式反応（👍/🤷/👎）自体が蒸留の役に立たないと判断され
+    // 廃止。コメントは既存の随時メモ（#思考タグ）としてそのまま保存する方式へ変更したため、
+    // 専用の書き込みエンドポイント・handleVaultAsakanWrite()関数は不要になった（削除済み）。
 
     // ===== 【一時】ダッシュボード自動反映のOAuth許可範囲確認用（2026-07-26・確認後に撤去予定） =====
     // 読み取り専用。書き込みは一切行わない。00_代表ダッシュボード.mdが現在のOAuth許可範囲内で
@@ -842,13 +842,23 @@ async function handleVaultAsakanRead(request, env) {
     // 「### [記事タイトル](url)〔タグ〕（出典）」というリンク形式へ変わっていたため、
     // 旧パターンが1件もマッチせず見出し0件になっていた（`### N.`ではなく`### [`で始まる）。
     // 番号は本文中に無くなったため、出現順に連番を振る。
+    // 2026-08-01再設計（柴山さん・設計壁打ち）：タップ式反応を廃止し「見出し＋要約を読んで
+    // コメントを書く」形に変更したため、見出し行の直後（次の見出し・区切り線・見出しレベル
+    // 変化の直前まで）にある要約段落もあわせて抽出する。
+    const lines = content.split('\n');
     const headings = [];
-    const re = /^###\s*\[([^\]]+)\]/gm;
-    let m;
     let idx = 0;
-    while ((m = re.exec(content)) !== null) {
+    for (let i = 0; i < lines.length; i++) {
+      const headingMatch = lines[i].match(/^###\s*\[([^\]]+)\]/);
+      if (!headingMatch) continue;
       idx += 1;
-      headings.push({ index: idx, heading: m[1].trim() });
+      const summaryLines = [];
+      for (let j = i + 1; j < lines.length; j++) {
+        const line = lines[j];
+        if (/^#{1,6}\s/.test(line) || /^---\s*$/.test(line)) break;
+        if (line.trim()) summaryLines.push(line.trim());
+      }
+      headings.push({ index: idx, heading: headingMatch[1].trim(), summary: summaryLines.join(' ') });
     }
     if (!headings.length) {
       // 配線完全性チェック（設計指摘・2026-08-01）：ファイルは見つかったのに見出しが0件の場合、
@@ -862,65 +872,6 @@ async function handleVaultAsakanRead(request, env) {
     console.error('[asakan-read] 例外発生:', e.message, e.stack);
     // 学習ログ・前回記録と同じ方針：読み込み失敗時もok:trueのままnoneで返し、呼び出し元は無視できるようにする
     return new Response(JSON.stringify({ ok: true, none: true, error: e.message }), { status: 200, headers });
-  }
-}
-
-// 朝刊反応：柴山さんの反応（面白い/普通/違う＋任意の一言）を、本部の朝刊ファイルとは
-// 別ファイル（朝刊反応_YYYYMMDD.md）へ保存する（2026-07-30・設計発注）。
-// 本部が朝刊を再生成する際の競合を避けるため、朝刊ファイル自体には一切書き込まない。
-// 設計：同じ見出しに複数回反応した場合は「最新のみ保持」とする（履歴は残さない）。
-// 理由：翌朝サルベージが読むのは「今の判断」であり、過去の揺れ動きまで保持する必要が
-// 現時点では無く、実装・データ構造とも単純に保てるため（過去の反応を残す設計は、
-// 需要が出てから追加する）。
-async function handleVaultAsakanWrite(request, env) {
-  const headers = { ...CORS_HEADERS, 'Content-Type': 'application/json' };
-  let body;
-  try { body = await request.json(); }
-  catch (e) { return new Response(JSON.stringify({ ok: false, error: 'リクエストの形式が不正です' }), { status: 400, headers }); }
-
-  const { token, reactions } = body;
-  if (!env.PRIVATE_ACCESS_TOKEN || token !== env.PRIVATE_ACCESS_TOKEN) {
-    return new Response(JSON.stringify({ ok: false, error: 'private data requires a valid token' }), { status: 401, headers });
-  }
-  if (!Array.isArray(reactions)) {
-    return new Response(JSON.stringify({ ok: false, error: 'reactionsは配列である必要があります' }), { status: 400, headers });
-  }
-
-  try {
-    const kv = getKV(env);
-    const oauthFolderId = await kv.get('vault_oauth_folder');
-    if (!oauthFolderId) {
-      return new Response(JSON.stringify({ ok: true, skipped: true, reason: 'Vault連携が未設定です' }), { status: 200, headers });
-    }
-    const accessToken = await getVaultAccessToken(env);
-    const deskFolderId = await getCachedDailyFolderId(env, accessToken, oauthFolderId, '01_今日のデスク');
-    const today = jstDateStr();
-    const filename = `朝刊反応_${today.replace(/-/g, '')}.md`;
-
-    const reactionLabel = { good: '👍面白い', neutral: '🤷普通', bad: '👎違う' };
-    const lines = reactions
-      .filter(r => r && r.heading && r.reaction)
-      .map(r => `- [${reactionLabel[r.reaction] || r.reaction}] ${r.heading}${r.note ? `（一言：${r.note}）` : ''}`);
-
-    const content = `---
-date: ${today}
-type: asakan-reaction
-source: mitsumeru
----
-
-# 朝刊反応 ${today}
-
-${lines.length ? lines.join('\n') : '（反応はまだありません）'}
-`;
-
-    const existing = await findVaultFile(accessToken, deskFolderId, filename);
-    const result = existing
-      ? await overwriteVaultFile(accessToken, existing.id, content)
-      : await createVaultFile(accessToken, deskFolderId, filename, content);
-    return new Response(JSON.stringify({ ok: true, fileId: result.id }), { status: 200, headers });
-  } catch (e) {
-    console.error('[asakan-write] 例外:', e.message, e.stack);
-    return new Response(JSON.stringify({ ok: false, error: e.message }), { status: 500, headers });
   }
 }
 
