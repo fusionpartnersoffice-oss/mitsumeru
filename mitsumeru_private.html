@@ -710,6 +710,17 @@
 <div id="screen-memo" class="screen">
   <div class="date-display" id="memo-date"></div>
 
+  <!-- 朝刊反応（2026-07-30・柴山さん直命・生成⇔検証ループ／2026-07-31・柴山さん最終決定により
+       朝タブから随時メモタブへ再移動、さらにタブの一番上へ移動：本部が毎朝生成する朝刊の
+       見出しへタップ1つで反応を残せるようにし、サルベージが翌朝拾って情報収集の精度を上げる。
+       入力必須にしない。 -->
+  <div class="section" id="asakan-panel">
+    <div class="section-title">📰 今朝の朝刊、どうでしたか</div>
+    <div id="asakan-list" style="font-size:13px;color:var(--text2);line-height:1.8;">
+      <span style="color:var(--text3);font-size:12px;">読み込み中...</span>
+    </div>
+  </div>
+
   <div class="section">
     <div class="section-title">随時メモ — Keepの代わりに</div>
 
@@ -768,17 +779,6 @@
       <input type="file" id="dumpbox-file-input" multiple style="display:none;" onchange="handleDumpboxFiles(this.files)">
       <button class="btn-secondary" id="dumpbox-btn" onclick="document.getElementById('dumpbox-file-input').click()" style="width:100%;">📥 ファイルを放り込む</button>
       <div id="dumpbox-msg" style="font-size:12px;margin-top:8px;text-align:center;"></div>
-    </div>
-  </div>
-
-  <!-- 朝刊反応（2026-07-30・柴山さん直命・生成⇔検証ループ／2026-07-31・柴山さん最終決定により
-       朝タブから随時メモタブへ再移動：秘書との壁打ちコメントを入れる運用と統合するため。
-       この配置を最終形とする）：本部が毎朝生成する朝刊の見出しへタップ1つで反応を残せるように
-       し、サルベージが翌朝拾って情報収集の精度を上げる。入力必須にしない。 -->
-  <div class="section" id="asakan-panel">
-    <div class="section-title">📰 今朝の朝刊、どうでしたか</div>
-    <div id="asakan-list" style="font-size:13px;color:var(--text2);line-height:1.8;">
-      <span style="color:var(--text3);font-size:12px;">読み込み中...</span>
     </div>
   </div>
 
