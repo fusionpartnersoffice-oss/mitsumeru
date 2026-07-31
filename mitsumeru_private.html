@@ -1620,6 +1620,13 @@ function insertIntoTextarea(id, text) {
 }
 
 function saveEvening() {
+  // 2026-07-31発見（柴山さんの実運用「夜の入力直後に翌日へ手動切替」で再現・実機検証済み）：
+  // cloudSaveDebounced()は1.5秒後に発火するが、date引数を省略すると発火時点の
+  // グローバル変数targetDateを読みに行く。その1.5秒の間にtargetDateが切り替わっていると、
+  // 元の日のデータが新しい（切替後の）日付のKVキーへ誤って保存されてしまう
+  // （夜タブのデバッグ5項目が「リフレッシュされず残る」という報告の実際の原因）。
+  // 呼び出し時点のtargetDateをこの時点で固定し、明示的に渡すことで防ぐ。
+  const dateAtSave = targetDate;
   const data = { _ts: Date.now() };
   ['e-supplement','e-tomorrow','e-delay','e-try100','e-feedback','e-notebooklm',
    'd1-reason','d2-reason','d3-reason','d4-reason','d5-reason','e-sleep-note'].forEach(id => {
@@ -1631,8 +1638,8 @@ function saveEvening() {
   data['advanceSchedule'] = getAdvanceScheduleData();
   // 夜の入眠サポート（2026-07-29・柴山さん本人指示）：既存項目は無変更、新規追加のみ
   data['sleepCheckin'] = Array.from(document.querySelectorAll('#e-sleep-checkin-group .checked input')).map(i => i.value);
-  localStorage.setItem(lsKey('evening'), JSON.stringify(data));
-  cloudSaveDebounced('evening', data);
+  localStorage.setItem(lsKey('evening', dateAtSave), JSON.stringify(data));
+  cloudSaveDebounced('evening', data, dateAtSave);
 }
 
 // ===== 先行予定マップ =====
@@ -1749,6 +1756,9 @@ function initAdvanceSchedule(data) {
   base.forEach(r => addAdvanceRow(r));
 }
 function saveMorning() {
+  // saveEvening()と同じ理由（2026-07-31発見）：cloudSaveDebounced発火時のtargetDate参照ズレを防ぐため、
+  // 呼び出し時点のtargetDateをここで固定する。
+  const dateAtSave = targetDate;
   const data = { _ts: Date.now() };
   ['m-sleep','m-wake','m-body','m-mood','m-noise-detail','m-want','m-course'].forEach(id => {
     const el = document.getElementById(id);
@@ -1770,8 +1780,8 @@ function saveMorning() {
   if (modeBadge) { data['mode-badge-text'] = modeBadge.textContent; data['mode-badge-class'] = modeBadge.className; }
   if (morningResult) data['morning-result-visible'] = morningResult.style.display !== 'none';
   data['lv-base'] = getLVBase();
-  localStorage.setItem(lsKey('morning'), JSON.stringify(data));
-  cloudSaveDebounced('morning', data);
+  localStorage.setItem(lsKey('morning', dateAtSave), JSON.stringify(data));
+  cloudSaveDebounced('morning', data, dateAtSave);
 }
 
 // ===== UI復元ヘルパー =====
