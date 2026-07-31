@@ -1994,6 +1994,25 @@ async function forceSyncFromCloud() {
   const gotAny = kvMorning || kvEvening || kvMemos || kvOutput || kvCalendar || kvDelay;
   const authFailed = rMorning.authFailed || rEvening.authFailed || rMemos.authFailed
     || rOutput.authFailed || rCalendar.authFailed || rDelay.authFailed;
+
+  // 2026-08-01是正（柴山さん実害報告・設計発注）：従来は「KVに取得できたら上書き」だけで、
+  // KV側が本当に空だった場合（例：本部が実害復旧のために該当キーを削除した直後）は何もせず、
+  // localStorage側の汚染データがそのまま残り続けていた。認証失敗（authFailed）ではなく、
+  // 正常に問い合わせた結果として「本当に無い」と分かった項目だけ、localStorageも明示的に消す。
+  let clearedAny = false;
+  const clearIfEmpty = (result, type) => {
+    if (result.ok && !result.authFailed && !result.value) {
+      localStorage.removeItem(lsKey(type));
+      clearedAny = true;
+    }
+  };
+  clearIfEmpty(rMorning, 'morning');
+  clearIfEmpty(rEvening, 'evening');
+  clearIfEmpty(rMemos, 'memos');
+  clearIfEmpty(rOutput, 'output');
+  clearIfEmpty(rCalendar, 'calendar');
+  clearIfEmpty(rDelay, 'delay');
+
   if (kvMorning) { applyMorningData(kvMorning); localStorage.setItem(lsKey('morning'), JSON.stringify(kvMorning)); }
   if (kvEvening) { applyEveningData(kvEvening); localStorage.setItem(lsKey('evening'), JSON.stringify(kvEvening)); }
   if (kvMemos)   { applyMemosData(kvMemos);     localStorage.setItem(lsKey('memos'),   JSON.stringify(kvMemos)); }
@@ -2027,7 +2046,15 @@ async function forceSyncFromCloud() {
     alert('データを取得できませんでした。アクセストークンが正しいか、設定タブでご確認ください。');
   } else {
     showSyncStatus('synced');
-    alert('同期は成功しましたが、まだ今日の記録がありません。');
+    if (clearedAny) {
+      // クラウド側が本当に空だった項目は、画面上の古い表示も一緒に消すため再読込する
+      // （個々の入力欄・チェックボックスを1つずつリセットする専用処理は無く、
+      // ページ再読込がchangeTargetDate()と同等の「初期状態からの復元」を最も確実に行える）。
+      alert('クラウド側にはまだ記録がありませんでした。画面の古い表示を消すため、これから再読込します。');
+      location.reload();
+    } else {
+      alert('同期は成功しましたが、まだ今日の記録がありません。');
+    }
   }
 }
 
