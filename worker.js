@@ -850,6 +850,13 @@ async function handleVaultAsakanRead(request, env) {
       idx += 1;
       headings.push({ index: idx, heading: m[1].trim() });
     }
+    if (!headings.length) {
+      // 配線完全性チェック（設計指摘・2026-08-01）：ファイルは見つかったのに見出しが0件の場合、
+      // 「ファイルが無い」場合と同じ文言（none:true）を返すと、今回のような本部側フォーマット
+      // 変更による抽出漏れが「まだ生成されていない」と誤認され、原因特定が遅れる。
+      // ファイルは存在した事実を区別できるよう、専用の理由文言を返す。
+      return new Response(JSON.stringify({ ok: true, none: true, reason: '見出しの抽出に失敗しました（本部側のフォーマット変更の可能性）' }), { status: 200, headers });
+    }
     return new Response(JSON.stringify({ ok: true, none: false, date: jstDateStr(), headings }), { status: 200, headers });
   } catch (e) {
     console.error('[asakan-read] 例外発生:', e.message, e.stack);
