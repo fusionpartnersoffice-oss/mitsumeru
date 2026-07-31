@@ -2653,9 +2653,14 @@ async function changeTargetDate(newDate) {
   });
   document.querySelectorAll('#m-noise-group .checkbox-item').forEach(l=>l.classList.remove('checked'));
   ['e-supplement','e-tomorrow','e-delay','e-try100','e-feedback','e-notebooklm',
-   'd1-reason','d2-reason','d3-reason','d4-reason','d5-reason'].forEach(id=>{
+   'd1-reason','d2-reason','d3-reason','d4-reason','d5-reason','e-sleep-note'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.value='';
   });
+  // 2026-08-01是正（設計指摘・柴山さん実害報告）：夜の入眠サポート（e-sleep-checkin-group）の
+  // 追加時（2026-07-29）、changeTargetDate()への追記が漏れていた。新しい日にsleepCheckinデータが
+  // 無い場合、applyEveningData()側はチェック状態を触らない作りのため、古い日のチェックが
+  // DOM上に残ったまま表示され続けていた。m-noise-groupと同じパターンでリセットする。
+  document.querySelectorAll('#e-sleep-checkin-group .checkbox-item').forEach(l=>l.classList.remove('checked'));
   document.querySelectorAll('.debug-btn').forEach(b=>b.classList.remove('selected-maru','selected-sankaku','selected-batsu'));
   renderMemos(); calcAutoCount();
 
