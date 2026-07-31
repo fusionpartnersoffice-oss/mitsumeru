@@ -566,6 +566,11 @@ async function handleVaultOAuthSetup(request, env) {
     const kv = getKV(env);
     await kv.put('vault_oauth_refresh', data.refresh_token);
     await kv.put('vault_oauth_folder', folderId);
+    // 2026-07-31発見（朝刊反応の実データ最終確認中）：ダッシュボード設定側（handleVaultDashboardSetup）
+    // は再認可後に古いキャッシュ済みアクセストークンを無効化しているが、こちら（初回/再セットアップ側）
+    // には同じ処理が漏れていた。スコープを拡張して再認可しても、TTL内（最大55分）は旧スコープの
+    // キャッシュ済みトークンが使われ続け、新しい権限がすぐに反映されない不具合だったため是正。
+    await kv.delete('vault_access_token_cache');
     return new Response(JSON.stringify({ ok: true }), { status: 200, headers });
   } catch (e) {
     return new Response(JSON.stringify({ ok: false, error: e.message }), { status: 500, headers });
