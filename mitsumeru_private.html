@@ -1905,6 +1905,26 @@ window.addEventListener('DOMContentLoaded', async function() {
     showSyncStatus('authfailed');
   }
 
+  // 2026-08-01是正（柴山さん実害報告・設計発注・至急）：本部がKVの汚染データを削除しても、
+  // ページを開き直した（リロードした）だけでは①のlocalStorage即時復元で古い表示が
+  // 残ったままだった。「今すぐ同期」ボタンを押させる（正典のエフォートレスの原則違反）の
+  // ではなく、通常のページ読み込み時に自動で解消されるようにする。認証失敗ではなく
+  // 正常応答で「KVに本当に無い」と分かった場合だけ、対応するlocalStorageも消し、
+  // 1回だけ再読込して古い表示を消す（2回目の読み込みではlocalStorageが既に空のため
+  // 再読込ループにはならない）。
+  // 重大な自己バグ是正（実装直後・実機テストで発見）：「KVが空だから消す」を無条件にすると、
+  // まだ夜の入力をしていないだけの普通の日（KVが空なのが正常）でも毎回trueになり、
+  // 無限リロードループに陥る。**ローカルに実際に古いデータが残っていた時だけ**リロード対象にする。
+  let _autoClearedAny = false;
+  const _autoClearIfEmpty = (status, type, hadLocalData) => {
+    if (status.ok && !status.authFailed && !status.value && hadLocalData) {
+      localStorage.removeItem(lsKey(type));
+      _autoClearedAny = true;
+    }
+  };
+  _autoClearIfEmpty(stMorning, 'morning', !!lsMorning);
+  _autoClearIfEmpty(stEvening, 'evening', !!lsEvening);
+
   const bestMorning = newerOf(lsMorning, kvMorning);
   if (bestMorning !== lsMorning && kvMorning) {
     applyMorningData(kvMorning);
@@ -1915,6 +1935,11 @@ window.addEventListener('DOMContentLoaded', async function() {
   if (bestEvening !== lsEvening && kvEvening) {
     applyEveningData(kvEvening);
     localStorage.setItem(lsKey('evening'), JSON.stringify(kvEvening));
+  }
+
+  if (_autoClearedAny) {
+    location.reload();
+    return;
   }
 
   const lsMemosTs  = lsMemos ? (lsMemos._ts||0) : 0;
