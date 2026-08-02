@@ -217,6 +217,15 @@
     <button class="btn-primary" onclick="saveSabikanTraining()">研修履歴を保存する</button>
     <div id="sk-save-msg" class="note" style="margin-top:8px;"></div>
     <div id="sk-alert-area" style="margin-top:12px;"></div>
+    <!-- 2026-08-02追加（柴山さん指摘・設計発注）：サビ管等は希少人材で即補充が難しく、
+         期限超過の赤アラートが出っぱなしになると現場が疲弊する。「対応中」を記録できるように
+         し、対応中は静かな表示に切り替える（アラートを消すのではなく、鳴りっぱなしを避ける）。 -->
+    <div class="field" style="margin-top:12px;">
+      <label>対応状況（任意・自由記述。例：採用活動中／後任育成中）</label>
+      <textarea id="sk-status-text" placeholder="対応中であれば状況を書いてください（空欄なら通常のアラート表示のまま）"></textarea>
+      <button class="btn-secondary" onclick="saveSabikanStatus()" style="margin-top:6px;">対応状況を保存する</button>
+      <div id="sk-status-save-msg" class="note" style="margin-top:6px;"></div>
+    </div>
   </div>
 
   <div class="section">
@@ -300,6 +309,24 @@ function loadSabikan(staffId) {
 }
 function saveSabikanData(staffId, data) { localStorage.setItem(sabikanKey(staffId), JSON.stringify(data)); }
 
+// 対応状況（2026-08-02追加）：みなし配置アラートを「消す」のではなく、対応中は静かな表示に
+// 切り替えるための状態。研修履歴とは別キーで保持（データの混在を避ける）。
+function sabikanStatusKey(staffId) { return 'kanade_sabikan_status_' + staffId; }
+function loadSabikanStatus(staffId) {
+  try { return JSON.parse(localStorage.getItem(sabikanStatusKey(staffId)) || 'null'); } catch(e) { return null; }
+}
+function saveSabikanStatusData(staffId, data) { localStorage.setItem(sabikanStatusKey(staffId), JSON.stringify(data)); }
+function saveSabikanStatus() {
+  const staffId = document.getElementById('sk-staff-select').value;
+  const msg = document.getElementById('sk-status-save-msg');
+  if (!staffId) { alert('職員を選択してください。'); return; }
+  const text = document.getElementById('sk-status-text').value.trim();
+  saveSabikanStatusData(staffId, { text, updatedAt: new Date().toISOString() });
+  msg.textContent = text ? '対応状況を保存しました。' : '対応状況をクリアしました（通常のアラート表示に戻ります）。';
+  msg.style.color = 'var(--accent)';
+  renderSabikanAlert(staffId);
+}
+
 function onSabikanFacilityChange() {
   const facilityId = document.getElementById('sk-facility-select').value;
   populateStaffSelect('sk-staff-select', facilityId);
@@ -322,14 +349,28 @@ function saveSabikanTraining() {
 // 実践研修修了日から5年後の更新研修期限を計算し、期限が近い（6か月以内）・既に過ぎている場合にアラートを出す
 function renderSabikanAlert(staffId) {
   const area = document.getElementById('sk-alert-area');
+  const statusEl = document.getElementById('sk-status-text');
   if (!area) return;
   const data = loadSabikan(staffId);
+  const statusData = loadSabikanStatus(staffId);
+  if (statusEl) statusEl.value = statusData ? (statusData.text || '') : '';
   if (!data || !data.jissenDate) { area.innerHTML = ''; return; }
   const jissen = new Date(data.jissenDate);
   const deadline = new Date(jissen); deadline.setFullYear(deadline.getFullYear() + 5);
   const today = new Date();
   const monthsLeft = (deadline - today) / (1000*60*60*24*30);
+  const daysLeft = Math.round((deadline - today) / (1000*60*60*24));
   const deadlineStr = deadline.toLocaleDateString('ja-JP');
+
+  // 「対応中」の記録があれば、鳴りっぱなしの赤アラートではなく静かな表示に切り替える
+  // （消すのが目的ではなく、疲弊させない・かつ見落とさせない、の両立が狙い）
+  if (statusData && statusData.text) {
+    const updatedStr = new Date(statusData.updatedAt).toLocaleDateString('ja-JP');
+    const daysText = daysLeft >= 0 ? `期限まであと${daysLeft}日` : `期限を${Math.abs(daysLeft)}日超過`;
+    area.innerHTML = `<div class="section" style="background:var(--card2, #f0f4f8);"><strong>🔵対応中：${statusData.text}</strong><div class="note" style="margin-top:4px;">${daysText}（期限：${deadlineStr}）／状況の更新日：${updatedStr}</div></div>`;
+    return;
+  }
+
   if (monthsLeft < 0) {
     area.innerHTML = `<div class="section" style="background:#fdecea;border-color:#c0392b;"><strong style="color:#c0392b;">⚠更新研修の期限（${deadlineStr}）を過ぎています。</strong> 資格が一時失効している可能性があります。至急ご確認ください。</div>`;
   } else if (monthsLeft <= 6) {
@@ -403,6 +444,8 @@ function renderSabikan() {
   if (!staffId) {
     if (kisoEl) kisoEl.value = '';
     if (jissenEl) jissenEl.value = '';
+    const statusEl = document.getElementById('sk-status-text');
+    if (statusEl) statusEl.value = '';
     document.getElementById('sk-alert-area').innerHTML = '';
     return;
   }
