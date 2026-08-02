@@ -122,6 +122,7 @@
   <button class="mode-tab active" onclick="switchTab('oneonone')">💬 1on1記録</button>
   <button class="mode-tab" onclick="switchTab('ojt')">📘 OJT計画</button>
   <button class="mode-tab" onclick="switchTab('feedback')">📣 フィードバック記録</button>
+  <button class="mode-tab" onclick="switchTab('sabikan')">🎓 サビ管等研修管理</button>
 </div>
 
 <!-- ══════════ CO-1＋CO-2：1on1記録シート（GROWモデル） ══════════ -->
@@ -194,6 +195,49 @@
   <div id="fb-history-area"></div>
 </div>
 
+<!-- ══════════ CO-5：サビ管等研修管理（2026-08-02・柴山さん承認・設計発注／リサーチ一次資料裏取り済み）══════════
+     出典：NotebookLM要約「サービス管理責任者・児童発達支援管理責任者 基礎研修共通化」§3・4
+     ＋リサーチ裏取り`リサーチ_みなし配置3条件_一次資料裏取り_奏実装用_20260802.md`
+     ⚠法令の細部を扱うため、判定の核（責に帰さない・予見できない事由か）はコード側で固定し、
+     条件1の具体的な除外パターン（都道府県・指定権者ごとに解釈が異なりうる部分）は
+     KANADE_TAIKYOKU_PATTERNS配列（設定値）として分離し、コード本体を触らず調整できるようにする。 -->
+<div id="screen-sabikan" class="screen">
+  <div class="section">
+    <div class="section-title">対象施設・対象職員</div>
+    <div class="field-row">
+      <div class="field"><label>施設</label><select id="sk-facility-select" onchange="onSabikanFacilityChange()"></select></div>
+      <div class="field"><label>職員</label><select id="sk-staff-select" onchange="renderSabikan()"></select></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">研修履歴・更新研修アラート</div>
+    <div class="field"><label>基礎研修修了日</label><input type="date" id="sk-kiso-date"></div>
+    <div class="field"><label>実践研修修了日（更新研修5年サイクルの起算点）</label><input type="date" id="sk-jissen-date"></div>
+    <button class="btn-primary" onclick="saveSabikanTraining()">研修履歴を保存する</button>
+    <div id="sk-save-msg" class="note" style="margin-top:8px;"></div>
+    <div id="sk-alert-area" style="margin-top:12px;"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">みなし配置シミュレーター</div>
+    <div class="note">サビ管・児発管が欠如した際、この職員をみなし配置した場合の延長期間（1年 or 2年）を判定します。判定の核（事業者の責に帰さない・予見できない事由か）は国の一次資料（令和5年6月30日厚労省・こども家庭庁事務連絡）に基づきます。★条件1の具体的な除外例は都道府県（指定権者）の運用解釈レベルの情報のため、下記の選択肢はコード内`KANADE_TAIKYOKU_PATTERNS`で調整可能です。</div>
+    <div class="field">
+      <label>欠如の事由</label>
+      <select id="sk-jiyu-select"></select>
+    </div>
+    <div class="field"><label>欠如が発生した日</label><input type="date" id="sk-ketsujo-date"></div>
+    <div class="field"><label>この職員が事業所に配置されたのは、欠如の発生「以前」からか</label>
+      <select id="sk-haichi-select">
+        <option value="before">欠如の発生より前から配置されている</option>
+        <option value="after">欠如の発生後に新規採用・異動してきた</option>
+      </select>
+    </div>
+    <button class="btn-primary" onclick="judgeMinashi()">判定する</button>
+    <div id="sk-judge-result" style="margin-top:12px;"></div>
+  </div>
+</div>
+
 <script>
 // ═══════════════════════════════════════════════
 // データ層
@@ -231,11 +275,149 @@ function loadFeedback(staffId) {
 function saveFeedbackList(staffId, list) { localStorage.setItem(feedbackKey(staffId), JSON.stringify(list)); }
 
 // ═══════════════════════════════════════════════
+// CO-5：サビ管等研修管理（2026-08-02追加）
+// ═══════════════════════════════════════════════
+
+// ⚠設定値（都道府県・指定権者ごとに解釈が異なりうる部分。コード本体を触らず調整可能にするため
+// ここに分離。判定の核＝「事業者の責に帰さない・予見できない事由か」は国の一次資料に基づき
+// judgeMinashi()側にハードコードし、この配列は「典型的な除外パターンの選択肢」のみを持つ）
+const KANADE_TAIKYOKU_PATTERNS = [
+  { value: 'fusoku',    label: '予期できない事由（急死・急な病気やケガ・失踪等）', excluded: false },
+  { value: 'keikaku',   label: '計画的退職・定期人事異動・定年退職',                 excluded: true },
+  { value: 'jizen',     label: '所定の事前申出期限（1か月以上前等）に則った退職',    excluded: true },
+  { value: 'harassment',label: '事業所（法人）側のハラスメント行為が原因の退職',     excluded: true },
+];
+
+function populateJiyuSelect() {
+  const sel = document.getElementById('sk-jiyu-select');
+  if (!sel) return;
+  sel.innerHTML = KANADE_TAIKYOKU_PATTERNS.map(p => `<option value="${p.value}">${p.label}</option>`).join('');
+}
+
+function sabikanKey(staffId) { return 'kanade_sabikan_' + staffId; }
+function loadSabikan(staffId) {
+  try { return JSON.parse(localStorage.getItem(sabikanKey(staffId)) || 'null'); } catch(e) { return null; }
+}
+function saveSabikanData(staffId, data) { localStorage.setItem(sabikanKey(staffId), JSON.stringify(data)); }
+
+function onSabikanFacilityChange() {
+  const facilityId = document.getElementById('sk-facility-select').value;
+  populateStaffSelect('sk-staff-select', facilityId);
+  populateJiyuSelect();
+  renderSabikan();
+}
+
+function saveSabikanTraining() {
+  const staffId = document.getElementById('sk-staff-select').value;
+  const msg = document.getElementById('sk-save-msg');
+  if (!staffId) { alert('職員を選択してください。'); return; }
+  const kiso = document.getElementById('sk-kiso-date').value;
+  const jissen = document.getElementById('sk-jissen-date').value;
+  saveSabikanData(staffId, { kisoDate: kiso, jissenDate: jissen, updatedAt: new Date().toISOString() });
+  msg.textContent = '保存しました。';
+  msg.style.color = 'var(--accent)';
+  renderSabikanAlert(staffId);
+}
+
+// 実践研修修了日から5年後の更新研修期限を計算し、期限が近い（6か月以内）・既に過ぎている場合にアラートを出す
+function renderSabikanAlert(staffId) {
+  const area = document.getElementById('sk-alert-area');
+  if (!area) return;
+  const data = loadSabikan(staffId);
+  if (!data || !data.jissenDate) { area.innerHTML = ''; return; }
+  const jissen = new Date(data.jissenDate);
+  const deadline = new Date(jissen); deadline.setFullYear(deadline.getFullYear() + 5);
+  const today = new Date();
+  const monthsLeft = (deadline - today) / (1000*60*60*24*30);
+  const deadlineStr = deadline.toLocaleDateString('ja-JP');
+  if (monthsLeft < 0) {
+    area.innerHTML = `<div class="section" style="background:#fdecea;border-color:#c0392b;"><strong style="color:#c0392b;">⚠更新研修の期限（${deadlineStr}）を過ぎています。</strong> 資格が一時失効している可能性があります。至急ご確認ください。</div>`;
+  } else if (monthsLeft <= 6) {
+    area.innerHTML = `<div class="section" style="background:#fdf3e0;border-color:var(--gold);"><strong>更新研修の期限は${deadlineStr}です（残り約${Math.round(monthsLeft)}か月）。</strong> 5年ごとの受講義務を過ぎると資格が一時失効するため、早めの受講手配をおすすめします。</div>`;
+  } else {
+    area.innerHTML = `<div class="note">更新研修の期限：${deadlineStr}（実践研修修了日から5年後）</div>`;
+  }
+}
+
+// みなし配置3条件の判定（出典：厚労省・こども家庭庁事務連絡＋Q&A・2026-08-02リサーチ裏取り済み）
+function judgeMinashi() {
+  const staffId = document.getElementById('sk-staff-select').value;
+  const resultArea = document.getElementById('sk-judge-result');
+  if (!staffId) { alert('職員を選択してください。'); return; }
+  const data = loadSabikan(staffId) || {};
+  const jiyu = document.getElementById('sk-jiyu-select').value;
+  const ketsujoDateStr = document.getElementById('sk-ketsujo-date').value;
+  const haichi = document.getElementById('sk-haichi-select').value;
+  if (!ketsujoDateStr) { alert('欠如が発生した日を入力してください。'); return; }
+
+  const pattern = KANADE_TAIKYOKU_PATTERNS.find(p => p.value === jiyu);
+  const ketsujoDate = new Date(ketsujoDateStr);
+  const kisoDate = data.kisoDate ? new Date(data.kisoDate) : null;
+
+  const reasons = [];
+  let eligible2y = true;
+
+  // 条件1：事由が「事業者の責に帰さない・予見できない事由」か（判定の核・国の一次資料）
+  if (!pattern || pattern.excluded) {
+    eligible2y = false;
+    reasons.push('条件1：選択された事由は「事業者の責に帰さない・予見できない事由」に該当しないため対象外（' + (pattern ? pattern.label : '不明') + '）');
+  } else {
+    reasons.push('条件1：予期できない事由に該当（OK）');
+  }
+
+  // 条件2：欠如した時点で既に基礎研修を修了済みか
+  if (!kisoDate) {
+    eligible2y = false;
+    reasons.push('条件2：基礎研修修了日が未登録のため判定不能（研修履歴を先に登録してください）');
+  } else if (kisoDate > ketsujoDate) {
+    eligible2y = false;
+    reasons.push('条件2：基礎研修修了が欠如発生「後」のため対象外（欠如時点で修了済みであることが必須）');
+  } else {
+    reasons.push('条件2：欠如発生時点で基礎研修修了済み（OK）');
+  }
+
+  // 条件3：欠如する以前から当該事業所に配置されていたか
+  if (haichi === 'after') {
+    eligible2y = false;
+    reasons.push('条件3：欠如発生「後」に新規採用・異動してきたため対象外');
+  } else {
+    reasons.push('条件3：欠如発生以前から当該事業所に配置済み（OK）');
+  }
+
+  const verdict = eligible2y ? '2年間の延長が可能です' : 'みなし配置期間は1年間のみです（2年延長の対象外）';
+  const verdictColor = eligible2y ? 'var(--accent)' : '#c0392b';
+  resultArea.innerHTML = `
+    <div class="section" style="border-color:${verdictColor};">
+      <div style="font-size:15px;font-weight:700;color:${verdictColor};margin-bottom:8px;">${verdict}</div>
+      <ul style="font-size:12px;color:var(--text2);padding-left:18px;">
+        ${reasons.map(r => `<li>${r}</li>`).join('')}
+      </ul>
+      <div class="note" style="margin-top:8px;">出典：令和5年6月30日厚労省・こども家庭庁事務連絡＋「令和5年度サービス管理責任者等研修制度の変更に関するQ&A」問9（2026-08-02リサーチ裏取り済み）。条件1の具体的な除外パターンは都道府県の運用解釈レベルの情報です。</div>
+    </div>`;
+}
+
+function renderSabikan() {
+  const staffId = document.getElementById('sk-staff-select') ? document.getElementById('sk-staff-select').value : '';
+  const kisoEl = document.getElementById('sk-kiso-date');
+  const jissenEl = document.getElementById('sk-jissen-date');
+  if (!staffId) {
+    if (kisoEl) kisoEl.value = '';
+    if (jissenEl) jissenEl.value = '';
+    document.getElementById('sk-alert-area').innerHTML = '';
+    return;
+  }
+  const data = loadSabikan(staffId);
+  if (kisoEl) kisoEl.value = data ? (data.kisoDate || '') : '';
+  if (jissenEl) jissenEl.value = data ? (data.jissenDate || '') : '';
+  renderSabikanAlert(staffId);
+}
+
+// ═══════════════════════════════════════════════
 // タブ切替
 // ═══════════════════════════════════════════════
 function switchTab(tab) {
   document.querySelectorAll('.mode-tab').forEach((t,i) => {
-    t.classList.toggle('active', ['oneonone','ojt','feedback'][i] === tab);
+    t.classList.toggle('active', ['oneonone','ojt','feedback','sabikan'][i] === tab);
   });
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-'+tab).classList.add('active');
@@ -244,6 +426,7 @@ function switchTab(tab) {
   if (tab === 'oneonone') { populateFacilitySelect('oo-facility-select'); onOneOnOneFacilityChange(); }
   if (tab === 'ojt')      { populateFacilitySelect('ojt-facility-select'); onOjtFacilityChange(); }
   if (tab === 'feedback') { populateFacilitySelect('fb-facility-select'); onFeedbackFacilityChange(); }
+  if (tab === 'sabikan')  { populateFacilitySelect('sk-facility-select'); onSabikanFacilityChange(); }
 }
 
 function populateFacilitySelect(selectId) {
