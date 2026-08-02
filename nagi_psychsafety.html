@@ -61,6 +61,7 @@
 <div class="mode-tabs">
   <button class="mode-tab active" onclick="switchTab('survey')">📝 7問アンケート</button>
   <button class="mode-tab" onclick="switchTab('result')">🛡️ 診断結果・履歴</button>
+  <button class="mode-tab" onclick="switchTab('shikumika')">🧩 仕組み化アセスメント</button>
 </div>
 
 <!-- ══════════ C5-1：エドモンドソン7問アンケート ══════════ -->
@@ -91,6 +92,25 @@
   </div>
 </div>
 
+<!-- ══════════ C5-3：仕組み化アセスメント（2026-08-02・柴山さん承認・設計発注）══════════
+     出典：NotebookLM要約「コンサル型福祉経営 火消し型経営 組織の疲弊構造」§4①（訪問看護の仕組みラボ）。
+     エドモンドソン7問（心理的安全性そのものの測定）とは評価対象が異なる別軸のため、
+     既存の7問アンケート・クラーク4段階判定には一切手を加えず、並行する新規診断として追加する。 -->
+<div id="screen-shikumika" class="screen">
+  <div class="section">
+    <div class="section-title">対象事業所</div>
+    <select id="shikumika-office-select" onchange="renderShikumika()"></select>
+  </div>
+  <div class="section">
+    <div class="section-title">仕組み化アセスメント（5つのYes/No設問）</div>
+    <div class="note">組織が属人化（個人の根性・努力への依存）から脱却し、安定して自走できる構造になっているかを自己評価します。エドモンドソンの7問（心理的安全性そのもの）とは別の軸として、並行してご利用ください。</div>
+    <div id="shikumika-questions"></div>
+    <button class="btn-primary" onclick="submitShikumika()">この回答を保存する</button>
+    <div id="shikumika-save-msg" class="note" style="margin-top:8px;"></div>
+  </div>
+  <div id="shikumika-result-area"></div>
+</div>
+
 <script>
 // ═══════════════════════════════════════════════
 // エドモンドソン7問（心理的安全性の学術尺度・Edmondson 1999）
@@ -118,6 +138,83 @@ function loadPsych(officeId) {
 }
 function savePsych(officeId, data) { localStorage.setItem(psychKey(officeId), JSON.stringify(data)); }
 
+// ═══════════════════════════════════════════════
+// C5-3：仕組み化アセスメント（訪問看護の仕組みラボ・5項目Yes/No・2026-08-02追加）
+// ═══════════════════════════════════════════════
+const SHIKUMIKA_QUESTIONS = [
+  '記録基準が揃っている：誰が書いても、ある程度同じ内容・視点になるか？',
+  '情報共有ルールが明確：何を・誰に・どこで共有するかが決まっているか？',
+  '新人教育フローがある：教える人・内容・順番が仕組みとして設計されているか？',
+  '判断エスカレーションが設計されている：迷ったときの相談ルートと判断ラインが明確か？',
+  '改善レビューを定期実施している：定期的な振り返りと改善が行われているか？',
+];
+const SHIKUMIKA_ZONES = [
+  { min: 0, max: 2,  key: '危険ゾーン',   cls: 'stage-1', desc: '日々の運営が「人の努力と根性」でかろうじて回っている状態。ベテラン依存・管理者の忙化・新人の定着不安・クレームやトラブルの予備軍が滞留しやすい段階。' },
+  { min: 3, max: 4,  key: '過渡期ゾーン', cls: 'stage-2', desc: '仕組みづくりが動き始めている段階。一部は整っているがまだ属人化が残っており、現場の負担が握れているレベル。' },
+  { min: 5, max: 5,  key: '成長ゾーン',   cls: 'stage-3', desc: '仕組みが組織に根付き始めている状態。現場が安定し、新人が育ち、管理者が戦略思考に集中でき、サービス満足度が高水準で安定するレベル。' },
+];
+function judgeShikumikaZone(yesCount) {
+  return SHIKUMIKA_ZONES.find(z => yesCount >= z.min && yesCount <= z.max) || SHIKUMIKA_ZONES[0];
+}
+function shikumikaKey(officeId) { return 'nagi_shikumika_' + officeId; }
+function loadShikumika(officeId) {
+  try { return JSON.parse(localStorage.getItem(shikumikaKey(officeId)) || 'null'); } catch(e) { return null; }
+}
+function saveShikumika(officeId, data) { localStorage.setItem(shikumikaKey(officeId), JSON.stringify(data)); }
+let currentShikumikaAnswers = new Array(SHIKUMIKA_QUESTIONS.length).fill(null);
+
+function renderShikumikaQuestions() {
+  const box = document.getElementById('shikumika-questions');
+  if (!box) return;
+  box.innerHTML = SHIKUMIKA_QUESTIONS.map((q, i) => `
+    <div class="q-item">
+      <div class="q-num">Q${i+1}</div>
+      <div class="q-text">${q}</div>
+      <div class="likert-row" id="shikumika-likert-${i}">
+        <div class="likert-btn" onclick="selectShikumikaAnswer(${i},true)" data-val="yes">はい</div>
+        <div class="likert-btn" onclick="selectShikumikaAnswer(${i},false)" data-val="no">いいえ</div>
+      </div>
+    </div>`).join('');
+}
+function selectShikumikaAnswer(qIndex, value) {
+  currentShikumikaAnswers[qIndex] = value;
+  document.querySelectorAll(`#shikumika-likert-${qIndex} .likert-btn`).forEach(el => {
+    el.classList.toggle('selected', (el.dataset.val === 'yes') === value);
+  });
+}
+function submitShikumika() {
+  const officeId = document.getElementById('shikumika-office-select').value;
+  const msg = document.getElementById('shikumika-save-msg');
+  if (!officeId) { alert('事業所を選択してください。'); return; }
+  if (currentShikumikaAnswers.some(v => v === null)) { alert('5問すべてに回答してください。'); return; }
+  const yesCount = currentShikumikaAnswers.filter(v => v === true).length;
+  const zone = judgeShikumikaZone(yesCount);
+  const data = { answers: currentShikumikaAnswers.slice(), yesCount, zone: zone.key, updatedAt: new Date().toISOString() };
+  saveShikumika(officeId, data);
+  msg.textContent = `保存しました（はい${yesCount}/5・${zone.key}）。`;
+  msg.style.color = 'var(--accent)';
+  currentShikumikaAnswers = new Array(SHIKUMIKA_QUESTIONS.length).fill(null);
+  renderShikumikaQuestions();
+  renderShikumika();
+}
+function renderShikumika() {
+  const officeId = document.getElementById('shikumika-office-select') ? document.getElementById('shikumika-office-select').value : '';
+  const area = document.getElementById('shikumika-result-area');
+  if (!area) return;
+  if (!officeId) { area.innerHTML = ''; return; }
+  const data = loadShikumika(officeId);
+  if (!data) { area.innerHTML = '<div class="empty-state">この事業所の仕組み化アセスメント結果はまだありません</div>'; return; }
+  const zone = SHIKUMIKA_ZONES.find(z => z.key === data.zone) || SHIKUMIKA_ZONES[0];
+  area.innerHTML = `
+    <div class="stage-card ${zone.cls}">
+      <div class="stage-title">${zone.key}</div>
+      <div class="stage-score">「はい」${data.yesCount}/5 ／ 診断日：${new Date(data.updatedAt).toLocaleString('ja-JP')}</div>
+      <div style="font-size:12px;margin-top:8px;">${zone.desc}</div>
+    </div>
+    <div class="note">出典：NotebookLM要約「コンサル型福祉経営 火消し型経営 組織の疲弊構造」§4①（訪問看護の仕組みラボ）。エドモンドソン7問（心理的安全性そのもの）とは評価対象が異なる別軸のため、両者のスコアを合算・換算することはしていません。</div>
+  `;
+}
+
 let corps = loadCorpsReadOnly();
 let offices = loadOfficesReadOnly();
 let currentAnswers = new Array(EDMONDSON_QUESTIONS.length).fill(null);
@@ -127,7 +224,7 @@ let currentAnswers = new Array(EDMONDSON_QUESTIONS.length).fill(null);
 // ═══════════════════════════════════════════════
 function switchTab(tab) {
   document.querySelectorAll('.mode-tab').forEach((t,i) => {
-    t.classList.toggle('active', ['survey','result'][i] === tab);
+    t.classList.toggle('active', ['survey','result','shikumika'][i] === tab);
   });
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-'+tab).classList.add('active');
@@ -135,6 +232,7 @@ function switchTab(tab) {
   offices = loadOfficesReadOnly();
   if (tab === 'survey') { populateOfficeSelect('survey-office-select'); }
   if (tab === 'result') { populateOfficeSelect('result-office-select'); renderResult(); }
+  if (tab === 'shikumika') { populateOfficeSelect('shikumika-office-select'); renderShikumikaQuestions(); renderShikumika(); }
 }
 
 function officeLabel(o) {
