@@ -2299,12 +2299,13 @@ function formatJobSearchStatusText(jobSearchStatus) {
   return parts.join('\n\n');
 }
 
-// 朝刊反応（2026-07-30・柴山さん直命・生成⇔検証ループ／2026-08-01再設計・柴山さん×設計壁打ち）：
-// タップ式反応（👍/🤷/👎）は蒸留の役に立たないと判断され廃止。見出し＋要約を読み物として並べ、
-// 各項目に自由記述のコメント欄を用意する。コメントは専用の保存先を作らず、既存の随時メモ
-// （#思考タグ）としてそのまま保存する（柴山さんの実際の使い方＝モバイルで一言書く→
-// 後でPCで秘書との壁打ち結果を同じメモに追記する、に既存の随時メモの仕組みが合うため）。
-let asakanItems = {}; // { index: {heading, summary, memoIndex} }
+// 朝刊反応（2026-07-30・柴山さん直命・生成⇔検証ループ／2026-08-01再設計・柴山さん×設計壁打ち／
+// 2026-08-04再設計・柴山さん直命「各項目にコメント欄は要らない。まとめて思考として一気にコメント
+// する」）：タップ式反応（👍/🤷/👎）は蒸留の役に立たないと判断され廃止。見出し＋要約を読み物として
+// 並べ、項目ごとの個別コメント欄は廃止し、リスト全体に対する1つのまとめコメント欄のみを設ける。
+// コメントは専用の保存先を作らず、既存の随時メモ（#思考タグ）としてその日1件だけ保存する。
+let asakanItems = {}; // { index: {heading, summary} }
+let asakanAllMemoIndex = null; // その日の朝刊まとめコメントが保存されているmemosの添字（無ければnull）
 
 function escapeAsakanHtml(s) {
   return String(s || '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
@@ -2330,7 +2331,11 @@ async function loadAsakanPanel() {
       return;
     }
     asakanItems = {};
-    (data.headings || []).forEach(h => { asakanItems[h.index] = { heading: h.heading, summary: h.summary || '', memoIndex: null }; });
+    (data.headings || []).forEach(h => { asakanItems[h.index] = { heading: h.heading, summary: h.summary || '' }; });
+    const todayStr = localDateStr(new Date());
+    const prefix = `【朝刊】${todayStr}：`;
+    const foundIdx = memos.findIndex(m => m.tag === 'G' && typeof m.content === 'string' && m.content.startsWith(prefix));
+    asakanAllMemoIndex = foundIdx >= 0 ? foundIdx : null;
     renderAsakanPanel();
   } catch (e) {
     box.innerHTML = '<span style="color:var(--text3);font-size:12px;">読み込みに失敗しました（無視して他の操作を続けてよい）</span>';
@@ -2345,33 +2350,37 @@ function renderAsakanPanel() {
     box.innerHTML = '<span style="color:var(--text3);font-size:12px;">本日の朝刊はまだ生成されていません</span>';
     return;
   }
-  box.innerHTML = indices.map(idx => {
+  const todayStr = localDateStr(new Date());
+  const existingComment = asakanAllMemoIndex !== null && memos[asakanAllMemoIndex]
+    ? memos[asakanAllMemoIndex].content.replace(/^【朝刊】[^：]*：/, '') : '';
+  const listHtml = indices.map(idx => {
     const it = asakanItems[idx];
-    const existingComment = it.memoIndex !== null && memos[it.memoIndex] ? memos[it.memoIndex].content.replace(/^【朝刊】[^：]*：/, '') : '';
     return `<div style="margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border);">
       <div style="margin-bottom:4px;font-weight:500;">${escapeAsakanHtml(it.heading)}</div>
       <div style="font-size:12px;color:var(--text3);margin-bottom:8px;">${escapeAsakanHtml(it.summary)}</div>
-      <textarea id="asakan-comment-${idx}" placeholder="コメント（任意・書かなくてよい）" style="width:100%;min-height:40px;font-size:13px;padding:6px 8px;border:0.5px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text);" onblur="saveAsakanComment(${idx})">${escapeAsakanHtml(existingComment)}</textarea>
     </div>`;
   }).join('');
+  box.innerHTML = listHtml + `
+    <div style="margin-top:4px;">
+      <textarea id="asakan-comment-all" placeholder="まとめてコメント（任意・全体を読んで気になったことを一気に書いてよい）" style="width:100%;min-height:60px;font-size:13px;padding:6px 8px;border:0.5px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text);" onblur="saveAsakanComment()">${escapeAsakanHtml(existingComment)}</textarea>
+    </div>`;
 }
 
-// コメントが書かれた項目だけ、既存の随時メモ（#思考タグ）として保存する。専用の保存先は作らない。
-// 同じ項目に何度も書き直した場合は新規メモを増やさず、既存のメモを上書き更新する。
-function saveAsakanComment(idx) {
-  const it = asakanItems[idx];
-  if (!it) return;
-  const el = document.getElementById(`asakan-comment-${idx}`);
+// リスト全体に対する1件のまとめコメントだけを、既存の随時メモ（#思考タグ）として保存する。
+// 専用の保存先は作らない。同じ日に何度も書き直した場合は新規メモを増やさず、既存のメモを上書き更新する。
+function saveAsakanComment() {
+  const el = document.getElementById('asakan-comment-all');
   const text = el ? el.value.trim() : '';
-  if (!text) return; // 書かない項目があってよい（空なら何もしない・既存メモを消しもしない）
-  const content = `【朝刊】${it.heading}：${text}`;
-  if (it.memoIndex !== null && memos[it.memoIndex]) {
-    memos[it.memoIndex].content = content;
+  if (!text) return; // 書かなくてよい（空なら何もしない・既存メモを消しもしない）
+  const todayStr = localDateStr(new Date());
+  const content = `【朝刊】${todayStr}：${text}`;
+  if (asakanAllMemoIndex !== null && memos[asakanAllMemoIndex]) {
+    memos[asakanAllMemoIndex].content = content;
   } else {
     const now = new Date();
     const timeStr = `${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}`;
     memos.push({ tag: 'G', time: timeStr, pomos: null, content, image: null });
-    it.memoIndex = memos.length - 1;
+    asakanAllMemoIndex = memos.length - 1;
   }
   saveMemos();
   renderMemos();
