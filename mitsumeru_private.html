@@ -1985,6 +1985,34 @@ window.addEventListener('DOMContentLoaded', async function() {
     if (bestDelay !== lsDelay) localStorage.setItem(lsKey('delay'), JSON.stringify(bestDelay));
   }
 
+  // 週次・月次サマリーをKVから復元（別端末同期・2026-08-04是正）：
+  // PCで生成した結果を、スマホ側では再生成せず取得できるようにする。「翌日戦略」と同じ
+  // 考え方（設計・柴山さん確定原因2026-07-20）を週次・月次にも適用する。失敗しても
+  // 既存機能には影響させない（再生成ボタンはそのまま使える）。
+  (async () => {
+    try {
+      const today = new Date();
+      const weekStart = (() => { const d = new Date(today); d.setDate(today.getDate() - 6); return localDateStr(d); })();
+      const kvWeekly = await cloudLoad('weekly-summary', weekStart);
+      if (kvWeekly && kvWeekly.text) {
+        const wBox = document.getElementById('weekly-summary');
+        if (wBox && !wBox.classList.contains('visible')) {
+          wBox.textContent = kvWeekly.text; wBox.classList.add('visible');
+          document.getElementById('copy-weekly-btn').style.display = 'inline-block';
+        }
+      }
+      const monthKey = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}`;
+      const kvMonthly = await cloudLoad('monthly-summary', monthKey);
+      if (kvMonthly && kvMonthly.text) {
+        const mBox = document.getElementById('monthly-summary');
+        if (mBox && !mBox.classList.contains('visible')) {
+          mBox.textContent = kvMonthly.text; mBox.classList.add('visible');
+          document.getElementById('copy-monthly-btn').style.display = 'inline-block';
+        }
+      }
+    } catch (e) { /* 失敗しても再生成ボタンで通常通り使えるため無視してよい */ }
+  })();
+
   // ③ オフライン復帰時の自動同期
   window.addEventListener('online', async function() {
     if (!syncPending) return;
@@ -4440,7 +4468,13 @@ ${records.join('\n\n')}
 ## ひとこと所感`;
 
   callClaude(prompt,
-    text => { loading.style.display='none'; box.textContent=text; box.classList.add('visible'); document.getElementById('copy-weekly-btn').style.display='inline-block'; },
+    text => {
+      loading.style.display='none'; box.textContent=text; box.classList.add('visible'); document.getElementById('copy-weekly-btn').style.display='inline-block';
+      // 2026-08-04是正（柴山さん実害報告）：生成結果がKVへ一切保存されておらず、
+      // PCで生成してもスマホで見れなかった。既存のcloudSaveの仕組みで週次サマリーを
+      // 保存する（キーはstartDate、翌日戦略等と同じ型で日付付きキーを使う）。
+      cloudSave('weekly-summary', { text, generatedAt: `${startDate}〜${endDate}` }, startDate);
+    },
     err  => { loading.style.display='none'; box.textContent='エラー：'+err; box.classList.add('visible'); }
   );
 }
@@ -4492,8 +4526,14 @@ ${records.join('\n\n')}
 ## \u4E3B\u306A\u6210\u679C\u30FB\u5B9F\u7E3E
 ## \u7FCC\u6708\u3078\u306E\u63D0\u8A00`;
 
+  const monthKey = `${year}-${String(month+1).padStart(2,'0')}`;
   callClaude(prompt,
-    text => { loading.style.display='none'; box.textContent=text; box.classList.add('visible'); document.getElementById('copy-monthly-btn').style.display='inline-block'; },
+    text => {
+      loading.style.display='none'; box.textContent=text; box.classList.add('visible'); document.getElementById('copy-monthly-btn').style.display='inline-block';
+      // 2026-08-04\u662F\u6B63\uFF08\u67F4\u5C71\u3055\u3093\u5B9F\u5BB3\u5831\u544A\uFF09\uFF1A\u9031\u6B21\u30B5\u30DE\u30EA\u30FC\u3068\u540C\u69D8\u3001\u751F\u6210\u7D50\u679C\u304CKV\u3078\u4FDD\u5B58\u3055\u308C\u3066
+      // \u304A\u3089\u305A\u30B9\u30DE\u30DB\u3067\u898B\u308C\u306A\u304B\u3063\u305F\u3002\u65E2\u5B58\u306EcloudSave\u3067\u4FDD\u5B58\u3059\u308B\uFF08\u30AD\u30FC\u306F\u5E74\u6708\uFF09\u3002
+      cloudSave('monthly-summary', { text, generatedAt: yearMonth }, monthKey);
+    },
     err  => { loading.style.display='none'; box.textContent='\u30A8\u30E9\u30FC\uFF1A'+err; box.classList.add('visible'); }
   );
 }
