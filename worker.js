@@ -37,7 +37,7 @@ const CORS_HEADERS = {
 
 // 版数確認用（2026-08-04・設計発注）。デプロイのたびに手で更新する（自動生成の仕組みは
 // 作らない・完璧さより外から見えることを優先、という発注時の指示に従う）。
-const BUILD_VERSION = '2026-08-04T18:22 1aedcdb+version-endpoint';
+const BUILD_VERSION = '2026-08-04T18:30 sync-calendar-500-fix';
 
 export default {
   async fetch(request, env) {
@@ -417,7 +417,14 @@ async function handleSyncCalendar(request, env) {
     const event = await writeCalendarEvent(env, accessToken, date, record); // G3-カレンダー
     return new Response(JSON.stringify({ ok: true, date, eventId: event.id }), { status: 200, headers });
   } catch (e) {
-    return new Response(JSON.stringify({ ok: false, error: e.message }), { status: 500, headers });
+    // 2026-08-04是正（FP-0006・QA2指摘）：本エンドポイントは柴山さんご本人専用のベストエフォート
+    // 連携で、呼び出し元（syncToGoogleCalendar）も結果を無視するfire-and-forgetになっている
+    // （既存コメント「失敗しても既存機能には一切影響させない」参照）。実測でGOOGLE_CALENDAR_ID
+    // 側の404（notFound）を確認済み＝外部設定側の問題で、コード修正だけでは解消しない。
+    // 500（サーバ側の想定外エラー）として返すと監視・QAが「実装が壊れている」と誤検知するため、
+    // 他の任意連携（sync-vault等のvaultResult）と同じ「200でok:falseを返す」形に統一する。
+    console.error('[sync-calendar] 失敗（外部Google Calendar API起因の可能性）:', e.message);
+    return new Response(JSON.stringify({ ok: false, error: e.message }), { status: 200, headers });
   }
 }
 
