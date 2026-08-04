@@ -1228,8 +1228,13 @@ function buildVaultMarkdown(date, record) {
   const morning = record.morning || {};
   const evening = record.evening || {};
   const want = morning['m-want'] || '（記載なし）';
-  const hp = morning['hp-val'] || '';
-  const mp = morning['mp-val'] || '';
+  // 2026-08-04是正（開発B・柴山さん実害報告）：夜の締め(closeDayHPMP)の値が保存されるようになった
+  // （mitsumeru_private.html側の対応と対）ため、evening側にhp-close-val/mp-close-valがあれば
+  // そちらを優先する。無ければ従来通り朝の値にフォールバックする（後方互換）。
+  const hp = (evening['hp-close-val'] !== undefined && evening['hp-close-val'] !== null && evening['hp-close-val'] !== '')
+    ? evening['hp-close-val'] : (morning['hp-val'] || '');
+  const mp = (evening['mp-close-val'] !== undefined && evening['mp-close-val'] !== null && evening['mp-close-val'] !== '')
+    ? evening['mp-close-val'] : (morning['mp-val'] || '');
   const lvBase = morning['lv-base'] !== undefined ? morning['lv-base'] : '';
   const supplement = evening['e-supplement'] || '（記載なし）';
   // 2026-07-25設計指示（B案）：夜タブの生テキストも書き出す（AI生成ナラティブ自体は

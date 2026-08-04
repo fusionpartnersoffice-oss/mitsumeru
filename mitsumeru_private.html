@@ -3297,8 +3297,23 @@ function closeDayHPMP() {
     return;
   }
   renderDayClose(c, c.endHP, c.endMP);
+  saveEveningHPMPClose(c.endHP, c.endMP);
   syncToGoogleCalendar();
   syncToVault();
+}
+
+// 2026-08-04発見（秘書経由・柴山さん実害報告）：夜の締め(closeDayHPMP)で算出したHP/MPは
+// これまでrenderDayClose()による画面表示のみで、KV/localStorageへ一切保存されていなかった。
+// 「翌日戦略」は毎日evening KVに保存されるが、夜の締めHP/MPだけは保存経路自体が未実装だった
+// （既存のsaveEvening()はテキストエリア・デバッグ項目専用で、この値は関知しない）。
+// evening KVの既存データを壊さないよう読み込んでからマージし、明示的な締め操作直後の
+// 即時呼び出し（saveMemos()と同じ理由でデバウンスしない）で保存する。
+function saveEveningHPMPClose(endHP, endMP) {
+  const dateAtSave = targetDate;
+  const existing = lsLoad('evening', dateAtSave) || {};
+  const data = { ...existing, 'hp-close-val': endHP, 'mp-close-val': endMP, _ts: Date.now() };
+  localStorage.setItem(lsKey('evening', dateAtSave), JSON.stringify(data));
+  cloudSave('evening', data, dateAtSave);
 }
 
 // G連携基盤・G3-カレンダー：夜の締めのタイミングでGoogleカレンダーへ自動書き出し（柴山さんご本人専用）。
