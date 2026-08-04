@@ -35,6 +35,10 @@ const CORS_HEADERS = {
   'Access-Control-Max-Age': '86400',
 };
 
+// 版数確認用（2026-08-04・設計発注）。デプロイのたびに手で更新する（自動生成の仕組みは
+// 作らない・完璧さより外から見えることを優先、という発注時の指示に従う）。
+const BUILD_VERSION = '2026-08-04T18:22 1aedcdb+version-endpoint';
+
 export default {
   async fetch(request, env) {
     // OPTIONSプリフライトリクエスト（モバイルブラウザのCORS対応）
@@ -43,6 +47,13 @@ export default {
     }
 
     const url = new URL(request.url);
+
+    // ===== 版数確認（2026-08-04・設計発注・QA2指摘対応）=====
+    // デプロイ確認が「開発Bの自己申告」に依存していた（外から検証する手段が無かった）ため新設。
+    // 認証不要（秘密情報を含まないため）。デプロイ時にBUILD定数を手で更新する運用。
+    if (url.pathname === '/version' && request.method === 'GET') {
+      return new Response(JSON.stringify({ ok: true, build: BUILD_VERSION }), { status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
+    }
 
     // ===== G連携基盤：ミツメルの記録をGoogleカレンダーへ自動書き出し（Phase1・私専用） =====
     if (url.pathname === '/sync-calendar' && request.method === 'POST') {
