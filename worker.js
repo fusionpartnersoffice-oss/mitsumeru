@@ -37,7 +37,7 @@ const CORS_HEADERS = {
 
 // 版数確認用（2026-08-04・設計発注）。デプロイのたびに手で更新する（自動生成の仕組みは
 // 作らない・完璧さより外から見えることを優先、という発注時の指示に従う）。
-const BUILD_VERSION = '2026-08-04T18:30 sync-calendar-500-fix';
+const BUILD_VERSION = '2026-08-05T08:50 FP-0018-ai-narrative-to-vault';
 
 export default {
   async fetch(request, env) {
@@ -433,10 +433,15 @@ async function handleSyncCalendar(request, env) {
 // プロファイルキー（private_profile_global）には設計上の制約により一切アクセスしない。
 async function getPrivateDailyRecord(env, date) {
   const kv = getKV(env);
-  const [morningRaw, eveningRaw, memosRaw] = await Promise.all([
+  // FP-0018（2026-08-05・設計発注）：夜のAI生成ナラティブ（翌日戦略の全文）は既存の
+  // private_output_{date} KV（generateEvening()がcloudSave('output', ...)で書いている）に
+  // 既に保存されていたが、ここで読んでいなかったためVaultへ反映されていなかった。新しい
+  // KV名前空間・エンドポイントは作らず、既存のoutputキーを読み先に加えるだけで足りる。
+  const [morningRaw, eveningRaw, memosRaw, outputRaw] = await Promise.all([
     kv.get('private_morning_' + date),
     kv.get('private_evening_' + date),
     kv.get('private_memos_' + date),
+    kv.get('private_output_' + date),
   ]);
   const parseJson = (raw) => {
     if (!raw) return null;
@@ -446,6 +451,7 @@ async function getPrivateDailyRecord(env, date) {
     morning: parseJson(morningRaw),
     evening: parseJson(eveningRaw),
     memos: parseJson(memosRaw),
+    output: parseJson(outputRaw),
   };
 }
 
@@ -1256,7 +1262,12 @@ function buildVaultMarkdown(date, record) {
   const lvBase = morning['lv-base'] !== undefined ? morning['lv-base'] : '';
   const supplement = evening['e-supplement'] || '（記載なし）';
   // 2026-07-25設計指示（B案）：夜タブの生テキストも書き出す（AI生成ナラティブ自体は
-  // 現状KV未保存のため対象外・A案として別途検討中）
+  // 現状KV未保存のため対象外・A案として別途検討中） → 2026-08-05・FP-0018で設計２が実装。
+  // 朝の「参謀からの一言」はmorning['morning-advice']（saveMorning()が既に保存していた）、
+  // 夜の「翌日戦略」全文はrecord.output.text（generateEvening()が既にcloudSave('output',...)で
+  // 保存していた）を、それぞれ読んで書き出す。どちらも新規保存経路は作らず、既存KVを読むだけ。
+  const morningAdvice = morning['morning-advice'] || null;
+  const tomorrowPlanFull = (record.output && record.output.text) ? record.output.text : null;
   const tomorrow = evening['e-tomorrow'] || '（記載なし）';
   const delay = evening['e-delay'] || '（記載なし）';
   const try100 = evening['e-try100'] || '（記載なし）';
@@ -1299,6 +1310,9 @@ HP：${hp || '—'}／MP：${mp || '—'}
 ## 今日の一言
 ${want}
 
+## 参謀からの一言（AI生成）
+${morningAdvice || '（記載なし）'}
+
 ## 随時メモ
 ${memosText}
 
@@ -1307,6 +1321,9 @@ ${supplement}
 
 ## 明日の設計
 ${tomorrow}
+
+## 翌日戦略（AI生成・全文）
+${tomorrowPlanFull || '（記載なし）'}
 
 ## 先送りタスク
 ${delay}
