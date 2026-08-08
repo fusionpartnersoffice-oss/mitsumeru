@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>管理者が相談できる場 | Fusion Partners</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧭</text></svg>">
+<script src="mitsumeru_core.js"></script>
+<style>
+:root {
+  --bg:#0f1923; --surface:#1a2634; --card:#223044;
+  --accent:#4fc3f7; --accent2:#81c784; --accent3:#ffb74d;
+  --text:#e8eaf0; --sub:#8fa3b8; --border:#2e4460; --radius:12px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Hiragino Kaku Gothic Pro','Meiryo',sans-serif;min-height:100vh;}
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 20px;}
+header h1{font-size:0.95rem;font-weight:700;color:var(--accent);}
+header p{font-size:0.72rem;color:var(--sub);margin-top:2px;}
+main{max-width:640px;margin:0 auto;padding:20px 16px 80px;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:14px;}
+.card h2{font-size:0.85rem;color:var(--accent);margin-bottom:8px;}
+.card .n{font-size:1.6rem;font-weight:700;}
+.card .base-note{font-size:0.72rem;color:var(--sub);margin-top:6px;line-height:1.5;}
+.empty-state{font-size:0.8rem;color:var(--sub);padding:8px 0;}
+.ai-box{margin-top:10px;}
+.ai-box textarea{width:100%;min-height:70px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:8px;font-size:0.8rem;display:none;}
+.btn-row{display:flex;gap:8px;margin-top:10px;}
+button{border:0;border-radius:8px;padding:9px 14px;font-size:0.8rem;cursor:pointer;}
+.btn-primary{background:var(--accent);color:#04202f;font-weight:700;}
+.btn-secondary{background:var(--surface);color:var(--sub);border:1px solid var(--border);}
+.note{font-size:0.72rem;color:var(--sub);margin-top:8px;line-height:1.6;}
+</style>
+</head>
+<body>
+<header>
+  <h1>管理者が相談できる場</h1>
+  <p>FP-0092 柱① ／ 既存データを見るだけ。入力欄はありません。</p>
+</header>
+<main>
+  <div class="card">
+    <h2>① あなた自身：休日／22時以降の記録</h2>
+    <div id="card1-body"></div>
+  </div>
+  <div class="card">
+    <h2>② チーム：契約変更（シフト班・契約日数・契約時間）</h2>
+    <div id="card2-body"></div>
+  </div>
+  <div class="card">
+    <h2>AIに聞く</h2>
+    <div id="ai-question">問いはまだ生成されていません。</div>
+    <div class="ai-box"><textarea id="ai-answer-box" readonly></textarea></div>
+    <div class="btn-row">
+      <button class="btn-primary" onclick="onSpeakClick()">話す</button>
+      <button class="btn-secondary" onclick="onSkipClick()">今はいい</button>
+    </div>
+    <div class="note">「今はいい」を押したことも記録します（答えないこと自体が信号のため）。</div>
+  </div>
+</main>
+<script>
+// ============================================================
+// データソース設定（1箇所にまとめる。9/1以降、対象がミライヘの管理者へ
+// 差し替わる想定のため、参照先はここだけ書き換えれば済むようにしてある。
+// 設計２への確認済み：現状は柴山さんご本人のミツメル日次記録＝mitsumeru_memos_*）
+// ============================================================
+const DATA_SOURCE = {
+  ownerMemosKeyPrefix: 'mitsumeru_memos_', // 柴山さんご本人の日次記録（mitsumeru_app.html保存分）
+  staffHistoryKey: 'kanade_shift_staff_history', // FP-0099で追加した職員マスタ変更履歴
+};
+
+// ★2026-08-08 秘書2経由・柴山さん指示：AIへ何を送るかは決め打ちにしない。
+// 'count_only'（既定）＝件数だけ送る。'with_names'＝職員名を含めて送る。
+// localStorageの設定値で切り替える（UIは未実装・9/1以降に柴山さんが選ぶ想定）。
+// 値を持たない・不正な値の場合は既定のcount_onlyへフォールバックする。
+const AI_SHARE_MODE_KEY = 'kanade_manager_ai_share_mode';
+function getAiShareMode() {
+  const v = localStorage.getItem(AI_SHARE_MODE_KEY);
+  return v === 'with_names' ? 'with_names' : 'count_only';
+}
+
+// カード②が見る対象データ（何を「契約変更」として検知するか）は、
+// kanade_shift.html側のSTAFF_HISTORY_TRACKED_FIELDS定数が決めている。
+// 柱①「夜勤をあきらめる」は柴山さんの過去の職場（入所・夜勤あり）前提で、
+// 9/1以降のミライヘ（放課後等デイサービス・夜勤なし）ではそのままでは発火しない見込み。
+// 「何を検知するか」は現場に入らないと決まらないため、このカードは器（kanade_shift_staff_history
+// を読んで件数を出すだけ）として作ってあり、対象フィールドの中身は9/1以降に差し込む。
+
+// 触らない範囲：ta_scan/pm_scan/nagi_psychsafety/nagi_team/nagi_staff/kanade_growth/
+// kanade_pulse/kanade_shiftの既存機能・HP/MP/LV計算・#実績(P)の内容欄本文には、
+// このファイルから一切書き込まない（読み取りのみ）。
+
+function parseDateFromMemoKey(key) {
+  const m = key.match(/^mitsumeru_memos_(\d{4}-\d{2}-\d{2})$/);
+  return m ? m[1] : null;
+}
+
+// 開発B2がFP-0094で定めた1件の定義をそのまま踏襲：
+// 「- [HH:MM] #タグ …」で始まる随時メモの行1つ＝1件。タグの種類は問わない。
+function loadOwnerMemoRecords() {
+  const records = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    const date = parseDateFromMemoKey(key);
+    if (!date) continue;
+    let payload;
+    try { payload = JSON.parse(localStorage.getItem(key)); } catch(e) { continue; }
+    const list = payload && Array.isArray(payload.data) ? payload.data : [];
+    list.forEach(memo => {
+      if (!memo || !memo.time) return; // 時刻が無いメモは母数に含めない（休日/深夜の判定ができないため）
+      records.push({ date, time: memo.time, tag: memo.tag });
+    });
+  }
+  return records;
+}
+
+function isWeekend(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  const day = d.getDay(); // 0=日 6=土
+  return day === 0 || day === 6;
+}
+function isLateNight(timeStr) {
+  // timeStrは"HHMM"の4桁文字列（mitsumeru_app.htmlのaddMemo()の保存形式）
+  if (!timeStr || timeStr.length < 4) return false;
+  const hour = parseInt(timeStr.substring(0, 2), 10);
+  return hour >= 22 || hour < 5;
+}
+
+function dateRangeDaysAgo(fromDaysAgo, toDaysAgo) {
+  // 今日を0として、[fromDaysAgo, toDaysAgo) の範囲（両方とも「n日前」）
+  const dates = [];
+  const today = new Date();
+  for (let n = toDaysAgo; n < fromDaysAgo; n++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - n);
+    dates.push(d.toISOString ? localDateStrLocal(d) : '');
+  }
+  return dates;
+}
+function localDateStrLocal(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function countWeekendOrLateNight(records, dateSet) {
+  return records.filter(r => dateSet.has(r.date) && (isWeekend(r.date) || isLateNight(r.time))).length;
+}
+
+// ============================================================
+// カード①：休日／22時以降の記録（本人）
+// ============================================================
+function renderCard1() {
+  const el = document.getElementById('card1-body');
+  const records = loadOwnerMemoRecords();
+  const thisWeekDates = new Set(dateRangeDaysAgo(7, 0));   // 直近7日（今日を含む）
+  const lastWeekDates = new Set(dateRangeDaysAgo(14, 7));  // その前の7日
+
+  const thisWeekTotal = records.filter(r => thisWeekDates.has(r.date)).length;
+  const lastWeekTotal = records.filter(r => lastWeekDates.has(r.date)).length;
+
+  if (thisWeekTotal === 0) {
+    // ㋑：データが来ていない（異常）。母数そのものが0。
+    el.innerHTML = `<div class="empty-state">データがありません（直近7日のミツメル日次記録が0件）。</div>`;
+    return { count: 0, base: 0, kind: 'no-data' };
+  }
+
+  const thisWeekFlag = countWeekendOrLateNight(records, thisWeekDates);
+  const lastWeekFlag = countWeekendOrLateNight(records, lastWeekDates);
+  const diff = thisWeekFlag - lastWeekFlag;
+  const diffText = diff === 0 ? '前週と同じ' : (diff > 0 ? `前週より${diff}件増` : `前週より${Math.abs(diff)}件減`);
+
+  if (thisWeekFlag === 0) {
+    // ㋐：該当なし（良い状態）。母数はある。
+    el.innerHTML = `<div class="n">0件</div><div class="base-note">該当なし（対象${thisWeekTotal}件の記録を見た結果、休日・22時以降の記録は0件・${diffText}）</div>`;
+  } else {
+    el.innerHTML = `<div class="n">${thisWeekFlag}件</div><div class="base-note">対象${thisWeekTotal}件のうち休日・22時以降が${thisWeekFlag}件・${diffText}</div>`;
+  }
+  return { count: thisWeekFlag, base: thisWeekTotal, kind: thisWeekFlag === 0 ? 'none-found' : 'found' };
+}
+
+// ============================================================
+// カード②：チームの契約変更（kanade_shift_staff_history）
+// ============================================================
+function loadStaffHistoryRecords() {
+  try {
+    return JSON.parse(localStorage.getItem(DATA_SOURCE.staffHistoryKey) || '[]');
+  } catch(e) { return []; }
+}
+function renderCard2() {
+  const el = document.getElementById('card2-body');
+  const all = loadStaffHistoryRecords();
+
+  if (all.length === 0) {
+    // ㋑：データが来ていない（kanade_shiftで契約変更が一度も保存されていない）
+    el.innerHTML = `<div class="empty-state">データがありません（kanade_shift_staff_historyが空）。</div>`;
+    return { count: 0, base: 0, kind: 'no-data' };
+  }
+
+  const now = Date.now();
+  const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+  const thisWeek = all.filter(e => (now - new Date(e.date).getTime()) <= sevenDaysMs);
+  const base = all.length;
+
+  if (thisWeek.length === 0) {
+    // ㋐：該当なし（良い状態）。母数（全履歴件数）はある。
+    el.innerHTML = `<div class="n">0件</div><div class="base-note">該当なし（記録済み全${base}件を見た結果、直近7日の契約変更は0件）</div>`;
+  } else {
+    el.innerHTML = `<div class="n">${thisWeek.length}件</div><div class="base-note">直近7日で${thisWeek.length}件（記録済み全${base}件のうち）</div>`;
+  }
+  return { count: thisWeek.length, base, kind: thisWeek.length === 0 ? 'none-found' : 'found' };
+}
+
+// ============================================================
+// AIに聞く（枠のみ。問いの中身は片D＝リサーチ2が決める）
+// ============================================================
+let lastCard1Result = null;
+let lastCard2Result = null;
+
+function updateAiQuestionPlaceholder() {
+  const el = document.getElementById('ai-question');
+  const bothNoData = lastCard1Result.kind === 'no-data' && lastCard2Result.kind === 'no-data';
+  const bothNoneFound = lastCard1Result.kind !== 'no-data' && lastCard2Result.kind !== 'no-data'
+    && lastCard1Result.count === 0 && lastCard2Result.count === 0;
+  if (bothNoData) {
+    el.textContent = 'まだデータが集まっていません（配線が来ていない状態のため、問いを作れません）。';
+  } else if (bothNoneFound) {
+    el.textContent = '今週は目立つものがありません。';
+  } else {
+    el.textContent = '（問いの生成は片D＝リサーチ2の実装待ち。ここにAIからの問いが1つ表示される枠です）';
+  }
+}
+
+// getAiShareMode()に応じて、②のカードで何を渡すかを切り替える。
+// 'count_only'＝件数のみ（既定）。'with_names'＝対象職員名を含める。
+// 片D（実際のAI呼び出し）実装時、このsummaryをプロンプトの材料として使う想定。
+function buildStaffSummaryForAI() {
+  if (getAiShareMode() === 'with_names') {
+    const all = loadStaffHistoryRecords();
+    const now = Date.now();
+    const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+    const names = all
+      .filter(e => (now - new Date(e.date).getTime()) <= sevenDaysMs)
+      .map(e => e.staffName)
+      .filter((v, i, arr) => arr.indexOf(v) === i);
+    return `今月、契約変更 ${lastCard2Result.count}件（対象：${names.join('・') || 'なし'}）`;
+  }
+  // count_only（既定）
+  return `今月、契約変更 ${lastCard2Result.count}件`;
+}
+
+function onSpeakClick() {
+  const key = mitsumeruGetApiKey('mitsumeru_api_key');
+  const box = document.getElementById('ai-answer-box');
+  if (!key) {
+    box.style.display = 'block';
+    box.value = MITSUMERU_MSG.apiKeyNotConfigured;
+    return;
+  }
+  const bothNoData = lastCard1Result.kind === 'no-data' && lastCard2Result.kind === 'no-data';
+  if (bothNoData) {
+    box.style.display = 'block';
+    box.value = 'まだデータが集まっていません。問いを作れません。';
+    return;
+  }
+  // AI呼び出しの本体（実際のプロンプト文面）は片D＝リサーチ2が決める。
+  // ここでは枠として、集計結果を渡す呼び出し口だけ用意する。
+  box.style.display = 'block';
+  box.value = '（片D未実装：ここにAIの回答が表示されます／送信予定の材料：' + buildStaffSummaryForAI() + '）';
+}
+
+function onSkipClick() {
+  // 「今はいい」を押したこと自体を記録する（答えないことも信号のため）。
+  const SKIP_LOG_KEY = 'kanade_manager_skip_log';
+  let log = [];
+  try { log = JSON.parse(localStorage.getItem(SKIP_LOG_KEY) || '[]'); } catch(e) { log = []; }
+  log.push({ date: new Date().toISOString() });
+  localStorage.setItem(SKIP_LOG_KEY, JSON.stringify(log));
+  const el = document.getElementById('ai-question');
+  el.textContent = '了解しました（記録しました）。';
+}
+
+function init() {
+  lastCard1Result = renderCard1();
+  lastCard2Result = renderCard2();
+  updateAiQuestionPlaceholder();
+}
+init();
+</script>
+</body>
+</html>
