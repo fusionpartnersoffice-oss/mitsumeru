@@ -331,6 +331,7 @@
 // ═══════════════════════════════════════════════
 const FACILITY_KEY = 'kanade_shift_facilities';
 const STAFF_KEY     = 'kanade_shift_staff';
+const STAFF_HISTORY_KEY = 'kanade_shift_staff_history';
 
 function loadFacilities() {
   try { return JSON.parse(localStorage.getItem(FACILITY_KEY) || '[]'); } catch(e) { return []; }
@@ -341,6 +342,42 @@ function loadStaff() {
   try { return JSON.parse(localStorage.getItem(STAFF_KEY) || '[]'); } catch(e) { return []; }
 }
 function saveStaffList(list) { localStorage.setItem(STAFF_KEY, JSON.stringify(list)); }
+
+// FP-0099：契約条件の変更履歴。saveStaff()の保存直前にのみ呼ぶ。
+// 新規追加・削除・施設マスタ操作からは呼ばない（Surgical Changes・触らない範囲を守るため）。
+//
+// ★2026-08-08 秘書2経由・柴山さん指摘：shiftTeam（夜勤/昼勤）は柴山さんの過去の職場（入所・夜勤あり）
+// 前提の項目。9/1以降のミライヘは放課後等デイサービスで夜勤が無く、この項目では発火しない見込み。
+// 「何を検知するか」は現場に入らないと決まらないため、対象フィールドは1箇所の定数にまとめ、
+// 現場が変わった時にここだけ差し替えられるようにしてある（決め打ちにしない）。
+const STAFF_HISTORY_TRACKED_FIELDS = ['shiftTeam', 'contractDays', 'contractHours'];
+
+function loadStaffHistory() {
+  try { return JSON.parse(localStorage.getItem(STAFF_HISTORY_KEY) || '[]'); } catch(e) { return []; }
+}
+function appendStaffHistory(entries) {
+  if (!entries.length) return;
+  const history = loadStaffHistory();
+  history.push(...entries);
+  localStorage.setItem(STAFF_HISTORY_KEY, JSON.stringify(history));
+}
+function recordStaffContractChange(oldRecord, newRecord) {
+  if (!oldRecord) return; // 新規職員：旧値が無いので比較しない
+  const entries = [];
+  STAFF_HISTORY_TRACKED_FIELDS.forEach(field => {
+    if (oldRecord[field] !== newRecord[field]) {
+      entries.push({
+        date: new Date().toISOString(),
+        staffId: newRecord.id,
+        staffName: newRecord.name,
+        field,
+        oldValue: oldRecord[field],
+        newValue: newRecord[field],
+      });
+    }
+  });
+  appendStaffHistory(entries);
+}
 
 let facilities = loadFacilities();
 let staffList = loadStaff();
@@ -593,6 +630,7 @@ function saveStaff() {
   };
   if (editingStaffId) {
     const idx = staffList.findIndex(s => s.id === editingStaffId);
+    recordStaffContractChange(staffList[idx], data);
     staffList[idx] = data;
   } else {
     staffList.push(data);
