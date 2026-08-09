@@ -134,7 +134,9 @@ function showResult(photoDataUrl) {
   const c = computeTodayStatus();
 
   if (!c.hasMorning) {
-    statsEl.innerHTML = '<div class="no-data">本日の記録がまだありません。<br>ミツメル本体（mitsumeru_app.html）の朝タブから記録を始めてください。</div>';
+    statsEl.innerHTML = c.noRecordAtAll
+      ? '<div class="no-data">データがありません（本日の記録が見つかりません）。<br>ミツメル本体の朝タブから記録を始めてください。</div>'
+      : '<div class="no-data">本日の記録がまだ完了していません（朝タブが途中のようです）。<br>ミツメル本体の朝タブから記録を完了させてください。</div>';
   } else {
     const lvTotal = c.lvBase + c.todayPts;
     const level = Math.floor(lvTotal / 100) + 1;
@@ -165,19 +167,39 @@ function retake() {
   initCamera();
 }
 
-// ===== mitsumeru_app.htmlと同じlocalStorageキーを読み取り専用で参照し、HP/MP/LVを表示する =====
-// 新規の計算ロジックは持たない（mitsumeru_app.htmlのcomputeDayClose()と同じロジックをそのまま踏襲）
+// ===== mitsumeru_private.html／mitsumeru_app.htmlと同じlocalStorageキーを読み取り専用で参照し、
+// HP/MP/LVを表示する（FP-0142・2026-08-09：柴山さんの実物はprivate側のため、private側を先に見て、
+// 無ければapp側を見る。新規の計算ロジックは持たない（各アプリのcomputeDayClose()と同じロジックを
+// そのまま踏襲）=====
+const RADAR_KEY_SOURCES = [
+  { prefix: 'mitsumeru_private_', lvKey: 'mitsumeru_private_lv_total' },
+  { prefix: 'mitsumeru_', lvKey: 'mitsumeru_lv_total' },
+];
 function computeTodayStatus() {
   const todayStr = localDateStr(new Date());
-  const morning = readJson('mitsumeru_morning_' + todayStr);
-  const evening = readJson('mitsumeru_evening_' + todayStr);
-  const memosRec = readJson('mitsumeru_memos_' + todayStr);
-  const lvBase = parseInt(localStorage.getItem('mitsumeru_lv_total') || '0', 10);
+  let morning = null, evening = null, memosRec = null, lvBase = 0;
+  for (const src of RADAR_KEY_SOURCES) {
+    const m = readJson(src.prefix + 'morning_' + todayStr);
+    if (m) {
+      morning = m;
+      evening = readJson(src.prefix + 'evening_' + todayStr);
+      memosRec = readJson(src.prefix + 'memos_' + todayStr);
+      lvBase = parseInt(localStorage.getItem(src.lvKey) || '0', 10);
+      break;
+    }
+  }
+  if (!morning) {
+    // ㋑データが無い：private・appどちらの保存先にも本日の記録キー自体が存在しない
+    return { hasMorning: false, noRecordAtAll: true, lvBase: 0, todayPts: 0 };
+  }
 
-  const startHP = morning ? parseInt(morning['hp-val'], 10) : NaN;
-  const startMP = morning ? parseInt(morning['mp-val'], 10) : NaN;
+  const startHP = parseInt(morning['hp-val'], 10);
+  const startMP = parseInt(morning['mp-val'], 10);
   const hasMorning = !isNaN(startHP) && !isNaN(startMP);
-  if (!hasMorning) return { hasMorning: false, lvBase, todayPts: 0 };
+  if (!hasMorning) {
+    // ㋐該当なし：記録キーは存在するが、朝タブが未完了などで値が不完全
+    return { hasMorning: false, noRecordAtAll: false, lvBase, todayPts: 0 };
+  }
 
   const memos = (memosRec && Array.isArray(memosRec.data)) ? memosRec.data : [];
   const pomoTotal = memos.filter(m => m.tag === 'P').reduce((s, m) => s + (m.pomos || 0), 0);
