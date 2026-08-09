@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>奏 — 耳を澄ます面接</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;500&family=Noto+Sans+JP:wght@300;400;500&display=swap');
+
+  :root {
+    --ink: #232019;
+    --ink2: #5c5346;
+    --ink3: #9a8f7d;
+    --paper: #faf7f0;
+    --paper2: #f0ebe0;
+    --line: #ddd3bf;
+    --gold: #b8874a;
+    --gold-soft: #e8d9bc;
+    --breath: 1px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    display: flex; flex-direction: column; align-items: center;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── 開始画面：静けさから始まる ─────────────────────── */
+  #start {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 100vh; width: 100%; text-align: center; padding: 40px;
+  }
+  #start .mark {
+    font-family: 'Noto Serif JP', serif; font-size: 15vw; max-font-size: 100px;
+    color: var(--gold); line-height: 1; margin-bottom: 4px;
+    animation: rise 1.4s ease-out;
+  }
+  @keyframes rise { from { opacity:0; transform: translateY(12px);} to {opacity:1; transform:translateY(0);} }
+  #start h1 { font-size: clamp(64px, 12vw, 100px); }
+  #start .tagline {
+    font-family: 'Noto Serif JP', serif; font-weight: 300; font-size: 15px;
+    color: var(--ink2); letter-spacing: 4px; margin: 10px 0 60px;
+  }
+  #start input {
+    width: min(340px, 80vw); text-align: center; font-size: 18px; font-family: 'Noto Serif JP', serif;
+    padding: 14px 10px; border: none; border-bottom: 1px solid var(--line);
+    background: transparent; color: var(--ink); outline: none; letter-spacing: 2px;
+  }
+  #start input:focus { border-color: var(--gold); }
+  #start input::placeholder { color: var(--ink3); font-family: 'Noto Sans JP', sans-serif; font-size: 14px; }
+  #start .begin {
+    margin-top: 36px; background: none; border: 1px solid var(--ink); color: var(--ink);
+    padding: 12px 40px; border-radius: 999px; font-size: 13px; letter-spacing: 3px;
+    cursor: pointer; transition: all .25s;
+  }
+  #start .begin:hover { background: var(--ink); color: var(--paper); }
+  #start .begin:disabled { opacity: .3; cursor: default; }
+  #start .begin:disabled:hover { background: none; color: var(--ink); }
+
+  /* ── 面接画面：楽章として進む ───────────────────────── */
+  #interview { display: none; width: 100%; min-height: 100vh; flex-direction: column; align-items: center; }
+  #interview.active { display: flex; }
+
+  .topbar {
+    width: 100%; padding: 20px 28px; display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; background: rgba(250,247,240,.92); backdrop-filter: blur(6px); z-index: 50;
+    border-bottom: 1px solid var(--line);
+  }
+  .topbar .who { font-family: 'Noto Serif JP', serif; font-size: 15px; letter-spacing: 1px; }
+  .topbar .movement { font-size: 11px; color: var(--ink3); letter-spacing: 3px; }
+
+  .stage {
+    width: min(560px, 90vw); padding: 60px 0 140px; display: flex; flex-direction: column; align-items: center;
+    min-height: calc(100vh - 70px);
+  }
+
+  .movement-title {
+    font-family: 'Noto Serif JP', serif; font-size: 13px; color: var(--gold);
+    letter-spacing: 4px; margin-bottom: 6px;
+  }
+  .movement-sub { font-size: 12px; color: var(--ink3); margin-bottom: 44px; text-align: center; line-height: 1.8; }
+
+  .qcard {
+    width: 100%; text-align: center; margin-bottom: 40px;
+    animation: fadein .5s ease;
+  }
+  @keyframes fadein { from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
+  .qcard .qnum { font-size: 11px; color: var(--ink3); letter-spacing: 2px; margin-bottom: 14px; }
+  .qcard .qtext {
+    font-family: 'Noto Serif JP', serif; font-weight: 400; font-size: clamp(20px,4vw,26px);
+    line-height: 1.7; color: var(--ink);
+  }
+
+  .notepad {
+    width: 100%; margin-top: 10px;
+  }
+  .notepad textarea {
+    width: 100%; min-height: 90px; border: none; border-bottom: 1px solid var(--line);
+    background: transparent; font-family: 'Noto Sans JP', sans-serif; font-size: 15px;
+    color: var(--ink); padding: 10px 4px; resize: none; outline: none; line-height: 1.8;
+  }
+  .notepad textarea::placeholder { color: var(--ink3); }
+  .notepad textarea:focus { border-color: var(--gold); }
+
+  /* ── AI伴奏：割り込まず、そっと寄り添う ─────────────── */
+  .companion {
+    width: 100%; margin-top: 18px; min-height: 22px;
+    display: flex; align-items: flex-start; gap: 10px;
+    font-size: 13px; color: var(--ink2); opacity: 0; transform: translateY(4px);
+    transition: all .5s ease;
+  }
+  .companion.show { opacity: 1; transform: translateY(0); }
+  .companion .note-icon { color: var(--gold); font-size: 14px; margin-top: 1px; }
+  .companion.pending { color: var(--ink3); font-style: italic; }
+  .companion .suggest { color: var(--ink); border-left: 2px solid var(--gold-soft); padding-left: 10px; }
+
+  .nav {
+    width: 100%; display: flex; justify-content: space-between; margin-top: 50px;
+  }
+  .nav button {
+    background: none; border: none; color: var(--ink2); font-size: 13px; letter-spacing: 2px;
+    cursor: pointer; padding: 10px 4px; border-bottom: 1px solid transparent;
+  }
+  .nav button:hover { border-color: var(--ink2); }
+  .nav .next { color: var(--ink); font-weight: 500; }
+  .nav button:disabled { opacity: .25; cursor: default; }
+
+  .dots { display: flex; gap: 7px; margin-top: 50px; }
+  .dots span { width: 6px; height: 6px; border-radius: 50%; background: var(--line); transition: all .3s; }
+  .dots span.done { background: var(--gold); }
+  .dots span.now { background: var(--ink); width: 16px; border-radius: 3px; }
+
+  /* ── 終章：ポートレート ─────────────────────────────── */
+  #portrait { display: none; width: 100%; flex-direction: column; align-items: center; }
+  #portrait.active { display: flex; }
+  .portrait-wrap { width: min(560px, 90vw); padding: 70px 0 100px; }
+  .portrait-wrap .label { font-size: 11px; color: var(--gold); letter-spacing: 4px; margin-bottom: 6px; text-align: center; }
+  .portrait-wrap h2 { font-family: 'Noto Serif JP', serif; font-weight: 400; font-size: 24px; text-align: center; margin-bottom: 40px; }
+  .portrait-body {
+    font-family: 'Noto Serif JP', serif; font-size: 17px; line-height: 2.1; color: var(--ink);
+    white-space: pre-wrap; background: var(--paper2); border-radius: 4px; padding: 34px 30px;
+    border-left: 3px solid var(--gold);
+  }
+  .portrait-note {
+    margin-top: 28px; font-size: 12px; color: var(--ink3); line-height: 1.9; text-align: center;
+  }
+  .restart { display:block; margin: 44px auto 0; background:none; border:1px solid var(--ink); color:var(--ink);
+    padding: 10px 32px; border-radius: 999px; font-size: 12px; letter-spacing: 2px; cursor: pointer; }
+  .restart:hover { background: var(--ink); color: var(--paper); }
+
+  .loading-veil {
+    position: fixed; inset: 0; background: rgba(250,247,240,.85); backdrop-filter: blur(3px);
+    display: none; align-items: center; justify-content: center; z-index: 200; flex-direction: column; gap: 14px;
+  }
+  .loading-veil.show { display: flex; }
+  .loading-veil .breathe {
+    width: 34px; height: 34px; border-radius: 50%; border: 1.5px solid var(--gold);
+    animation: breathe 1.6s ease-in-out infinite;
+  }
+  @keyframes breathe { 0%,100%{transform:scale(.85); opacity:.5;} 50%{transform:scale(1.15); opacity:1;} }
+  .loading-veil .msg { font-size: 12px; color: var(--ink2); letter-spacing: 2px; }
+</style>
+</head>
+<body>
+
+<!-- ══ 開始 ══ -->
+<div id="start">
+  <div class="mark">奏</div>
+  <div class="tagline">K A N A D E &nbsp;— &nbsp;耳を澄ます面接</div>
+  <input id="cname" type="text" placeholder="今日、会う人の名前">
+  <button class="begin" id="beginBtn" disabled onclick="beginInterview()">面接を、はじめる</button>
+</div>
+
+<!-- ══ 面接（楽章） ══ -->
+<div id="interview">
+  <div class="topbar">
+    <div class="who" id="whoLabel"></div>
+    <div class="movement" id="movementLabel">第一楽章 ｜ この人を知る</div>
+  </div>
+  <div class="stage">
+    <div class="movement-title" id="mvTitle"></div>
+    <div class="movement-sub" id="mvSub"></div>
+
+    <div class="qcard">
+      <div class="qnum" id="qnum">問 1 / 3</div>
+      <div class="qtext" id="qtext"></div>
+    </div>
+
+    <div class="notepad">
+      <textarea id="note" placeholder="聞こえたことを、そのまま書いてください。うまくまとめなくていい。" oninput="onNoteInput()"></textarea>
+    </div>
+
+    <div class="companion" id="companion"></div>
+
+    <div class="dots" id="dots"></div>
+
+    <div class="nav">
+      <button onclick="prevQ()" id="prevBtn">← もどる</button>
+      <button class="next" onclick="nextQ()" id="nextBtn">次へ →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 終章：ポートレート ══ -->
+<div id="portrait">
+  <div class="portrait-wrap">
+    <div class="label">終章 ｜ 記録</div>
+    <h2 id="pname"></h2>
+    <div class="portrait-body" id="pbody">静かに、まとめています…</div>
+    <div class="portrait-note">
+      これは点数ではありません。あなたが聞いたことを、あなたの言葉のまま束ねたものです。<br>
+      判断するのは、あなたです。
+    </div>
+    <button class="restart" onclick="location.reload()">次の人へ</button>
+  </div>
+</div>
+
+<div class="loading-veil" id="veil"><div class="breathe"></div><div class="msg">聞いています…</div></div>
+
+<script>
+/* ============================================================
+   奏 v2 プロトタイプ — 体験のデモ用（配線は仮）
+   本番のAI呼び出しは hibiki-worker と同じ形（サーバー側でキーを持つ）に
+   差し替える前提。ここでは「もし応答が来たら」の間だけ再現している。
+   ============================================================ */
+
+const MOVEMENTS = [
+  {
+    title: '第一楽章', label: '第一楽章 ｜ この人を知る', sub: '事実に、静かに触れていく。',
+    questions: [
+      '直近の仕事で、いちばん手応えがあった瞬間はいつでしたか。',
+      'その時、具体的に何をしましたか。誰が、どう動きましたか。',
+      '結果は、数字や周囲の反応として、どう返ってきましたか。'
+    ],
+    companionType: 'fact' // 意見/事実の判定
+  },
+  {
+    title: '第二楽章', label: '第二楽章 ｜ 響き合うか', sub: '相手の気持ちに、どれだけ触れられる人か。',
+    questions: [
+      '誰かの気持ちが、言葉になる前にわかった経験はありますか。',
+      'それは、どうしてわかったと思いますか。'
+    ],
+    companionType: 'resonance' // 共鳴力の毒サイン観察
+  },
+  {
+    title: '第三楽章', label: '第三楽章 ｜ 譲れないもの', sub: '価値観は、準備された言葉より、間（ま）に出る。',
+    questions: [
+      '働く上で、絶対に譲れないことは何ですか。',
+      '最も後悔した選択と、最も誇りに思う選択を、一つずつ教えてください。'
+    ],
+    companionType: 'values'
+  }
+];
+
+let mv = 0, q = 0;
+let candidateName = '';
+const notes = []; // { mv, q, text }
+
+document.getElementById('cname').addEventListener('input', e => {
+  document.getElementById('beginBtn').disabled = !e.target.value.trim();
+});
+document.getElementById('cname').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.target.value.trim()) beginInterview();
+});
+
+function beginInterview() {
+  candidateName = document.getElementById('cname').value.trim();
+  if (!candidateName) return;
+  document.getElementById('start').style.display = 'none';
+  document.getElementById('interview').classList.add('active');
+  document.getElementById('whoLabel').textContent = candidateName + ' さん';
+  renderQ();
+}
+
+function renderQ() {
+  const m = MOVEMENTS[mv];
+  document.getElementById('movementLabel').textContent = m.label;
+  document.getElementById('mvTitle').textContent = m.title;
+  document.getElementById('mvSub').textContent = m.sub;
+  document.getElementById('qnum').textContent = `問 ${q+1} / ${m.questions.length}`;
+  document.getElementById('qtext').textContent = m.questions[q];
+
+  const key = `${mv}-${q}`;
+  const saved = notes.find(n => n.key === key);
+  document.getElementById('note').value = saved ? saved.text : '';
+  document.getElementById('companion').className = 'companion';
+  document.getElementById('companion').innerHTML = '';
+  if (saved && saved.aiResult) showCompanion(saved.aiResult);
+
+  document.getElementById('prevBtn').disabled = (mv === 0 && q === 0);
+  renderDots();
+}
+
+function renderDots() {
+  const totalQ = MOVEMENTS.reduce((s,m)=>s+m.questions.length,0);
+  let idx = 0, cur = 0;
+  MOVEMENTS.forEach((m,mi)=> m.questions.forEach((_,qi)=>{ if(mi===mv&&qi===q) cur = idx; idx++; }));
+  const dots = document.getElementById('dots');
+  dots.innerHTML = '';
+  for (let i=0;i<totalQ;i++){
+    const s = document.createElement('span');
+    if (i < cur) s.className = 'done';
+    else if (i === cur) s.className = 'now';
+    dots.appendChild(s);
+  }
+}
+
+let noteTimer = null;
+function onNoteInput() {
+  clearTimeout(noteTimer);
+  const text = document.getElementById('note').value;
+  const key = `${mv}-${q}`;
+  let n = notes.find(x=>x.key===key);
+  if (!n) { n = {key, mv, q, text: ''}; notes.push(n); }
+  n.text = text;
+  document.getElementById('companion').className = 'companion';
+
+  if (text.trim().length < 8) return;
+  // 書き終わって少し止まったら、そっと伴奏が入る（割り込まない）
+  noteTimer = setTimeout(() => runCompanion(n), 1400);
+}
+
+function runCompanion(n) {
+  const el = document.getElementById('companion');
+  el.className = 'companion pending show';
+  el.innerHTML = `<span class="note-icon">♪</span><span>耳を澄ませています…</span>`;
+
+  // ---- 本番ではここが hibiki-worker 経由のAI呼び出しになる ----
+  // プロトタイプでは、意見/事実・毒サインの型に沿った擬似応答を生成する
+  setTimeout(() => {
+    const result = mockCompanionResponse(MOVEMENTS[mv].companionType, n.text);
+    n.aiResult = result;
+    showCompanion(result);
+  }, 900);
+}
+
+function mockCompanionResponse(type, text) {
+  const hasNumberOrName = /\d|さん|先生|部長|課長|チーム/.test(text);
+  if (type === 'fact') {
+    return hasNumberOrName
+      ? '事実として、十分に具体的です。'
+      : '少し印象寄りかもしれません。「それは、誰が・いつ・どんな言葉で」を聞くと、もう一段深まりそうです。';
+  }
+  if (type === 'resonance') {
+    return /自分が|私が|正直|びっくり/.test(text) && !/その人|相手/.test(text)
+      ? '相手側の反応が、まだ聞こえてきていません。「その人は、その後どうなりましたか」と聞いてみてください。'
+      : '相手の変化まで、追えています。';
+  }
+  return '準備された言葉か、その場で出た言葉か——間（ま）の長さも、記録しておく価値があります。';
+}
+
+function showCompanion(text) {
+  const el = document.getElementById('companion');
+  el.className = 'companion show';
+  el.innerHTML = `<span class="note-icon">♪</span><span class="suggest">${text}</span>`;
+}
+
+function nextQ() {
+  const m = MOVEMENTS[mv];
+  if (q < m.questions.length - 1) { q++; }
+  else if (mv < MOVEMENTS.length - 1) { mv++; q = 0; }
+  else { finishInterview(); return; }
+  renderQ();
+}
+function prevQ() {
+  if (q > 0) { q--; }
+  else if (mv > 0) { mv--; q = MOVEMENTS[mv].questions.length - 1; }
+  renderQ();
+}
+
+function finishInterview() {
+  document.getElementById('interview').classList.remove('active');
+  document.getElementById('portrait').classList.add('active');
+  document.getElementById('pname').textContent = candidateName + ' さんの記録';
+
+  const veil = document.getElementById('veil');
+  veil.classList.add('show');
+  setTimeout(() => {
+    veil.classList.remove('show');
+    document.getElementById('pbody').textContent = buildPortrait();
+  }, 1400);
+}
+
+function buildPortrait() {
+  // ---- 本番はAIが notes[] からポートレートを合成する（サーバー側呼び出し） ----
+  // プロトタイプでは、書かれたメモをそのまま人物像の形に束ねる
+  const lines = notes.filter(n => n.text.trim()).map(n => n.text.trim());
+  if (lines.length === 0) {
+    return `${candidateName}さんとの時間の記録は、まだありません。\n\nメモを書きながら進めると、ここに人物像が浮かび上がります。`;
+  }
+  return `${candidateName}さんは、${lines[0]}\n\n` +
+    lines.slice(1).map(l => `— ${l}`).join('\n\n') +
+    `\n\n※これはあなたのメモをそのまま並べたものです。本番では、ここに"意見寄りだった箇所"「事実で確認できた箇所」の静かな注記が添えられます。合否はこの記録が決めません。決めるのは、あなたです。`;
+}
+</script>
+</body>
+</html>
