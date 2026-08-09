@@ -1992,8 +1992,10 @@ window.addEventListener('DOMContentLoaded', async function() {
   (async () => {
     try {
       const today = new Date();
-      const weekStart = (() => { const d = new Date(today); d.setDate(today.getDate() - 6); return localDateStr(d); })();
-      const kvWeekly = await cloudLoad('weekly-summary', weekStart);
+      // FP-0132是正（2026-08-09）：weekStart（閲覧日基準の7日前）はもう読み出しに使わない。
+      // 生成日と閲覧日が同一暦日でないとキーが一致せず、翌日以降スマホで開くと
+      // 永久に見つからない不具合があったため（FP-0009で特定）。'latest'固定キーへ変更。
+      const kvWeekly = await cloudLoad('weekly-summary', 'latest');
       if (kvWeekly && kvWeekly.text) {
         const wBox = document.getElementById('weekly-summary');
         if (wBox && !wBox.classList.contains('visible')) {
@@ -3897,13 +3899,15 @@ G（気づき）：${g}
 - 上の「今日の終わり方（消耗・成長・デバッグ結果）」を必ず踏まえ、明日の負荷を調整すること
 - 上記に明記されていない予定・出来事を創作しないこと（「明日の確定アポ」に無いものを勝手に補わない）
 - **文体は「エレガントに毒を吐く」（正典「文体・トーン」準拠）。精神論を排した知的な語り口で、断言はするが攻撃的にはならない。この文体は全セクションで一貫させること**
-- 特にHP/MPが低い・悪化した等のネガティブな事実を伝える時ほど、事実は正確に伝えたうえで最後に軽いユーモア・オチを添えて着地させること。深刻な内容の時はユーモアの強さを抑え誠実さを優先する判断も必要
+- ネガティブな事実を伝える時は、事実を正確に、薄めずに伝えること。ユーモア・オチで着地させることを目的にしないこと。事実で終えてよい。軽い一言を添えるかは任意であり、添えることで事実の重さが下がるなら添えないこと
 - 説明的・事務的な言い回しを避け、柴山さんご本人が実際に使う生きた言い回しに近づけること（分析の正確さ・具体性は犠牲にしない）
 - 明日の行動戦略のタスク優先順位はMUST「${must}」に照らして判断すること。NEVER「${never}」に反する提案は絶対にしないこと
 - **MUST/NEVERの項目を「M-1」「N-3」のような記号・番号だけで済ませないこと。** 参照する場合は、その項目が具体的に何を指しているか（中身）を必ず本文中に書き出すこと（2026-07-28・実際の出力で発生した問題への是正）
 - エゴグラム（${ego}）またはエニアグラム第1位（${enea1}）を、V(ノイズ)分析かTOMORROW_MESSAGEで必ず1回具体的に言及すること
 - RC（${rc}）を組織適応の傾向として、TOMORROW_PLAN（翌日の設計・戦略立案）で必ず1回具体的に反映すること
 - トーン厳守：同志として隣に立つ言葉（上から目線・励まし・慰め禁止）。命令形・断定形は「〜してみませんか」「〜でどうでしょう」に変換すること
+- 数字（done件数・停滞件数・HP/MP等）は、理由や文脈で薄めないこと。「3日連続高負荷だったので」のような理由付けを、数字の評価の前に置かないこと。数字をそのまま述べてから、必要なら理由を後ろに置くこと
+- 本文（SUMMARY_P/V/G・所見）で挙げた否定的な事実は、評価にも反映すること。本文で問題を挙げながら評価を下げないことは矛盾である
 
 以下の区切りマーカーを必ず使い、10セクションすべてを出力してください。他のテキストは不要です。
 
@@ -3916,7 +3920,7 @@ G（気づき）：${g}
 ===CUTLOSS===
 ④先送り3日以上（損切り提案）を箇条書き
 ===COMMENT===
-伴走コメント2〜3文。必ず「今日の終わり方」を根拠として具体的に引用して評価する（例：MPが○○まで落ちた／デバッグ✕が△件あった／Try100を△件達成した、等の事実を挙げ、だから明日をこう設計した、と述べる）。
+所見2〜3文。必ず「今日の終わり方」を根拠として具体的に引用して評価する（例：MPが○○まで落ちた／デバッグ✕が△件あった／Try100を△件達成した、等の事実を挙げ、だから明日をこう設計した、と述べる）。
 ===SUMMARY_P===
 今日完了したこと・実施したことの事実のみ
 ===SUMMARY_V===
@@ -4174,7 +4178,7 @@ HP: ${hp}→${endHP} ／ MP: ${mp}→${endMP}
   if (aiResult.review)   _block3Parts.push(`今週中にやること：\n${aiResult.review}`);
   if (aiResult.delegate) _block3Parts.push(`委任・簡略化候補：\n${aiResult.delegate}`);
   if (aiResult.cutloss)  _block3Parts.push(`損切り検討：\n${aiResult.cutloss}`);
-  _block3Parts.push(`伴走コメント：\n${aiResult.comment || '特になし'}`);
+  _block3Parts.push(`所見：\n${aiResult.comment || '特になし'}`);
 
   const text = `①HP/MP/LVの数値
 HP：${endHP}/100　MP：${endMP}/100　LV：${lvBaseFormatted}${_tomorrowReason ? `\n根拠：${_tomorrowReason}` : ''}
@@ -4489,6 +4493,9 @@ ${records.join('\n\n')}
       // PCで生成してもスマホで見れなかった。既存のcloudSaveの仕組みで週次サマリーを
       // 保存する（キーはstartDate、翌日戦略等と同じ型で日付付きキーを使う）。
       cloudSave('weekly-summary', { text, generatedAt: `${startDate}〜${endDate}` }, startDate);
+      // FP-0132是正（2026-08-09）：日付キーは過去分の保存用に残す。読み出し側は閲覧日ではなく
+      // この固定キー'latest'だけを見るので、生成日と閲覧日が異なっても必ず見つかる。
+      cloudSave('weekly-summary', { text, generatedAt: `${startDate}〜${endDate}` }, 'latest');
     },
     err  => { loading.style.display='none'; box.textContent='エラー：'+err; box.classList.add('visible'); }
   );
