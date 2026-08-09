@@ -1,6 +1,11 @@
 # -*- coding: utf-8 -*-
 # FP-0120: 00_代表ダッシュボード.md（読み取り専用データソース）から、
-# ミツメルのタブ用HTML（kanade_dashboard.html）を全面生成する。
+# ミツメルのタブ用HTML（Fusion_kanban_dashboard.html）を全面生成する。
+# ★2026-08-09 14:29 改名：kanade_dashboard.html → Fusion_kanban_dashboard.html
+#   理由：奏（kanade）は人材・1on1の商品ブランド。本ファイルは社内の運営管理であり商品ではない。
+#   柴山さん直命（2026-08-09 14:23「なんでkanadeがつくの？ややこしい。やり直し」／14:26で名称確定）。
+# ⚠️このスクリプト自身のファイル名（generate_kanade_dashboard.py）は★まだ改名していない。
+#   承認されたのは出力側のHTMLのみ。★同じ問題が残っていることを、消さずに書いて残す。
 # 元データは作り直さない（設計書3.1節）。00_代表ダッシュボード.mdは1バイトも書き込まない。
 import re
 import os
@@ -11,7 +16,7 @@ from datetime import datetime
 
 DASHBOARD_MD = r"H:\マイドライブ\Obsidian_Vault\🏢 01_代表デスク\01_今日のデスク\00_代表ダッシュボード.md"
 ISSUES_DIR = r"H:\マイドライブ\Obsidian_Vault\🏢 01_代表デスク\00_正典\_案件台帳\issues"
-OUTPUT_HTML = r"C:\Users\fanta\Claude\mitsumeru\kanade_dashboard.html"
+OUTPUT_HTML = r"C:\Users\fanta\Claude\mitsumeru\Fusion_kanban_dashboard.html"
 GEN_TIME = None  # set by caller via --stamp or defaults to now (real run passes fixed date実測 string)
 
 STATE_LABELS = {

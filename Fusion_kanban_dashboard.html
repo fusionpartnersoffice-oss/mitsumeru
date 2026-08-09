@@ -34,7 +34,7 @@ main{max-width:720px;margin:0 auto;padding:20px 16px 80px;}
 <body>
 <header>
   <h1>代表ダッシュボード（BI）</h1>
-  <p class="gen-time">この画面は generate_kanade_dashboard.py を実行した時点のものです。最終生成：2026-08-09 09:58（date実測）（自動更新はまだ設定していません。開くたびには更新されません）</p>
+  <p class="gen-time">この画面は generate_kanade_dashboard.py を実行した時点のものです。最終生成：2026-08-09 14:30（自動更新はまだ設定していません。開くたびには更新されません）</p>
 </header>
 <main>
   <div class="card">
@@ -50,19 +50,19 @@ main{max-width:720px;margin:0 auto;padding:20px 16px 80px;}
     <div class="n">医療福祉朝刊 2026-08-09</div><ul class="news-list"><li>①福祉・厚労</li><li>②Tec</li><li>③生活のHack・Tips</li><li>④ビジネス戦略</li><li>⑤未蒸留の情報</li><li>⑥埋もれた情報</li><li>編集後記</li></ul>
   </div>
   <div class="card">
-    <h2>📊 ④ 案件進捗（2026-08-09 09:58（date実測）時点）</h2>
-    <table class="dash-table"><tr><th>状態</th><th>件数</th></tr><tr><td>未着手（todo）</td><td>9</td></tr><tr><td>作業中（in_progress）</td><td>7</td></tr><tr><td>確認待ち（in_review）</td><td>6</td></tr><tr><td>確認済み（accepted）</td><td>12</td></tr><tr><td>止まっている（blocked）</td><td>5</td></tr><tr><td>完了（done）</td><td>83</td></tr><tr><td>取り下げ（cancelled）</td><td>6</td></tr></table>
-    <div class="base-note">1件＝issues/*.json のレコード1つ。対象＝全128件。実測 2026-08-09 09:58（date実測）</div>
+    <h2>📊 ④ 案件進捗（2026-08-09 14:30時点）</h2>
+    <table class="dash-table"><tr><th>状態</th><th>件数</th></tr><tr><td>未着手（todo）</td><td>9</td></tr><tr><td>作業中（in_progress）</td><td>7</td></tr><tr><td>確認待ち（in_review）</td><td>5</td></tr><tr><td>確認済み（accepted）</td><td>22</td></tr><tr><td>止まっている（blocked）</td><td>7</td></tr><tr><td>完了（done）</td><td>84</td></tr><tr><td>取り下げ（cancelled）</td><td>7</td></tr></table>
+    <div class="base-note">1件＝issues/*.json のレコード1つ。対象＝全141件。実測 2026-08-09 14:30</div>
   </div>
   <div class="card">
     <h2>⏸ 誰も動かしていないもの（最後の状態遷移から24時間以上・上位3件）</h2>
-    <table class="dash-table"><tr><th>案件（件名）</th><th>何時間止まっているか</th></tr><tr><td>AI生成ナラティブ（朝の参謀からの一言・夜のTOMORROW_PLAN）をKV保存しVaultへ書き出す（A案・7/25から宙に浮いていたもの）</td><td>89.2時間</td></tr><tr><td>blockedがどの滞留検知にも入っておらず、待ちの理由が解消しても誰も気づかない</td><td>88.9時間</td></tr><tr><td>2026-08-12：blocked検知の実回数を数え、QA2と閾値・出力先を決め直す</td><td>88.9時間</td></tr></table>
-    <div class="base-note">対象 7件（母数：未完了39件のうち24時間以上）。「最後の状態遷移」＝history中のnote/set_scope_kind等（type付きの管理操作）を除いた、state変更エントリの最新ts（FP-0044の定義）。実測 2026-08-09 09:58（date実測）</div>
+    <table class="dash-table"><tr><th>案件（件名）</th><th>何時間止まっているか</th></tr><tr><td>AI生成ナラティブ（朝の参謀からの一言・夜のTOMORROW_PLAN）をKV保存しVaultへ書き出す（A案・7/25から宙に浮いていたもの）</td><td>93.7時間</td></tr><tr><td>blockedがどの滞留検知にも入っておらず、待ちの理由が解消しても誰も気づかない</td><td>93.4時間</td></tr><tr><td>2026-08-12：blocked検知の実回数を数え、QA2と閾値・出力先を決め直す</td><td>93.4時間</td></tr></table>
+    <div class="base-note">対象 14件（母数：未完了50件のうち24時間以上）。「最後の状態遷移」＝history中のnote/set_scope_kind等（type付きの管理操作）を除いた、state変更エントリの最新ts（FP-0044の定義）。実測 2026-08-09 14:30</div>
   </div>
   <div class="card">
     <h2>📊 ④-2 案件進捗（4区分・scope×kind）</h2>
-    <table class="dash-table"><tr><th>scope</th><th>kind</th><th>未完了件数</th></tr><tr><td>全体</td><td>イシュー</td><td>13件</td></tr><tr><td>全体</td><td>デバッグ</td><td>10件</td></tr><tr><td>個別</td><td>イシュー</td><td>12件</td></tr><tr><td>個別</td><td>デバッグ</td><td>4件</td></tr><tr><td>未分類</td><td>—</td><td>0件（scope/kind未設定のレコード）</td></tr></table>
-    <div class="base-note">未完了＝state が todo/in_progress/in_review/blocked/accepted のいずれか（accepted を含む。done/cancelled/failed のみ含めない）。accepted は検収者が合格させただけで、筆頭が報告先へ渡すまでは完了ではないため（FP-0032・FP-0131の実害を根拠に設計２確定）。scope＝全体/個別、kind＝イシュー/デバッグ（柴山さん2026-08-08 19:34指定・軸の定義はFP-0135で設計２が固定）。未分類＝scope/kindが設定されていない未完了レコード。未完了総数 39件。実測 2026-08-09 09:58（date実測）</div>
+    <table class="dash-table"><tr><th>scope</th><th>kind</th><th>未完了件数</th></tr><tr><td>全体</td><td>イシュー</td><td>18件</td></tr><tr><td>全体</td><td>デバッグ</td><td>13件</td></tr><tr><td>個別</td><td>イシュー</td><td>12件</td></tr><tr><td>個別</td><td>デバッグ</td><td>7件</td></tr><tr><td>未分類</td><td>—</td><td>0件（scope/kind未設定のレコード）</td></tr></table>
+    <div class="base-note">未完了＝state が todo/in_progress/in_review/blocked/accepted のいずれか（accepted を含む。done/cancelled/failed のみ含めない）。accepted は検収者が合格させただけで、筆頭が報告先へ渡すまでは完了ではないため（FP-0032・FP-0131の実害を根拠に設計２確定）。scope＝全体/個別、kind＝イシュー/デバッグ（柴山さん2026-08-08 19:34指定・軸の定義はFP-0135で設計２が固定）。未分類＝scope/kindが設定されていない未完了レコード。未完了総数 50件。実測 2026-08-09 14:30</div>
   </div>
   <div class="card">
     <h2>🎮 ⑤ ミツメル</h2>
