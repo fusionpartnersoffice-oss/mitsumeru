@@ -3861,6 +3861,7 @@ function buildDelayWithFlags(delayText, history) {
 async function runAIEveningAnalysis(promptContext) {
   const { tomorrow, delay, hp, mp, eveSummary, profileText, p, v, g, debugText,
           endHP, endMP, counts, lvBaseFormatted, dateStr, trend7, must, never, ego, enea1, rc, supplement,
+          try100, feedback, notebooklm, todayNotePublish,
           jobSearchStatusText } = promptContext;
 
   const hpNum = parseInt(endHP), mpNum = parseInt(endMP);
@@ -3894,6 +3895,10 @@ V（ノイズ）：${v}
 G（気づき）：${g}
 デバッグ評価（役割/委譲/動機/資産/余白）：${debugText}
 補足・追記：${supplement || 'なし'}
+Try100（明日やりたいこと）：${try100 || 'なし'}
+システムへの気づき・改善点：${feedback || 'なし'}
+NotebookLM要約：${notebooklm || 'なし'}
+本日のnote公開実績（自動検知・note-publish-watch）：${todayNotePublish || 'なし'}
 
 以下のルールを厳守してください：
 - 客観的な事実のみ抽出。感情的な脚色・推測・ハルシネーション禁止。マークダウン装飾禁止（#・##・太字の多用禁止）
@@ -4015,7 +4020,12 @@ async function generateEvening() {
   const v = memos.filter(m=>m.tag==='V').map(m=>m.content).join(' / ') || 'なし';
   const g = memos.filter(m=>m.tag==='G').map(m=>m.content).join(' / ') || 'なし';
 
-  const debugText = `役割:${debugScores.d1}、委譲:${debugScores.d2}、動機:${debugScores.d3}、資産:${debugScores.d4}、余白:${debugScores.d5}`;
+  const d1Reason = (document.getElementById('d1-reason') || {value:''}).value.trim();
+  const d2Reason = (document.getElementById('d2-reason') || {value:''}).value.trim();
+  const d3Reason = (document.getElementById('d3-reason') || {value:''}).value.trim();
+  const d4Reason = (document.getElementById('d4-reason') || {value:''}).value.trim();
+  const d5Reason = (document.getElementById('d5-reason') || {value:''}).value.trim();
+  const debugText = `役割:${debugScores.d1}${d1Reason ? `（${d1Reason}）` : ''}、委譲:${debugScores.d2}${d2Reason ? `（${d2Reason}）` : ''}、動機:${debugScores.d3}${d3Reason ? `（${d3Reason}）` : ''}、資産:${debugScores.d4}${d4Reason ? `（${d4Reason}）` : ''}、余白:${debugScores.d5}${d5Reason ? `（${d5Reason}）` : ''}`;
   const lsMorningE = lsLoad('morning') || {};
   const _lvBaseE = lsMorningE['lv-base'] !== undefined ? lsMorningE['lv-base'] : getLVBase();
   const lvTotal = _lvBaseE + counts.pomo * 10;
@@ -4087,11 +4097,17 @@ HP: ${hp}→${endHP} ／ MP: ${mp}→${endMP}
   const learningLogTextEvening = await fetchLearningLogText();
   // 配線漏れの是正（2026-07-28設計発注）：朝と同じダッシュボード面接・物差し情報を夜にも渡す
   const jobSearchStatusEvening = formatJobSearchStatusText(await fetchJobSearchStatus(targetDate || localDateStr(new Date())));
+  // 配線漏れの是正（2026-08-13設計発注・FUS-208）：note-publish-watch（サーバー側）が
+  // 当日のミツメル日次記録へ「## note公開」節を追記する運用に合わせ、既存のfetchVaultContext
+  // （朝と同じ関数・同じ認証トークン経路・新規シークレット不要）を夜にも呼び、当日分のnote公開実績を拾う。
+  const todayVaultCtx = await fetchVaultContext(targetDate || localDateStr(new Date()));
+  const todayNotePublish = (todayVaultCtx && todayVaultCtx.todayNotePublish) || '';
   const aiResult = await runAIEveningAnalysis({
     tomorrow, delay, hp, mp, eveSummary,
     profileText: getProfileText() + learningLogTextEvening, p, v, g, debugText,
     endHP, endMP, counts, lvBaseFormatted, dateStr, trend7,
     must: _eMust, never: _eNever, ego: _eEgo, enea1: _eEnea1, rc: _eRc, supplement,
+    try100, feedback, notebooklm, todayNotePublish,
     jobSearchStatusText: jobSearchStatusEvening
   });
 

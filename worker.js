@@ -1503,6 +1503,7 @@ function parseVaultMarkdown(content) {
     supplement: section('補足'),
     tomorrow: section('明日の設計'),
     delay: section('先送りタスク'),
+    notePublish: section('note公開'),
   };
 }
 
@@ -1552,12 +1553,30 @@ async function handleVaultMorningContext(request, env) {
     const prevDate = prev.name.replace('.md', '');
     const daysSince = Math.round((new Date(today) - new Date(prevDate)) / 86400000);
 
+    // 夜の評価の配線漏れ是正（2026-08-13・設計発注・FUS-208）：note-publish-watchが
+    // 当日のミツメル日次記録へ「## note公開」節を追記する運用に対応するため、
+    // 前日ファイルとは別に「今日自身のファイル」も探し、あれば note公開 節だけ読む。
+    // 前日ファイル探索と同じリストAPI呼び出し結果（listData）を再利用し、追加のAPI呼び出しは
+    // todayファイルが実在する場合の本文取得1回のみに抑える。
+    let todayNotePublish = '';
+    const todayFile = (listData.files || []).find(f => f.name === todayFilename);
+    if (todayFile) {
+      try {
+        const todayContentRes = await fetch(`https://www.googleapis.com/drive/v3/files/${todayFile.id}?alt=media`, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        const todayContent = await todayContentRes.text();
+        todayNotePublish = parseVaultMarkdown(todayContent).notePublish;
+      } catch (e) { todayNotePublish = ''; }
+    }
+
     return new Response(JSON.stringify({
       ok: true, none: false,
       prevDate, daysSince,
       hp: parsed.hp, mp: parsed.mp,
       want: parsed.want, supplement: parsed.supplement,
       tomorrow: parsed.tomorrow, delay: parsed.delay,
+      todayNotePublish,
     }), { status: 200, headers });
   } catch (e) {
     return new Response(JSON.stringify({ ok: false, error: e.message }), { status: 500, headers });
