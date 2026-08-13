@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>1on1相談（SOAP） | Fusion Partners</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗣️</text></svg>">
+<script src="mitsumeru_core.js"></script>
+<style>
+:root {
+  --bg:#0f1923; --surface:#1a2634; --card:#223044;
+  --accent:#4fc3f7; --accent2:#81c784; --accent3:#ffb74d;
+  --text:#e8eaf0; --sub:#8fa3b8; --border:#2e4460; --radius:12px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Hiragino Kaku Gothic Pro','Meiryo',sans-serif;min-height:100vh;}
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;}
+header h1{font-size:0.95rem;font-weight:700;color:var(--accent);}
+header p{font-size:0.72rem;color:var(--sub);margin-top:2px;}
+main{max-width:640px;margin:0 auto;padding:20px 16px 80px;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:14px;}
+.card h2{font-size:0.85rem;color:var(--accent);margin-bottom:8px;}
+.empty-state{font-size:0.8rem;color:var(--sub);padding:8px 0;}
+label{font-size:0.78rem;color:var(--sub);display:block;margin-bottom:4px;}
+select,input[type=text],textarea{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:8px;font-size:0.85rem;margin-bottom:10px;}
+textarea{min-height:90px;}
+.btn-row{display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;}
+button{border:0;border-radius:8px;padding:9px 14px;font-size:0.8rem;cursor:pointer;}
+.btn-primary{background:var(--accent);color:#04202f;font-weight:700;}
+.btn-secondary{background:var(--surface);color:var(--sub);border:1px solid var(--border);}
+.note{font-size:0.72rem;color:var(--sub);margin-top:8px;line-height:1.6;}
+.soap-block{border-left:3px solid var(--border);padding:8px 0 8px 10px;margin-bottom:10px;}
+.soap-block .label{font-size:0.7rem;color:var(--accent3);font-weight:700;margin-bottom:2px;}
+.soap-block .body{font-size:0.82rem;white-space:pre-wrap;}
+.record-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px;}
+.record-card .ts{font-size:0.7rem;color:var(--sub);margin-bottom:6px;}
+.gen-time{font-size:0.72rem;color:var(--accent3);}
+.tag-nodata{font-size:0.72rem;color:var(--sub);font-style:italic;}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>1on1相談（SOAP）</h1>
+    <p>FUS-73 ／ 層①：全員が使う記録層</p>
+  </div>
+  <button class="btn-secondary" onclick="toggleSummary()">柴山さん専用サマリー</button>
+</header>
+<main id="main-layer1">
+  <div class="card">
+    <h2>誰の記録か</h2>
+    <label for="person-select">氏名（既存を選ぶ、または新規に追加）</label>
+    <select id="person-select" onchange="onPersonChange()"></select>
+    <input type="text" id="new-person-name" placeholder="新しい氏名を入力してEnter">
+    <div id="o-material" class="note"></div>
+  </div>
+
+  <div class="card">
+    <h2>S（主観的情報）：本人が今日話したこと</h2>
+    <textarea id="s-input" placeholder="今日、本人が話した言葉をそのまま書いてください"></textarea>
+    <div class="btn-row">
+      <button class="btn-primary" onclick="onSpeakClick()">AIと1on1する</button>
+    </div>
+    <div id="ai-status" class="note"></div>
+  </div>
+
+  <div class="card" id="soap-result-card" style="display:none;">
+    <h2>今回のSOAP</h2>
+    <div id="soap-result"></div>
+    <div class="btn-row">
+      <button class="btn-primary" onclick="saveRecord()">この内容を記録に残す</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>これまでの記録</h2>
+    <div id="record-history"></div>
+  </div>
+
+  <div class="note">
+    層①のS/O/A/Pは全員（社長を含む）が使う記録です。層②（柴山さん専用サマリー）はヘッダのボタンから開けます。
+  </div>
+</main>
+
+<main id="main-layer2" style="display:none;">
+  <div class="card">
+    <h2>柴山さん専用サマリー（層②）</h2>
+    <div id="summary-body"></div>
+    <div class="btn-row">
+      <button class="btn-secondary" onclick="toggleSummary()">記録画面へ戻る</button>
+    </div>
+  </div>
+</main>
+
+<script>
+// ============================================================
+// FUS-73（ミツメル1on1・SOAP設計）。データ源は設計２確認済み（2026-08-11）：
+// ①1on1機能側に新規roster（'oneon1_roster'）を持つ。既存3ロースターへの
+//   強制一致はしない（表記ゆれによる人違いリスクを避けるため）
+// ②O材料の紐付けは正規化（前後空白除去・全角半角統一程度）した緩い一致で
+//   自動候補を出す。一致しない場合は「見つかりませんでした」と明示し、
+//   無理に紐付けない
+// ③柴山さんご本人以外の社員の「名前つき日次記録」データソースは現状存在
+//   しない（getVisitorIdは匿名IDで社員識別に使えないことを実機確認済み）。
+//   社長以外の日次記録は「材料無し」として空欄運用。新規の入力元は作らない
+// ============================================================
+const ONEON1_ROSTER_KEY = 'oneon1_roster';
+const ONEON1_RECORDS_KEY = 'oneon1_records';
+
+function normalizeName(s) {
+  return (s || '')
+    .trim()
+    .replace(/[　\s]+/g, ' ')
+    .normalize('NFKC');
+}
+
+function loadJson(key, fallback) {
+  try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)); }
+  catch (e) { return fallback; }
+}
+function saveJson(key, value) { localStorage.setItem(key, JSON.stringify(value)); }
+
+function loadRoster() { return loadJson(ONEON1_ROSTER_KEY, []); }
+function saveRoster(list) { saveJson(ONEON1_ROSTER_KEY, list); }
+function loadRecords() { return loadJson(ONEON1_RECORDS_KEY, []); }
+function saveRecords(list) { saveJson(ONEON1_RECORDS_KEY, list); }
+
+let currentPerson = null;
+let lastSoap = null;
+
+function renderPersonSelect() {
+  const roster = loadRoster();
+  const sel = document.getElementById('person-select');
+  sel.innerHTML = '<option value="">（選択してください）</option>' +
+    roster.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+  if (currentPerson) sel.value = currentPerson;
+}
+
+function onPersonChange() {
+  const sel = document.getElementById('person-select');
+  currentPerson = sel.value || null;
+  renderOMaterial();
+  renderHistory();
+}
+
+document.getElementById('new-person-name').addEventListener('keydown', function (e) {
+  if (e.key !== 'Enter') return;
+  const name = normalizeName(this.value);
+  if (!name) return;
+  const roster = loadRoster();
+  if (!roster.some(p => p.name === name)) {
+    roster.push({ name, createdAt: new Date().toISOString() });
+    saveRoster(roster);
+  }
+  this.value = '';
+  currentPerson = name;
+  renderPersonSelect();
+  renderOMaterial();
+  renderHistory();
+});
+
+// 既存3ロースター（ta_roster/pm_roster/mitsumeru_scan_roster）から、
+// 正規化した緩い一致でO材料の自動候補を探す。一致しなければ何も返さない。
+function findOMaterial(personName) {
+  const target = normalizeName(personName);
+  const sources = [
+    { key: 'ta_roster', label: 'チームアセスメント／KSA' },
+    { key: 'pm_roster', label: 'PMチェック' },
+    { key: 'mitsumeru_scan_roster', label: 'エゴグラム／エニアグラム' },
+  ];
+  const found = [];
+  sources.forEach(src => {
+    const list = loadJson(src.key, []);
+    const hit = list.find(r => normalizeName(r.name) === target);
+    if (hit) found.push({ label: src.label, record: hit });
+  });
+  return found;
+}
+
+function renderOMaterial() {
+  const box = document.getElementById('o-material');
+  if (!currentPerson) { box.textContent = ''; return; }
+  const materials = findOMaterial(currentPerson);
+  if (materials.length === 0) {
+    box.innerHTML = `<span class="tag-nodata">${currentPerson}さんのO材料（適性検査結果）は見つかりませんでした。無理に紐付けていません。</span>`;
+    return;
+  }
+  box.innerHTML = 'O材料：' + materials.map(m => m.label).join('・') + ' が見つかりました（自動紐付け・正規化した緩い一致）。';
+}
+
+function buildOSummaryText(personName) {
+  const materials = findOMaterial(personName);
+  if (materials.length === 0) return 'O材料（適性検査結果）：見つかりませんでした。';
+  return 'O材料（適性検査結果・既存ロースターから自動紐付け）：\n' +
+    materials.map(m => `- ${m.label}：${JSON.stringify(m.record)}`).join('\n');
+}
+
+function onSpeakClick() {
+  if (!currentPerson) { alert('先に氏名を選択または追加してください。'); return; }
+  const sInput = document.getElementById('s-input').value.trim();
+  if (!sInput) { alert('S（本人が話したこと）を入力してください。'); return; }
+  const key = mitsumeruGetApiKey('mitsumeru_api_key');
+  const status = document.getElementById('ai-status');
+  if (!key) { status.textContent = MITSUMERU_MSG.apiKeyNotConfigured; return; }
+
+  const oSummary = buildOSummaryText(currentPerson);
+  const prompt = `あなたは1on1の相談相手です。以下の情報をSOAP形式（医療カルテと同じ考え方）で整理してください。
+S（主観的情報）＝本人が話した言葉そのもの。O（客観的情報）＝日次記録や適性検査データ。
+A（評価）＝SとOを合わせて、表面の訴えの奥にある本質（氷山モデル）で見立てる。
+P（計画）＝次の一手。
+「最近どうですか」のような開かれすぎた/馴れ馴れしい聞き方はせず、具体的な事実に基づいて書いてください。
+記録にない事実を創作しないこと。
+
+【S：本人が話したこと】
+${sInput}
+
+【O：客観的情報】
+${oSummary}
+
+以下の形式で出力してください（他のテキストは不要）：
+===S===
+（Sの要約）
+===O===
+（Oの要約）
+===A===
+（見立て）
+===P===
+（次の一手）`;
+
+  status.textContent = '生成中…';
+  mitsumeruCallClaude('mitsumeru_api_key', prompt,
+    text => {
+      status.textContent = '';
+      lastSoap = parseSoap(text);
+      renderSoapResult(lastSoap);
+    },
+    err => { status.textContent = 'エラー：' + err; },
+    2000
+  );
+}
+
+function parseSoap(text) {
+  const get = (name) => {
+    const re = new RegExp('===' + name + '===\\s*([\\s\\S]*?)(?:===|$)');
+    const m = text.match(re);
+    return m ? m[1].trim() : '';
+  };
+  return { S: get('S'), O: get('O'), A: get('A'), P: get('P') };
+}
+
+function renderSoapResult(soap) {
+  const card = document.getElementById('soap-result-card');
+  const box = document.getElementById('soap-result');
+  card.style.display = 'block';
+  const rows = [['S', soap.S], ['O', soap.O], ['A', soap.A], ['P', soap.P]];
+  box.innerHTML = rows.map(([label, body]) =>
+    `<div class="soap-block"><div class="label">${label}</div><div class="body">${escapeHtml(body || '（空）')}</div></div>`
+  ).join('');
+}
+
+function escapeHtml(s) {
+  const div = document.createElement('div');
+  div.textContent = s;
+  return div.innerHTML;
+}
+
+function saveRecord() {
+  if (!currentPerson || !lastSoap) return;
+  const records = loadRecords();
+  records.push({
+    person: currentPerson,
+    ts: new Date().toISOString(),
+    soap: lastSoap,
+  });
+  saveRecords(records);
+  document.getElementById('s-input').value = '';
+  document.getElementById('soap-result-card').style.display = 'none';
+  lastSoap = null;
+  renderHistory();
+}
+
+function renderHistory() {
+  const box = document.getElementById('record-history');
+  if (!currentPerson) { box.innerHTML = '<div class="empty-state">氏名を選択すると、これまでの記録が表示されます。</div>'; return; }
+  const records = loadRecords().filter(r => r.person === currentPerson).sort((a, b) => b.ts.localeCompare(a.ts));
+  if (records.length === 0) { box.innerHTML = `<div class="empty-state">${currentPerson}さんの記録はまだありません（対象0件）。</div>`; return; }
+  box.innerHTML = records.map(r => `
+    <div class="record-card">
+      <div class="ts">${new Date(r.ts).toLocaleString('ja-JP')}</div>
+      <div class="soap-block"><div class="label">A</div><div class="body">${escapeHtml(r.soap.A || '（空）')}</div></div>
+      <div class="soap-block"><div class="label">P</div><div class="body">${escapeHtml(r.soap.P || '（空）')}</div></div>
+    </div>`).join('');
+}
+
+// ===== 層②：柴山さん専用サマリー =====
+// ⚠️未確定（設計書「未確定・次の壁打ちで詰めること」）：具体的な表示項目・強い認証は
+// 今回のスコープ外。現時点では画面の切替のみで、全員分の記録件数・最新の見立てを一覧表示する。
+function toggleSummary() {
+  const l1 = document.getElementById('main-layer1');
+  const l2 = document.getElementById('main-layer2');
+  const showSummary = l2.style.display === 'none';
+  l1.style.display = showSummary ? 'none' : 'block';
+  l2.style.display = showSummary ? 'block' : 'none';
+  if (showSummary) renderSummary();
+}
+
+function renderSummary() {
+  const box = document.getElementById('summary-body');
+  const records = loadRecords();
+  if (records.length === 0) {
+    box.innerHTML = '<div class="empty-state">データがありません（記録が1件もありません）。</div>';
+    return;
+  }
+  const byPerson = {};
+  records.forEach(r => {
+    byPerson[r.person] = byPerson[r.person] || [];
+    byPerson[r.person].push(r);
+  });
+  box.innerHTML = Object.keys(byPerson).map(name => {
+    const list = byPerson[name].sort((a, b) => b.ts.localeCompare(a.ts));
+    const latest = list[0];
+    return `<div class="record-card">
+      <div class="ts">${escapeHtml(name)}（記録${list.length}件・最新：${new Date(latest.ts).toLocaleString('ja-JP')}）</div>
+      <div class="soap-block"><div class="label">最新のA</div><div class="body">${escapeHtml(latest.soap.A || '（空）')}</div></div>
+      <div class="soap-block"><div class="label">最新のP</div><div class="body">${escapeHtml(latest.soap.P || '（空）')}</div></div>
+    </div>`;
+  }).join('') + `<div class="note">対象＝1on1記録の登録者${Object.keys(byPerson).length}名。1件＝S/O/A/Pの1回分の記録。定義：${new Date().toLocaleString('ja-JP')}時点</div>`;
+}
+
+function init() {
+  renderPersonSelect();
+  renderOMaterial();
+  renderHistory();
+}
+init();
+</script>
+</body>
+</html>
