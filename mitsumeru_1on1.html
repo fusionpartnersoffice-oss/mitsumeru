@@ -58,7 +58,7 @@ main.active{display:block;}
     <h1>1on1相談（SOAP）</h1>
     <p>FUS-73 ／ 層①：全員が使う記録層</p>
   </div>
-  <button class="btn-secondary toggle-summary-btn" onclick="toggleSummary()">柴山さん専用サマリー</button>
+  <button class="btn-secondary toggle-summary-btn" onclick="toggleSummary()">これまでの経緯</button>
 </header>
 <div class="layout-wrap">
 <main id="main-layer1" class="active">
@@ -80,21 +80,32 @@ main.active{display:block;}
   </div>
 
   <div class="card" id="soap-result-card" style="display:none;">
-    <h2>今回のSOAP</h2>
-    <div class="btn-row">
-      <button class="btn-primary" onclick="saveRecord()">この内容を記録に残す</button>
-    </div>
+    <h2>AIの見立て（O/A/P）</h2>
     <div id="soap-result"></div>
   </div>
 
+  <div class="card">
+    <h2>あなたの意見・補足コメント（任意）</h2>
+    <div class="note">AIを実行する前でも後でも書けます。AIの文章は書き換えません。</div>
+    <label for="comment-O">O（客観的情報）への補足</label>
+    <textarea id="comment-O" class="soap-comment" placeholder="Oへの補足コメント（任意・相手の名前を含めてよい）"></textarea>
+    <label for="comment-A">A（評価）への補足</label>
+    <textarea id="comment-A" class="soap-comment" placeholder="Aへの補足コメント（任意）"></textarea>
+    <label for="comment-P">P（計画）への補足</label>
+    <textarea id="comment-P" class="soap-comment" placeholder="Pへの補足コメント（任意）"></textarea>
+    <div class="btn-row">
+      <button class="btn-primary" onclick="saveRecord()">この内容を記録に残す</button>
+    </div>
+  </div>
+
   <div class="note">
-    層①のS/O/A/Pは全員（社長を含む）が使う記録です。過去の記録・コメント編集は左側「柴山さん専用サマリー」でご確認ください（同じ人を選ぶと自動で連動します）。
+    層①のS/O/A/Pは全員（社長を含む）が使う記録です。過去の記録・コメント編集は左側「これまでの経緯」でご確認ください（同じ人を選ぶと自動で連動します）。
   </div>
 </main>
 
 <main id="main-layer2">
   <div class="card">
-    <h2>柴山さん専用サマリー（層②）</h2>
+    <h2>これまでの経緯（層②）</h2>
     <div class="btn-row">
       <button class="btn-secondary toggle-summary-btn" onclick="toggleSummary()">記録画面へ戻る</button>
     </div>
@@ -260,16 +271,15 @@ function parseSoap(text) {
   return { S: get('S'), O: get('O'), A: get('A'), P: get('P') };
 }
 
+// 柴山さん実機指摘対応（2026-08-15）：コメント欄をsoap-result-cardから独立した常設カードへ移動したため、
+// ここはAIの見立て（O/A/P本文）を表示するだけになった。コメント欄自体はHTML側に固定で常時存在する。
 function renderSoapResult(soap) {
   const card = document.getElementById('soap-result-card');
   const box = document.getElementById('soap-result');
   card.style.display = 'block';
-  // FUS-215①：O/A/Pへの補足コメント欄。Sは本人の生発言のためコメント対象外。
-  const rows = [['S', soap.S, false], ['O', soap.O, true], ['A', soap.A, true], ['P', soap.P, true]];
-  box.innerHTML = rows.map(([label, body, hasComment]) =>
-    `<div class="soap-block"><div class="label">${label}</div><div class="body">${escapeHtml(body || '（空）')}</div>` +
-    (hasComment ? `<textarea class="soap-comment" id="comment-${label}" placeholder="${label}への補足コメント（任意・相手の名前を含めてよい。自動突合は今回のスコープ外）"></textarea>` : '') +
-    `</div>`
+  const rows = [['S', soap.S], ['O', soap.O], ['A', soap.A], ['P', soap.P]];
+  box.innerHTML = rows.map(([label, body]) =>
+    `<div class="soap-block"><div class="label">${label}</div><div class="body">${escapeHtml(body || '（空）')}</div></div>`
   ).join('');
 }
 
@@ -279,26 +289,34 @@ function escapeHtml(s) {
   return div.innerHTML;
 }
 
+// 柴山さん実機指摘対応（2026-08-15）：「AIの見立てが前回とあまり変わらなければ、AIを押さずに保存したい」
+// との要望を受け、lastSoapが無い（＝AIを一度も実行していない）状態でも保存できるようにする。
+// その場合、O/A/PはAI未実行のため空欄のまま保存し、コメント欄（自分の意見）だけが記録される。
 function saveRecord() {
-  if (!currentPerson || !lastSoap) return;
+  if (!currentPerson) { alert('先に氏名を選択または追加してください。'); return; }
+  const sInput = document.getElementById('s-input').value.trim();
+  if (!sInput && !lastSoap) { alert('S（本人が話したこと）を入力してください。'); return; }
   const records = loadRecords();
-  // FUS-215①：O/A/Pコメント欄の内容を記録へ含める（空欄は空文字のまま保存）
   const comments = {
-    O: (document.getElementById('comment-O') || { value: '' }).value.trim(),
-    A: (document.getElementById('comment-A') || { value: '' }).value.trim(),
-    P: (document.getElementById('comment-P') || { value: '' }).value.trim(),
+    O: document.getElementById('comment-O').value.trim(),
+    A: document.getElementById('comment-A').value.trim(),
+    P: document.getElementById('comment-P').value.trim(),
   };
+  const soap = lastSoap || { S: sInput, O: '', A: '', P: '' };
   records.push({
     person: currentPerson,
     ts: new Date().toISOString(),
-    soap: lastSoap,
+    soap,
     comments,
   });
   saveRecords(records);
   document.getElementById('s-input').value = '';
+  document.getElementById('comment-O').value = '';
+  document.getElementById('comment-A').value = '';
+  document.getElementById('comment-P').value = '';
   document.getElementById('soap-result-card').style.display = 'none';
   lastSoap = null;
-  renderSummary(); // 柴山さん実機指摘対応：右で保存したら即座に左のサマリーへ反映（右側の履歴表示は廃止・左に一本化）
+  renderSummary(); // 右で保存したら即座に左のサマリーへ反映
 }
 
 // FUS-215②：個別記録のPDF出力用キャッシュ（renderSummary直近描画分・indexで参照）
@@ -367,7 +385,7 @@ ${blocks}
   w.document.close();
 }
 
-// ===== 層②：柴山さん専用サマリー =====
+// ===== 層②：これまでの経緯（旧名称「柴山さん専用サマリー」・2026-08-15改称。認証は未実装） =====
 // ⚠️未確定（設計書「未確定・次の壁打ちで詰めること」）：具体的な表示項目・強い認証は
 // 今回のスコープ外。現時点では画面の切替のみで、全員分の記録件数・最新の見立てを一覧表示する。
 // 柴山さん実機指摘対応（2026-08-15）：900px以上（PC等）は常にCSSの@mediaで両方表示。
