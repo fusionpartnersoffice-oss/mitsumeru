@@ -303,6 +303,7 @@ function renderHistory() {
   box.innerHTML = records.map((r, i) => `
     <div class="record-card">
       <div class="ts">${new Date(r.ts).toLocaleString('ja-JP')}</div>
+      <div class="soap-block"><div class="label">O</div><div class="body">${escapeHtml(r.soap.O || '（空）')}</div>${r.comments && r.comments.O ? `<div class="comment-view">💬 ${escapeHtml(r.comments.O)}</div>` : ''}</div>
       <div class="soap-block"><div class="label">A</div><div class="body">${escapeHtml(r.soap.A || '（空）')}</div>${r.comments && r.comments.A ? `<div class="comment-view">💬 ${escapeHtml(r.comments.A)}</div>` : ''}</div>
       <div class="soap-block"><div class="label">P</div><div class="body">${escapeHtml(r.soap.P || '（空）')}</div>${r.comments && r.comments.P ? `<div class="comment-view">💬 ${escapeHtml(r.comments.P)}</div>` : ''}</div>
       <div class="btn-row"><button class="btn-secondary" onclick="printRecord(${i})">🖨️ この記録をPDF保存</button></div>
@@ -372,6 +373,7 @@ function renderSummary() {
     const timeline = recent.map(r => `
       <div class="record-card">
         <div class="ts">${new Date(r.ts).toLocaleString('ja-JP')}</div>
+        <div class="soap-block"><div class="label">O</div><div class="body">${escapeHtml(r.soap.O || '（空）')}</div>${r.comments && r.comments.O ? `<div class="comment-view">💬 ${escapeHtml(r.comments.O)}</div>` : ''}</div>
         <div class="soap-block"><div class="label">A</div><div class="body">${escapeHtml(r.soap.A || '（空）')}</div>${r.comments && r.comments.A ? `<div class="comment-view">💬 ${escapeHtml(r.comments.A)}</div>` : ''}</div>
         <div class="soap-block"><div class="label">P</div><div class="body">${escapeHtml(r.soap.P || '（空）')}</div>${r.comments && r.comments.P ? `<div class="comment-view">💬 ${escapeHtml(r.comments.P)}</div>` : ''}</div>
       </div>`).join('');
