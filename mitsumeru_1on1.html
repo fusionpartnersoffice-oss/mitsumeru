@@ -68,10 +68,10 @@ button{border:0;border-radius:8px;padding:9px 14px;font-size:0.8rem;cursor:point
 
   <div class="card" id="soap-result-card" style="display:none;">
     <h2>今回のSOAP</h2>
-    <div id="soap-result"></div>
     <div class="btn-row">
       <button class="btn-primary" onclick="saveRecord()">この内容を記録に残す</button>
     </div>
+    <div id="soap-result"></div>
   </div>
 
   <div class="card">
@@ -87,10 +87,12 @@ button{border:0;border-radius:8px;padding:9px 14px;font-size:0.8rem;cursor:point
 <main id="main-layer2" style="display:none;">
   <div class="card">
     <h2>柴山さん専用サマリー（層②）</h2>
-    <div id="summary-body"></div>
     <div class="btn-row">
       <button class="btn-secondary" onclick="toggleSummary()">記録画面へ戻る</button>
     </div>
+    <label for="summary-person-select">誰のサマリーを見るか（個別表示）</label>
+    <select id="summary-person-select" onchange="renderSummary()"></select>
+    <div id="summary-body"></div>
   </div>
 </main>
 
@@ -302,11 +304,11 @@ function renderHistory() {
   if (records.length === 0) { box.innerHTML = `<div class="empty-state">${currentPerson}さんの記録はまだありません（対象0件）。</div>`; return; }
   box.innerHTML = records.map((r, i) => `
     <div class="record-card">
+      <div class="btn-row"><button class="btn-secondary" onclick="printRecord(${i})">🖨️ この記録をPDF保存</button></div>
       <div class="ts">${new Date(r.ts).toLocaleString('ja-JP')}</div>
       <div class="soap-block"><div class="label">O</div><div class="body">${escapeHtml(r.soap.O || '（空）')}</div>${r.comments && r.comments.O ? `<div class="comment-view">💬 ${escapeHtml(r.comments.O)}</div>` : ''}</div>
       <div class="soap-block"><div class="label">A</div><div class="body">${escapeHtml(r.soap.A || '（空）')}</div>${r.comments && r.comments.A ? `<div class="comment-view">💬 ${escapeHtml(r.comments.A)}</div>` : ''}</div>
       <div class="soap-block"><div class="label">P</div><div class="body">${escapeHtml(r.soap.P || '（空）')}</div>${r.comments && r.comments.P ? `<div class="comment-view">💬 ${escapeHtml(r.comments.P)}</div>` : ''}</div>
-      <div class="btn-row"><button class="btn-secondary" onclick="printRecord(${i})">🖨️ この記録をPDF保存</button></div>
     </div>`).join('');
 }
 
@@ -348,7 +350,18 @@ function toggleSummary() {
   const showSummary = l2.style.display === 'none';
   l1.style.display = showSummary ? 'none' : 'block';
   l2.style.display = showSummary ? 'block' : 'none';
-  if (showSummary) renderSummary();
+  if (showSummary) { renderSummaryPersonSelect(); renderSummary(); }
+}
+
+// FUS-215追加是正：柴山さんご本人の指摘（2026-08-15）「全員が1画面に混在している」に対応。
+// 層①と同じ「まず人を選ぶ」方式へ変更。個別表示のみ・全員一覧表示はしない。
+function renderSummaryPersonSelect() {
+  const roster = loadRoster();
+  const sel = document.getElementById('summary-person-select');
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">（選択してください）</option>' +
+    roster.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+  if (prev) sel.value = prev;
 }
 
 // FUS-215③：「最新のA・Pのみ」から「直近N件を時系列で並べた総括」へ拡張。
@@ -357,31 +370,29 @@ const SUMMARY_RECENT_N = 5;
 
 function renderSummary() {
   const box = document.getElementById('summary-body');
-  const records = loadRecords();
-  if (records.length === 0) {
-    box.innerHTML = '<div class="empty-state">データがありません（記録が1件もありません）。</div>';
+  const selectedName = document.getElementById('summary-person-select').value;
+  if (!selectedName) {
+    box.innerHTML = '<div class="empty-state">上のプルダウンで、見たい人を選んでください（個別表示のみ・複数人の同時表示はしません）。</div>';
     return;
   }
-  const byPerson = {};
-  records.forEach(r => {
-    byPerson[r.person] = byPerson[r.person] || [];
-    byPerson[r.person].push(r);
-  });
-  box.innerHTML = Object.keys(byPerson).map(name => {
-    const list = byPerson[name].sort((a, b) => b.ts.localeCompare(a.ts));
-    const recent = list.slice(0, SUMMARY_RECENT_N);
-    const timeline = recent.map(r => `
+  const records = loadRecords().filter(r => r.person === selectedName);
+  if (records.length === 0) {
+    box.innerHTML = `<div class="empty-state">${escapeHtml(selectedName)}さんの記録はまだありません。</div>`;
+    return;
+  }
+  const list = records.sort((a, b) => b.ts.localeCompare(a.ts));
+  const recent = list.slice(0, SUMMARY_RECENT_N);
+  const timeline = recent.map(r => `
       <div class="record-card">
         <div class="ts">${new Date(r.ts).toLocaleString('ja-JP')}</div>
         <div class="soap-block"><div class="label">O</div><div class="body">${escapeHtml(r.soap.O || '（空）')}</div>${r.comments && r.comments.O ? `<div class="comment-view">💬 ${escapeHtml(r.comments.O)}</div>` : ''}</div>
         <div class="soap-block"><div class="label">A</div><div class="body">${escapeHtml(r.soap.A || '（空）')}</div>${r.comments && r.comments.A ? `<div class="comment-view">💬 ${escapeHtml(r.comments.A)}</div>` : ''}</div>
         <div class="soap-block"><div class="label">P</div><div class="body">${escapeHtml(r.soap.P || '（空）')}</div>${r.comments && r.comments.P ? `<div class="comment-view">💬 ${escapeHtml(r.comments.P)}</div>` : ''}</div>
       </div>`).join('');
-    return `<div class="card">
-      <h2>${escapeHtml(name)}（記録${list.length}件・直近${recent.length}件を表示）</h2>
+  box.innerHTML = `<div class="card">
+      <h2>${escapeHtml(selectedName)}（記録${list.length}件・直近${recent.length}件を表示）</h2>
       ${timeline}
-    </div>`;
-  }).join('') + `<div class="note">対象＝1on1記録の登録者${Object.keys(byPerson).length}名。各人、直近${SUMMARY_RECENT_N}件までを時系列（新しい順）で表示。繰り返し・傾向の自動検知はしていません（表示範囲の拡張のみ）。定義：${new Date().toLocaleString('ja-JP')}時点</div>`;
+    </div>` + `<div class="note">${escapeHtml(selectedName)}さんの直近${SUMMARY_RECENT_N}件までを時系列（新しい順）で表示。繰り返し・傾向の自動検知はしていません（表示範囲の拡張のみ）。定義：${new Date().toLocaleString('ja-JP')}時点</div>`;
 }
 
 function init() {
