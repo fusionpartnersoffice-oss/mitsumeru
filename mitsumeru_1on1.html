@@ -87,13 +87,8 @@ main.active{display:block;}
     <div id="soap-result"></div>
   </div>
 
-  <div class="card">
-    <h2>これまでの記録</h2>
-    <div id="record-history"></div>
-  </div>
-
   <div class="note">
-    層①のS/O/A/Pは全員（社長を含む）が使う記録です。層②（柴山さん専用サマリー）はヘッダのボタンから開けます。
+    層①のS/O/A/Pは全員（社長を含む）が使う記録です。過去の記録・コメント編集は左側「柴山さん専用サマリー」でご確認ください（同じ人を選ぶと自動で連動します）。
   </div>
 </main>
 
@@ -157,7 +152,6 @@ function onPersonChange() {
   const sel = document.getElementById('person-select');
   currentPerson = sel.value || null;
   renderOMaterial();
-  renderHistory();
   renderSummary(); // 柴山さん実機指摘対応：左（サマリー）を右の選択に自動追従させる
 }
 
@@ -174,7 +168,7 @@ document.getElementById('new-person-name').addEventListener('keydown', function 
   currentPerson = name;
   renderPersonSelect();
   renderOMaterial();
-  renderHistory();
+  renderSummary();
 });
 
 // 既存3ロースター（ta_roster/pm_roster/mitsumeru_scan_roster）から、
@@ -304,85 +298,16 @@ function saveRecord() {
   document.getElementById('s-input').value = '';
   document.getElementById('soap-result-card').style.display = 'none';
   lastSoap = null;
-  renderHistory();
-  renderSummary(); // 柴山さん実機指摘対応：右で保存したら即座に左のサマリーへも反映
+  renderSummary(); // 柴山さん実機指摘対応：右で保存したら即座に左のサマリーへ反映（右側の履歴表示は廃止・左に一本化）
 }
 
-// FUS-215②：個別記録のPDF出力用キャッシュ（renderHistory直近描画分のみ・indexで参照）
-let historyRecordsCache = [];
+// FUS-215②：個別記録のPDF出力用キャッシュ（renderSummary直近描画分・indexで参照）
 let summaryRecordsCache = [];
-
-let editingHistoryIndex = null;
-
-function renderHistory() {
-  const box = document.getElementById('record-history');
-  if (!currentPerson) { box.innerHTML = '<div class="empty-state">氏名を選択すると、これまでの記録が表示されます。</div>'; return; }
-  const records = loadRecords().filter(r => r.person === currentPerson).sort((a, b) => b.ts.localeCompare(a.ts));
-  historyRecordsCache = records;
-  if (records.length === 0) { box.innerHTML = `<div class="empty-state">${currentPerson}さんの記録はまだありません（対象0件）。</div>`; return; }
-  box.innerHTML = records.map((r, i) => {
-    const editing = editingHistoryIndex === i;
-    const soapRow = (label) => {
-      const hasComment = ['O', 'A', 'P'].includes(label);
-      const commentVal = (r.comments && r.comments[label]) || '';
-      const commentHtml = editing && hasComment
-        ? `<textarea class="soap-comment" id="edit-comment-${label}-${i}" placeholder="${label}への補足コメント">${escapeHtml(commentVal)}</textarea>`
-        : (commentVal ? `<div class="comment-view">💬 ${escapeHtml(commentVal)}</div>` : '');
-      return `<div class="soap-block"><div class="label">${label}</div><div class="body">${escapeHtml(r.soap[label] || '（空）')}</div>${commentHtml}</div>`;
-    };
-    const actionButtons = editing
-      ? `<div class="btn-row">
-           <button class="btn-primary" onclick="saveHistoryComment(${i})">✅ コメントを保存</button>
-           <button class="btn-secondary" onclick="cancelEditHistoryComment()">キャンセル</button>
-         </div>`
-      : `<div class="btn-row">
-           <button class="btn-secondary" onclick="printRecord(${i})">🖨️ この記録をPDF保存</button>
-           <button class="btn-secondary" onclick="startEditHistoryComment(${i})">✏️ コメントを編集</button>
-         </div>`;
-    return `
-    <div class="record-card">
-      ${actionButtons}
-      <div class="ts">${new Date(r.ts).toLocaleString('ja-JP')}</div>
-      ${soapRow('O')}
-      ${soapRow('A')}
-      ${soapRow('P')}
-    </div>`;
-  }).join('');
-}
-
-// 柴山さん実機指摘対応（2026-08-15）：「過去の記録をコメント修正できないのか」への対応。
-// 保存後の記録に対しても、O/A/Pコメントを後から編集できるようにする（S・O・A・P本文自体は不変。編集対象はコメントのみ）。
-function startEditHistoryComment(index) {
-  editingHistoryIndex = index;
-  renderHistory();
-}
-function cancelEditHistoryComment() {
-  editingHistoryIndex = null;
-  renderHistory();
-}
-function saveHistoryComment(index) {
-  const target = historyRecordsCache[index];
-  if (!target) return;
-  const newComments = {
-    O: (document.getElementById(`edit-comment-O-${index}`) || { value: target.comments?.O || '' }).value.trim(),
-    A: (document.getElementById(`edit-comment-A-${index}`) || { value: target.comments?.A || '' }).value.trim(),
-    P: (document.getElementById(`edit-comment-P-${index}`) || { value: target.comments?.P || '' }).value.trim(),
-  };
-  // ts＋personで対象を特定し、全件配列（未フィルタ）の該当レコードだけを書き換える。
-  const all = loadRecords();
-  const idx = all.findIndex(r => r.person === target.person && r.ts === target.ts);
-  if (idx === -1) return;
-  all[idx].comments = newComments;
-  saveRecords(all);
-  editingHistoryIndex = null;
-  renderHistory();
-  renderSummary(); // 左側のサマリーも同じデータのため合わせて再描画
-}
 
 // FUS-215②：個別記録のPDF出力。mitsumeru_scan.htmlの既存パターン（別ウィンドウ＋window.print()）を流用。
 // 新規ライブラリは導入しない。
 function printRecord(index) {
-  const r = historyRecordsCache[index];
+  const r = summaryRecordsCache[index];
   if (!r) return;
   const rows = ['S', 'O', 'A', 'P'].map(k => `
     <div class="block"><div class="label">${k}</div><div class="body">${escapeHtml(r.soap[k] || '（空）')}</div>${r.comments && r.comments[k] ? `<div class="comment">💬 ${escapeHtml(r.comments[k])}</div>` : ''}</div>`).join('');
@@ -495,7 +420,10 @@ function renderSummary() {
            <button class="btn-primary" onclick="saveSummaryComment(${i})">✅ コメントを保存</button>
            <button class="btn-secondary" onclick="cancelEditSummaryComment()">キャンセル</button>
          </div>`
-      : `<div class="btn-row"><button class="btn-secondary" onclick="startEditSummaryComment(${i})">✏️ コメントを編集</button></div>`;
+      : `<div class="btn-row">
+           <button class="btn-secondary" onclick="printRecord(${i})">🖨️ この記録をPDF保存</button>
+           <button class="btn-secondary" onclick="startEditSummaryComment(${i})">✏️ コメントを編集</button>
+         </div>`;
     return `
       <div class="record-card">
         ${rowButtons}
@@ -537,14 +465,11 @@ function saveSummaryComment(index) {
   saveRecords(all);
   editingSummaryIndex = null;
   renderSummary();
-  renderHistory(); // 右側の「これまでの記録」も同じデータのため合わせて再描画
 }
 
 function init() {
   renderPersonSelect();
   renderOMaterial();
-  renderHistory();
-  // 分割レイアウト（PC等）では層②も常時見えているため、初期表示から中身を用意しておく
   renderSummary();
 }
 init();
