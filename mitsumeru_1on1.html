@@ -36,6 +36,8 @@ button{border:0;border-radius:8px;padding:9px 14px;font-size:0.8rem;cursor:point
 .record-card .ts{font-size:0.7rem;color:var(--sub);margin-bottom:6px;}
 .gen-time{font-size:0.72rem;color:var(--accent3);}
 .tag-nodata{font-size:0.72rem;color:var(--sub);font-style:italic;}
+.soap-comment{min-height:44px;margin-top:6px;margin-bottom:0;font-size:0.78rem;}
+.comment-view{font-size:0.76rem;color:var(--accent);margin-top:4px;white-space:pre-wrap;}
 </style>
 </head>
 <body>
@@ -252,9 +254,12 @@ function renderSoapResult(soap) {
   const card = document.getElementById('soap-result-card');
   const box = document.getElementById('soap-result');
   card.style.display = 'block';
-  const rows = [['S', soap.S], ['O', soap.O], ['A', soap.A], ['P', soap.P]];
-  box.innerHTML = rows.map(([label, body]) =>
-    `<div class="soap-block"><div class="label">${label}</div><div class="body">${escapeHtml(body || '（空）')}</div></div>`
+  // FUS-215①：O/A/Pへの補足コメント欄。Sは本人の生発言のためコメント対象外。
+  const rows = [['S', soap.S, false], ['O', soap.O, true], ['A', soap.A, true], ['P', soap.P, true]];
+  box.innerHTML = rows.map(([label, body, hasComment]) =>
+    `<div class="soap-block"><div class="label">${label}</div><div class="body">${escapeHtml(body || '（空）')}</div>` +
+    (hasComment ? `<textarea class="soap-comment" id="comment-${label}" placeholder="${label}への補足コメント（任意・相手の名前を含めてよい。自動突合は今回のスコープ外）"></textarea>` : '') +
+    `</div>`
   ).join('');
 }
 
@@ -267,10 +272,17 @@ function escapeHtml(s) {
 function saveRecord() {
   if (!currentPerson || !lastSoap) return;
   const records = loadRecords();
+  // FUS-215①：O/A/Pコメント欄の内容を記録へ含める（空欄は空文字のまま保存）
+  const comments = {
+    O: (document.getElementById('comment-O') || { value: '' }).value.trim(),
+    A: (document.getElementById('comment-A') || { value: '' }).value.trim(),
+    P: (document.getElementById('comment-P') || { value: '' }).value.trim(),
+  };
   records.push({
     person: currentPerson,
     ts: new Date().toISOString(),
     soap: lastSoap,
+    comments,
   });
   saveRecords(records);
   document.getElementById('s-input').value = '';
@@ -279,17 +291,51 @@ function saveRecord() {
   renderHistory();
 }
 
+// FUS-215②：個別記録のPDF出力用キャッシュ（renderHistory直近描画分のみ・indexで参照）
+let historyRecordsCache = [];
+
 function renderHistory() {
   const box = document.getElementById('record-history');
   if (!currentPerson) { box.innerHTML = '<div class="empty-state">氏名を選択すると、これまでの記録が表示されます。</div>'; return; }
   const records = loadRecords().filter(r => r.person === currentPerson).sort((a, b) => b.ts.localeCompare(a.ts));
+  historyRecordsCache = records;
   if (records.length === 0) { box.innerHTML = `<div class="empty-state">${currentPerson}さんの記録はまだありません（対象0件）。</div>`; return; }
-  box.innerHTML = records.map(r => `
+  box.innerHTML = records.map((r, i) => `
     <div class="record-card">
       <div class="ts">${new Date(r.ts).toLocaleString('ja-JP')}</div>
-      <div class="soap-block"><div class="label">A</div><div class="body">${escapeHtml(r.soap.A || '（空）')}</div></div>
-      <div class="soap-block"><div class="label">P</div><div class="body">${escapeHtml(r.soap.P || '（空）')}</div></div>
+      <div class="soap-block"><div class="label">A</div><div class="body">${escapeHtml(r.soap.A || '（空）')}</div>${r.comments && r.comments.A ? `<div class="comment-view">💬 ${escapeHtml(r.comments.A)}</div>` : ''}</div>
+      <div class="soap-block"><div class="label">P</div><div class="body">${escapeHtml(r.soap.P || '（空）')}</div>${r.comments && r.comments.P ? `<div class="comment-view">💬 ${escapeHtml(r.comments.P)}</div>` : ''}</div>
+      <div class="btn-row"><button class="btn-secondary" onclick="printRecord(${i})">🖨️ この記録をPDF保存</button></div>
     </div>`).join('');
+}
+
+// FUS-215②：個別記録のPDF出力。mitsumeru_scan.htmlの既存パターン（別ウィンドウ＋window.print()）を流用。
+// 新規ライブラリは導入しない。
+function printRecord(index) {
+  const r = historyRecordsCache[index];
+  if (!r) return;
+  const rows = ['S', 'O', 'A', 'P'].map(k => `
+    <div class="block"><div class="label">${k}</div><div class="body">${escapeHtml(r.soap[k] || '（空）')}</div>${r.comments && r.comments[k] ? `<div class="comment">💬 ${escapeHtml(r.comments[k])}</div>` : ''}</div>`).join('');
+  const html = `<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">
+<title>1on1記録 ${escapeHtml(r.person)} ${new Date(r.ts).toLocaleDateString('ja-JP')}</title>
+<style>
+body{font-family:'Hiragino Kaku Gothic Pro','Meiryo',sans-serif;color:#111;padding:24px;max-width:700px;margin:0 auto;}
+h1{font-size:1.1rem;color:#0277bd;margin-bottom:4px;}
+.meta{font-size:0.8rem;color:#555;margin-bottom:16px;}
+.block{border-left:3px solid #ccc;padding:8px 0 8px 10px;margin-bottom:12px;}
+.block .label{font-size:0.75rem;color:#e65100;font-weight:700;margin-bottom:2px;}
+.block .body{font-size:0.88rem;white-space:pre-wrap;}
+.comment{font-size:0.8rem;color:#0277bd;margin-top:4px;white-space:pre-wrap;}
+@media print{button{display:none;} body{padding:0;}}
+</style></head><body>
+<h1>1on1相談記録</h1>
+<div class="meta">${escapeHtml(r.person)} 様／${new Date(r.ts).toLocaleString('ja-JP')}</div>
+${rows}
+<button onclick="window.print()" style="margin-top:16px;padding:8px 20px;background:#0277bd;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:0.9rem;">🖨️ 印刷 / PDF保存</button>
+</body></html>`;
+  const w = window.open('', '_blank', 'width=700,height=800');
+  w.document.write(html);
+  w.document.close();
 }
 
 // ===== 層②：柴山さん専用サマリー =====
@@ -303,6 +349,10 @@ function toggleSummary() {
   l2.style.display = showSummary ? 'block' : 'none';
   if (showSummary) renderSummary();
 }
+
+// FUS-215③：「最新のA・Pのみ」から「直近N件を時系列で並べた総括」へ拡張。
+// キーワード・傾向の自動検知は今回スコープ外（過剰実装を避け、表示範囲を広げるだけに留める）。
+const SUMMARY_RECENT_N = 5;
 
 function renderSummary() {
   const box = document.getElementById('summary-body');
@@ -318,13 +368,18 @@ function renderSummary() {
   });
   box.innerHTML = Object.keys(byPerson).map(name => {
     const list = byPerson[name].sort((a, b) => b.ts.localeCompare(a.ts));
-    const latest = list[0];
-    return `<div class="record-card">
-      <div class="ts">${escapeHtml(name)}（記録${list.length}件・最新：${new Date(latest.ts).toLocaleString('ja-JP')}）</div>
-      <div class="soap-block"><div class="label">最新のA</div><div class="body">${escapeHtml(latest.soap.A || '（空）')}</div></div>
-      <div class="soap-block"><div class="label">最新のP</div><div class="body">${escapeHtml(latest.soap.P || '（空）')}</div></div>
+    const recent = list.slice(0, SUMMARY_RECENT_N);
+    const timeline = recent.map(r => `
+      <div class="record-card">
+        <div class="ts">${new Date(r.ts).toLocaleString('ja-JP')}</div>
+        <div class="soap-block"><div class="label">A</div><div class="body">${escapeHtml(r.soap.A || '（空）')}</div>${r.comments && r.comments.A ? `<div class="comment-view">💬 ${escapeHtml(r.comments.A)}</div>` : ''}</div>
+        <div class="soap-block"><div class="label">P</div><div class="body">${escapeHtml(r.soap.P || '（空）')}</div>${r.comments && r.comments.P ? `<div class="comment-view">💬 ${escapeHtml(r.comments.P)}</div>` : ''}</div>
+      </div>`).join('');
+    return `<div class="card">
+      <h2>${escapeHtml(name)}（記録${list.length}件・直近${recent.length}件を表示）</h2>
+      ${timeline}
     </div>`;
-  }).join('') + `<div class="note">対象＝1on1記録の登録者${Object.keys(byPerson).length}名。1件＝S/O/A/Pの1回分の記録。定義：${new Date().toLocaleString('ja-JP')}時点</div>`;
+  }).join('') + `<div class="note">対象＝1on1記録の登録者${Object.keys(byPerson).length}名。各人、直近${SUMMARY_RECENT_N}件までを時系列（新しい順）で表示。繰り返し・傾向の自動検知はしていません（表示範囲の拡張のみ）。定義：${new Date().toLocaleString('ja-JP')}時点</div>`;
 }
 
 function init() {
