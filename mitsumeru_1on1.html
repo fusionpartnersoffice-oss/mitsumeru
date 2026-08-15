@@ -103,8 +103,7 @@ main.active{display:block;}
     <div class="btn-row">
       <button class="btn-secondary toggle-summary-btn" onclick="toggleSummary()">記録画面へ戻る</button>
     </div>
-    <label for="summary-person-select">誰のサマリーを見るか（個別表示）</label>
-    <select id="summary-person-select" onchange="renderSummary()"></select>
+    <div class="note" id="summary-current-person"></div>
     <div id="summary-body"></div>
   </div>
 </main>
@@ -159,6 +158,7 @@ function onPersonChange() {
   currentPerson = sel.value || null;
   renderOMaterial();
   renderHistory();
+  renderSummary(); // 柴山さん実機指摘対応：左（サマリー）を右の選択に自動追従させる
 }
 
 document.getElementById('new-person-name').addEventListener('keydown', function (e) {
@@ -305,6 +305,7 @@ function saveRecord() {
   document.getElementById('soap-result-card').style.display = 'none';
   lastSoap = null;
   renderHistory();
+  renderSummary(); // 柴山さん実機指摘対応：右で保存したら即座に左のサマリーへも反映
 }
 
 // FUS-215②：個別記録のPDF出力用キャッシュ（renderHistory直近描画分のみ・indexで参照）
@@ -375,6 +376,7 @@ function saveHistoryComment(index) {
   saveRecords(all);
   editingHistoryIndex = null;
   renderHistory();
+  renderSummary(); // 左側のサマリーも同じデータのため合わせて再描画
 }
 
 // FUS-215②：個別記録のPDF出力。mitsumeru_scan.htmlの既存パターン（別ウィンドウ＋window.print()）を流用。
@@ -451,32 +453,25 @@ function toggleSummary() {
   const showSummary = !l2.classList.contains('active');
   l1.classList.toggle('active', !showSummary);
   l2.classList.toggle('active', showSummary);
-  renderSummaryPersonSelect();
   renderSummary();
 }
 
-// FUS-215追加是正：柴山さんご本人の指摘（2026-08-15）「全員が1画面に混在している」に対応。
-// 層①と同じ「まず人を選ぶ」方式へ変更。個別表示のみ・全員一覧表示はしない。
-function renderSummaryPersonSelect() {
-  const roster = loadRoster();
-  const sel = document.getElementById('summary-person-select');
-  const prev = sel.value;
-  sel.innerHTML = '<option value="">（選択してください）</option>' +
-    roster.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
-  if (prev) sel.value = prev;
-}
-
-// FUS-215③：「最新のA・Pのみ」から「直近N件を時系列で並べた総括」へ拡張。
-// キーワード・傾向の自動検知は今回スコープ外（過剰実装を避け、表示範囲を広げるだけに留める）。
+// FUS-215追加是正・2026-08-15（柴山さん実機指摘②）：
+// 「右（層①）で選んだ人と、左（層②サマリー）が別々に選べるのは紛らわしい」との指摘を受け、
+// 左は右のcurrentPersonへ自動追従する専用の人選択UIを廃止（個別選択の混乱を防ぐ）。
 const SUMMARY_RECENT_N = 5;
+let editingSummaryIndex = null;
 
 function renderSummary() {
   const box = document.getElementById('summary-body');
-  const selectedName = document.getElementById('summary-person-select').value;
+  const nameLabel = document.getElementById('summary-current-person');
+  const selectedName = currentPerson;
   if (!selectedName) {
-    box.innerHTML = '<div class="empty-state">上のプルダウンで、見たい人を選んでください（個別表示のみ・複数人の同時表示はしません）。</div>';
+    nameLabel.textContent = '';
+    box.innerHTML = '<div class="empty-state">右側で氏名を選ぶと、ここにその人のサマリーが表示されます。</div>';
     return;
   }
+  nameLabel.textContent = `表示中：${selectedName}さん（右側の選択に自動で連動します）`;
   const records = loadRecords().filter(r => r.person === selectedName);
   if (records.length === 0) {
     box.innerHTML = `<div class="empty-state">${escapeHtml(selectedName)}さんの記録はまだありません。</div>`;
@@ -485,13 +480,31 @@ function renderSummary() {
   const list = records.sort((a, b) => b.ts.localeCompare(a.ts));
   const recent = list.slice(0, SUMMARY_RECENT_N);
   summaryRecordsCache = recent;
-  const timeline = recent.map(r => `
+  const timeline = recent.map((r, i) => {
+    const editing = editingSummaryIndex === i;
+    const soapRow = (label) => {
+      const hasComment = ['O', 'A', 'P'].includes(label);
+      const commentVal = (r.comments && r.comments[label]) || '';
+      const commentHtml = editing && hasComment
+        ? `<textarea class="soap-comment" id="edit-summary-comment-${label}-${i}" placeholder="${label}への補足コメント">${escapeHtml(commentVal)}</textarea>`
+        : (commentVal ? `<div class="comment-view">💬 ${escapeHtml(commentVal)}</div>` : '');
+      return `<div class="soap-block"><div class="label">${label}</div><div class="body">${escapeHtml(r.soap[label] || '（空）')}</div>${commentHtml}</div>`;
+    };
+    const rowButtons = editing
+      ? `<div class="btn-row">
+           <button class="btn-primary" onclick="saveSummaryComment(${i})">✅ コメントを保存</button>
+           <button class="btn-secondary" onclick="cancelEditSummaryComment()">キャンセル</button>
+         </div>`
+      : `<div class="btn-row"><button class="btn-secondary" onclick="startEditSummaryComment(${i})">✏️ コメントを編集</button></div>`;
+    return `
       <div class="record-card">
+        ${rowButtons}
         <div class="ts">${new Date(r.ts).toLocaleString('ja-JP')}</div>
-        <div class="soap-block"><div class="label">O</div><div class="body">${escapeHtml(r.soap.O || '（空）')}</div>${r.comments && r.comments.O ? `<div class="comment-view">💬 ${escapeHtml(r.comments.O)}</div>` : ''}</div>
-        <div class="soap-block"><div class="label">A</div><div class="body">${escapeHtml(r.soap.A || '（空）')}</div>${r.comments && r.comments.A ? `<div class="comment-view">💬 ${escapeHtml(r.comments.A)}</div>` : ''}</div>
-        <div class="soap-block"><div class="label">P</div><div class="body">${escapeHtml(r.soap.P || '（空）')}</div>${r.comments && r.comments.P ? `<div class="comment-view">💬 ${escapeHtml(r.comments.P)}</div>` : ''}</div>
-      </div>`).join('');
+        ${soapRow('O')}
+        ${soapRow('A')}
+        ${soapRow('P')}
+      </div>`;
+  }).join('');
   box.innerHTML = `<div class="card">
       <div class="summary-heading-row" style="display:flex;justify-content:space-between;align-items:center;">
         <h2>${escapeHtml(selectedName)}（記録${list.length}件・直近${recent.length}件を表示）</h2>
@@ -501,12 +514,37 @@ function renderSummary() {
     </div>` + `<div class="note">${escapeHtml(selectedName)}さんの直近${SUMMARY_RECENT_N}件までを時系列（新しい順）で表示。繰り返し・傾向の自動検知はしていません（表示範囲の拡張のみ）。定義：${new Date().toLocaleString('ja-JP')}時点</div>`;
 }
 
+function startEditSummaryComment(index) {
+  editingSummaryIndex = index;
+  renderSummary();
+}
+function cancelEditSummaryComment() {
+  editingSummaryIndex = null;
+  renderSummary();
+}
+function saveSummaryComment(index) {
+  const target = summaryRecordsCache[index];
+  if (!target) return;
+  const newComments = {
+    O: (document.getElementById(`edit-summary-comment-O-${index}`) || { value: target.comments?.O || '' }).value.trim(),
+    A: (document.getElementById(`edit-summary-comment-A-${index}`) || { value: target.comments?.A || '' }).value.trim(),
+    P: (document.getElementById(`edit-summary-comment-P-${index}`) || { value: target.comments?.P || '' }).value.trim(),
+  };
+  const all = loadRecords();
+  const idx = all.findIndex(r => r.person === target.person && r.ts === target.ts);
+  if (idx === -1) return;
+  all[idx].comments = newComments;
+  saveRecords(all);
+  editingSummaryIndex = null;
+  renderSummary();
+  renderHistory(); // 右側の「これまでの記録」も同じデータのため合わせて再描画
+}
+
 function init() {
   renderPersonSelect();
   renderOMaterial();
   renderHistory();
   // 分割レイアウト（PC等）では層②も常時見えているため、初期表示から中身を用意しておく
-  renderSummaryPersonSelect();
   renderSummary();
 }
 init();
