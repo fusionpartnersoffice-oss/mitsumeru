@@ -1050,9 +1050,18 @@ function _renderAndShow(result) {
 }
 
 function _renderRaw(raw) {
-  // パース失敗時：生テキストを「本当の原因」欄に表示して結果画面へ
+  // パース失敗時：空欄だらけの画面にしない。生テキストは「今、見えていること」欄に表示し、
+  // 型に沿った分析ができなかった旨を明記する（2026-08-16・柴山さんご本人の指摘：
+  // APIを使った上で結果が空白なのは良くない。人間関係等、5階層の型に合わない相談で
+  // AIが質問を続けようとした場合にこの経路へ入りやすい）。
   const result = {
-    iceberg: { surface: '（自動抽出できませんでした）', pattern: '', structure: '', mental_model: '', root: raw },
+    iceberg: {
+      surface: raw,
+      pattern: '',
+      structure: '（このご相談は、決まった型（組織の仕組み・思い込み等）にうまく沿った分析ができませんでした。上の内容をそのままご確認ください）',
+      mental_model: '',
+      root: ''
+    },
     field_actions: ['', '', ''],
     planner: { analysis: '', proposals: ['', '', ''] }
   };
