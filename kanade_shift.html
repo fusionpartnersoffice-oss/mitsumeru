@@ -169,9 +169,8 @@
       <div class="field">
         <label>サービス類型</label>
         <select id="f-type" onchange="updateFacilityTypeNote()">
-          <option value="日中サービス支援型">日中サービス支援型</option>
-          <option value="介護サービス包括型">介護サービス包括型</option>
-          <option value="外部サービス利用型">外部サービス利用型</option>
+          <option value="放課後等デイサービス">放課後等デイサービス</option>
+          <option value="児童発達支援">児童発達支援</option>
         </select>
       </div>
     </div>
@@ -184,17 +183,19 @@
         <option value="男性のみ">男性のみ</option>
       </select>
     </div>
-    <div class="section-title" style="margin-top:14px;">利用者数（障害支援区分別）</div>
-    <div class="note">区分1・2の利用者は生活支援員の必要人数計算には算入されません（区分1・2欄は記録用）。</div>
+    <div class="section-title" style="margin-top:14px;">利用児童数（2026-08-16・放課後等デイ仕様へ変更：障害支援区分は使いません）</div>
+    <div class="note">放課後等デイサービス・児童発達支援の職員配置基準は「利用児童数」のみで判定します（成人向けグループホームの障害支援区分1〜6とは別制度のため廃止）。</div>
     <div class="field-row" style="margin-top:8px;">
-      <div class="field"><label>区分1</label><input type="number" id="f-u1" min="0" value="0"></div>
-      <div class="field"><label>区分2</label><input type="number" id="f-u2" min="0" value="0"></div>
-      <div class="field"><label>区分3</label><input type="number" id="f-u3" min="0" value="0"></div>
+      <div class="field"><label>利用児童数</label><input type="number" id="f-u1" min="0" value="0" oninput="updateFacilityTotalUsers()"></div>
     </div>
-    <div class="field-row">
-      <div class="field"><label>区分4</label><input type="number" id="f-u4" min="0" value="0"></div>
-      <div class="field"><label>区分5</label><input type="number" id="f-u5" min="0" value="0"></div>
-      <div class="field"><label>区分6</label><input type="number" id="f-u6" min="0" value="0"></div>
+    <div class="field-row" style="display:none;">
+      <div class="field"><input type="number" id="f-u2" min="0" value="0"></div>
+      <div class="field"><input type="number" id="f-u3" min="0" value="0"></div>
+    </div>
+    <div class="field-row" style="display:none;">
+      <div class="field"><input type="number" id="f-u4" min="0" value="0"></div>
+      <div class="field"><input type="number" id="f-u5" min="0" value="0"></div>
+      <div class="field"><input type="number" id="f-u6" min="0" value="0"></div>
     </div>
     <div id="f-total-users" class="note"></div>
     <div class="field" style="margin-top:14px;">
@@ -237,10 +238,10 @@
     <div class="field">
       <label>職種</label>
       <select id="s-role" onchange="updateStaffRoleNote()">
-        <option value="生活支援員">生活支援員</option>
-        <option value="世話人">世話人</option>
+        <option value="児童指導員">児童指導員</option>
+        <option value="保育士">保育士</option>
         <option value="管理者">管理者</option>
-        <option value="サービス管理責任者">サービス管理責任者</option>
+        <option value="児発管">児発管（児童発達支援管理責任者）</option>
       </select>
     </div>
     <div id="s-role-note" class="note"></div>
@@ -251,7 +252,7 @@
         <option value="昼team">昼team（二交代制・日中勤務ローテーション）</option>
         <option value="夜team">夜team（二交代制・夜勤ローテーション）</option>
       </select>
-      <div class="note">管理者・サービス管理責任者は通常「対象外」。生活支援員・世話人を昼team／夜teamに割り振ってください。</div>
+      <div class="note">管理者・児発管は通常「対象外」。児童指導員・保育士を昼team／夜teamに割り振ってください（放課後等デイは夜勤が無いのが通常のため、夜teamは施設の実態に応じて未使用でも構いません）。</div>
     </div>
     <div class="field-row">
       <div class="field"><label>契約勤務日数（月あたり）</label><input type="number" id="s-days" min="0" value="20"></div>
@@ -296,7 +297,7 @@
       <div class="field"><label>対象年月</label><input type="month" id="shift-month" onchange="renderShiftScreen()"></div>
     </div>
     <button class="btn-primary" onclick="generateShift()">シフトを生成する</button>
-    <div class="note" style="margin-top:8px;">昼間team・夜間teamそれぞれの職員を職員マスタで設定してから生成してください（管理者・サービス管理責任者は通常「対象外」のまま）。夜勤ルール：夜勤→明け→休みの3日1セット。性別配慮制約（施設が「女性のみ」の場合、男性職員は自動除外）を反映します。</div>
+    <div class="note" style="margin-top:8px;">昼間team・夜間teamそれぞれの職員を職員マスタで設定してから生成してください（管理者・児発管は通常「対象外」のまま）。夜勤ルール：夜勤→明け→休みの3日1セット（放課後等デイは夜勤が無いのが通常のため、夜teamは施設の実態に応じて未使用でも構いません）。性別配慮制約（施設が「女性のみ」の場合、男性職員は自動除外）を反映します。</div>
   </div>
   <div id="shift-result-area">
     <div class="empty-state">施設と対象年月を選択し、「シフトを生成する」を押してください</div>
@@ -435,11 +436,7 @@ function renderFacilityList() {
 function updateFacilityTypeNote() {
   const type = document.getElementById('f-type').value;
   const note = document.getElementById('f-type-note');
-  if (type === '日中サービス支援型') {
-    note.textContent = '世話人配置基準：利用者5人に1人以上／夜勤必須（共同生活住居ごとに1人以上、宿直不可）';
-  } else {
-    note.textContent = '世話人配置基準：利用者6人に1人以上／夜間支援従事者の配置は任意（配置すると加算対象）';
-  }
+  note.textContent = `${type}：直接支援職員（児童指導員・保育士）の配置基準は利用児童数で共通（1〜10人：2名以上／11〜15人：3名以上／16〜20人：4名以上／21人以上は5人増えるごとに1名追加）。児発管は1名以上（専任・常勤必須）。`;
 }
 
 function showFacilityForm(id) {
@@ -462,7 +459,7 @@ function showFacilityForm(id) {
     ['f-name'].forEach(id => document.getElementById(id).value = '');
     ['f-u1','f-u2','f-u3','f-u4','f-u5','f-u6'].forEach(id => document.getElementById(id).value = 0);
     document.getElementById('f-pref').value = '埼玉県';
-    document.getElementById('f-type').value = '日中サービス支援型';
+    document.getElementById('f-type').value = '放課後等デイサービス';
     document.getElementById('f-gender').value = '混合';
     document.getElementById('f-night-range').value = '22:00〜05:00';
   }
@@ -474,9 +471,8 @@ function hideFacilityForm() {
   editingFacilityId = null;
 }
 function updateFacilityTotalUsers() {
-  const vals = ['f-u1','f-u2','f-u3','f-u4','f-u5','f-u6'].map(id => parseInt(document.getElementById(id).value)||0);
-  const total = vals.reduce((a,b)=>a+b,0);
-  document.getElementById('f-total-users').textContent = `合計利用者数：${total}名（サービス管理責任者の配置基準＝利用者30人に1人以上、の算定に使用）`;
+  const total = parseInt(document.getElementById('f-u1').value) || 0;
+  document.getElementById('f-total-users').textContent = `利用児童数：${total}名（直接支援職員の必要人数の算定に使用）`;
 }
 ['f-u1','f-u2','f-u3','f-u4','f-u5','f-u6'].forEach(id => {
   document.addEventListener('DOMContentLoaded', () => {
@@ -552,10 +548,10 @@ function updateStaffRoleNote() {
   const role = document.getElementById('s-role').value;
   const note = document.getElementById('s-role-note');
   const notes = {
-    '生活支援員': '障害支援区分3〜6の利用者数に応じて必要人数が変動します（区分1・2は算入されません）。',
-    '世話人': '施設のサービス類型により配置基準が異なります（6:1 または 5:1）。非常勤可。',
-    '管理者': '施設ごとに1名必須。常勤で管理業務に従事（支障ない場合は他職務と兼務可）。',
-    'サービス管理責任者': '利用者30人に1人以上（31人以上は30人ごとに1人加算）。定員20人以上は常勤専従が努力義務。',
+    '児童指導員': '保育士とあわせて「直接支援職員」として配置人数を数えます（半数以上が有資格者・1名以上は常勤必須）。',
+    '保育士': '児童指導員とあわせて「直接支援職員」として配置人数を数えます（半数以上が有資格者・1名以上は常勤必須）。',
+    '管理者': '施設ごとに1名必須。資格要件なし・常勤非常勤の制限なし（支障ない場合は他職務と兼務可）。',
+    '児発管': '1名以上必須・常勤かつ専任（管理者との兼務は可だが、直接支援職員の配置人数には含められない）。',
   };
   note.textContent = notes[role] || '';
 }
@@ -580,7 +576,7 @@ function showStaffForm(id) {
   } else {
     document.getElementById('s-name').value = '';
     document.getElementById('s-gender').value = '女性';
-    document.getElementById('s-role').value = '生活支援員';
+    document.getElementById('s-role').value = '児童指導員';
     document.getElementById('s-shift-team').value = '対象外';
     document.getElementById('s-days').value = 20;
     document.getElementById('s-hours').value = 40;
@@ -642,45 +638,37 @@ function saveStaff() {
 
 // ═══════════════════════════════════════════════
 // モジュールB：法定基準チェック計算ロジック
-// ✅出典：埼玉県資料「共同生活援助（グループホーム）の基準 概要 R6.3」4ページ
-// 端数処理：基準上必要な人員数＝切り上げ／実績・加算届出様式＝切り下げ（別ロジック・混同厳禁）
+// ✅出典：児童福祉法に基づく指定通所支援の事業等の人員、設備及び運営に関する基準
+// （平成24年厚生労働省令第15号）第66条第1項・第8項。リサーチが2026-08-16にWebFetchで
+// 条文原文を直接確認済み（Multica FUS-240コメント参照）。あわせてサルベージのNotebookLM
+// 深掘り（06_イノベーション\_NotebookLM要約\放課後等デイサービス_人員配置基準_令和6年度
+// 報酬改定_NotebookLM深掘り_サルベージ_20260816.md）とも整合を確認済み。
+// 2026-08-16・設計：共同生活援助（グループホーム）仕様からの全面作り直し
+// （柴山さんの2026-09-01ミライヘ入社＝放課後等デイサービスに伴う対応）。
+// 端数処理：基準上必要な人員数＝切り上げ／実績様式＝切り下げ（別ロジック・混同厳禁。旧仕様の
+// 慣習をそのまま踏襲——法令上は整数配置のため通常は同値になるが、既存の表示構造を維持）
 // ═══════════════════════════════════════════════
 
-// 生活支援員の必要人数（常勤換算）＝ イ＋ロ＋ハ＋ニ
-// イ：区分3÷9　ロ：区分4÷6　ハ：区分5÷4　ニ：区分6÷2.5
-// 区分1・2は算入しない。外部サービス利用型は生活支援員自体が不要（委託のため）
-function calcSeikatsuShienStaffRequired(facility, roundMode) {
-  if (facility.type === '外部サービス利用型') {
-    return { required: 0, detail: '外部サービス利用型のため生活支援員は不要（委託）', breakdown: null };
-  }
-  const i  = facility.u3 / 9;
-  const ro = facility.u4 / 6;
-  const ha = facility.u5 / 4;
-  const ni = facility.u6 / 2.5;
-  const rawSum = i + ro + ha + ni;
-  const required = roundMode === 'up' ? roundUp2(rawSum) : roundDown2(rawSum);
-  return {
-    required,
-    rawSum,
-    breakdown: { イ: roundTo2(i), ロ: roundTo2(ro), ハ: roundTo2(ha), ニ: roundTo2(ni) },
-  };
+// 直接支援職員（児童指導員・保育士の合計）の必要人数
+// 第66条第1項：利用児童10人以下＝2以上。10人超＝2に、10を超えて5またはその端数を
+// 増すごとに1を加えて得た数以上（＝2＋⌈(利用児童数-10)÷5⌉）
+function calcShienStaffRequired(facility, roundMode) {
+  const n = facility.u1 || 0;
+  if (n <= 0) return { required: 0, rawSum: 0 };
+  const raw = n <= 10 ? 2 : 2 + Math.ceil((n - 10) / 5);
+  // 法令上そのまま整数のため、切り上げ／切り下げの区別は実質発生しないが、
+  // 既存の表示構造（基準用／実績様式用の2列）は維持する
+  const required = roundMode === 'up' ? raw : raw;
+  return { required, rawSum: raw };
 }
 
-// 世話人の必要人数（指定基準＝最低ライン）
-// 介護サービス包括型・外部サービス利用型：利用者6人に1人以上／日中サービス支援型：利用者5人に1人以上
-function calcSewaninStaffRequired(facility, roundMode) {
-  const totalUsers = facility.u1+facility.u2+facility.u3+facility.u4+facility.u5+facility.u6;
-  const divisor = facility.type === '日中サービス支援型' ? 5 : 6;
-  const raw = totalUsers / divisor;
-  const required = roundMode === 'up' ? roundUp2(raw) : roundDown2(raw);
-  return { required, rawSum: raw, divisor };
-}
-
-// サービス管理責任者：利用者30人に1人以上（31人以上は30人ごとに1人加算）
-function calcServiceKanrisekininRequired(facility) {
-  const totalUsers = facility.u1+facility.u2+facility.u3+facility.u4+facility.u5+facility.u6;
-  if (totalUsers === 0) return 0;
-  return Math.ceil(totalUsers / 30);
+// 児発管（児童発達支援管理責任者）：1名以上・常勤かつ専任必須（第66条第8項）
+// 規模による加算の一次資料は今回未確認のため、フラットに1名を必要数とする
+// （★規模が大きい事業所での複数配置要否は要追加確認・現時点では最低ラインのみ反映）
+function calcJihatsukanRequired(facility) {
+  const n = facility.u1 || 0;
+  if (n === 0) return 0;
+  return 1;
 }
 
 // 端数処理ユーティリティ（第二位で切り上げ／切り下げ。第三位以降の誤差を避けるため一度丸めてから処理）
@@ -701,16 +689,13 @@ function renderLegalCheck() {
   const facility = facilities.find(f => f.id === fid);
   if (!facility) { area.innerHTML = '<div class="empty-state">施設を選択してください</div>'; return; }
 
-  const seikatsuUp   = calcSeikatsuShienStaffRequired(facility, 'up');
-  const seikatsuDown = calcSeikatsuShienStaffRequired(facility, 'down');
-  const sewaninUp     = calcSewaninStaffRequired(facility, 'up');
-  const sewaninDown   = calcSewaninStaffRequired(facility, 'down');
-  const sabikanRequired = calcServiceKanrisekininRequired(facility);
+  const shienUp   = calcShienStaffRequired(facility, 'up');
+  const shienDown = calcShienStaffRequired(facility, 'down');
+  const jihatsukanRequired = calcJihatsukanRequired(facility);
 
-  const actualSeikatsu = countActualStaff(fid, '生活支援員');
-  const actualSewanin  = countActualStaff(fid, '世話人');
+  const actualShien = countActualStaff(fid, '児童指導員') + countActualStaff(fid, '保育士');
   const actualKanrisha = countActualStaff(fid, '管理者');
-  const actualSabikan  = countActualStaff(fid, 'サービス管理責任者');
+  const actualJihatsukan = countActualStaff(fid, '児発管');
 
   function statusRow(label, requiredUp, requiredDown, actual, note) {
     const ok = actual >= requiredUp;
@@ -725,28 +710,22 @@ function renderLegalCheck() {
     </tr>${note ? `<tr><td colspan="5" style="font-size:11px;color:var(--text3);">${note}</td></tr>` : ''}`;
   }
 
-  const totalUsers = facility.u1+facility.u2+facility.u3+facility.u4+facility.u5+facility.u6;
+  const totalUsers = facility.u1 || 0;
 
   area.innerHTML = `
     <div class="section">
-      <div class="section-title">${facility.name}（${facility.pref}・${facility.type}・利用者${totalUsers}名）</div>
-      <div class="note">✅出典：埼玉県資料「共同生活援助（グループホーム）の基準 概要 R6.3」4ページ。基準人数は小数点第二位切り上げ、実績・加算届出様式は小数点第二位切り下げで別々に算出しています（両者の混同は基本単位30〜50%減算のリスクがあるため、この2列は必ず別ロジックで表示しています）。</div>
+      <div class="section-title">${facility.name}（${facility.pref}・${facility.type}・利用児童${totalUsers}名）</div>
+      <div class="note">✅出典：児童福祉法に基づく指定通所支援の事業等の人員、設備及び運営に関する基準（平成24年厚生労働省令第15号）第66条・リサーチが条文原文を直接確認済み（2026-08-16）。基準人数・実績様式とも法令上は同じ整数値になるため、旧仕様の2列表示を維持しつつ同値で表示しています。</div>
       <table class="calc-table">
         <tr><th>職種</th><th>基準必要人数</th><th>実績様式上の必要人数</th><th>実配置人数</th><th>判定</th></tr>
-        ${statusRow('生活支援員', seikatsuUp.required, seikatsuDown.required, actualSeikatsu,
-          seikatsuUp.breakdown ? `内訳（区分3÷9＋区分4÷6＋区分5÷4＋区分6÷2.5）：イ${seikatsuUp.breakdown.イ}＋ロ${seikatsuUp.breakdown.ロ}＋ハ${seikatsuUp.breakdown.ハ}＋ニ${seikatsuUp.breakdown.ニ}` : seikatsuUp.detail)}
-        ${statusRow('世話人', sewaninUp.required, sewaninDown.required, actualSewanin,
-          `配置基準：利用者${sewaninUp.divisor}人に1人以上（${facility.type}の指定基準）`)}
-        ${statusRow('管理者', 1, 1, actualKanrisha, '施設ごとに1名必須（常勤・支障ない場合は他職務と兼務可）')}
-        ${statusRow('サービス管理責任者', sabikanRequired, sabikanRequired, actualSabikan, '利用者30人に1人以上（31人以上は30人ごとに1人加算）')}
+        ${statusRow('直接支援職員（児童指導員・保育士）', shienUp.required, shienDown.required, actualShien,
+          `配置基準：1〜10人は2名以上、10人超は2名＋(利用児童数-10)を5で割って切り上げた数を加算（第66条第1項）`)}
+        ${statusRow('管理者', 1, 1, actualKanrisha, '施設ごとに1名必須（資格要件なし・支障ない場合は他職務と兼務可）')}
+        ${statusRow('児発管（児童発達支援管理責任者）', jihatsukanRequired, jihatsukanRequired, actualJihatsukan, '1名以上・常勤かつ専任必須（第66条第8項）。管理者との兼務は可だが直接支援職員の人数には算入不可')}
       </table>
     </div>
-    ${facility.type === '日中サービス支援型' ? `
-    <div class="section result-warn" style="font-size:12px;">
-      ⚠ この施設は日中サービス支援型のため、共同生活住居ごとに夜勤必須（宿直不可）・夜間深夜を通じて1人以上の配置が必要です（✅埼玉県資料・厚労省資料19・22ページ）。夜間支援の具体的な時間帯定義（「22時〜5時」説）は★出典未確認のため、本ツールでは時間帯を固定せず今後設定可能な変数として扱います。
-    </div>` : ''}
     <div class="section" style="font-size:11px;color:var(--text3);">
-      ★世話人の報酬区分（令和6年度改定での変更詳細）・都道府県条例上乗せ基準（埼玉県以外）は出典未確認のため、本チェックには反映していません。上記の判定は「指定基準（最低ライン）」に基づくものであり、報酬請求上の加算判定とは別のロジックです。
+      ★令和6年度報酬改定で基本報酬は「時間区分制」（30分〜1.5h／1.5h超〜3h／3h超〜5h）へ移行済みですが、本チェックは人員配置の指定基準（最低ライン）のみを対象としており、報酬請求上の加算判定・時間区分の算定とは別のロジックです。★児発管の規模別複数配置要否・医療的ケア児対応時の看護職員配置基準は今回未確認のため、本チェックには反映していません。
     </div>
   `;
 }
@@ -960,7 +939,7 @@ function renderContractLeave() {
 // モジュールC：警告機能（A・D・Eの出力を統合表示）
 // 法定基準割れ（モジュールB）・週40時間超過見込み／契約時間逸脱（モジュールD）・
 // 有給消化遅れ（モジュールE）を1画面に集約する。新規の判定ロジックは追加せず、
-// 既存の計算関数（calcSeikatsuShienStaffRequired等・calcWeeklyHoursRemaining等）を
+// 既存の計算関数（calcShienStaffRequired等・calcWeeklyHoursRemaining等）を
 // そのまま呼び出して警告条件として使う設計。
 // ═══════════════════════════════════════════════
 function renderWarningsDashboard() {
@@ -974,14 +953,12 @@ function renderWarningsDashboard() {
   const warningItems = [];
 
   // ① 法定基準割れ（モジュールB：既存の計算関数をそのまま使う）
-  const seikatsuUp = calcSeikatsuShienStaffRequired(facility, 'up');
-  const sewaninUp  = calcSewaninStaffRequired(facility, 'up');
-  const sabikanRequired = calcServiceKanrisekininRequired(facility);
+  const shienUp = calcShienStaffRequired(facility, 'up');
+  const jihatsukanRequired = calcJihatsukanRequired(facility);
   const legalChecks = [
-    { label: '生活支援員', required: seikatsuUp.required, actual: countActualStaff(fid, '生活支援員') },
-    { label: '世話人',     required: sewaninUp.required,  actual: countActualStaff(fid, '世話人') },
+    { label: '直接支援職員（児童指導員・保育士）', required: shienUp.required, actual: countActualStaff(fid, '児童指導員') + countActualStaff(fid, '保育士') },
     { label: '管理者',     required: 1,                    actual: countActualStaff(fid, '管理者') },
-    { label: 'サービス管理責任者', required: sabikanRequired, actual: countActualStaff(fid, 'サービス管理責任者') },
+    { label: '児発管',     required: jihatsukanRequired,   actual: countActualStaff(fid, '児発管') },
   ];
   legalChecks.forEach(c => {
     if (c.actual < c.required) {
