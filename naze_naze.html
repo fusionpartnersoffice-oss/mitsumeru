@@ -573,10 +573,10 @@ function getDemoId() {
 }
 
 // ── Worker経由API呼び出し ──
-// ── APIキー管理（sessionStorageのみ、ブラウザを閉じると消える） ──
-function getUserApiKey() { return sessionStorage.getItem(STORE_KEY + '_apikey') || ''; }
-function setUserApiKey(key) { sessionStorage.setItem(STORE_KEY + '_apikey', key); }
-function clearUserApiKey() { sessionStorage.removeItem(STORE_KEY + '_apikey'); }
+// ── APIキー管理（localStorage・ブラウザを閉じても保持する。2026-08-16・柴山さんご本人の希望により変更） ──
+function getUserApiKey() { return localStorage.getItem(STORE_KEY + '_apikey') || ''; }
+function setUserApiKey(key) { localStorage.setItem(STORE_KEY + '_apikey', key); }
+function clearUserApiKey() { localStorage.removeItem(STORE_KEY + '_apikey'); }
 
 function showApiKeyInput() {
   const banner = document.getElementById('apikeyBanner');
