@@ -515,7 +515,13 @@ function goTo(n) {
   window.scrollTo(0, 0);
 }
 
-function showRoster() { prevPage = currentPage; renderRoster(); goTo(5); }
+function showRoster() {
+  prevPage = currentPage;
+  renderRoster();
+  goTo(5);
+  // クラウドの最新分を取り込んでから再描画（別端末からの追加分を反映・非同期のため一覧は先に表示）
+  syncRosterFromCloud().then(() => renderRoster());
+}
 function backFromRoster() { goTo(prevPage || 0); }
 
 // ═══════════════════════════════════════════════
@@ -685,6 +691,57 @@ function showResults() {
 
 const ROSTER_KEY = 'mitsumeru_scan_roster';
 
+// クラウド同期（FUS-236・設計技術検証済み：既存Workerへtoken不要のscan_プレフィックスで
+// 書込・読込。新規Worker・新規KV名前空間は無し。既存localStorage保存はそのまま残し、
+// 追加でクラウドへも保存する。既存4ツール中の試作第1号）
+const SYNC_URL = 'https://mitsumeru-sync.fusion-partners-office.workers.dev';
+const CLOUD_ROSTER_KEY = 'scan_roster';
+
+async function cloudSaveRoster(roster) {
+  try {
+    await fetch(`${SYNC_URL}?key=${encodeURIComponent(CLOUD_ROSTER_KEY)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ data: roster, _ts: Date.now() }),
+    });
+  } catch (e) {
+    // オフライン等での失敗はローカル保存を妨げない（クラウド同期は追加機能のため）
+  }
+}
+
+async function cloudLoadRoster() {
+  try {
+    const res = await fetch(`${SYNC_URL}?key=${encodeURIComponent(CLOUD_ROSTER_KEY)}`);
+    if (!res.ok) return null;
+    const json = await res.json();
+    if (!json.value) return null;
+    const parsed = typeof json.value === 'string' ? JSON.parse(json.value) : json.value;
+    return Array.isArray(parsed.data) ? parsed.data : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+// ローカルとクラウドを突合し、savedAtが同じ受検者は重複させず、
+// どちらか片方にしかない受検者は両方とも残す（削除的な同期はしない＝非破壊）
+function mergeRosterArrays(local, cloud) {
+  const map = new Map();
+  local.forEach(r => map.set(r.savedAt, r));
+  cloud.forEach(r => { if (!map.has(r.savedAt)) map.set(r.savedAt, r); });
+  return Array.from(map.values());
+}
+
+// 受検者リスト画面を開くたびにクラウドの最新分を取り込む（別端末からの追加分を反映）
+async function syncRosterFromCloud() {
+  const cloud = await cloudLoadRoster();
+  if (!cloud) return;
+  const local = loadRoster();
+  const merged = mergeRosterArrays(local, cloud);
+  if (merged.length !== local.length) {
+    localStorage.setItem(ROSTER_KEY, JSON.stringify(merged));
+  }
+}
+
 function loadRoster() {
   try { return JSON.parse(localStorage.getItem(ROSTER_KEY) || '[]'); }
   catch { return []; }
@@ -696,6 +753,7 @@ function autoSaveToRoster() {
   if (roster.some(r => r.savedAt === lastResult.savedAt)) return;
   roster.unshift(lastResult);
   localStorage.setItem(ROSTER_KEY, JSON.stringify(roster));
+  cloudSaveRoster(roster);
 }
 
 function saveToRoster() {
@@ -760,6 +818,7 @@ function deleteEntry(idx) {
   const roster = loadRoster();
   roster.splice(idx, 1);
   localStorage.setItem(ROSTER_KEY, JSON.stringify(roster));
+  cloudSaveRoster(roster);
   renderRoster();
 }
 
@@ -955,6 +1014,7 @@ function deleteFromDetail(idx) {
   const roster = loadRoster();
   roster.splice(idx, 1);
   localStorage.setItem(ROSTER_KEY, JSON.stringify(roster));
+  cloudSaveRoster(roster);
   closeRosterDetail();
   renderRoster();
 }
