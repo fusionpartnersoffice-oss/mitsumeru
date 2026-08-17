@@ -73,6 +73,7 @@ td{padding:6px 8px;border-bottom:1px solid var(--border);white-space:nowrap;}
 <header>
   <div class="logo">🧬</div>
   <h1>凪 軸D：スタッフ性質 <span>個人プロファイル（ミツメル/奏連携） | Fusion Partners</span></h1>
+  <button class="btn btn-secondary btn-sm" onclick="openOrgManage()">⚙ 法人・事業所管理</button>
   <a href="./nagi_system.html" class="btn btn-secondary btn-sm" style="text-decoration:none;">🧭 ハブ（羅針盤）へ戻る</a>
 </header>
 
@@ -166,6 +167,34 @@ td{padding:6px 8px;border-bottom:1px solid var(--border);white-space:nowrap;}
 
 </main>
 
+<!-- MODAL: 法人・事業所管理（FUS-249・2026-08-17追加。nagi_system.htmlのCRUDパターンを移植・
+     localStorageキー(nagi_corps/nagi_offices)は共通のため両画面で相互に反映される） -->
+<div class="modal-overlay" id="modal-org-manage" onclick="if(event.target===this)closeModal('modal-org-manage')">
+  <div class="modal" style="max-width:480px;">
+    <button class="modal-close" onclick="closeModal('modal-org-manage')">✕</button>
+    <div class="modal-title">⚙ 法人・事業所管理</div>
+    <div class="nav-tabs" style="border-radius:6px;overflow:hidden;margin-bottom:16px;">
+      <div class="nav-tab active" onclick="switchOrgTab('corps')" id="otab-corps">法人</div>
+      <div class="nav-tab" onclick="switchOrgTab('offices')" id="otab-offices">事業所</div>
+    </div>
+    <div id="org-corps">
+      <div style="display:flex;gap:8px;margin-bottom:10px;">
+        <input id="new-corp-name" placeholder="法人名を入力" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:0.85rem;outline:none;flex:1;">
+        <button class="btn btn-primary" onclick="addCorp()">＋ 追加</button>
+      </div>
+      <div id="corps-list"></div>
+    </div>
+    <div id="org-offices" style="display:none;">
+      <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+        <select id="new-office-corp" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:0.82rem;outline:none;flex:1;"></select>
+        <input id="new-office-name" placeholder="事業所名" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:0.85rem;outline:none;flex:2;">
+        <button class="btn btn-primary" onclick="addOffice()">＋ 追加</button>
+      </div>
+      <div id="offices-list"></div>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: スタッフ追加 -->
 <div class="modal-overlay" id="modal-add-staff" onclick="if(event.target===this)closeModal('modal-add-staff')">
   <div class="modal" style="max-width:420px;">
@@ -173,7 +202,15 @@ td{padding:6px 8px;border-bottom:1px solid var(--border);white-space:nowrap;}
     <div class="modal-title">＋ スタッフ追加</div>
     <div class="form-group"><label>法人</label><select id="new-staff-corp" onchange="onNewStaffCorpChange()"><option value="">選択してください</option></select></div>
     <div class="form-group"><label>事業所</label><select id="new-staff-office"><option value="">法人を先に選択</option></select></div>
-    <div class="form-group"><label>氏名</label><input id="new-staff-name" placeholder="山田 太郎"></div>
+    <div class="form-group" id="new-staff-corp-empty-note" style="display:none;font-size:0.74rem;color:var(--warn);">法人が登録されていません。先に「⚙ 法人・事業所管理」から法人・事業所を登録してください。</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div class="form-group"><label>姓</label><input id="new-staff-sei" placeholder="山田"></div>
+      <div class="form-group"><label>名</label><input id="new-staff-mei" placeholder="太郎"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div class="form-group"><label>フリガナ（姓）</label><input id="new-staff-sei-kana" placeholder="ヤマダ"></div>
+      <div class="form-group"><label>フリガナ（名）</label><input id="new-staff-mei-kana" placeholder="タロウ"></div>
+    </div>
     <div class="form-group"><label>役割</label><select id="new-staff-role">
       <option value="一般職">一般職</option><option value="リーダークラス">リーダークラス</option><option value="管理者クラス">管理者クラス</option>
     </select></div>
@@ -333,6 +370,93 @@ function currentStaffScope(){
 }
 
 // ════════════════════════════════════════════════════
+//  法人・事業所 CRUD（FUS-249・2026-08-17追加）
+//  nagi_system.htmlのCRUDパターンをそのまま移植。localStorageキー
+//  （nagi_corps/nagi_offices）は共通のため、どちらの画面で登録しても両方に反映される。
+// ════════════════════════════════════════════════════
+function openOrgManage(){
+  switchOrgTab('corps');
+  renderCorpsList();
+  refreshOfficeCorpSelect();
+  renderOfficesList();
+  openModal('modal-org-manage');
+}
+function switchOrgTab(name){
+  document.getElementById('org-corps').style.display = name==='corps' ? 'block' : 'none';
+  document.getElementById('org-offices').style.display = name==='offices' ? 'block' : 'none';
+  document.getElementById('otab-corps').classList.toggle('active', name==='corps');
+  document.getElementById('otab-offices').classList.toggle('active', name==='offices');
+}
+function addCorp(){
+  const name=document.getElementById('new-corp-name').value.trim();
+  if(!name){ alert('法人名を入力してください'); return; }
+  const corps=getCorps();
+  corps.push({id:uid(),name});
+  save('nagi_corps',corps);
+  document.getElementById('new-corp-name').value='';
+  renderCorpsList();
+  refreshCorpSelect();
+  onCorpChange();
+  refreshOfficeCorpSelect();
+  refreshNewStaffCorpSelect();
+}
+function deleteCorp(id){
+  if(!confirm('この法人と紐づく事業所・スタッフのデータも削除されます。削除しますか？')) return;
+  save('nagi_corps',getCorps().filter(c=>c.id!==id));
+  save('nagi_offices',getAllOffices().filter(o=>o.corpId!==id));
+  save('nagi_staff',getAllStaff().filter(s=>s.corpId!==id));
+  renderCorpsList();
+  refreshCorpSelect();
+  onCorpChange();
+  refreshOfficeCorpSelect();
+  refreshNewStaffCorpSelect();
+  renderStaffList();
+}
+function renderCorpsList(){
+  document.getElementById('corps-list').innerHTML=getCorps().map(c=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);">
+      <span style="flex:1;font-size:0.85rem;">${c.name}</span>
+      <button class="btn btn-danger btn-xs" onclick="deleteCorp('${c.id}')">削除</button>
+    </div>`).join('')||'<div class="empty" style="padding:12px;">法人なし</div>';
+}
+function refreshOfficeCorpSelect(){
+  const sel=document.getElementById('new-office-corp');
+  sel.innerHTML='<option value="">── 法人を選択 ──</option>'+getCorps().map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+}
+function addOffice(){
+  const corpId=document.getElementById('new-office-corp').value;
+  const name=document.getElementById('new-office-name').value.trim();
+  if(!corpId||!name){ alert('法人と事業所名を入力してください'); return; }
+  const offices=getAllOffices();
+  offices.push({id:uid(),corpId,name});
+  save('nagi_offices',offices);
+  document.getElementById('new-office-name').value='';
+  renderOfficesList();
+  onCorpChange();
+  refreshNewStaffCorpSelect();
+}
+function deleteOffice(id){
+  if(!confirm('この事業所のデータを削除しますか？')) return;
+  save('nagi_offices',getAllOffices().filter(o=>o.id!==id));
+  save('nagi_staff',getAllStaff().filter(s=>s.officeId!==id));
+  renderOfficesList();
+  onCorpChange();
+  refreshNewStaffCorpSelect();
+  renderStaffList();
+}
+function renderOfficesList(){
+  const corps=getCorps();
+  document.getElementById('offices-list').innerHTML=getAllOffices().map(o=>{
+    const c=corps.find(cc=>cc.id===o.corpId);
+    return `<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);">
+      <span style="color:var(--sub);font-size:0.72rem;width:80px;">${c?.name||''}</span>
+      <span style="flex:1;font-size:0.85rem;">${o.name}</span>
+      <button class="btn btn-danger btn-xs" onclick="deleteOffice('${o.id}')">削除</button>
+    </div>`;
+  }).join('')||'<div class="empty" style="padding:12px;">事業所なし</div>';
+}
+
+// ════════════════════════════════════════════════════
 //  スタッフ台帳
 // ════════════════════════════════════════════════════
 function renderStaffList(){
@@ -404,11 +528,21 @@ function openStaffDetail(staffId){
 // ════════════════════════════════════════════════════
 //  スタッフ追加
 // ════════════════════════════════════════════════════
-function openAddStaff(){
+function refreshNewStaffCorpSelect(){
   const corpSel=document.getElementById('new-staff-corp');
+  if(!corpSel) return;
+  const cur=corpSel.value;
   corpSel.innerHTML='<option value="">選択してください</option>'+getCorps().map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+  corpSel.value=cur;
+}
+function openAddStaff(){
+  refreshNewStaffCorpSelect();
   document.getElementById('new-staff-office').innerHTML='<option value="">法人を先に選択</option>';
-  document.getElementById('new-staff-name').value='';
+  document.getElementById('new-staff-corp-empty-note').style.display = getCorps().length ? 'none' : 'block';
+  document.getElementById('new-staff-sei').value='';
+  document.getElementById('new-staff-mei').value='';
+  document.getElementById('new-staff-sei-kana').value='';
+  document.getElementById('new-staff-mei-kana').value='';
   openModal('modal-add-staff');
 }
 function onNewStaffCorpChange(){
@@ -419,14 +553,21 @@ function onNewStaffCorpChange(){
 function confirmAddStaff(){
   const corpId=document.getElementById('new-staff-corp').value;
   const officeId=document.getElementById('new-staff-office').value;
-  const name=document.getElementById('new-staff-name').value.trim();
+  // 氏名4分割（FUS-249・mitsumeru_scan.html/mitsumeru_tekisei_check.htmlと同じ変数命名パターン：
+  // sei/mei/seiKana/meiKana）。既存コード（一覧表示・PMマップ等）はs.nameの単一文字列を前提に
+  // しているため、name＝「姓 名」の結合文字列として引き続き保存し、後方互換を維持する。
+  const sei=document.getElementById('new-staff-sei').value.trim();
+  const mei=document.getElementById('new-staff-mei').value.trim();
+  const seiKana=document.getElementById('new-staff-sei-kana').value.trim();
+  const meiKana=document.getElementById('new-staff-mei-kana').value.trim();
+  const name=(sei+' '+mei).trim();
   const role=document.getElementById('new-staff-role').value;
-  if(!corpId||!officeId||!name){ alert('法人・事業所・氏名を入力してください'); return; }
+  if(!corpId||!officeId||!sei||!mei){ alert('法人・事業所・姓・名を入力してください'); return; }
   const allStaff=getAllStaff();
   // 診断（エゴグラム・TA・PM）は候補者管理経由の採用データでのみ埋まる仕様のため、
   // 手動追加時はnull（未実施）のままにする。0で埋めると「実測でゼロ」と区別がつかなくなるため
   // （2026-07-26・設計指摘：ミツメルの心理診断未使用バグと同種のリスクとして是正）。
-  allStaff.push({id:uid(), corpId, officeId, name, role, ego:null, task:null,social:null,p:null,m:null, lsrp:null, enn:[], transferHistory:[]});
+  allStaff.push({id:uid(), corpId, officeId, name, sei, mei, seiKana, meiKana, role, ego:null, task:null,social:null,p:null,m:null, lsrp:null, enn:[], transferHistory:[]});
   save('nagi_staff', allStaff);
   closeModal('modal-add-staff');
   renderStaffList();
