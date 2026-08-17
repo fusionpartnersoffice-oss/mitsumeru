@@ -1027,6 +1027,9 @@
       <button class="btn-secondary" onclick="testWorkerConnection()" style="margin-bottom:8px;">🔌 Worker接続テスト</button>
       <div id="worker-test-result" style="display:none;padding:10px 12px;border-radius:6px;font-size:12px;line-height:1.7;margin-bottom:8px;"></div>
       <div style="font-size:11px;color:var(--text3);">対象日：<span id="sync-target-date"></span></div>
+      <div style="font-size:11px;color:var(--text3);margin-top:8px;padding-top:8px;border-top:0.5px solid var(--border);">
+        ★ミツメルスキャン（心理アセスメント）のデータは、この画面とは別の仕組み（scan_プレフィックス）で端末間同期されます。ツールタブの「ミツメルスキャンを開く」から入ると、開いた時点で自動的に最新の受検者リストを取得します（2026-08-17・FUS-236で実装）。
+      </div>
     </div>
   </details>
 </div>
@@ -1384,6 +1387,14 @@
   <div style="display:flex;gap:8px;margin-bottom:16px;">
     <button id="tool-btn-emergency" class="btn-primary" onclick="switchToolMode('emergency')" style="flex:1;font-size:13px;letter-spacing:1px;">⚡ 3minエマージェンシー</button>
     <button id="tool-btn-whywhy" class="btn-secondary" onclick="switchToolMode('whywhy')" style="flex:1;font-size:13px;letter-spacing:1px;">🔍 なぜなぜ分析</button>
+  </div>
+
+  <!-- ミツメルスキャンへの導線（2026-08-17・柴山さん指摘：ツールタブに無かった。
+       これまでヘッダーの小さいリンクにしかなく見落とされていた。openScanWithConsent()は既存関数を流用。 -->
+  <div class="section" style="margin-bottom:16px;">
+    <div class="section-title">🔍 ミツメルスキャン</div>
+    <p style="font-size:12px;color:var(--text2);line-height:1.8;margin-bottom:12px;">LSRP・エゴグラム・エニアグラムの心理アセスメント。別タブで開きます（要配慮個人情報の確認あり）。</p>
+    <button class="btn-secondary" onclick="openScanWithConsent()" style="width:100%;">ミツメルスキャンを開く →</button>
   </div>
 
   <!-- 3minエマージェンシー -->
