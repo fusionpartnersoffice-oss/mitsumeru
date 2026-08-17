@@ -202,6 +202,33 @@
       <label>夜間支援時間帯（モジュールA・シフト表の表示用。「22時〜5時」説は★出典未確認のためハードコードせず設定可能な変数にしています）</label>
       <input type="text" id="f-night-range" placeholder="例：22:00〜05:00" value="22:00〜05:00">
     </div>
+    <div class="section-title" style="margin-top:14px;">稼働日・稼働時間（FUS-245 Phase1・2026-08-17追加）</div>
+    <div class="note">ここで設定した休業日・サービス提供時間は、現時点ではカレンダー表示（Phase2）にのみ反映され、シフトの自動生成ロジック（Phase4で対応予定）にはまだ反映されません。</div>
+    <div class="field">
+      <label>定休日（曜日）</label>
+      <div style="display:flex; gap:12px; flex-wrap:wrap;">
+        <label style="display:flex; align-items:center; gap:4px; font-weight:normal;"><input type="checkbox" class="f-closed-weekday" value="0"> 日</label>
+        <label style="display:flex; align-items:center; gap:4px; font-weight:normal;"><input type="checkbox" class="f-closed-weekday" value="1"> 月</label>
+        <label style="display:flex; align-items:center; gap:4px; font-weight:normal;"><input type="checkbox" class="f-closed-weekday" value="2"> 火</label>
+        <label style="display:flex; align-items:center; gap:4px; font-weight:normal;"><input type="checkbox" class="f-closed-weekday" value="3"> 水</label>
+        <label style="display:flex; align-items:center; gap:4px; font-weight:normal;"><input type="checkbox" class="f-closed-weekday" value="4"> 木</label>
+        <label style="display:flex; align-items:center; gap:4px; font-weight:normal;"><input type="checkbox" class="f-closed-weekday" value="5"> 金</label>
+        <label style="display:flex; align-items:center; gap:4px; font-weight:normal;"><input type="checkbox" class="f-closed-weekday" value="6"> 土</label>
+      </div>
+    </div>
+    <div class="field">
+      <label style="display:flex; align-items:center; gap:6px; font-weight:normal;">
+        <input type="checkbox" id="f-closed-holidays"> 祝日を休業とする
+      </label>
+    </div>
+    <div class="field">
+      <label>臨時休業日（年末年始等・1行1日付・YYYY-MM-DD形式）</label>
+      <textarea id="f-extra-closed-dates" rows="3" placeholder="例：&#10;2026-12-29&#10;2026-12-30&#10;2027-01-03"></textarea>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>サービス提供開始時刻</label><input type="time" id="f-service-start" value="10:00"></div>
+      <div class="field"><label>サービス提供終了時刻</label><input type="time" id="f-service-end" value="17:00"></div>
+    </div>
     <div style="display:flex; gap:10px; margin-top:14px;">
       <button class="btn-primary" onclick="saveFacility()">保存する</button>
       <button class="btn-secondary" onclick="hideFacilityForm()">キャンセル</button>
@@ -487,6 +514,13 @@ function showFacilityForm(id) {
     document.getElementById('f-u5').value = f.u5;
     document.getElementById('f-u6').value = f.u6;
     document.getElementById('f-night-range').value = f.nightRange || '22:00〜05:00';
+    document.querySelectorAll('.f-closed-weekday').forEach(cb => {
+      cb.checked = (f.closedWeekdays || []).includes(parseInt(cb.value));
+    });
+    document.getElementById('f-closed-holidays').checked = !!f.closedOnHolidays;
+    document.getElementById('f-extra-closed-dates').value = (f.extraClosedDates || []).join('\n');
+    document.getElementById('f-service-start').value = f.serviceStart || '10:00';
+    document.getElementById('f-service-end').value = f.serviceEnd || '17:00';
   } else {
     ['f-name'].forEach(id => document.getElementById(id).value = '');
     ['f-u1','f-u2','f-u3','f-u4','f-u5','f-u6'].forEach(id => document.getElementById(id).value = 0);
@@ -494,6 +528,11 @@ function showFacilityForm(id) {
     document.getElementById('f-type').value = '放課後等デイサービス';
     document.getElementById('f-gender').value = '混合';
     document.getElementById('f-night-range').value = '22:00〜05:00';
+    document.querySelectorAll('.f-closed-weekday').forEach(cb => cb.checked = false);
+    document.getElementById('f-closed-holidays').checked = false;
+    document.getElementById('f-extra-closed-dates').value = '';
+    document.getElementById('f-service-start').value = '10:00';
+    document.getElementById('f-service-end').value = '17:00';
   }
   updateFacilityTypeNote();
   updateFacilityTotalUsers();
@@ -538,6 +577,12 @@ function saveFacility() {
     u5: parseInt(document.getElementById('f-u5').value)||0,
     u6: parseInt(document.getElementById('f-u6').value)||0,
     nightRange: document.getElementById('f-night-range').value.trim() || '22:00〜05:00',
+    closedWeekdays: Array.from(document.querySelectorAll('.f-closed-weekday:checked')).map(cb => parseInt(cb.value)),
+    closedOnHolidays: document.getElementById('f-closed-holidays').checked,
+    extraClosedDates: document.getElementById('f-extra-closed-dates').value
+      .split('\n').map(s => s.trim()).filter(s => /^\d{4}-\d{2}-\d{2}$/.test(s)),
+    serviceStart: document.getElementById('f-service-start').value || '10:00',
+    serviceEnd: document.getElementById('f-service-end').value || '17:00',
   };
   if (editingFacilityId) {
     const idx = facilities.findIndex(f => f.id === editingFacilityId);
@@ -856,6 +901,35 @@ function generateShift() {
   renderShiftScreen();
 }
 
+// FUS-245 Phase2（2026-08-17）：カレンダー形式表示（縦軸＝職員・横軸＝日付）。
+// 実物PDF（H:\...\🗄️ 99_旧クライアント\...\勤務表 202107.pdf 他）の構造に近づけた表示。
+// ★表示のみの変更。generateShiftForFacility()の生成ロジックには一切触れていない
+// （非稼働日・休み希望はまだ反映されない＝下記の必須注記で明示）。
+const SHIFT_ROLE_ORDER = ['児発管', '管理者', '保育士', '児童指導員'];
+
+function buildCalendarRows(facility, staffList, result) {
+  // カレンダーの行として表示する職員＝dayTeam・nightTeamに実際に割り当てられた職員のみ
+  // （管理者・児発管等「対象外」の職員は、シフト生成ロジック自体に登場しないため表示対象外。
+  // 　これもPhase2が表示のみでロジックに触れていないことの帰結）
+  const { dayTeam, nightTeam, daysInMonth } = result;
+  const shownStaff = [...dayTeam, ...nightTeam].filter((s, i, arr) => arr.findIndex(x => x.id === s.id) === i);
+  shownStaff.sort((a, b) => {
+    const ra = SHIFT_ROLE_ORDER.indexOf(a.role), rb = SHIFT_ROLE_ORDER.indexOf(b.role);
+    if (ra !== rb) return ra - rb;
+    return a.name.localeCompare(b.name, 'ja');
+  });
+
+  return shownStaff.map(s => {
+    let workDays = 0;
+    const cells = result.rows.map(r => {
+      if (r.dayPerson && r.dayPerson.id === s.id) { workDays++; return '○昼'; }
+      if (r.nightPerson && r.nightPerson.id === s.id) { workDays++; return '○夜'; }
+      return '×';
+    });
+    return { staff: s, cells, workDays };
+  });
+}
+
 function renderShiftScreen() {
   const area = document.getElementById('shift-result-area');
   if (!lastShiftResult) { area.innerHTML = '<div class="empty-state">施設と対象年月を選択し、「シフトを生成する」を押してください</div>'; return; }
@@ -870,23 +944,39 @@ function renderShiftScreen() {
   if (unassignedDays > 0) warnings.push(`⚠ ${unassignedDays}日分、昼勤担当が契約日数の上限により割り当てできませんでした（契約勤務日数の見直しが必要な可能性があります）`);
   if (excludedByGender.length) warnings.push(`⚠ 性別配慮制約により${excludedByGender.length}名（${excludedByGender.map(s=>s.name).join('・')}）を自動除外しました（施設の性別構成：${facility.gender}）`);
 
-  const rowsHtml = rows.map(r => `
+  const calendarRows = buildCalendarRows(facility, staffList, result);
+
+  const dateHeaderHtml = rows.map(r => {
+    const isWeekBoundary = r.weekday === '日' && r.day !== 1;
+    const style = isWeekBoundary ? 'border-left:2px solid var(--text3);' : '';
+    const color = (r.weekday === '土') ? 'color:#2277cc;' : (r.weekday === '日') ? 'color:#cc4444;' : '';
+    return `<th style="font-size:10px;padding:2px;${style}${color}">${r.day}<br>${r.weekday}</th>`;
+  }).join('');
+
+  const calendarRowsHtml = calendarRows.map(cr => `
     <tr>
-      <td>${month}/${r.day}（${r.weekday}）</td>
-      <td>${r.dayPerson ? r.dayPerson.name : (dayTeam.length ? '（割当なし）' : '—')}</td>
-      <td>${r.nightPerson ? r.nightPerson.name : '—'}</td>
-      <td style="font-size:11px;color:var(--text3);">${r.note}</td>
+      <td style="white-space:nowrap;font-size:11px;">${cr.staff.role}／${cr.staff.name}</td>
+      ${cr.cells.map((c, i) => {
+        const isWeekBoundary = rows[i].weekday === '日' && rows[i].day !== 1;
+        const style = isWeekBoundary ? 'border-left:2px solid var(--text3);' : '';
+        return `<td style="text-align:center;font-size:11px;${style}">${c}</td>`;
+      }).join('')}
+      <td style="text-align:center;font-weight:600;">${cr.workDays}</td>
     </tr>`).join('');
 
   area.innerHTML = `
     <div class="section">
       <div class="section-title">${facility.name}（${year}年${month}月） — 昼team${dayTeam.length}名／夜team${nightTeam.length}名</div>
       <div class="note">夜間支援時間帯：${facility.nightRange || '22:00〜05:00'}（★出典未確認のため設定可能な変数。埼玉県資料・厚労省資料で該当箇所を再確認してから正式反映すること）</div>
+      <div class="warn-note">⚠️【FUS-245 Phase2・必読】現在は表示形式のみの実装です。施設マスタで設定した休業日・サービス提供時間、および職員の休み希望等は、まだシフト生成ロジックには反映されていません（Phase4以降で対応予定）。下記カレンダーの○×は、従来どおりの契約日数ラウンドロビンの結果をそのまま表示しています。</div>
       ${warnings.map(w => `<div class="warn-note">${w}</div>`).join('')}
-      <table class="calc-table">
-        <tr><th>日付</th><th>昼勤担当</th><th>夜勤担当</th><th>備考</th></tr>
-        ${rowsHtml}
-      </table>
+      <div style="overflow-x:auto;">
+        <table class="calc-table" style="white-space:nowrap;">
+          <tr><th>職種／氏名</th>${dateHeaderHtml}<th>月間<br>勤務日数</th></tr>
+          ${calendarRowsHtml}
+        </table>
+      </div>
+      ${!calendarRows.length ? '<div class="note">昼team・夜teamに割り当てられた職員がいないため、カレンダーに表示する行がありません。</div>' : ''}
     </div>
     <div class="section" style="font-size:11px;color:var(--text3);">
       昼勤担当は契約勤務日数（月あたり）の上限まで、ラウンドロビンで割り当てています。週40時間の労働時間上限・有給消化状況は「契約時間・有給管理」タブで別途確認してください（本シフト生成は現時点では週40時間の自動チェックまでは行っていません）。
