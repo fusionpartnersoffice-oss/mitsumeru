@@ -380,8 +380,40 @@ function recordStaffContractChange(oldRecord, newRecord) {
   appendStaffHistory(entries);
 }
 
+// サンプルデータ（2026-08-17・柴山さんご本人の依頼）：初回のみ（施設が1件も無い時だけ）
+// 岐阜県可児市・放課後等デイサービス・定員10名の2パターンを自動投入する。
+// 一度でも施設を登録した後は発火しない（既存データを上書きしない）。
+function seedDemoDataIfEmpty(currentFacilities, currentStaff) {
+  if (currentFacilities.length > 0) return { facilities: currentFacilities, staff: currentStaff };
+
+  const fac1 = { id: 'fac_demo_kani_ok', name: 'ほのぼのはうす可児（充足パターン）', pref: '岐阜県', type: '放課後等デイサービス', gender: '混合', u1: 10, u2: 0, u3: 0, u4: 0, u5: 0, u6: 0, nightRange: '22:00〜05:00' };
+  const fac2 = { id: 'fac_demo_kani_ng', name: 'つくしんぼ可児（人員不足パターン）', pref: '岐阜県', type: '放課後等デイサービス', gender: '混合', u1: 10, u2: 0, u3: 0, u4: 0, u5: 0, u6: 0, nightRange: '22:00〜05:00' };
+
+  const mkStaff = (id, facilityId, name, gender, role, shiftTeam) => ({
+    id, facilityId, name, gender, role, shiftTeam,
+    contractDays: 20, contractHours: 40, actualMonthlyDays: 0, actualWeeklyHours: 0,
+    paidLeaveRemaining: 10, paidLeaveTakenThisYear: 0,
+  });
+
+  const demoStaff = [
+    mkStaff('staff_demo_A_kanri', 'fac_demo_kani_ok', '管理者A', '女性', '管理者', '対象外'),
+    mkStaff('staff_demo_A_jihatsukan', 'fac_demo_kani_ok', '児発管A', '女性', '児発管', '対象外'),
+    mkStaff('staff_demo_A_shien1', 'fac_demo_kani_ok', '児童指導員A1', '女性', '児童指導員', '昼team'),
+    mkStaff('staff_demo_A_shien2', 'fac_demo_kani_ok', '保育士A1', '男性', '保育士', '昼team'),
+    mkStaff('staff_demo_B_kanri', 'fac_demo_kani_ng', '管理者B', '女性', '管理者', '対象外'),
+    mkStaff('staff_demo_B_jihatsukan', 'fac_demo_kani_ng', '児発管B', '女性', '児発管', '対象外'),
+    mkStaff('staff_demo_B_shien1', 'fac_demo_kani_ng', '児童指導員B1', '女性', '児童指導員', '昼team'),
+  ];
+
+  const facilities = [fac1, fac2];
+  saveFacilities(facilities);
+  saveStaffList(demoStaff);
+  return { facilities, staff: demoStaff };
+}
+
 let facilities = loadFacilities();
 let staffList = loadStaff();
+({ facilities, staff: staffList } = seedDemoDataIfEmpty(facilities, staffList));
 let activeFacilityId = null;
 let editingFacilityId = null;
 let editingStaffId = null;
