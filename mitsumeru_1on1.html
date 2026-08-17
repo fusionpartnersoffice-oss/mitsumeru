@@ -98,6 +98,12 @@ main.active{display:block;}
     </div>
   </div>
 
+  <div class="card" id="career-anchor-card" style="display:none;">
+    <h2>📝 キャリアアンカー・MUST/NEVER</h2>
+    <div class="note">柴山さんご本人がミツメルプライベート（設定タブ）に登録した指針です。1on1中の参考にどうぞ。</div>
+    <div id="career-anchor-content" style="font-size:13px;line-height:1.8;white-space:pre-wrap;"></div>
+  </div>
+
   <div class="note">
     層①のS/O/A/Pは全員（社長を含む）が使う記録です。過去の記録・コメント編集は左側「これまでの経緯」でご確認ください（同じ人を選ぶと自動で連動します）。
   </div>
@@ -485,10 +491,32 @@ function saveSummaryComment(index) {
   renderSummary();
 }
 
+// キャリアアンカー・MUST/NEVER（2026-08-17・柴山さんご本人の指示）：
+// mitsumeru_private.htmlと同一オリジン・同一端末のlocalStorageを直接読む
+// （クラウド経由ではなく、この端末で既に入力済みのプロファイルをそのまま参照する）。
+// 未入力（プロファイル自体が無い・3項目とも空）の場合はカード自体を表示しない。
+function renderCareerAnchor() {
+  const card = document.getElementById('career-anchor-card');
+  const box = document.getElementById('career-anchor-content');
+  let profile;
+  try { profile = JSON.parse(localStorage.getItem('mitsumeru_private_profile') || 'null'); } catch (e) { profile = null; }
+  if (!profile || (!profile.anchor && !profile.must && !profile.never)) {
+    card.style.display = 'none';
+    return;
+  }
+  const lines = [];
+  if (profile.anchor) lines.push(`【キャリアアンカー】${profile.anchor}`);
+  if (profile.must) lines.push(`【MUST】${profile.must}`);
+  if (profile.never) lines.push(`【NEVER】${profile.never}`);
+  box.textContent = lines.join('\n\n');
+  card.style.display = 'block';
+}
+
 function init() {
   renderPersonSelect();
   renderOMaterial();
   renderSummary();
+  renderCareerAnchor();
 }
 init();
 </script>
