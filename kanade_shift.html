@@ -285,6 +285,10 @@
       <div class="field"><label>契約勤務日数（月あたり）</label><input type="number" id="s-days" min="0" value="20"></div>
       <div class="field"><label>契約勤務時間（週あたり・h）</label><input type="number" id="s-hours" min="0" max="40" value="40"></div>
     </div>
+    <div class="field-row">
+      <div class="field"><label>在籍開始日（任意・月中入職の判定用。FUS-245 Phase4）</label><input type="date" id="s-join-date"></div>
+      <div class="field"><label>在籍終了日（任意・月中退職の判定用）</label><input type="date" id="s-leave-date"></div>
+    </div>
     <div class="section-title" style="margin-top:14px;">モジュールD：契約時間の実績（差分可視化用）</div>
     <div class="note">現時点ではモジュールAの自動シフトから実績を自動集計する連携は未実装のため、実績は引き続き手入力です（次フェーズで自動連携予定）。</div>
     <div class="field-row" style="margin-top:8px;">
@@ -650,6 +654,8 @@ function showStaffForm(id) {
     document.getElementById('s-actual-hours').value = s.actualWeeklyHours ?? 0;
     document.getElementById('s-paid-leave').value = s.paidLeaveRemaining;
     document.getElementById('s-paid-leave-taken').value = s.paidLeaveTakenThisYear ?? 0;
+    document.getElementById('s-join-date').value = s.joinDate || '';
+    document.getElementById('s-leave-date').value = s.leaveDate || '';
   } else {
     document.getElementById('s-name').value = '';
     document.getElementById('s-gender').value = '女性';
@@ -661,6 +667,8 @@ function showStaffForm(id) {
     document.getElementById('s-actual-hours').value = 0;
     document.getElementById('s-paid-leave').value = 10;
     document.getElementById('s-paid-leave-taken').value = 0;
+    document.getElementById('s-join-date').value = '';
+    document.getElementById('s-leave-date').value = '';
   }
   updateStaffRoleNote();
 }
@@ -700,6 +708,8 @@ function saveStaff() {
     actualWeeklyHours: parseInt(document.getElementById('s-actual-hours').value)||0,
     paidLeaveRemaining: parseInt(document.getElementById('s-paid-leave').value)||0,
     paidLeaveTakenThisYear: parseInt(document.getElementById('s-paid-leave-taken').value)||0,
+    joinDate: document.getElementById('s-join-date').value || null,
+    leaveDate: document.getElementById('s-leave-date').value || null,
   };
   if (editingStaffId) {
     const idx = staffList.findIndex(s => s.id === editingStaffId);
@@ -907,6 +917,65 @@ function generateShift() {
 // （非稼働日・休み希望はまだ反映されない＝下記の必須注記で明示）。
 const SHIFT_ROLE_ORDER = ['児発管', '管理者', '保育士', '児童指導員'];
 
+// ═══════════════════════════════════════════════
+// FUS-245 Phase3〜5：判定ロジック（2026-08-17）
+// ★暫定計算・一次資料未確認（設計・QA承認済みの安全側の原則で実装）：
+// 　未確認の基準は常に「厳しい方」で判定する（誤って「達成」「充足」と表示することを絶対に避ける）。
+// 　端数は判定が厳しくなる方向（切り捨て）へ倒す。0件データは「達成／充足」を返さずnull（対象外）を返す。
+// ═══════════════════════════════════════════════
+
+// Phase3：週法定労働時間（週40時間・保守的想定）の上限判定。ちょうど40時間は達成、1分でも超えたら未達成。
+function judgeWeeklyHoursCompliance(actualMinutes, weeksCount) {
+  if (actualMinutes == null || weeksCount == null || weeksCount <= 0) return null;
+  const legalMinutesPerWeek = 40 * 60;
+  const allowedMinutes = legalMinutesPerWeek * weeksCount;
+  return actualMinutes <= allowedMinutes ? '達成' : '未達成';
+}
+
+// Phase4：常勤換算（FTE）。分母32時間/週。端数は切り捨て（安全側＝FTEを実際より低く見積もる→充足判定が厳しくなる）
+function computeFTE(actualWeeklyMinutes, weeksCount) {
+  if (actualWeeklyMinutes == null || weeksCount == null || weeksCount <= 0) return null;
+  const denomMinutes = 32 * 60;
+  const raw = actualWeeklyMinutes / denomMinutes;
+  return Math.floor(raw * 100) / 100;
+}
+
+// Phase4：所定人員体制の充足判定（実配置が必要人数「以上」で充足）
+function judgeStaffingSufficiency(requiredCount, actualCount) {
+  if (requiredCount == null || actualCount == null) return null;
+  return actualCount >= requiredCount ? '充足' : '不足';
+}
+
+// Phase5：稼働日に応じた法定労働日数の上限（暫定・★出典未確認）。
+// 実稼働日数（休業日を除く）と、週1日休日の原則ベースの上限（週数×6日）のうち、小さい方を採用（安全側）。
+function computeConservativeMaxWorkingDays(daysInMonth, closedDaysCount) {
+  const operatingDays = daysInMonth - closedDaysCount;
+  const weeksCount = Math.floor(daysInMonth / 7);
+  const legalMaxByWeeklyRest = weeksCount * 6;
+  return Math.min(operatingDays, legalMaxByWeeklyRest);
+}
+
+// Phase4：月中入退職を考慮した実効週数（在籍期間と対象月の重なり日数を7で割り切り捨て・安全側）
+function effectiveWeeksInMonth(year, month, daysInMonth, joinDateStr, leaveDateStr) {
+  const monthStart = new Date(Date.UTC(year, month - 1, 1));
+  const monthEnd = new Date(Date.UTC(year, month - 1, daysInMonth));
+  let start = monthStart, end = monthEnd;
+  if (joinDateStr) { const j = new Date(joinDateStr + 'T00:00:00Z'); if (j > start) start = j; }
+  if (leaveDateStr) { const l = new Date(leaveDateStr + 'T00:00:00Z'); if (l < end) end = l; }
+  if (end < start) return 0;
+  const enrolledDays = Math.floor((end - start) / 86400000) + 1;
+  return Math.floor(enrolledDays / 7);
+}
+
+// 施設のサービス提供時間（Phase1）から1日あたりの勤務時間（分）を算出。未設定時は7時間を暫定値とする。
+function facilityDailyMinutes(facility) {
+  if (!facility.serviceStart || !facility.serviceEnd) return 7 * 60;
+  const [sh, sm] = facility.serviceStart.split(':').map(Number);
+  const [eh, em] = facility.serviceEnd.split(':').map(Number);
+  const mins = (eh * 60 + em) - (sh * 60 + sm);
+  return mins > 0 ? mins : 7 * 60;
+}
+
 function buildCalendarRows(facility, staffList, result) {
   // カレンダーの行として表示する職員＝dayTeam・nightTeamに実際に割り当てられた職員のみ
   // （管理者・児発管等「対象外」の職員は、シフト生成ロジック自体に登場しないため表示対象外。
@@ -919,6 +988,9 @@ function buildCalendarRows(facility, staffList, result) {
     return a.name.localeCompare(b.name, 'ja');
   });
 
+  const dailyMinutes = facilityDailyMinutes(facility);
+  const [year, month] = [lastShiftResult.year, lastShiftResult.month];
+
   return shownStaff.map(s => {
     let workDays = 0;
     const cells = result.rows.map(r => {
@@ -926,7 +998,15 @@ function buildCalendarRows(facility, staffList, result) {
       if (r.nightPerson && r.nightPerson.id === s.id) { workDays++; return '○夜'; }
       return '×';
     });
-    return { staff: s, cells, workDays };
+
+    // Phase3・Phase4：月中入退職を考慮した実効週数を基準に、週あたり実働分を概算する
+    const weeksCount = effectiveWeeksInMonth(year, month, daysInMonth, s.joinDate, s.leaveDate);
+    const totalWorkedMinutes = workDays * dailyMinutes;
+    const weeklyMinutes = weeksCount > 0 ? Math.floor(totalWorkedMinutes / weeksCount) : null; // 切り捨て＝安全側（過小評価で判定を厳しくする）
+    const hoursJudge = weeksCount > 0 ? judgeWeeklyHoursCompliance(weeklyMinutes, 1) : null;
+    const fte = weeksCount > 0 ? computeFTE(weeklyMinutes, 1) : null;
+
+    return { staff: s, cells, workDays, weeksCount, hoursJudge, fte };
   });
 }
 
@@ -962,24 +1042,59 @@ function renderShiftScreen() {
         return `<td style="text-align:center;font-size:11px;${style}">${c}</td>`;
       }).join('')}
       <td style="text-align:center;font-weight:600;">${cr.workDays}</td>
+      <td style="text-align:center;font-size:11px;${cr.hoursJudge === '未達成' ? 'color:#cc4444;font-weight:600;' : ''}">${cr.hoursJudge || '対象外'}</td>
+      <td style="text-align:center;font-size:11px;">${cr.fte != null ? cr.fte : '対象外'}</td>
     </tr>`).join('');
+
+  // Phase4：日別・所定人員体制の充足判定（①時間帯ごとの実配置チェック＝当日の昼team配置1名＋夜team配置1名がいるか）
+  // 必要人数は法定基準チェック（モジュールB）と同じ直接支援職員の基準式を暫定的に流用（★出典：モジュールBと同一・第66条第1項）
+  const requiredDirectSupport = calcShienStaffRequired(facility, 'up').required;
+  const dailyStaffingHtml = rows.map(r => {
+    const actualCount = (r.dayPerson ? 1 : 0) + (r.nightPerson ? 1 : 0);
+    const judge = judgeStaffingSufficiency(requiredDirectSupport, actualCount);
+    const isWeekBoundary = r.weekday === '日' && r.day !== 1;
+    const style = isWeekBoundary ? 'border-left:2px solid var(--text3);' : '';
+    const color = judge === '不足' ? 'color:#cc4444;font-weight:600;' : '';
+    return `<td style="text-align:center;font-size:11px;${style}${color}">${judge || '—'}</td>`;
+  }).join('');
+  const shortfallDays = rows.filter(r => {
+    const actualCount = (r.dayPerson ? 1 : 0) + (r.nightPerson ? 1 : 0);
+    return judgeStaffingSufficiency(requiredDirectSupport, actualCount) === '不足';
+  }).length;
+
+  // Phase5：稼働日に応じた法定労働日数の上限（暫定）
+  const closedDaysCount = rows.filter(r => {
+    const dow = ['日','月','火','水','木','金','土'].indexOf(r.weekday);
+    return (facility.closedWeekdays || []).includes(dow);
+  }).length + (facility.extraClosedDates || []).filter(d => {
+    const dt = new Date(d + 'T00:00:00');
+    return dt.getFullYear() === year && (dt.getMonth() + 1) === month;
+  }).length;
+  const maxWorkingDays = computeConservativeMaxWorkingDays(rows.length, closedDaysCount);
 
   area.innerHTML = `
     <div class="section">
       <div class="section-title">${facility.name}（${year}年${month}月） — 昼team${dayTeam.length}名／夜team${nightTeam.length}名</div>
       <div class="note">夜間支援時間帯：${facility.nightRange || '22:00〜05:00'}（★出典未確認のため設定可能な変数。埼玉県資料・厚労省資料で該当箇所を再確認してから正式反映すること）</div>
-      <div class="warn-note">⚠️【FUS-245 Phase2・必読】現在は表示形式のみの実装です。施設マスタで設定した休業日・サービス提供時間、および職員の休み希望等は、まだシフト生成ロジックには反映されていません（Phase4以降で対応予定）。下記カレンダーの○×は、従来どおりの契約日数ラウンドロビンの結果をそのまま表示しています。</div>
+      <div class="warn-note">⚠️【FUS-245 Phase2・必読】カレンダーの○×表示は、従来どおりの契約日数ラウンドロビンの結果をそのまま表示しています（施設マスタの休業日・休み希望等はまだシフト生成ロジックには反映されていません）。</div>
+      <div class="warn-note">⚠️【FUS-245 Phase3〜5・必読】週法定時間判定・常勤換算(FTE)・所定人員充足・法定労働日数上限は、いずれも★暫定計算です（一次資料未確認・安全側の原則で判定基準を厳しめに設定しています）。正式な労務判断には使用せず、必ず社会保険労務士等の専門家に確認してください。</div>
       ${warnings.map(w => `<div class="warn-note">${w}</div>`).join('')}
       <div style="overflow-x:auto;">
         <table class="calc-table" style="white-space:nowrap;">
-          <tr><th>職種／氏名</th>${dateHeaderHtml}<th>月間<br>勤務日数</th></tr>
+          <tr><th>職種／氏名</th>${dateHeaderHtml}<th>月間<br>勤務日数</th><th>週法定時間<br>判定(Phase3)</th><th>常勤換算<br>FTE(Phase4)</th></tr>
           ${calendarRowsHtml}
+          <tr style="background:var(--surface2, rgba(0,0,0,0.03));">
+            <td style="font-size:11px;font-weight:600;">日別充足判定<br>(Phase4・必要${requiredDirectSupport}名)</td>
+            ${dailyStaffingHtml}
+            <td colspan="3" style="text-align:center;font-size:11px;">${shortfallDays > 0 ? `⚠ ${shortfallDays}日不足` : '全日充足'}</td>
+          </tr>
         </table>
       </div>
       ${!calendarRows.length ? '<div class="note">昼team・夜teamに割り当てられた職員がいないため、カレンダーに表示する行がありません。</div>' : ''}
+      <div class="note" style="margin-top:8px;">Phase5・法定労働日数の上限（暫定）：当月${rows.length}日中、休業日${closedDaysCount}日を除いた実稼働${rows.length - closedDaysCount}日と、週1日休日の原則ベースの上限のうち小さい方＝<strong>${maxWorkingDays}日</strong>（★出典未確認・保守的な仮の値）。</div>
     </div>
     <div class="section" style="font-size:11px;color:var(--text3);">
-      昼勤担当は契約勤務日数（月あたり）の上限まで、ラウンドロビンで割り当てています。週40時間の労働時間上限・有給消化状況は「契約時間・有給管理」タブで別途確認してください（本シフト生成は現時点では週40時間の自動チェックまでは行っていません）。
+      昼勤担当は契約勤務日数（月あたり）の上限まで、ラウンドロビンで割り当てています。有給消化状況は「契約時間・有給管理」タブで別途確認してください。
     </div>
   `;
 }
