@@ -100,8 +100,16 @@ main.active{display:block;}
 
   <div class="card" id="career-anchor-card" style="display:none;">
     <h2>📝 キャリアアンカー・MUST/NEVER</h2>
-    <div class="note">柴山さんご本人がミツメルプライベート（設定タブ）に登録した指針です。1on1中の参考にどうぞ。</div>
-    <div id="career-anchor-content" style="font-size:13px;line-height:1.8;white-space:pre-wrap;"></div>
+    <div class="note">今選んでいる相手（<span id="career-anchor-person-name"></span>）の指針です。1on1の中で聞き出した内容を記録してください。</div>
+    <label for="anchor-input">キャリアアンカー（何があっても譲れないもの）</label>
+    <textarea id="anchor-input" placeholder="例：自立・独立、社会貢献"></textarea>
+    <label for="must-input">MUST（好きなこと・得意なこと）</label>
+    <textarea id="must-input" placeholder="例：組織設計、人材育成"></textarea>
+    <label for="never-input">NEVER（嫌いなこと・苦手なこと）</label>
+    <textarea id="never-input" placeholder="例：精神論、穴埋め作業"></textarea>
+    <div class="btn-row">
+      <button class="btn-primary" onclick="saveCareerAnchor()">この内容を保存する</button>
+    </div>
   </div>
 
   <div class="note">
@@ -170,6 +178,31 @@ function onPersonChange() {
   currentPerson = sel.value || null;
   renderOMaterial();
   renderSummary(); // 柴山さん実機指摘対応：左（サマリー）を右の選択に自動追従させる
+  renderCareerAnchor();
+}
+
+function renderCareerAnchor() {
+  const card = document.getElementById('career-anchor-card');
+  if (!currentPerson) { card.style.display = 'none'; return; }
+  const roster = loadRoster();
+  const person = roster.find(p => p.name === currentPerson);
+  document.getElementById('career-anchor-person-name').textContent = currentPerson;
+  document.getElementById('anchor-input').value = (person && person.anchor) || '';
+  document.getElementById('must-input').value = (person && person.must) || '';
+  document.getElementById('never-input').value = (person && person.never) || '';
+  card.style.display = 'block';
+}
+
+function saveCareerAnchor() {
+  if (!currentPerson) return;
+  const roster = loadRoster();
+  const person = roster.find(p => p.name === currentPerson);
+  if (!person) return;
+  person.anchor = document.getElementById('anchor-input').value;
+  person.must = document.getElementById('must-input').value;
+  person.never = document.getElementById('never-input').value;
+  saveRoster(roster);
+  alert(currentPerson + 'さんのキャリアアンカー・MUST・NEVERを保存しました。');
 }
 
 document.getElementById('new-person-name').addEventListener('keydown', function (e) {
@@ -186,6 +219,7 @@ document.getElementById('new-person-name').addEventListener('keydown', function 
   renderPersonSelect();
   renderOMaterial();
   renderSummary();
+  renderCareerAnchor();
 });
 
 // 既存3ロースター（ta_roster/pm_roster/mitsumeru_scan_roster）から、
@@ -489,27 +523,6 @@ function saveSummaryComment(index) {
   saveRecords(all);
   editingSummaryIndex = null;
   renderSummary();
-}
-
-// キャリアアンカー・MUST/NEVER（2026-08-17・柴山さんご本人の指示）：
-// mitsumeru_private.htmlと同一オリジン・同一端末のlocalStorageを直接読む
-// （クラウド経由ではなく、この端末で既に入力済みのプロファイルをそのまま参照する）。
-// 未入力（プロファイル自体が無い・3項目とも空）の場合はカード自体を表示しない。
-function renderCareerAnchor() {
-  const card = document.getElementById('career-anchor-card');
-  const box = document.getElementById('career-anchor-content');
-  let profile;
-  try { profile = JSON.parse(localStorage.getItem('mitsumeru_private_profile') || 'null'); } catch (e) { profile = null; }
-  if (!profile || (!profile.anchor && !profile.must && !profile.never)) {
-    card.style.display = 'none';
-    return;
-  }
-  const lines = [];
-  if (profile.anchor) lines.push(`【キャリアアンカー】${profile.anchor}`);
-  if (profile.must) lines.push(`【MUST】${profile.must}`);
-  if (profile.never) lines.push(`【NEVER】${profile.never}`);
-  box.textContent = lines.join('\n\n');
-  card.style.display = 'block';
 }
 
 function init() {
