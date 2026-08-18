@@ -860,6 +860,11 @@ function renderProfile() {
       </select>
     </div>
     <div class="note-box">※ スコア圏はあくまで参考。判定は面接官が決めます（奏は提示、決定は人）。</div>
+    ${c.judgment==='採用推薦' ? `
+    <div class="btn-row" style="margin-top:10px">
+      <button class="btn btn-primary" onclick="sendToRoster('${c.id}')">📇 採用確定 → 職員台帳へ引き継ぐ</button>
+    </div>
+    <div class="note-box" style="margin-top:8px">氏名・入職希望日を職員台帳（kanade_roster.html）へ引き継ぎます。法人・事業所・雇用条件等の残りの項目は台帳側で入力してください。</div>` : ''}
   </div>
 
   <div class="section">
@@ -936,6 +941,23 @@ ${c.judgment||'未判定'}
 ---
 *奏 Kanade v1 で作成。スコアは参考であり、採否の決定は面接官が行う。*
 `;
+}
+
+function sendToRoster(id) {
+  const c = candidates.find(x=>x.id===id) || cur();
+  if (!c) return;
+  const nameParts = (c.name||'').trim().split(/\s+/);
+  const intake = {
+    sei: nameParts[0]||'',
+    mei: nameParts.slice(1).join(' ')||'',
+    hireDate: null,
+  };
+  let list = [];
+  try { list = JSON.parse(localStorage.getItem('kanade_roster_intake')||'[]'); } catch { list = []; }
+  list.push(intake);
+  localStorage.setItem('kanade_roster_intake', JSON.stringify(list));
+  toast('職員台帳へ引き継ぎました。kanade_roster.htmlを開いてください');
+  window.open('./kanade_roster.html', '_blank');
 }
 
 function copyMd() {

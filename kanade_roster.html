@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>職員台帳 | Fusion Partners</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%234fc3f7'/><text x='16' y='24' font-size='18' text-anchor='middle'>📇</text></svg>">
+<style>
+:root {
+  --bg:#0f1923; --surface:#1a2634; --card:#223044;
+  --accent:#4fc3f7; --accent2:#81c784; --accent3:#ffb74d;
+  --danger:#ef5350; --warn:#ffa726; --text:#e8eaf0; --sub:#8fa3b8;
+  --border:#2e4460; --radius:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Hiragino Kaku Gothic Pro','Meiryo',sans-serif;min-height:100vh;font-size:14px;}
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.logo{width:30px;height:30px;background:linear-gradient(135deg,#4fc3f7,#0277bd);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
+header h1{font-size:1rem;font-weight:700;color:var(--accent);flex:1;}
+header h1 span{font-size:0.68rem;font-weight:400;color:var(--sub);}
+
+.selector-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:8px 20px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.selector-bar select{background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 10px;font-size:0.8rem;outline:none;}
+.selector-bar label{font-size:0.78rem;color:var(--sub);}
+
+.nav-tabs{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;display:flex;gap:4px;overflow-x:auto;}
+.nav-tab{padding:10px 14px;font-size:0.8rem;color:var(--sub);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;}
+.nav-tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:700;}
+
+main{max-width:1080px;margin:0 auto;padding:20px 16px 80px;}
+.page{display:none;} .page.active{display:block;}
+
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;}
+.empty{text-align:center;color:var(--sub);padding:30px 20px;font-size:0.82rem;}
+.section{margin-bottom:22px;}
+.section-title{font-size:0.85rem;color:var(--accent);margin-bottom:12px;border-left:3px solid var(--accent);padding-left:8px;display:flex;justify-content:space-between;align-items:center;}
+.subsection-title{font-size:0.8rem;color:var(--accent3);margin:14px 0 8px;font-weight:700;}
+
+.btn{padding:8px 18px;border-radius:7px;border:none;font-size:0.82rem;font-weight:600;cursor:pointer;}
+.btn-primary{background:var(--accent);color:#000;}
+.btn-secondary{background:var(--card);color:var(--sub);border:1px solid var(--border);}
+.btn-danger{background:var(--danger);color:#fff;}
+.btn-warn{background:var(--warn);color:#000;}
+.btn-sm{padding:5px 12px;font-size:0.74rem;}
+.btn-xs{padding:3px 8px;font-size:0.68rem;}
+
+.table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:0.78rem;}
+th{text-align:left;padding:6px 8px;color:var(--sub);border-bottom:1px solid var(--border);white-space:nowrap;}
+td{padding:6px 8px;border-bottom:1px solid var(--border);white-space:nowrap;}
+.tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:0.68rem;background:var(--surface);color:var(--sub);}
+.tag-active{color:var(--accent2);} .tag-leave{color:var(--warn);} .tag-retired{color:var(--sub);}
+
+.form-group{margin-bottom:12px;}
+.form-group label{font-size:0.78rem;color:var(--sub);display:block;margin-bottom:3px;}
+.form-group input,.form-group select,.form-group textarea{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:0.85rem;outline:none;font-family:inherit;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.form-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+@media(max-width:700px){.form-row,.form-row3{grid-template-columns:1fr;}}
+
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:100;align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px 10px;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;width:100%;max-width:640px;position:relative;margin:20px 0;}
+.modal-title{font-size:1rem;font-weight:700;margin-bottom:14px;}
+.modal-close{position:absolute;top:12px;right:14px;background:none;border:none;color:var(--sub);font-size:1.2rem;cursor:pointer;}
+
+.allowance-row{display:flex;gap:8px;margin-bottom:6px;align-items:center;}
+.allowance-row input{flex:1;}
+.intake-banner{background:var(--card);border:1px solid var(--accent3);border-radius:8px;padding:12px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
+.note{font-size:0.72rem;color:var(--sub);margin-top:4px;line-height:1.6;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">📇</div>
+  <h1>職員台帳 <span>雇用形態・就業条件・内定条件を含む人事情報の一次登録 | Fusion Partners</span></h1>
+  <a href="./kanade_hub.html" class="btn btn-secondary btn-sm" style="text-decoration:none;">🧭 ハブへ戻る</a>
+</header>
+
+<div class="selector-bar">
+  <label>法人</label>
+  <select id="sel-corp" onchange="onCorpChange()"><option value="">── 全法人 ──</option></select>
+  <label>事業所</label>
+  <select id="sel-office" onchange="onOfficeChange()"><option value="">── 全事業所 ──</option></select>
+  <label style="margin-left:8px;"><input type="checkbox" id="chk-show-retired" onchange="renderRoster()"> 退職済みも表示</label>
+</div>
+
+<div class="nav-tabs">
+  <div class="nav-tab active" onclick="goTab('roster')" id="tab-roster">📇 職員台帳</div>
+  <div class="nav-tab" onclick="goTab('org')" id="tab-org">⚙ 法人・事業所管理</div>
+</div>
+
+<main>
+
+<!-- 台帳 -->
+<div class="page active" id="page-roster">
+  <div id="intake-area"></div>
+  <div class="section">
+    <div class="section-title">
+      <span>📇 職員一覧</span>
+      <button class="btn btn-primary btn-sm" onclick="openAddStaff()">＋ 職員を新規登録</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>氏名</th><th>法人</th><th>事業所</th><th>雇用形態</th><th>入職日</th><th>在籍状態</th><th>操作</th>
+        </tr></thead>
+        <tbody id="roster-tbody"></tbody>
+      </table>
+    </div>
+    <div id="roster-empty" class="empty" style="display:none;">職員データがありません。「＋ 職員を新規登録」から登録してください。</div>
+  </div>
+</div>
+
+<!-- 法人・事業所管理 -->
+<div class="page" id="page-org">
+  <div class="section">
+    <div class="section-title">⚙ 法人・事業所管理</div>
+    <div class="note">nagi_staff.html等と同じlocalStorageキー（nagi_corps/nagi_offices）を使用します。ここで登録した法人・事業所は他ツールの選択肢にも反映されます。</div>
+    <div class="nav-tabs" style="border-radius:6px;overflow:hidden;margin:14px 0;">
+      <div class="nav-tab active" onclick="switchOrgTab('corps')" id="otab-corps">法人</div>
+      <div class="nav-tab" onclick="switchOrgTab('offices')" id="otab-offices">事業所</div>
+    </div>
+    <div id="org-corps">
+      <div style="display:flex;gap:8px;margin-bottom:10px;">
+        <input id="new-corp-name" placeholder="法人名を入力" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:0.85rem;outline:none;flex:1;">
+        <button class="btn btn-primary" onclick="addCorp()">＋ 追加</button>
+      </div>
+      <div id="corps-list"></div>
+    </div>
+    <div id="org-offices" style="display:none;">
+      <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+        <select id="new-office-corp" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:0.82rem;outline:none;flex:1;"></select>
+        <input id="new-office-name" placeholder="事業所名" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:0.85rem;outline:none;flex:2;">
+        <button class="btn btn-primary" onclick="addOffice()">＋ 追加</button>
+      </div>
+      <div id="offices-list"></div>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<!-- MODAL: 職員登録・編集 -->
+<div class="modal-overlay" id="modal-staff" onclick="if(event.target===this)closeModal('modal-staff')">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-staff')">✕</button>
+    <div class="modal-title" id="staff-modal-title">＋ 職員を新規登録</div>
+
+    <div class="subsection-title">基本情報</div>
+    <div class="form-row">
+      <div class="form-group"><label>法人</label><select id="st-corp" onchange="onStaffCorpChange()"><option value="">選択してください</option></select></div>
+      <div class="form-group"><label>就業施設（事業所）</label><select id="st-office"><option value="">法人を先に選択</option></select></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>姓</label><input id="st-sei" placeholder="山田"></div>
+      <div class="form-group"><label>名</label><input id="st-mei" placeholder="太郎"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>フリガナ（姓）</label><input id="st-sei-kana" placeholder="ヤマダ"></div>
+      <div class="form-group"><label>フリガナ（名）</label><input id="st-mei-kana" placeholder="タロウ"></div>
+    </div>
+    <div class="form-group"><label>就業先住所</label><input id="st-work-address" placeholder="例：埼玉県〇〇市..."></div>
+    <div class="form-row">
+      <div class="form-group"><label>入職日</label><input type="date" id="st-hire-date"></div>
+      <div class="form-group"><label>在籍状態</label><select id="st-status">
+        <option value="在職中">在職中</option><option value="休職中">休職中</option><option value="退職済み">退職済み</option>
+      </select></div>
+    </div>
+    <div class="form-group" id="st-leave-date-group" style="display:none;"><label>退職日</label><input type="date" id="st-leave-date"></div>
+
+    <div class="subsection-title">雇用形態</div>
+    <div class="form-row">
+      <div class="form-group"><label>雇用形態</label><select id="st-employment-type">
+        <option value="正職員">正職員</option><option value="パート・アルバイト">パート・アルバイト</option>
+        <option value="契約社員">契約社員</option><option value="業務委託">業務委託</option>
+      </select></div>
+      <div class="form-group"><label>勤務形態</label><select id="st-work-style">
+        <option value="日勤常勤">日勤常勤</option><option value="シフト制">シフト制</option><option value="時短勤務">時短勤務</option>
+      </select></div>
+    </div>
+
+    <div class="subsection-title">契約</div>
+    <div class="form-row">
+      <div class="form-group"><label>契約期間の定め</label><select id="st-fixed-term" onchange="toggleFixedTermFields()">
+        <option value="無">無（無期雇用）</option><option value="有">有（有期雇用）</option>
+      </select></div>
+      <div class="form-group"><label>試用期間（月数・任意）</label><input type="number" id="st-probation-months" min="0" placeholder="例：3"></div>
+    </div>
+    <div id="fixed-term-fields" style="display:none;">
+      <div class="form-row3">
+        <div class="form-group"><label>契約期間</label><input id="st-term-period" placeholder="例：1年間"></div>
+        <div class="form-group"><label>更新の有無</label><select id="st-renewal"><option value="有">有</option><option value="無">無</option></select></div>
+        <div class="form-group"><label>更新基準・上限</label><input id="st-renewal-condition" placeholder="例：通算5年まで"></div>
+      </div>
+    </div>
+    <div class="form-group"><label>試用期間中の労働条件変更</label><select id="st-probation-condition-change">
+      <option value="無">無</option><option value="有">有（詳細は備考へ）</option>
+    </select></div>
+
+    <div class="subsection-title">勤務時間</div>
+    <div class="note">パターン①〜④まで入力可（シフト制等・不要な行は空欄のままでよい）</div>
+    <div id="work-patterns"></div>
+    <div class="form-row3">
+      <div class="form-group"><label>残業</label><select id="st-overtime"><option value="無">無</option><option value="有">有</option></select></div>
+      <div class="form-group"><label>夜勤</label><select id="st-night-shift"><option value="無">無</option><option value="有">有</option></select></div>
+      <div class="form-group"><label>勤務日（曜日等）</label><input id="st-work-days" placeholder="例：月〜金・シフトによる"></div>
+    </div>
+
+    <div class="subsection-title">仕事内容</div>
+    <div class="form-group"><label>仕事内容</label><textarea id="st-job-desc" rows="2"></textarea></div>
+    <div class="form-group"><label>業務内容の変更可能性</label><select id="st-job-change-possible"><option value="無">無</option><option value="有">有</option></select></div>
+
+    <div class="subsection-title">給与</div>
+    <div class="form-row">
+      <div class="form-group"><label>基本給（月給。時給制の場合は時給を入力し右で選択）</label><input type="number" id="st-base-salary" min="0"></div>
+      <div class="form-group"><label>基本給の単位</label><select id="st-base-salary-unit"><option value="月給">月給</option><option value="時給">時給</option><option value="日給">日給</option></select></div>
+    </div>
+    <div class="form-group"><label>固定残業代（円・任意）</label><input type="number" id="st-fixed-overtime-pay" min="0"></div>
+    <div class="subsection-title" style="font-size:0.76rem;margin-top:10px;">各種手当（任意の数だけ追加可）</div>
+    <div id="allowance-list"></div>
+    <button class="btn btn-secondary btn-xs" onclick="addAllowanceRow()">＋ 手当を追加</button>
+    <div class="form-row" style="margin-top:10px;">
+      <div class="form-group"><label>月給総額（想定・円）</label><input type="number" id="st-monthly-total" min="0"></div>
+      <div class="form-group"><label>理論年収（円）</label><input type="number" id="st-annual-estimate" min="0"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>賞与</label><select id="st-bonus" onchange="toggleBonusDetail()"><option value="無">無</option><option value="有">有</option></select></div>
+      <div class="form-group" id="bonus-detail-group" style="display:none;"><label>賞与詳細</label><input id="st-bonus-detail" placeholder="例：年2回・計2ヶ月分"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>昇給</label><select id="st-raise"><option value="無">無</option><option value="有">有</option></select></div>
+      <div class="form-group"><label>退職金</label><select id="st-retirement-pay"><option value="無">無</option><option value="有">有</option></select></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>賃金締日</label><input id="st-pay-closing-day" placeholder="例：末日"></div>
+      <div class="form-group"><label>賃金支払日</label><input id="st-pay-day" placeholder="例：翌月25日"></div>
+    </div>
+
+    <div class="subsection-title">社会保険</div>
+    <div class="form-row">
+      <div class="form-group"><label>健康保険</label><select id="st-ins-health"><option value="有">有</option><option value="無">無</option></select></div>
+      <div class="form-group"><label>厚生年金</label><select id="st-ins-pension"><option value="有">有</option><option value="無">無</option></select></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>労災保険</label><select id="st-ins-work-accident"><option value="有">有</option><option value="無">無</option></select></div>
+      <div class="form-group"><label>雇用保険</label><select id="st-ins-employment"><option value="有">有</option><option value="無">無</option></select></div>
+    </div>
+
+    <div class="subsection-title">その他</div>
+    <div class="form-row">
+      <div class="form-group"><label>休日（年間日数）</label><input type="number" id="st-annual-holidays" min="0"></div>
+      <div class="form-group"><label>受動喫煙防止措置</label><input id="st-smoking-measure" placeholder="例：敷地内禁煙"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>採用担当者・責任者</label><input id="st-hiring-officer"></div>
+      <div class="form-group"><label>連絡先</label><input id="st-contact"></div>
+    </div>
+    <div class="subsection-title" style="font-size:0.76rem;">紹介元（将来のyuzuru_sales_log連携用・任意）</div>
+    <div class="form-row3">
+      <div class="form-group"><label>紹介元 会社名</label><input id="st-referral-company"></div>
+      <div class="form-group"><label>紹介元 担当者</label><input id="st-referral-contact"></div>
+      <div class="form-group"><label>紹介元 連絡先</label><input id="st-referral-phone"></div>
+    </div>
+    <div class="form-group"><label>備考</label><textarea id="st-notes" rows="2"></textarea></div>
+
+    <div style="display:flex;gap:10px;margin-top:16px;">
+      <button class="btn btn-primary" onclick="confirmSaveStaff()">保存する</button>
+      <button class="btn btn-secondary" onclick="closeModal('modal-staff')">キャンセル</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════
+//  共通ヘルパー（nagi_staff.html / nagi_system.html と同一実装・localStorageスキーマ互換）
+// ════════════════════════════════════════════════════
+function load(k){ try{ return JSON.parse(localStorage.getItem(k)||'[]'); }catch{ return []; } }
+function save(k,v){ localStorage.setItem(k,JSON.stringify(v)); }
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+function getCorps(){ return load('nagi_corps'); }
+function getAllOffices(){ return load('nagi_offices'); }
+function getOffices(corpId){ const a=getAllOffices(); return corpId?a.filter(o=>o.corpId===corpId):a; }
+const ROSTER_KEY='kanade_roster_staff';
+function getRoster(){ return load(ROSTER_KEY); }
+function saveRoster(list){ save(ROSTER_KEY,list); }
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+
+function goTab(name){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  document.getElementById('tab-'+name).classList.add('active');
+}
+
+// ════════════════════════════════════════════════════
+//  法人・事業所 CRUD（nagi_staff.htmlと同一パターン・localStorageキー共有）
+// ════════════════════════════════════════════════════
+function refreshCorpSelect(){
+  const sel=document.getElementById('sel-corp');
+  sel.innerHTML='<option value="">── 全法人 ──</option>'+getCorps().map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+}
+function onCorpChange(){
+  const corpId=document.getElementById('sel-corp').value;
+  const officeSel=document.getElementById('sel-office');
+  const corps=getCorps();
+  officeSel.innerHTML='<option value="">── 全事業所 ──</option>'+getOffices(corpId).map(o=>{
+    const c=corps.find(cc=>cc.id===o.corpId);
+    return `<option value="${o.id}">${c?.name||''} / ${o.name}</option>`;
+  }).join('');
+  renderRoster();
+}
+function onOfficeChange(){ renderRoster(); }
+function switchOrgTab(name){
+  document.getElementById('org-corps').style.display = name==='corps' ? 'block' : 'none';
+  document.getElementById('org-offices').style.display = name==='offices' ? 'block' : 'none';
+  document.getElementById('otab-corps').classList.toggle('active', name==='corps');
+  document.getElementById('otab-offices').classList.toggle('active', name==='offices');
+}
+function addCorp(){
+  const name=document.getElementById('new-corp-name').value.trim();
+  if(!name){ alert('法人名を入力してください'); return; }
+  const corps=getCorps();
+  corps.push({id:uid(),name});
+  save('nagi_corps',corps);
+  document.getElementById('new-corp-name').value='';
+  renderCorpsList();
+  refreshCorpSelect();
+  onCorpChange();
+  refreshOfficeCorpSelect();
+}
+function deleteCorp(id){
+  if(!confirm('この法人と紐づく事業所・職員データも削除されます。削除しますか？')) return;
+  save('nagi_corps',getCorps().filter(c=>c.id!==id));
+  save('nagi_offices',getAllOffices().filter(o=>o.corpId!==id));
+  saveRoster(getRoster().filter(s=>s.corpId!==id));
+  renderCorpsList();
+  refreshCorpSelect();
+  onCorpChange();
+  refreshOfficeCorpSelect();
+  renderRoster();
+}
+function renderCorpsList(){
+  document.getElementById('corps-list').innerHTML=getCorps().map(c=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);">
+      <span style="flex:1;font-size:0.85rem;">${c.name}</span>
+      <button class="btn btn-danger btn-xs" onclick="deleteCorp('${c.id}')">削除</button>
+    </div>`).join('')||'<div class="empty" style="padding:12px;">法人なし</div>';
+}
+function refreshOfficeCorpSelect(){
+  const sel=document.getElementById('new-office-corp');
+  sel.innerHTML='<option value="">── 法人を選択 ──</option>'+getCorps().map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+}
+function addOffice(){
+  const corpId=document.getElementById('new-office-corp').value;
+  const name=document.getElementById('new-office-name').value.trim();
+  if(!corpId||!name){ alert('法人と事業所名を入力してください'); return; }
+  const offices=getAllOffices();
+  offices.push({id:uid(),corpId,name});
+  save('nagi_offices',offices);
+  document.getElementById('new-office-name').value='';
+  renderOfficesList();
+  onCorpChange();
+}
+function deleteOffice(id){
+  if(!confirm('この事業所のデータを削除しますか？')) return;
+  save('nagi_offices',getAllOffices().filter(o=>o.id!==id));
+  saveRoster(getRoster().filter(s=>s.officeId!==id));
+  renderOfficesList();
+  onCorpChange();
+  renderRoster();
+}
+function renderOfficesList(){
+  const corps=getCorps();
+  document.getElementById('offices-list').innerHTML=getAllOffices().map(o=>{
+    const c=corps.find(cc=>cc.id===o.corpId);
+    return `<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);">
+      <span style="color:var(--sub);font-size:0.72rem;width:80px;">${c?.name||''}</span>
+      <span style="flex:1;font-size:0.85rem;">${o.name}</span>
+      <button class="btn btn-danger btn-xs" onclick="deleteOffice('${o.id}')">削除</button>
+    </div>`;
+  }).join('')||'<div class="empty" style="padding:12px;">事業所なし</div>';
+}
+
+// ════════════════════════════════════════════════════
+//  職員台帳 一覧
+// ════════════════════════════════════════════════════
+function currentRosterScope(){
+  const corpId=document.getElementById('sel-corp').value;
+  const oid=document.getElementById('sel-office').value;
+  let list=getRoster();
+  if(oid) list=list.filter(s=>s.officeId===oid);
+  else if(corpId) list=list.filter(s=>s.corpId===corpId);
+  if(!document.getElementById('chk-show-retired').checked) list=list.filter(s=>s.status!=='退職済み');
+  return list;
+}
+function statusTagClass(status){
+  if(status==='在職中') return 'tag-active';
+  if(status==='休職中') return 'tag-leave';
+  return 'tag-retired';
+}
+function renderRoster(){
+  const list=currentRosterScope();
+  const corps=getCorps(), offices=getAllOffices();
+  const tbody=document.getElementById('roster-tbody');
+  const empty=document.getElementById('roster-empty');
+  if(!list.length){ tbody.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  tbody.innerHTML=list.map(s=>{
+    const c=corps.find(x=>x.id===s.corpId), o=offices.find(x=>x.id===s.officeId);
+    return `<tr>
+      <td style="font-weight:600;">${s.name||''}</td>
+      <td>${c?.name||'─'}</td>
+      <td>${o?.name||'─'}</td>
+      <td><span class="tag">${s.employmentType||''}</span></td>
+      <td>${s.hireDate||'─'}</td>
+      <td class="${statusTagClass(s.status)}" style="font-weight:600;">${s.status||'在職中'}</td>
+      <td>
+        <button class="btn btn-secondary btn-xs" onclick="openEditStaff('${s.id}')">編集</button>
+        <button class="btn btn-danger btn-xs" onclick="deleteStaff('${s.id}')">削除</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+function deleteStaff(id){
+  if(!confirm('この職員データを削除しますか？')) return;
+  saveRoster(getRoster().filter(s=>s.id!==id));
+  renderRoster();
+}
+
+// ════════════════════════════════════════════════════
+//  職員 登録・編集フォーム
+// ════════════════════════════════════════════════════
+let editingStaffId=null;
+const WORK_PATTERN_COUNT=4;
+
+function renderWorkPatternFields(){
+  const box=document.getElementById('work-patterns');
+  let html='';
+  for(let i=1;i<=WORK_PATTERN_COUNT;i++){
+    html+=`<div class="form-row3">
+      <div class="form-group"><label>パターン${i}・開始</label><input type="time" id="st-wp${i}-start"></div>
+      <div class="form-group"><label>パターン${i}・終了</label><input type="time" id="st-wp${i}-end"></div>
+      <div class="form-group"><label>パターン${i}・休憩(分)</label><input type="number" id="st-wp${i}-break" min="0"></div>
+    </div>`;
+  }
+  box.innerHTML=html;
+}
+
+function addAllowanceRow(nameVal,amountVal){
+  const box=document.getElementById('allowance-list');
+  const row=document.createElement('div');
+  row.className='allowance-row';
+  row.innerHTML=`<input placeholder="手当名（例：夜勤手当）" class="allowance-name" value="${nameVal?esc(nameVal):''}">
+    <input type="number" placeholder="金額（円）" class="allowance-amount" min="0" value="${amountVal??''}">
+    <button class="btn btn-danger btn-xs" onclick="this.parentElement.remove()">✕</button>`;
+  box.appendChild(row);
+}
+function esc(s){ const d=document.createElement('div'); d.textContent=s??''; return d.innerHTML; }
+function collectAllowances(){
+  return Array.from(document.querySelectorAll('#allowance-list .allowance-row')).map(row=>({
+    name: row.querySelector('.allowance-name').value.trim(),
+    amount: parseInt(row.querySelector('.allowance-amount').value)||0,
+  })).filter(a=>a.name);
+}
+
+function refreshStaffCorpSelect(){
+  const sel=document.getElementById('st-corp');
+  const cur=sel.value;
+  sel.innerHTML='<option value="">選択してください</option>'+getCorps().map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+  sel.value=cur;
+}
+function onStaffCorpChange(){
+  const corpId=document.getElementById('st-corp').value;
+  const sel=document.getElementById('st-office');
+  const cur=sel.value;
+  sel.innerHTML=corpId ? ('<option value="">選択してください</option>'+getOffices(corpId).map(o=>`<option value="${o.id}">${o.name}</option>`).join('')) : '<option value="">法人を先に選択</option>';
+  sel.value=cur;
+}
+function toggleFixedTermFields(){
+  document.getElementById('fixed-term-fields').style.display = document.getElementById('st-fixed-term').value==='有' ? 'block' : 'none';
+}
+function toggleBonusDetail(){
+  document.getElementById('bonus-detail-group').style.display = document.getElementById('st-bonus').value==='有' ? 'block' : 'none';
+}
+function onStaffStatusChange(){
+  document.getElementById('st-leave-date-group').style.display = document.getElementById('st-status').value==='退職済み' ? 'block' : 'none';
+}
+document.addEventListener('change', e=>{ if(e.target && e.target.id==='st-status') onStaffStatusChange(); });
+
+function resetStaffForm(){
+  ['st-sei','st-mei','st-sei-kana','st-mei-kana','st-work-address','st-hire-date','st-leave-date',
+   'st-probation-months','st-term-period','st-renewal-condition','st-job-desc','st-work-days',
+   'st-base-salary','st-fixed-overtime-pay','st-monthly-total','st-annual-estimate','st-bonus-detail',
+   'st-pay-closing-day','st-pay-day','st-annual-holidays','st-smoking-measure','st-hiring-officer',
+   'st-contact','st-referral-company','st-referral-contact','st-referral-phone','st-notes'
+  ].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('st-corp').value='';
+  document.getElementById('st-office').innerHTML='<option value="">法人を先に選択</option>';
+  document.getElementById('st-status').value='在職中';
+  document.getElementById('st-employment-type').value='正職員';
+  document.getElementById('st-work-style').value='日勤常勤';
+  document.getElementById('st-fixed-term').value='無';
+  document.getElementById('st-base-salary-unit').value='月給';
+  document.getElementById('st-overtime').value='無';
+  document.getElementById('st-night-shift').value='無';
+  document.getElementById('st-job-change-possible').value='無';
+  document.getElementById('st-bonus').value='無';
+  document.getElementById('st-raise').value='無';
+  document.getElementById('st-retirement-pay').value='無';
+  document.getElementById('st-probation-condition-change').value='無';
+  ['st-ins-health','st-ins-pension','st-ins-work-accident','st-ins-employment'].forEach(id=>document.getElementById(id).value='有');
+  renderWorkPatternFields();
+  document.getElementById('allowance-list').innerHTML='';
+  toggleFixedTermFields();
+  toggleBonusDetail();
+  onStaffStatusChange();
+}
+
+function openAddStaff(prefill){
+  editingStaffId=null;
+  document.getElementById('staff-modal-title').textContent='＋ 職員を新規登録';
+  refreshStaffCorpSelect();
+  resetStaffForm();
+  if(prefill){
+    if(prefill.sei) document.getElementById('st-sei').value=prefill.sei;
+    if(prefill.mei) document.getElementById('st-mei').value=prefill.mei;
+    if(prefill.hireDate) document.getElementById('st-hire-date').value=prefill.hireDate;
+  }
+  openModal('modal-staff');
+}
+
+function openEditStaff(id){
+  const s=getRoster().find(x=>x.id===id);
+  if(!s) return;
+  editingStaffId=id;
+  document.getElementById('staff-modal-title').textContent='✎ 職員情報を編集';
+  refreshStaffCorpSelect();
+  document.getElementById('st-corp').value=s.corpId||'';
+  onStaffCorpChange();
+  document.getElementById('st-office').value=s.officeId||'';
+  document.getElementById('st-sei').value=s.sei||'';
+  document.getElementById('st-mei').value=s.mei||'';
+  document.getElementById('st-sei-kana').value=s.seiKana||'';
+  document.getElementById('st-mei-kana').value=s.meiKana||'';
+  document.getElementById('st-work-address').value=s.workAddress||'';
+  document.getElementById('st-hire-date').value=s.hireDate||'';
+  document.getElementById('st-status').value=s.status||'在職中';
+  document.getElementById('st-leave-date').value=s.leaveDate||'';
+  document.getElementById('st-employment-type').value=s.employmentType||'正職員';
+  document.getElementById('st-work-style').value=s.workStyle||'日勤常勤';
+  document.getElementById('st-fixed-term').value=s.fixedTerm||'無';
+  document.getElementById('st-probation-months').value=s.probationMonths??'';
+  document.getElementById('st-term-period').value=s.termPeriod||'';
+  document.getElementById('st-renewal').value=s.renewal||'有';
+  document.getElementById('st-renewal-condition').value=s.renewalCondition||'';
+  document.getElementById('st-probation-condition-change').value=s.probationConditionChange||'無';
+  renderWorkPatternFields();
+  (s.workPatterns||[]).forEach((wp,i)=>{
+    if(i>=WORK_PATTERN_COUNT) return;
+    const n=i+1;
+    if(wp.start) document.getElementById(`st-wp${n}-start`).value=wp.start;
+    if(wp.end) document.getElementById(`st-wp${n}-end`).value=wp.end;
+    if(wp.breakMin!=null) document.getElementById(`st-wp${n}-break`).value=wp.breakMin;
+  });
+  document.getElementById('st-overtime').value=s.overtime||'無';
+  document.getElementById('st-night-shift').value=s.nightShift||'無';
+  document.getElementById('st-work-days').value=s.workDays||'';
+  document.getElementById('st-job-desc').value=s.jobDesc||'';
+  document.getElementById('st-job-change-possible').value=s.jobChangePossible||'無';
+  document.getElementById('st-base-salary').value=s.baseSalary??'';
+  document.getElementById('st-base-salary-unit').value=s.baseSalaryUnit||'月給';
+  document.getElementById('st-fixed-overtime-pay').value=s.fixedOvertimePay??'';
+  document.getElementById('allowance-list').innerHTML='';
+  (s.allowances||[]).forEach(a=>addAllowanceRow(a.name,a.amount));
+  document.getElementById('st-monthly-total').value=s.monthlyTotal??'';
+  document.getElementById('st-annual-estimate').value=s.annualEstimate??'';
+  document.getElementById('st-bonus').value=s.bonus||'無';
+  document.getElementById('st-bonus-detail').value=s.bonusDetail||'';
+  document.getElementById('st-raise').value=s.raise||'無';
+  document.getElementById('st-retirement-pay').value=s.retirementPay||'無';
+  document.getElementById('st-pay-closing-day').value=s.payClosingDay||'';
+  document.getElementById('st-pay-day').value=s.payDay||'';
+  document.getElementById('st-ins-health').value=s.insHealth||'有';
+  document.getElementById('st-ins-pension').value=s.insPension||'有';
+  document.getElementById('st-ins-work-accident').value=s.insWorkAccident||'有';
+  document.getElementById('st-ins-employment').value=s.insEmployment||'有';
+  document.getElementById('st-annual-holidays').value=s.annualHolidays??'';
+  document.getElementById('st-smoking-measure').value=s.smokingMeasure||'';
+  document.getElementById('st-hiring-officer').value=s.hiringOfficer||'';
+  document.getElementById('st-contact').value=s.contact||'';
+  document.getElementById('st-referral-company').value=s.referralCompany||'';
+  document.getElementById('st-referral-contact').value=s.referralContact||'';
+  document.getElementById('st-referral-phone').value=s.referralPhone||'';
+  document.getElementById('st-notes').value=s.notes||'';
+  toggleFixedTermFields();
+  toggleBonusDetail();
+  onStaffStatusChange();
+  openModal('modal-staff');
+}
+
+function confirmSaveStaff(){
+  const corpId=document.getElementById('st-corp').value;
+  const officeId=document.getElementById('st-office').value;
+  const sei=document.getElementById('st-sei').value.trim();
+  const mei=document.getElementById('st-mei').value.trim();
+  if(!corpId||!officeId||!sei||!mei){ alert('法人・事業所・姓・名を入力してください'); return; }
+  const workPatterns=[];
+  for(let i=1;i<=WORK_PATTERN_COUNT;i++){
+    const start=document.getElementById(`st-wp${i}-start`).value;
+    const end=document.getElementById(`st-wp${i}-end`).value;
+    const breakMinRaw=document.getElementById(`st-wp${i}-break`).value;
+    if(start||end||breakMinRaw) workPatterns.push({start, end, breakMin: breakMinRaw===''?null:parseInt(breakMinRaw)});
+  }
+  const data={
+    id: editingStaffId || uid(),
+    corpId, officeId,
+    sei, mei,
+    seiKana: document.getElementById('st-sei-kana').value.trim(),
+    meiKana: document.getElementById('st-mei-kana').value.trim(),
+    name: (sei+' '+mei).trim(),
+    workAddress: document.getElementById('st-work-address').value.trim(),
+    hireDate: document.getElementById('st-hire-date').value,
+    status: document.getElementById('st-status').value,
+    leaveDate: document.getElementById('st-leave-date').value || null,
+    employmentType: document.getElementById('st-employment-type').value,
+    workStyle: document.getElementById('st-work-style').value,
+    fixedTerm: document.getElementById('st-fixed-term').value,
+    probationMonths: document.getElementById('st-probation-months').value===''?null:parseInt(document.getElementById('st-probation-months').value),
+    termPeriod: document.getElementById('st-term-period').value.trim(),
+    renewal: document.getElementById('st-renewal').value,
+    renewalCondition: document.getElementById('st-renewal-condition').value.trim(),
+    probationConditionChange: document.getElementById('st-probation-condition-change').value,
+    workPatterns,
+    overtime: document.getElementById('st-overtime').value,
+    nightShift: document.getElementById('st-night-shift').value,
+    workDays: document.getElementById('st-work-days').value.trim(),
+    jobDesc: document.getElementById('st-job-desc').value.trim(),
+    jobChangePossible: document.getElementById('st-job-change-possible').value,
+    baseSalary: document.getElementById('st-base-salary').value===''?null:parseInt(document.getElementById('st-base-salary').value),
+    baseSalaryUnit: document.getElementById('st-base-salary-unit').value,
+    fixedOvertimePay: document.getElementById('st-fixed-overtime-pay').value===''?null:parseInt(document.getElementById('st-fixed-overtime-pay').value),
+    allowances: collectAllowances(),
+    monthlyTotal: document.getElementById('st-monthly-total').value===''?null:parseInt(document.getElementById('st-monthly-total').value),
+    annualEstimate: document.getElementById('st-annual-estimate').value===''?null:parseInt(document.getElementById('st-annual-estimate').value),
+    bonus: document.getElementById('st-bonus').value,
+    bonusDetail: document.getElementById('st-bonus-detail').value.trim(),
+    raise: document.getElementById('st-raise').value,
+    retirementPay: document.getElementById('st-retirement-pay').value,
+    payClosingDay: document.getElementById('st-pay-closing-day').value.trim(),
+    payDay: document.getElementById('st-pay-day').value.trim(),
+    insHealth: document.getElementById('st-ins-health').value,
+    insPension: document.getElementById('st-ins-pension').value,
+    insWorkAccident: document.getElementById('st-ins-work-accident').value,
+    insEmployment: document.getElementById('st-ins-employment').value,
+    annualHolidays: document.getElementById('st-annual-holidays').value===''?null:parseInt(document.getElementById('st-annual-holidays').value),
+    smokingMeasure: document.getElementById('st-smoking-measure').value.trim(),
+    hiringOfficer: document.getElementById('st-hiring-officer').value.trim(),
+    contact: document.getElementById('st-contact').value.trim(),
+    referralCompany: document.getElementById('st-referral-company').value.trim(),
+    referralContact: document.getElementById('st-referral-contact').value.trim(),
+    referralPhone: document.getElementById('st-referral-phone').value.trim(),
+    notes: document.getElementById('st-notes').value.trim(),
+  };
+  const roster=getRoster();
+  if(editingStaffId){
+    const idx=roster.findIndex(s=>s.id===editingStaffId);
+    if(idx>=0) roster[idx]=data; else roster.push(data);
+  } else {
+    roster.push(data);
+  }
+  saveRoster(roster);
+  closeModal('modal-staff');
+  renderRoster();
+}
+
+// ════════════════════════════════════════════════════
+//  候補者の取り込み（kanade_app.html→採用確定の橋渡し・FUS-251）
+//  kanade_app.html側が kanade_roster_intake というlocalStorageキーへ
+//  {sei, mei, hireDate}相当のオブジェクトを積む想定。ここで一覧表示し、
+//  「台帳へ登録」を押すと新規登録フォームへ引き継ぐ（自動保存はしない＝
+//  必須項目（法人・事業所等）を人が確認してから保存する設計）。
+// ════════════════════════════════════════════════════
+const INTAKE_KEY='kanade_roster_intake';
+function getIntake(){ return load(INTAKE_KEY); }
+function saveIntake(list){ save(INTAKE_KEY,list); }
+function renderIntakeBanner(){
+  const intake=getIntake();
+  const area=document.getElementById('intake-area');
+  if(!intake.length){ area.innerHTML=''; return; }
+  area.innerHTML=intake.map((it,i)=>`
+    <div class="intake-banner">
+      <span>📥 面接支援（奏）から採用確定された候補者：<strong>${esc((it.sei||'')+' '+(it.mei||''))}</strong> ${it.hireDate?`（入職希望日：${esc(it.hireDate)}）`:''} を台帳へ取り込みますか？</span>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-primary btn-sm" onclick="intakeAdopt(${i})">台帳へ登録</button>
+        <button class="btn btn-secondary btn-sm" onclick="intakeDismiss(${i})">今は登録しない</button>
+      </div>
+    </div>`).join('');
+}
+function intakeAdopt(i){
+  const intake=getIntake();
+  const it=intake[i];
+  if(!it) return;
+  openAddStaff(it);
+  intake.splice(i,1);
+  saveIntake(intake);
+  renderIntakeBanner();
+}
+function intakeDismiss(i){
+  const intake=getIntake();
+  intake.splice(i,1);
+  saveIntake(intake);
+  renderIntakeBanner();
+}
+
+// ════════════════════════════════════════════════════
+//  初期化
+// ════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', ()=>{
+  refreshCorpSelect();
+  onCorpChange();
+  renderCorpsList();
+  refreshOfficeCorpSelect();
+  renderOfficesList();
+  renderRoster();
+  renderIntakeBanner();
+});
+</script>
+</body>
+</html>
