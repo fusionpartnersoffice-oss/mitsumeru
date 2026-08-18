@@ -266,6 +266,25 @@ function n(v){ return Number(v)||0; }
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
 function getCorps(){ return load('nagi_corps'); }
 function getAllOffices(){ return load('nagi_offices'); }
+
+// FUS-249実機確認用デモデータ（2026-08-18・柴山さんご依頼。kanade_shift.htmlのseedDemoDataIfEmptyと同じ考え方：
+// 法人・事業所・職員が0件（未登録）の時だけ、確認しやすいよう1法人・2事業所・4名を自動投入する）
+function seedNagiStaffDemoDataIfEmpty(){
+  if(getCorps().length>0) return;
+  const corpId='demo_corp_fusion';
+  save('nagi_corps',[{id:corpId,name:'デモ法人（FUS-249確認用）'}]);
+  const office1='demo_office_a', office2='demo_office_b';
+  save('nagi_offices',[
+    {id:office1,corpId,name:'デモ事業所A（可児）'},
+    {id:office2,corpId,name:'デモ事業所B（多治見）'}
+  ]);
+  save('nagi_staff',[
+    {id:'demo_staff_1',corpId,officeId:office1,name:'山田 太郎',sei:'山田',mei:'太郎',seiKana:'ヤマダ',meiKana:'タロウ',role:'管理者クラス',ego:null,task:null,social:null,p:null,m:null,lsrp:null,enn:[],transferHistory:[]},
+    {id:'demo_staff_2',corpId,officeId:office1,name:'佐藤 花子',sei:'佐藤',mei:'花子',seiKana:'サトウ',meiKana:'ハナコ',role:'リーダークラス',ego:null,task:null,social:null,p:null,m:null,lsrp:null,enn:[],transferHistory:[]},
+    {id:'demo_staff_3',corpId,officeId:office2,name:'鈴木 次郎',sei:'鈴木',mei:'次郎',seiKana:'スズキ',meiKana:'ジロウ',role:'一般職',ego:null,task:null,social:null,p:null,m:null,lsrp:null,enn:[],transferHistory:[]},
+    {id:'demo_staff_4',corpId,officeId:office2,name:'田中 美咲',sei:'田中',mei:'美咲',seiKana:'タナカ',meiKana:'ミサキ',role:'一般職',ego:null,task:null,social:null,p:null,m:null,lsrp:null,enn:[],transferHistory:[]}
+  ]);
+}
 function getOffices(corpId){ const a=getAllOffices(); return corpId?a.filter(o=>o.corpId===corpId):a; }
 function getAllStaff(){ return load('nagi_staff'); }
 function getStaffById(id){ return getAllStaff().find(s=>s.id===id)||null; }
@@ -769,6 +788,7 @@ function confirmReject(){
 //  init
 // ════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', ()=>{
+  seedNagiStaffDemoDataIfEmpty();
   refreshCorpSelect();
   renderStaffList();
 });
