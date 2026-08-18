@@ -700,7 +700,7 @@ function showResults() {
 // 受検者リスト管理
 // ═══════════════════════════════════════════════
 
-const ROSTER_KEY = 'mitsumeru_scan_roster';
+const ROSTER_KEY = 'mitsumeru_tekisei_roster';
 
 function loadRoster() {
   try { return JSON.parse(localStorage.getItem(ROSTER_KEY) || '[]'); }
@@ -986,7 +986,7 @@ function sendToAdmin(){
 // このデバイスの全データをまとめて管理者に送信
 function sendAllToAdmin(){
   let roster = [];
-  try { roster = JSON.parse(localStorage.getItem('mitsumeru_scan_roster') || '[]'); } catch(e){}
+  try { roster = JSON.parse(localStorage.getItem(ROSTER_KEY) || '[]'); } catch(e){}
   if(!roster.length){
     alert('このデバイスにはまだ診断データがありません。');
     return;
