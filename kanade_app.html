@@ -515,7 +515,9 @@ function addCandidate() {
     // フェーズ3
     rjp:'', rjp_reason:'',
     consistency_ennea:'', consistency_ego:'',
-    hunch:'', judgment:''
+    hunch:'', judgment:'',
+    // 追加情報（2026-08-16柴山さん指定・FUS-239）
+    contactNote:'', turnoverReason:'', desiredStartDate:'', referralRoute:'', referralFee:''
   };
   candidates.push(c); save();
   currentId = c.id;
@@ -539,6 +541,11 @@ function deleteCandidate(id, ev) {
 }
 
 function setField(key, val) { const c = cur(); if (!c) return; c[key] = val; save(); }
+function updateBasicField(key, val) {
+  const c = cur(); if (!c) return;
+  c[key] = val; save();
+  renderList(); renderInterview(); renderProfile();
+}
 function setScore(key, val) {
   const c = cur(); if (!c) return; c[key] = Number(val); save();
   const el = document.getElementById('val-'+key); if (el) el.textContent = val;
@@ -644,6 +651,33 @@ function renderInterview() {
   body.innerHTML = `
   <div class="current-banner">面接中：<b>${esc(c.name)}</b> ／ ${esc(c.position)||'ポジション未設定'} ／ ${fmtDate(c.date)}
     <span class="pill">合計 <span id="live-total">${totalOf(c)}</span>/55</span></div>
+
+  <!-- 基本情報の編集 -->
+  <div class="section">
+    <div class="section-title">基本情報（編集可）</div>
+    <div class="two-col">
+      <div class="field"><label>候補者名</label><input type="text" value="${esc(c.name)}" onchange="updateBasicField('name', this.value)"></div>
+      <div class="field"><label>ポジション</label><input type="text" value="${esc(c.position)}" onchange="updateBasicField('position', this.value)"></div>
+    </div>
+    <div class="two-col">
+      <div class="field"><label>面接日</label><input type="date" value="${esc(c.date)}" onchange="updateBasicField('date', this.value)"></div>
+      <div class="field"><label>面接官</label><input type="text" value="${esc(c.interviewer)}" onchange="updateBasicField('interviewer', this.value)"></div>
+    </div>
+  </div>
+
+  <!-- 追加情報（2026-08-16柴山さん指定・FUS-239） -->
+  <div class="section">
+    <div class="section-title">追加情報</div>
+    <div class="field"><label>連絡先と注意点（何時ごろ連絡可能か・留守電で応答可能か等）</label><textarea oninput="setField('contactNote', this.value)" placeholder="例：090-xxxx-xxxx／平日18時以降・留守電可">${esc(c.contactNote)}</textarea></div>
+    <div class="field"><label>転職理由</label><textarea oninput="setField('turnoverReason', this.value)">${esc(c.turnoverReason)}</textarea></div>
+    <div class="two-col">
+      <div class="field"><label>入職希望日</label><input type="date" value="${esc(c.desiredStartDate)}" onchange="setField('desiredStartDate', this.value)"></div>
+      <div class="field"><label>紹介ルート</label><select onchange="setField('referralRoute', this.value)">
+        ${optList(['','ハローワーク','エージェント','紹介','求人サイト','その他'], c.referralRoute)}
+      </select></div>
+    </div>
+    <div class="field"><label>紹介料（円・決裁が必要な場合の記録用）</label><input type="number" min="0" value="${c.referralFee||''}" onchange="setField('referralFee', this.value ? Number(this.value) : '')"></div>
+  </div>
 
   <!-- フェーズ1 -->
   <div class="section">
@@ -950,7 +984,7 @@ function sendToRoster(id) {
   const intake = {
     sei: nameParts[0]||'',
     mei: nameParts.slice(1).join(' ')||'',
-    hireDate: null,
+    hireDate: c.desiredStartDate || null,
   };
   let list = [];
   try { list = JSON.parse(localStorage.getItem('kanade_roster_intake')||'[]'); } catch { list = []; }
