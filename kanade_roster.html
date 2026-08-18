@@ -288,14 +288,26 @@ function getRoster(){ return load(ROSTER_KEY); }
 // FUS-251実機確認用デモデータ（2026-08-18・柴山さんご依頼。kanade_shift.htmlのseedDemoDataIfEmptyと同じ考え方：
 // 法人が0件（未登録）の時だけ、確認しやすいよう1法人・2事業所・3名を自動投入する。実在の金額・氏名は使わずダミー値のみ）
 function seedKanadeRosterDemoDataIfEmpty(){
-  if(getCorps().length>0) return;
+  // 2026-08-18修正：当初「法人が0件の時だけ」投入する条件だったが、
+  // 他ツール（nagi_staff.html等）が既に法人・事業所データを共有キー(nagi_corps)へ
+  // 書き込んでいた場合、条件に引っかかり職員デモデータごと投入されない不具合があった。
+  // 「職員が0件の時だけ」に変更し、既存の法人有無に関わらず必ずデモ職員が入るようにする。
+  if(getRoster().length>0) return;
   const corpId='demo_corp_kanade';
-  save('nagi_corps',[{id:corpId,name:'デモ法人（FUS-251確認用）'}]);
+  const existingCorps=getCorps();
+  if(!existingCorps.some(c=>c.id===corpId)){
+    existingCorps.push({id:corpId,name:'デモ法人（FUS-251確認用）'});
+    save('nagi_corps',existingCorps);
+  }
   const office1='demo_office_kanade_a', office2='demo_office_kanade_b';
-  save('nagi_offices',[
-    {id:office1,corpId,name:'デモ事業所A（可児）'},
-    {id:office2,corpId,name:'デモ事業所B（多治見）'}
-  ]);
+  const existingOffices=getAllOffices();
+  if(!existingOffices.some(o=>o.id===office1)){
+    existingOffices.push(
+      {id:office1,corpId,name:'デモ事業所A（可児）'},
+      {id:office2,corpId,name:'デモ事業所B（多治見）'}
+    );
+    save('nagi_offices',existingOffices);
+  }
   save(ROSTER_KEY,[
     {
       id:'demo_staff_kanade_1', corpId, officeId:office1,
