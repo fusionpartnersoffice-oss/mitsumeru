@@ -756,6 +756,25 @@ function autoSaveToRoster() {
   cloudSaveRoster(roster);
 }
 
+// 実機確認用デモデータ（2026-08-18・柴山さんご依頼。受検者一覧が0件の時だけ投入）
+function seedScanDemoDataIfEmpty() {
+  const roster = loadRoster();
+  if (roster.length > 0) return;
+  roster.push({
+    sei:'職員', mei:'デモ子', seiKana:'ショクイン', meiKana:'デモコ', name:'職員 デモ子',
+    corp:'デモ法人', office:'デモ事業所', date:'2026-08-18',
+    lsrp:{ primary:5, secondary:2, total:7, level:'★☆☆ 安全圏（適合ピース）', cause:'' },
+    egogram:{ CP:6, NP:6, A:7, FC:6, AC:5, I:12, U:11 },
+    rc:{ 判定:'凪', RCリスク指標:2, 補助判定:'組織適応リスク：低（2/10）' },
+    enneagram:{ top3:[{type:'T9',name:'タイプ9｜調停者',score:15},{type:'T2',name:'タイプ2｜助祭者',score:13},{type:'T6',name:'タイプ6｜忠実家',score:12}], allScores:{T9:15,T2:13,T6:12} },
+    lsrpLevelShort:'安全', rcShort:'凪', rcRaw:2,
+    ennTop1:'調停者', ennTop2:'助祭者', ennTop3:'忠実家',
+    nameKana:'ショクイン デモコ', savedAt:new Date().toISOString()
+  });
+  localStorage.setItem(ROSTER_KEY, JSON.stringify(roster));
+}
+seedScanDemoDataIfEmpty();
+
 function saveToRoster() {
   if (!lastResult) { alert('先に診断を完了してください。'); return; }
   autoSaveToRoster();

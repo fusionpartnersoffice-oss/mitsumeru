@@ -1025,8 +1025,34 @@ function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg
 
 document.querySelectorAll('.mode-tab').forEach(t=> t.addEventListener('click', ()=>switchScreen(t.dataset.screen)));
 
+// 実機確認用デモデータ（2026-08-18・柴山さんご依頼。候補者が0件の初回表示時のみ投入）
+function seedKanadeAppDemoDataIfEmpty(){
+  if (candidates.length > 0) return;
+  candidates.push({
+    id: newId(), name:'デモ候補者太郎',
+    position:'介護職員', date:'2026-08-25', interviewer:'デモ面接官',
+    egoCP:'', egoNP:'', egoA:'', egoFC:'', egoAC:'', ennea:'', enneaWing:'', p1note:'',
+    lsrp1:'', lsrp2:'', lsrpNote:'', lsrpConsent:false, lsrpConsentDate:'',
+    aiHypothesis:'', aiHypothesisAt:'',
+    s_skill:0, s_seika:0, s_senryaku:0, s_henkaku:0,
+    s_kouki:0, s_dosatsu:0, s_tanryoku:0, s_kyomei:0, s_values:0,
+    note_skill:'', note_comp:'', note_pote:'', note_values:'',
+    aiFactCheck_skill:'', aiFactCheck_skillAt:'',
+    aiFactCheck_comp:'',  aiFactCheck_compAt:'',
+    aiFactCheck_pote:'',  aiFactCheck_poteAt:'',
+    aiFactCheck_values:'', aiFactCheck_valuesAt:'',
+    rjp:'', rjp_reason:'',
+    consistency_ennea:'', consistency_ego:'',
+    hunch:'', judgment:'採用推薦',
+    contactNote:'平日18時以降・留守電可', turnoverReason:'デモ用の転職理由サンプル',
+    desiredStartDate:'2026-10-01', referralRoute:'ハロワ', referralFee:''
+  });
+  save();
+}
+
 // 起動
 load();
+seedKanadeAppDemoDataIfEmpty();
 renderList(); renderInterview(); renderProfile();
 </script>
 </body>

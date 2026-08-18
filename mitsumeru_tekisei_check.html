@@ -708,6 +708,25 @@ function loadRoster() {
 }
 function saveRoster(r){ localStorage.setItem(ROSTER_KEY, JSON.stringify(r)); }
 
+// 実機確認用デモデータ（2026-08-18・柴山さんご依頼。受検者一覧が0件の時だけ投入）
+function seedTekiseiCheckDemoDataIfEmpty() {
+  const roster = loadRoster();
+  if (roster.length > 0) return;
+  roster.push({
+    sei:'候補', mei:'デモ子', seiKana:'コウホ', meiKana:'デモコ', name:'候補 デモ子',
+    corp:'デモ法人', office:'デモ事業所', date:'2026-08-18',
+    lsrp:{ primary:4, secondary:2, total:6, level:'★☆☆ 安全圏（適合ピース）', cause:'' },
+    egogram:{ CP:5, NP:6, A:6, FC:6, AC:5, I:11, U:11 },
+    rc:{ 判定:'凪', RCリスク指標:2, 補助判定:'組織適応リスク：低（2/10）' },
+    enneagram:{ top3:[{type:'T2',name:'タイプ2｜助祭者',score:14},{type:'T9',name:'タイプ9｜調停者',score:13},{type:'T6',name:'タイプ6｜忠実家',score:12}], allScores:{T2:14,T9:13,T6:12} },
+    lsrpLevelShort:'安全', rcShort:'凪', rcRaw:2,
+    ennTop1:'助祭者', ennTop2:'調停者', ennTop3:'忠実家',
+    nameKana:'コウホ デモコ', savedAt:new Date().toISOString()
+  });
+  saveRoster(roster);
+}
+seedTekiseiCheckDemoDataIfEmpty();
+
 function autoSaveToRoster() {
   if (!lastResult) return;
   const roster = loadRoster();
