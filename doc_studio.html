@@ -440,7 +440,35 @@ function checkHandoff() {
   saveDraft();
 }
 
+// 実機確認用デモデータ（2026-08-18・柴山さんご依頼。他ツールと同じ考え方：
+// 下書きが1件も無い〔＝初めて開いた〕時だけ、確認しやすいようサンプルを投入する）
+function seedDocStudioDemoDataIfEmpty() {
+  if (localStorage.getItem(DRAFT_KEY)) return;
+  const demo = {
+    facility: { name:'デモ介護施設さくら', corp:'デモ法人（実機確認用）', type:'訪問介護', addr:'岐阜県可児市デモ町1-1', phone:'000-0000-0000' },
+    sceneState: {
+      fusion_case: {
+        title:'現場を止めない、仕組みで支える',
+        body:'FusionOSのミツメル・凪・響・奏の各ツールを使い、記録の負担を減らしながら現場の状態を見える化しています。',
+        caseExample:{ type:'離職率改善', issue:'新人の早期離職が続いていた', response:'初期教育の仕組み化と1on1の定例化により、半年で離職率が改善' },
+        images:[]
+      },
+      recruit_user: {
+        title:'あなたらしい毎日を、一緒に',
+        service:'要介護1〜5・認知症対応可。入浴・食事・機能訓練を提供',
+        strength:'少人数制で一人ひとりに合わせたケア、駅から徒歩5分',
+        vacancy:'残り2名（随時見学可）',
+        contact:'相談員・デモ担当まで（平日9-17時）',
+        images:[]
+      }
+    },
+    currentScene:'fusion_case', _ts: Date.now()
+  };
+  localStorage.setItem(DRAFT_KEY, JSON.stringify(demo));
+}
+
 window.addEventListener('DOMContentLoaded', function() {
+  seedDocStudioDemoDataIfEmpty();
   applyData(loadDraft());
   checkHandoff();
   renderPreview();
