@@ -916,11 +916,19 @@ function viewRosterEntry(idx) {
         <div style="font-size:0.75rem;color:var(--sub);margin-bottom:4px;">LSRP判定</div>
         <div style="font-size:1.1rem;font-weight:700;${lsrpClass}">${r.lsrpLevelShort || '-'}</div>
         <div style="font-size:0.75rem;color:var(--sub);margin-top:4px;">${r.lsrp?.level || ''}</div>
+        <div style="font-size:0.68rem;color:var(--sub);margin-top:6px;border-top:1px solid var(--border);padding-top:6px;">
+          一次(冷酷さ・利己的さ): ${r.lsrp?.primary ?? '-'}/16　二次(衝動性): ${r.lsrp?.secondary ?? '-'}/10　合計: ${r.lsrp?.total ?? '-'}/26<br>
+          判定基準：合計26中 16以上=危険／11以上=要警戒／11未満=安全圏。詳細な読み方はミツメル統合構造定義書§20参照
+        </div>
       </div>
       <div style="background:var(--bg);border-radius:10px;padding:14px;">
         <div style="font-size:0.75rem;color:var(--sub);margin-bottom:4px;">RC判定</div>
         <div style="font-size:1.1rem;font-weight:700;${rcClass}">${r.rcShort || '-'}</div>
         <div style="font-size:0.75rem;color:var(--sub);margin-top:4px;">RC指標: ${r.rcRaw ?? '-'}</div>
+        <div style="font-size:0.68rem;color:var(--sub);margin-top:6px;border-top:1px solid var(--border);padding-top:6px;">
+          エゴグラムI(自己肯定)=CP+FC・U(他者肯定)=NP+ACから判定：<br>
+          冷徹=I&gt;9かつU&lt;5／危険=I&gt;7かつU&lt;5／停滞=I&lt;5かつU&lt;5／衝動=FC&gt;6かつI&lt;5
+        </div>
       </div>
     </div>
     <div style="background:var(--bg);border-radius:10px;padding:14px;margin-bottom:12px;">
