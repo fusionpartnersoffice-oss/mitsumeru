@@ -284,6 +284,81 @@ function getAllOffices(){ return load('nagi_offices'); }
 function getOffices(corpId){ const a=getAllOffices(); return corpId?a.filter(o=>o.corpId===corpId):a; }
 const ROSTER_KEY='kanade_roster_staff';
 function getRoster(){ return load(ROSTER_KEY); }
+
+// FUS-251実機確認用デモデータ（2026-08-18・柴山さんご依頼。kanade_shift.htmlのseedDemoDataIfEmptyと同じ考え方：
+// 法人が0件（未登録）の時だけ、確認しやすいよう1法人・2事業所・3名を自動投入する。実在の金額・氏名は使わずダミー値のみ）
+function seedKanadeRosterDemoDataIfEmpty(){
+  if(getCorps().length>0) return;
+  const corpId='demo_corp_kanade';
+  save('nagi_corps',[{id:corpId,name:'デモ法人（FUS-251確認用）'}]);
+  const office1='demo_office_kanade_a', office2='demo_office_kanade_b';
+  save('nagi_offices',[
+    {id:office1,corpId,name:'デモ事業所A（可児）'},
+    {id:office2,corpId,name:'デモ事業所B（多治見）'}
+  ]);
+  save(ROSTER_KEY,[
+    {
+      id:'demo_staff_kanade_1', corpId, officeId:office1,
+      sei:'山田', mei:'太郎', seiKana:'ヤマダ', meiKana:'タロウ', name:'山田 太郎',
+      workAddress:'岐阜県可児市デモ町1-1', hireDate:'2026-04-01', status:'在職中', leaveDate:null,
+      employmentType:'正職員', workStyle:'日勤常勤',
+      fixedTerm:'無', probationMonths:3, termPeriod:'', renewal:'', renewalCondition:'', probationConditionChange:'無',
+      workPatterns:[{start:'09:00', end:'18:00', breakMin:60}],
+      overtime:'無', nightShift:'無', workDays:'月〜金',
+      jobDesc:'デモ用の業務内容サンプル', jobChangePossible:'有',
+      baseSalary:220000, baseSalaryUnit:'月給', fixedOvertimePay:null,
+      allowances:[{name:'資格手当', amount:5000}],
+      monthlyTotal:225000, annualEstimate:2900000,
+      bonus:'有', bonusDetail:'年2回・計2ヶ月分', raise:'有', retirementPay:'有',
+      payClosingDay:'20日', payDay:'翌月28日',
+      insHealth:'有', insPension:'有', insWorkAccident:'有', insEmployment:'有',
+      annualHolidays:105, smokingMeasure:'敷地内禁煙',
+      hiringOfficer:'デモ担当者', contact:'000-0000-0000',
+      referralCompany:'', referralContact:'', referralPhone:'',
+      notes:'FUS-251実機確認用のダミーデータです'
+    },
+    {
+      id:'demo_staff_kanade_2', corpId, officeId:office2,
+      sei:'佐藤', mei:'花子', seiKana:'サトウ', meiKana:'ハナコ', name:'佐藤 花子',
+      workAddress:'岐阜県多治見市デモ町2-2', hireDate:'2026-06-01', status:'在職中', leaveDate:null,
+      employmentType:'パート・アルバイト', workStyle:'シフト制',
+      fixedTerm:'有', probationMonths:null, termPeriod:'2026-06-01〜2027-05-31', renewal:'有', renewalCondition:'1年ごと更新', probationConditionChange:'無',
+      workPatterns:[{start:'09:00', end:'13:00', breakMin:0}],
+      overtime:'無', nightShift:'無', workDays:'シフトによる',
+      jobDesc:'デモ用の業務内容サンプル', jobChangePossible:'無',
+      baseSalary:1100, baseSalaryUnit:'時給', fixedOvertimePay:null,
+      allowances:[],
+      monthlyTotal:70000, annualEstimate:840000,
+      bonus:'無', bonusDetail:'', raise:'無', retirementPay:'無',
+      payClosingDay:'20日', payDay:'翌月28日',
+      insHealth:'無', insPension:'無', insWorkAccident:'有', insEmployment:'有',
+      annualHolidays:105, smokingMeasure:'敷地内禁煙',
+      hiringOfficer:'デモ担当者', contact:'000-0000-0000',
+      referralCompany:'デモ紹介会社', referralContact:'デモ担当', referralPhone:'000-0000-0001',
+      notes:'FUS-251実機確認用のダミーデータです'
+    },
+    {
+      id:'demo_staff_kanade_3', corpId, officeId:office1,
+      sei:'鈴木', mei:'次郎', seiKana:'スズキ', meiKana:'ジロウ', name:'鈴木 次郎',
+      workAddress:'岐阜県可児市デモ町1-1', hireDate:'2020-04-01', status:'退職済み', leaveDate:'2026-03-31',
+      employmentType:'正職員', workStyle:'日勤常勤',
+      fixedTerm:'無', probationMonths:3, termPeriod:'', renewal:'', renewalCondition:'', probationConditionChange:'無',
+      workPatterns:[{start:'09:00', end:'18:00', breakMin:60}],
+      overtime:'有', nightShift:'無', workDays:'月〜金',
+      jobDesc:'デモ用の業務内容サンプル', jobChangePossible:'有',
+      baseSalary:230000, baseSalaryUnit:'月給', fixedOvertimePay:10000,
+      allowances:[{name:'管理手当', amount:20000}],
+      monthlyTotal:260000, annualEstimate:3400000,
+      bonus:'有', bonusDetail:'年2回', raise:'有', retirementPay:'有',
+      payClosingDay:'20日', payDay:'翌月28日',
+      insHealth:'有', insPension:'有', insWorkAccident:'有', insEmployment:'有',
+      annualHolidays:105, smokingMeasure:'敷地内禁煙',
+      hiringOfficer:'デモ担当者', contact:'000-0000-0000',
+      referralCompany:'', referralContact:'', referralPhone:'',
+      notes:'退職済みステータス確認用のダミーデータです'
+    }
+  ]);
+}
 function saveRoster(list){ save(ROSTER_KEY,list); }
 function openModal(id){ document.getElementById(id).classList.add('open'); }
 function closeModal(id){ document.getElementById(id).classList.remove('open'); }
@@ -719,6 +794,7 @@ function intakeDismiss(i){
 //  初期化
 // ════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', ()=>{
+  seedKanadeRosterDemoDataIfEmpty();
   refreshCorpSelect();
   onCorpChange();
   renderCorpsList();
