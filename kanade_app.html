@@ -165,6 +165,8 @@
   .cand-item .meta { font-size: 11px; color: var(--text3); }
   .cand-item .sc { margin-left: auto; font-family: 'Noto Serif JP', serif; color: var(--accent); font-size: 16px; }
   .cand-item .del { color: var(--text3); font-size: 16px; padding: 0 6px; }
+  .list-group-title { font-size: 11px; font-weight: 700; color: var(--text3); letter-spacing: 1px; margin: 14px 0 6px; }
+  .list-group-title:first-child { margin-top: 0; }
 
   .note-box { font-size: 11px; color: var(--text3); line-height: 1.7; }
   .empty { text-align: center; color: var(--text3); padding: 40px 0; font-size: 13px; }
@@ -488,6 +490,31 @@ function factCheckBlock(floorKey, c) {
   `;
 }
 
+// ---------- 選考ステータス（FUS-269） ----------
+const STAGE_OPTIONS = ['面接前','1次面接','2次面接','最終面接'];
+const OUTCOME_OPTIONS = ['検討中','採用','不採用'];
+const REFERRAL_CALC_METHODS = ['手動入力','年収の◯％','月収の◯ヶ月分'];
+
+function computeReferralFee(c) {
+  if (c.referralFeeCalcMethod === '年収の◯％') {
+    if (!c.desiredAnnualSalary || !c.referralFeeCalcRate) return null;
+    return Math.round(c.desiredAnnualSalary * c.referralFeeCalcRate / 100);
+  }
+  if (c.referralFeeCalcMethod === '月収の◯ヶ月分') {
+    if (!c.desiredMonthlySalary || !c.referralFeeCalcRate) return null;
+    return Math.round(c.desiredMonthlySalary * c.referralFeeCalcRate);
+  }
+  return null; // 手動入力
+}
+function updateReferralCalc(key, val) {
+  const c = cur(); if (!c) return;
+  c[key] = val;
+  const auto = computeReferralFee(c);
+  if (auto !== null) c.referralFee = auto;
+  save();
+  renderInterview();
+}
+
 // ---------- 候補者操作 ----------
 function addCandidate() {
   const name = document.getElementById('new-name').value.trim();
@@ -517,7 +544,12 @@ function addCandidate() {
     consistency_ennea:'', consistency_ego:'',
     hunch:'', judgment:'',
     // 追加情報（2026-08-16柴山さん指定・FUS-239）
-    contactNote:'', turnoverReason:'', desiredStartDate:'', referralRoute:'', referralFee:''
+    contactNote:'', turnoverReason:'', desiredStartDate:'', referralRoute:'', referralFee:'',
+    // 選考ステータス（2026-08-19柴山さん指定・FUS-269）
+    stage: STAGE_OPTIONS[0], outcome: OUTCOME_OPTIONS[0],
+    rejectReason:'', isBlacklisted:false, blacklistNote:'',
+    desiredAnnualSalary:'', desiredMonthlySalary:'',
+    referralFeeCalcMethod: REFERRAL_CALC_METHODS[0], referralFeeCalcRate:''
   };
   candidates.push(c); save();
   currentId = c.id;
@@ -614,18 +646,32 @@ function updateLiveTotal() {
 }
 
 // ---------- レンダリング：候補者リスト ----------
-function renderList() {
-  const wrap = document.getElementById('cand-list');
-  if (!candidates.length) { wrap.innerHTML = '<div class="empty">まだ候補者がいません。</div>'; return; }
-  wrap.innerHTML = candidates.map(c => `
+function candItemHtml(c) {
+  return `
     <div class="cand-item ${c.id===currentId?'current':''}" onclick="selectCandidate(${c.id})">
       <div>
-        <div class="nm">${esc(c.name)}</div>
-        <div class="meta">${esc(c.position)||'—'} · ${fmtDate(c.date)}</div>
+        <div class="nm">${c.isBlacklisted?'🚫 ':''}${esc(c.name)}</div>
+        <div class="meta">${esc(c.position)||'—'} · ${fmtDate(c.date)} · <span class="pill" style="padding:1px 6px;font-size:10px;">${esc(c.stage||STAGE_OPTIONS[0])}</span></div>
       </div>
       <div class="sc">${totalOf(c)}<span style="font-size:11px;color:var(--text3)">/55</span></div>
       <div class="del" onclick="deleteCandidate(${c.id}, event)" title="削除">✕</div>
-    </div>`).join('');
+    </div>`;
+}
+function renderList() {
+  const wrap = document.getElementById('cand-list');
+  if (!candidates.length) { wrap.innerHTML = '<div class="empty">まだ候補者がいません。</div>'; return; }
+
+  const inProgress = candidates.filter(c => (c.outcome||OUTCOME_OPTIONS[0])==='検討中');
+  const hired = candidates.filter(c => c.outcome==='採用');
+  const rejected = candidates.filter(c => c.outcome==='不採用');
+  const stageOrder = (c) => { const i = STAGE_OPTIONS.indexOf(c.stage); return i<0 ? 999 : i; };
+  inProgress.sort((a,b) => stageOrder(a)-stageOrder(b));
+
+  let html = '';
+  if (inProgress.length) html += `<div class="list-group-title">選考中（${inProgress.length}）</div>` + inProgress.map(candItemHtml).join('');
+  if (hired.length) html += `<div class="list-group-title" style="color:var(--green);">採用（${hired.length}）</div>` + hired.map(candItemHtml).join('');
+  if (rejected.length) html += `<div class="list-group-title" style="color:var(--red);">不採用（${rejected.length}）</div>` + rejected.map(candItemHtml).join('');
+  wrap.innerHTML = html;
 }
 
 // ---------- レンダリング：面接 ----------
@@ -665,6 +711,24 @@ function renderInterview() {
     </div>
   </div>
 
+  <!-- 選考ステータス（2026-08-19柴山さん指定・FUS-269） -->
+  <div class="section">
+    <div class="section-title">選考ステータス</div>
+    <div class="two-col">
+      <div class="field"><label>選考ステージ</label><select onchange="updateBasicField('stage', this.value)">
+        ${optList(STAGE_OPTIONS, c.stage||STAGE_OPTIONS[0])}
+      </select></div>
+      <div class="field"><label>最終結果</label><select onchange="updateBasicField('outcome', this.value)">
+        ${optList(OUTCOME_OPTIONS, c.outcome||OUTCOME_OPTIONS[0])}
+      </select></div>
+    </div>
+    ${c.outcome==='不採用' ? `
+    <div class="field"><label>不採用理由</label><textarea oninput="setField('rejectReason', this.value)">${esc(c.rejectReason)}</textarea></div>` : ''}
+    <div class="field"><label><input type="checkbox" ${c.isBlacklisted?'checked':''} onchange="updateBasicField('isBlacklisted', this.checked)"> ブラックリスト対象</label></div>
+    ${c.isBlacklisted ? `
+    <div class="field"><label>ブラックリスト理由</label><textarea oninput="setField('blacklistNote', this.value)">${esc(c.blacklistNote)}</textarea></div>` : ''}
+  </div>
+
   <!-- 追加情報（2026-08-16柴山さん指定・FUS-239） -->
   <div class="section">
     <div class="section-title">追加情報</div>
@@ -676,7 +740,19 @@ function renderInterview() {
         ${optList(['','ハローワーク','エージェント','紹介','求人サイト','その他'], c.referralRoute)}
       </select></div>
     </div>
-    <div class="field"><label>紹介料（円・決裁が必要な場合の記録用）</label><input type="number" min="0" value="${c.referralFee||''}" onchange="setField('referralFee', this.value ? Number(this.value) : '')"></div>
+    <div class="two-col">
+      <div class="field"><label>希望年収（円・任意）</label><input type="number" min="0" value="${c.desiredAnnualSalary||''}" onchange="updateReferralCalc('desiredAnnualSalary', this.value ? Number(this.value) : '')"></div>
+      <div class="field"><label>希望月収（円・任意。どちらか片方でよい）</label><input type="number" min="0" value="${c.desiredMonthlySalary||''}" onchange="updateReferralCalc('desiredMonthlySalary', this.value ? Number(this.value) : '')"></div>
+    </div>
+    <div class="two-col">
+      <div class="field"><label>紹介料の計算方式</label><select onchange="updateReferralCalc('referralFeeCalcMethod', this.value)">
+        ${optList(REFERRAL_CALC_METHODS, c.referralFeeCalcMethod||REFERRAL_CALC_METHODS[0])}
+      </select></div>
+      ${c.referralFeeCalcMethod && c.referralFeeCalcMethod!=='手動入力' ? `
+      <div class="field"><label>${c.referralFeeCalcMethod==='年収の◯％'?'料率（％）':'月数（ヶ月）'}</label><input type="number" min="0" step="0.1" value="${c.referralFeeCalcRate||''}" onchange="updateReferralCalc('referralFeeCalcRate', this.value ? Number(this.value) : '')"></div>` : ''}
+    </div>
+    <div class="field"><label>紹介料（円）${c.referralFeeCalcMethod && c.referralFeeCalcMethod!=='手動入力' ? '（自動計算・上書き可）' : ''}</label>
+      <input type="number" min="0" value="${c.referralFee||''}" onchange="setField('referralFee', this.value ? Number(this.value) : '')"></div>
   </div>
 
   <!-- フェーズ1 -->
@@ -1045,7 +1121,11 @@ function seedKanadeAppDemoDataIfEmpty(){
     consistency_ennea:'', consistency_ego:'',
     hunch:'', judgment:'採用推薦',
     contactNote:'平日18時以降・留守電可', turnoverReason:'デモ用の転職理由サンプル',
-    desiredStartDate:'2026-10-01', referralRoute:'ハロワ', referralFee:''
+    desiredStartDate:'2026-10-01', referralRoute:'ハロワ', referralFee:'',
+    stage:'2次面接', outcome:'検討中',
+    rejectReason:'', isBlacklisted:false, blacklistNote:'',
+    desiredAnnualSalary:'', desiredMonthlySalary:'',
+    referralFeeCalcMethod:'手動入力', referralFeeCalcRate:''
   });
   save();
 }
