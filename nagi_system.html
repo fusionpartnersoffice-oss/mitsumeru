@@ -305,6 +305,10 @@ tr:hover td{background:rgba(79,195,247,0.03);}
       <div id="compass-staff-summary"></div>
     </div>
   </div>
+  <div class="section" style="margin-top:14px;">
+    <div class="section-title">📇 職員台帳サマリー（kanade_roster.html連携）</div>
+    <div id="compass-roster-summary"></div>
+  </div>
 </div>
 
 <!-- ══════════════════════════════════════
@@ -2214,8 +2218,57 @@ function renderCompass(){
       </div>`;
   }
 
+  renderKanadeRosterSummary();
+
   // 更新日時
   document.getElementById('compass-updated').textContent=new Date().toLocaleString('ja-JP',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+}
+
+// ── 職員台帳（kanade_roster.html）連携サマリー（FUS-270・配線のみ・診断結果統合はFUS-254側） ──
+function getKanadeRosterStaff(){
+  try{ return JSON.parse(localStorage.getItem('kanade_roster_staff')||'[]'); }catch{ return []; }
+}
+function renderKanadeRosterSummary(){
+  const el=document.getElementById('compass-roster-summary');
+  if(!el) return;
+  const roster=getKanadeRosterStaff();
+  if(!roster.length){
+    el.innerHTML='<div style="color:var(--sub);font-size:0.78rem;padding:12px 0;">職員台帳データなし（kanade_roster.htmlで職員を登録すると表示されます）</div>';
+    return;
+  }
+  const active=roster.filter(s=>s.status==='在職中');
+  const leave=roster.filter(s=>s.status==='休職中');
+  const retired=roster.filter(s=>s.status==='退職済み');
+  const byType={};
+  active.forEach(s=>{ const t=s.employmentType||'未設定'; byType[t]=(byType[t]||0)+1; });
+  const corps=getCorps(), offices=getOffices();
+  const byOffice={};
+  active.forEach(s=>{
+    const o=offices.find(x=>x.id===s.officeId);
+    const c=corps.find(x=>x.id===s.corpId);
+    const label=(c?c.name:'—')+' / '+(o?o.name:'—');
+    byOffice[label]=(byOffice[label]||0)+1;
+  });
+  el.innerHTML=`
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
+      <div class="card" style="flex:1;min-width:80px;text-align:center;padding:10px;">
+        <div style="font-size:1.4rem;font-weight:700;color:var(--accent);">${active.length}</div>
+        <div style="font-size:0.65rem;color:var(--sub);">在職中</div>
+      </div>
+      <div class="card" style="flex:1;min-width:80px;text-align:center;padding:10px;">
+        <div style="font-size:1.4rem;font-weight:700;color:var(--warn);">${leave.length}</div>
+        <div style="font-size:0.65rem;color:var(--sub);">休職中</div>
+      </div>
+      <div class="card" style="flex:1;min-width:80px;text-align:center;padding:10px;">
+        <div style="font-size:1.4rem;font-weight:700;color:var(--sub);">${retired.length}</div>
+        <div style="font-size:0.65rem;color:var(--sub);">退職済み</div>
+      </div>
+    </div>
+    <div style="font-size:0.72rem;color:var(--sub);margin-bottom:4px;">雇用形態内訳（在職中）</div>
+    <div style="font-size:0.78rem;margin-bottom:10px;">${Object.entries(byType).map(([k,v])=>`${k}：${v}名`).join('　／　')||'—'}</div>
+    <div style="font-size:0.72rem;color:var(--sub);margin-bottom:4px;">事業所別在職者数</div>
+    <div style="font-size:0.78rem;">${Object.entries(byOffice).map(([k,v])=>`${k}：${v}名`).join('<br>')||'—'}</div>
+  `;
 }
 
 // ════════════════════════════════════════════════════
