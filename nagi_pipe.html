@@ -92,6 +92,12 @@ main{max-width:1000px;margin:0 auto;padding:20px 16px 80px;}
         <div class="form-group"><label>成約数</label><input id="pipe-contract" type="number" placeholder="2"></div>
         <div class="form-group"><label>リピート数</label><input id="pipe-repeat" type="number" placeholder="2"></div>
       </div>
+      <p style="font-size:0.78rem;color:var(--sub);margin:14px 0 10px;">稼働率（当月の延べ回数÷定員満員の場合の延べ回数×100）を出す場合は以下も入力してください（任意）。</p>
+      <div class="form-row3">
+        <div class="form-group"><label>定員</label><input id="pipe-capacity" type="number" placeholder="例：10"></div>
+        <div class="form-group"><label>稼働日数（当月）</label><input id="pipe-workdays" type="number" placeholder="例：24"></div>
+        <div class="form-group"><label>当月の延べ回数（実績）</label><input id="pipe-monthly-visits" type="number" placeholder="例：180"></div>
+      </div>
       <button class="btn btn-primary" onclick="savePipe()">💾 保存</button>
       <span id="save-msg" style="margin-left:10px;font-size:0.78rem;color:var(--accent2);"></span>
     </div>
@@ -145,6 +151,7 @@ function renderSignalCard(p){
   const sig = approach===0 ? ['#ef5350','🔴 商談中案件がゼロです'] : approach<=2 ? ['#ffa726','🟡 商談件数が少なめ'] : ['#81c784','🟢 商談件数は良好'];
   const rate = n(p.visit) ? n(p.contract)/n(p.visit) : null;
   const repeatRate = n(p.contract) ? n(p.repeat)/n(p.contract) : null;
+  const occRate = computeOccupancyRate(p);
   return `
     <div class="card-title">シグナル判定</div>
     <div style="margin:8px 0;"><span class="tag" style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:0.68rem;font-weight:600;background:${sig[0]}22;color:${sig[0]};border:1px solid ${sig[0]}44;">${sig[1]}</span></div>
@@ -156,6 +163,9 @@ function renderSignalCard(p){
     <div style="margin-top:10px;font-size:0.78rem;color:var(--sub);">
       成約率（見学→成約）：${rate!==null?(rate*100).toFixed(1)+'%':'─'}　／　リピート率（成約→リピート）：${repeatRate!==null?(repeatRate*100).toFixed(1)+'%':'─'}
     </div>
+    <div style="margin-top:6px;font-size:0.78rem;color:var(--sub);">
+      稼働率：${occRate!==null?occRate.toFixed(1)+'%':'─（定員・稼働日数・当月の延べ回数を入力すると表示されます）'}
+    </div>
   `;
 }
 
@@ -166,8 +176,19 @@ function loadPipeForm(){
   const oid=document.getElementById('sel-office').value;
   const p=getPipe(oid);
   ['approach','inquiry','visit','contract','repeat'].forEach(k=>{ document.getElementById('pipe-'+k).value = p ? (p[k]||'') : ''; });
+  document.getElementById('pipe-capacity').value = p ? (p.capacity||'') : '';
+  document.getElementById('pipe-workdays').value = p ? (p.workdays||'') : '';
+  document.getElementById('pipe-monthly-visits').value = p ? (p.monthlyVisits||'') : '';
   document.getElementById('pipe-signal-card').innerHTML = renderSignalCard(p);
   loadPipeAIComment(p);
+}
+
+// 稼働率＝当月の延べ回数÷定員満員の場合の延べ回数×100（柴山さんご指定の計算式・FUS-277）
+function computeOccupancyRate(p){
+  if(!p || !n(p.capacity) || !n(p.workdays) || !n(p.monthlyVisits)) return null;
+  const maxVisits = n(p.capacity) * n(p.workdays);
+  if(!maxVisits) return null;
+  return n(p.monthlyVisits) / maxVisits * 100;
 }
 
 function savePipe(){
@@ -181,6 +202,9 @@ function savePipe(){
     visit:n(document.getElementById('pipe-visit').value),
     contract:n(document.getElementById('pipe-contract').value),
     repeat:n(document.getElementById('pipe-repeat').value),
+    capacity:n(document.getElementById('pipe-capacity').value),
+    workdays:n(document.getElementById('pipe-workdays').value),
+    monthlyVisits:n(document.getElementById('pipe-monthly-visits').value),
     updatedAt:new Date().toISOString(),
   });
   save('nagi_pipe',data);
