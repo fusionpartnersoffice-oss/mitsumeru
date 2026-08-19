@@ -646,6 +646,40 @@ function renderFeedbackHistory() {
   area.innerHTML = `<div class="section"><div class="section-title">これまでのフィードバック記録（${list.length}件）</div>${cards}</div>`;
 }
 
+// 実機確認用デモデータ（2026-08-19・柴山さんご依頼。施設・職員はkanade_shift.htmlのマスタを
+// 読み取り専用参照するため、そちら側のseedDemoDataIfEmptyで投入済みの職員を対象に、
+// 1on1/OJT/フィードバック/サビ管研修の記録が1件も無い場合だけデモ記録を投入する）
+function seedGrowthDemoDataIfEmpty() {
+  if (!staffList.length) return;
+  const s = staffList[0];
+  if (loadOneOnOne(s.id).length === 0) {
+    saveOneOnOneList(s.id, [{
+      date: new Date().toISOString().slice(0,10),
+      goal: 'デモ：次の半年で夜勤対応に慣れる',
+      reality: 'デモ：日勤は安定しているが夜勤は未経験',
+      options: 'デモ：ベテラン職員に同行して2回OJTを受ける',
+      will: 'デモ：来月から月1回の夜勤同行を開始する'
+    }]);
+  }
+  if (loadOjt(s.id).length === 0) {
+    saveOjtList(s.id, [{
+      date: new Date().toISOString().slice(0,10),
+      purpose: 'デモ：夜勤帯の緊急対応手順の習得',
+      criteria: 'デモ：一人で緊急連絡フローを実行できる',
+      steps: 'デモ：①手順書を読む②同行観察③実施④振り返り',
+      tips: 'デモ：焦らず手順書の順番通りに進めればよい'
+    }]);
+  }
+  if (loadFeedback(s.id).length === 0) {
+    saveFeedbackList(s.id, [{
+      date: new Date().toISOString().slice(0,10),
+      situation: 'デモ：利用者対応中の場面で',
+      behavior: 'デモ：落ち着いた声かけで対応していた',
+      impact: 'デモ：利用者・保護者の安心につながった'
+    }]);
+  }
+}
+
 // ═══════════════════════════════════════════════
 // 起動時
 // ═══════════════════════════════════════════════
@@ -654,6 +688,7 @@ window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('oo-date').value = today;
   document.getElementById('ojt-date').value = today;
   document.getElementById('fb-date').value = today;
+  seedGrowthDemoDataIfEmpty();
   populateFacilitySelect('oo-facility-select');
   onOneOnOneFacilityChange();
 });
