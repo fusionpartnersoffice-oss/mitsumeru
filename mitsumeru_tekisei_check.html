@@ -1142,6 +1142,8 @@ function viewRosterEntry(idx) {
     <div style="margin-top:20px;display:flex;gap:8px;flex-wrap:wrap;justify-content:space-between;">
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <button class="btn btn-primary btn-sm" onclick="copyRosterEntryJSON(${idx})">📋 ミツメルにコピー</button>
+        <button class="btn btn-primary btn-sm" onclick="sendToInterviewToolLocal(${idx})">📤 面接ツールへ送る（同一端末）</button>
+        <button class="btn btn-secondary btn-sm" onclick="sendToInterviewToolByEmail(${idx})">📧 面接ツールへ送る（メール）</button>
         <button class="btn btn-print btn-sm" onclick="printRosterEntry(${idx})">🖨️ 印刷</button>
       </div>
       <button class="btn btn-danger btn-sm" onclick="deleteFromDetail(${idx})">🗑 削除</button>
@@ -1168,6 +1170,40 @@ function copyRosterEntryJSON(idx) {
     document.execCommand('copy'); document.body.removeChild(ta);
     alert('JSONをコピーしました。\nミツメルの設定タブ「📥 スキャン結果をインポート」に貼り付けてください。');
   });
+}
+
+// 面接ツール（kanade_app.html）の適性検査受信箱へ送る（FUS-276）
+function buildInterviewToolExportData(r) {
+  return {
+    sei: r.sei, mei: r.mei, seiKana: r.seiKana, meiKana: r.meiKana,
+    name: r.name, corp: r.corp, office: r.office, date: r.date,
+    lsrp: r.lsrp, egogram: r.egogram, rc: r.rc, enneagram: r.enneagram
+  };
+}
+// 対面（同一端末）：kanade_app_intakeキーへ直接pushし、面接ツールを新規タブで開く
+function sendToInterviewToolLocal(idx) {
+  const roster = loadRoster();
+  const r = roster[idx];
+  if (!r) return;
+  const data = buildInterviewToolExportData(r);
+  let inbox = [];
+  try { inbox = JSON.parse(localStorage.getItem('kanade_app_intake') || '[]'); } catch(e) { inbox = []; }
+  inbox.push({ name: r.name, data, receivedAt: new Date().toISOString() });
+  localStorage.setItem('kanade_app_intake', JSON.stringify(inbox));
+  alert('面接ツール（kanade_app.html）の受信箱へ送りました。面接ツールを開いて取り込んでください。');
+  window.open('./kanade_app.html', '_blank');
+}
+// メール（別端末）：?intake=<base64>付きのリンクをメール本文に埋め込んで送る
+function sendToInterviewToolByEmail(idx) {
+  const roster = loadRoster();
+  const r = roster[idx];
+  if (!r) return;
+  const data = buildInterviewToolExportData(r);
+  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(data)))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+  const url = `${location.origin}${location.pathname.replace(/mitsumeru_tekisei_check\.html$/, 'kanade_app.html')}?intake=${encoded}`;
+  const subject = encodeURIComponent(`【適性検査結果】${r.name || ''}`);
+  const body = encodeURIComponent(`${r.name || ''}様の適性検査結果です。\n\n以下のリンクを開くと、面接ツール（奏）の受信箱に自動で取り込まれます：\n${url}`);
+  window.open(`mailto:?subject=${subject}&body=${body}`);
 }
 
 function printRosterEntry(idx) {

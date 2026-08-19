@@ -231,6 +231,7 @@
 
 <!-- ============ 候補者リスト ============ -->
 <div class="screen active" id="screen-list">
+  <div id="aptitude-inbox-area"></div>
   <div class="section">
     <div class="section-title">新規候補者</div>
     <div class="two-col">
@@ -607,12 +608,8 @@ function closeAptitudeImport() {
   document.getElementById('aptitude-import-overlay').style.display = 'none';
   document.getElementById('aptitude-import-json').value = '';
 }
-function importAptitudeResult() {
-  const c = cur(); if (!c) { alert('先に候補者を選択してください。'); return; }
-  const raw = document.getElementById('aptitude-import-json').value.trim();
-  let data;
-  try { data = JSON.parse(raw); } catch(e) { alert('貼り付けた内容が読み取れませんでした。適性検査の「📋 ミツメルにコピー」ボタンで取得した内容をそのまま貼り付けてください。'); return; }
-
+// 適性検査データを候補者オブジェクトへ反映する共通処理（FUS-276で受信箱経由の取り込みと共用するため抽出）
+function applyAptitudeData(c, data) {
   let imported = [];
   // エゴグラム：data.egogram.CP/NP/A/FC/AC
   if (data.egogram) {
@@ -631,14 +628,23 @@ function importAptitudeResult() {
   // LSRP：本人同意（lsrpConsent）取得済みの場合のみ反映（検証用ダミー文書・08_法務\検証用ダミー_奏LSRP運用文書_20260721.md の同意ゲートを迂回しない）
   if (data.lsrp && (data.lsrp.primary !== undefined || data.lsrp.secondary !== undefined)) {
     if (!c.lsrpConsent) {
-      alert('LSRPスコアも含まれていますが、本人同意が未取得のためLSRP欄への反映はスキップしました。\nエゴグラム・エニアグラムのみ反映します。同意取得後、再度インポートしてください。');
+      imported.push('LSRP(同意未取得のためスキップ)');
     } else {
       if (data.lsrp.primary !== undefined) c.lsrp1 = data.lsrp.primary;
       if (data.lsrp.secondary !== undefined) c.lsrp2 = data.lsrp.secondary;
       imported.push('LSRP');
     }
   }
+  return imported;
+}
 
+function importAptitudeResult() {
+  const c = cur(); if (!c) { alert('先に候補者を選択してください。'); return; }
+  const raw = document.getElementById('aptitude-import-json').value.trim();
+  let data;
+  try { data = JSON.parse(raw); } catch(e) { alert('貼り付けた内容が読み取れませんでした。適性検査の「📋 ミツメルにコピー」ボタンで取得した内容をそのまま貼り付けてください。'); return; }
+
+  const imported = applyAptitudeData(c, data);
   if (!imported.length) { alert('反映できる項目が見つかりませんでした。'); return; }
   save();
   renderInterview();
@@ -1102,7 +1108,7 @@ function switchScreen(name) {
   // P2修正：遷移先画面を最新データで再描画する（profile遷移直後に0/55と出る再描画漏れバグ）
   if (name === 'profile') renderProfile();
   else if (name === 'interview') renderInterview();
-  else if (name === 'list') renderList();
+  else if (name === 'list') { renderList(); renderAptitudeInbox(); }
   window.scrollTo(0,0);
 }
 let toastT;
@@ -1162,10 +1168,97 @@ function seedKanadeAppDemoDataIfEmpty(){
   save();
 }
 
+// ---------- 適性検査受信箱（FUS-276） ----------
+// mitsumeru_tekisei_check.htmlから「対面（同一端末）」「メール（別端末・URLリンク）」
+// 両経路で送られた適性検査データを一時保管し、①新規候補者として追加／②既存候補者へ
+// 紐づける、のいずれかで取り込む。既存の「候補者を選択→個別貼り付け」フローは無変更で残す
+const APTITUDE_INBOX_KEY = 'kanade_app_intake';
+function getAptitudeInbox(){ try{ return JSON.parse(localStorage.getItem(APTITUDE_INBOX_KEY)||'[]'); }catch(e){ return []; } }
+function saveAptitudeInbox(list){ localStorage.setItem(APTITUDE_INBOX_KEY, JSON.stringify(list)); }
+
+// メールリンク（?intake=<base64>）経由の取り込み。起動時に検知し受信箱へ追加、URLはクリーンにする
+function processIntakeFromURL(){
+  const params = new URLSearchParams(location.search);
+  const encoded = params.get('intake');
+  if (!encoded) return;
+  try{
+    const json = decodeURIComponent(escape(atob(encoded.replace(/-/g,'+').replace(/_/g,'/'))));
+    const data = JSON.parse(json);
+    const inbox = getAptitudeInbox();
+    inbox.push({ name: data.name||'', data, receivedAt: new Date().toISOString() });
+    saveAptitudeInbox(inbox);
+  }catch(e){
+    alert('メールリンクのデータ読み取りに失敗しました。リンクが壊れている可能性があります。');
+  }
+  history.replaceState(null, '', location.pathname);
+}
+
+function renderAptitudeInbox(){
+  const area = document.getElementById('aptitude-inbox-area');
+  if (!area) return;
+  const inbox = getAptitudeInbox();
+  if (!inbox.length) { area.innerHTML=''; return; }
+  area.innerHTML = inbox.map((item,i) => `
+    <div class="current-banner" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+      <span>📥 適性検査受信箱：<b>${esc(item.name||'（氏名不明）')}</b>（受信：${(item.receivedAt||'').slice(0,10)}）</span>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+        <button class="btn btn-primary" onclick="addInboxAsNewCandidate(${i})">🆕 新規候補者として追加</button>
+        <select id="inbox-link-sel-${i}" style="padding:4px 6px;">
+          <option value="">既存候補者を選択…</option>
+          ${candidates.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')}
+        </select>
+        <button class="btn btn-secondary" onclick="linkInboxToCandidate(${i})">🔗 紐づける</button>
+        <button class="btn btn-ghost" onclick="dismissInboxItem(${i})">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+function addInboxAsNewCandidate(i){
+  const inbox = getAptitudeInbox();
+  const item = inbox[i];
+  if (!item) return;
+  document.getElementById('new-name').value = item.name || '';
+  addCandidate();
+  const c = cur();
+  if (c) { applyAptitudeData(c, item.data); save(); }
+  inbox.splice(i,1);
+  saveAptitudeInbox(inbox);
+  renderAptitudeInbox();
+  renderInterview(); renderProfile();
+}
+
+function linkInboxToCandidate(i){
+  const inbox = getAptitudeInbox();
+  const item = inbox[i];
+  if (!item) return;
+  const sel = document.getElementById('inbox-link-sel-'+i);
+  const targetId = sel ? Number(sel.value) : NaN;
+  if (!targetId) { alert('紐づける候補者を選択してください。'); return; }
+  const c = candidates.find(x=>x.id===targetId);
+  if (!c) return;
+  applyAptitudeData(c, item.data);
+  save();
+  inbox.splice(i,1);
+  saveAptitudeInbox(inbox);
+  renderAptitudeInbox();
+  if (currentId === c.id) { renderInterview(); renderProfile(); }
+  renderList();
+  alert(c.name + 'へ適性検査データを紐づけました。');
+}
+
+function dismissInboxItem(i){
+  const inbox = getAptitudeInbox();
+  inbox.splice(i,1);
+  saveAptitudeInbox(inbox);
+  renderAptitudeInbox();
+}
+
 // 起動
+processIntakeFromURL();
 load();
 seedKanadeAppDemoDataIfEmpty();
 renderList(); renderInterview(); renderProfile();
+renderAptitudeInbox();
 </script>
 </body>
 </html>
