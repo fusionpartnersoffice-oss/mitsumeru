@@ -1198,7 +1198,12 @@ function renderAptitudeInbox(){
   if (!area) return;
   const inbox = getAptitudeInbox();
   if (!inbox.length) { area.innerHTML=''; return; }
-  area.innerHTML = inbox.map((item,i) => `
+  const bulkBar = inbox.length > 1 ? `
+    <div class="current-banner" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;background:var(--bg2);">
+      <span>📥 受信箱に${inbox.length}件たまっています（集団受検後の一括登録用途）</span>
+      <button class="btn btn-primary" onclick="bulkAdoptAllInboxAsNewCandidates()">🆕📥 全員を新規候補者として一括登録する</button>
+    </div>` : '';
+  area.innerHTML = bulkBar + inbox.map((item,i) => `
     <div class="current-banner" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
       <span>📥 適性検査受信箱：<b>${esc(item.name||'（氏名不明）')}</b>（受信：${(item.receivedAt||'').slice(0,10)}）</span>
       <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
@@ -1211,6 +1216,24 @@ function renderAptitudeInbox(){
         <button class="btn btn-ghost" onclick="dismissInboxItem(${i})">✕</button>
       </div>
     </div>`).join('');
+}
+
+// 受信箱の全件を一括で新規候補者として登録する（FUS-276追記・2026-08-19柴山さんご要望：
+// 「適性スキャンデータが複数来ても一気に面接ツールにダンプできると助かる」）
+function bulkAdoptAllInboxAsNewCandidates(){
+  const inbox = getAptitudeInbox();
+  if (!inbox.length) { alert('受信箱にデータがありません。'); return; }
+  if (!confirm(inbox.length + '件を全員、新規候補者として一括登録します。よろしいですか？')) return;
+  inbox.forEach(item => {
+    document.getElementById('new-name').value = item.name || '';
+    addCandidate();
+    const c = cur();
+    if (c) { applyAptitudeData(c, item.data); save(); }
+  });
+  saveAptitudeInbox([]);
+  renderAptitudeInbox();
+  switchScreen('list');
+  alert(inbox.length + '件を新規候補者として一括登録しました。');
 }
 
 function addInboxAsNewCandidate(i){
