@@ -1060,10 +1060,16 @@ function sendToRoster(id) {
   const c = candidates.find(x=>x.id===id) || cur();
   if (!c) return;
   const nameParts = (c.name||'').trim().split(/\s+/);
+  // 面接時適性検査（フェーズ1/2）の実施有無を判定し、実施済みなら要約を職員台帳へ引き継ぐ（FUS-275）
+  const hasAptitude = c.egoCP || c.egoNP || c.egoA || c.egoFC || c.egoAC || c.ennea || c.lsrp1 || c.lsrp2;
+  const aptitudeSummary = hasAptitude
+    ? `エゴグラム:CP${c.egoCP||'-'}/NP${c.egoNP||'-'}/A${c.egoA||'-'}/FC${c.egoFC||'-'}/AC${c.egoAC||'-'} / エニアグラム:${c.ennea||'-'} / LSRP:${(c.lsrp1||c.lsrp2)?(c.lsrp1||'-')+'/'+(c.lsrp2||'-'):'-'}`
+    : null;
   const intake = {
     sei: nameParts[0]||'',
     mei: nameParts.slice(1).join(' ')||'',
     hireDate: c.desiredStartDate || null,
+    aptitudeSummary,
   };
   let list = [];
   try { list = JSON.parse(localStorage.getItem('kanade_roster_intake')||'[]'); } catch { list = []; }

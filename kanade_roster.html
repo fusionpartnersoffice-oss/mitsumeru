@@ -105,7 +105,7 @@ td{padding:6px 8px;border-bottom:1px solid var(--border);white-space:nowrap;}
       <table>
         <thead><tr>
           <th>氏名</th><th>法人</th><th>事業所</th><th>雇用形態</th><th>入職日</th><th>在籍状態</th>
-          <th>🧠ミツメル</th><th>👥TA/KSA</th><th>🎯PM</th><th>操作</th>
+          <th>🧠ミツメル</th><th>👥TA/KSA</th><th>🎯PM</th><th>🧭面接適性</th><th>🗣️1on1</th><th>操作</th>
         </tr></thead>
         <tbody id="roster-tbody"></tbody>
       </table>
@@ -493,6 +493,22 @@ function diagCell(diag){
   const at = (diag.savedAt||'').slice(0,10);
   return `<span class="tag tag-active" title="${esc(diag.summary||'')}">✅ ${at}</span>`;
 }
+// 1on1実施状況（FUS-275）：mitsumeru_1on1.htmlのoneon1_recordsキーを直接参照し、
+// 同ツールのnormalizeName()と同一ロジックで氏名を突合する（貼り付け不要・自動判定）
+function normalizeName(s){ return (s||'').trim().replace(/[　\s]+/g,' ').normalize('NFKC'); }
+function has1on1Record(staffName){
+  const target = normalizeName(staffName);
+  if (!target) return false;
+  try{
+    const records = JSON.parse(localStorage.getItem('oneon1_records')||'[]');
+    return records.some(r=>normalizeName(r.person)===target);
+  }catch(e){ return false; }
+}
+function has1on1Cell(staffName){
+  return has1on1Record(staffName)
+    ? '<span class="tag tag-active">✅ 実施</span>'
+    : '<span class="tag" style="color:var(--sub);">未実施</span>';
+}
 function statusTagClass(status){
   if(status==='在職中') return 'tag-active';
   if(status==='休職中') return 'tag-leave';
@@ -517,6 +533,8 @@ function renderRoster(){
       <td>${diagCell(s.diagMitsumeruScan)}</td>
       <td>${diagCell(s.diagTaScan)}</td>
       <td>${diagCell(s.diagPmScan)}</td>
+      <td>${diagCell(s.diagInterviewAptitude)}</td>
+      <td>${has1on1Cell(s.name)}</td>
       <td>
         <button class="btn btn-secondary btn-xs" onclick="openEditStaff('${s.id}')">編集</button>
         <button class="btn btn-danger btn-xs" onclick="deleteStaff('${s.id}')">削除</button>
@@ -541,6 +559,7 @@ const DIAG_TYPES = [
   {key:'diagMitsumeruScan', label:'🧠 ミツメルスキャン', url:'./mitsumeru_scan.html', type:'mitsumeruScan'},
   {key:'diagTaScan', label:'👥 チームアセスメント(TA/KSA)', url:'./ta_scan.html', type:'taScan'},
   {key:'diagPmScan', label:'🎯 PM診断', url:'./pm_scan.html', type:'pmScan'},
+  {key:'diagInterviewAptitude', label:'🧭 面接時適性検査（採用確定時に自動連携。手動貼付も可）', url:'./kanade_app.html', type:'interviewAptitude'},
 ];
 let editingDiag = {};
 function renderDiagRows(){
@@ -741,6 +760,7 @@ function openEditStaff(id){
     diagMitsumeruScan: s.diagMitsumeruScan||null,
     diagTaScan: s.diagTaScan||null,
     diagPmScan: s.diagPmScan||null,
+    diagInterviewAptitude: s.diagInterviewAptitude||null,
   };
   renderDiagRows();
   openModal('modal-staff');
@@ -811,6 +831,7 @@ function confirmSaveStaff(){
     diagMitsumeruScan: editingDiag.diagMitsumeruScan||null,
     diagTaScan: editingDiag.diagTaScan||null,
     diagPmScan: editingDiag.diagPmScan||null,
+    diagInterviewAptitude: editingDiag.diagInterviewAptitude||null,
   };
   const roster=getRoster();
   if(editingStaffId){
@@ -852,6 +873,11 @@ function intakeAdopt(i){
   const it=intake[i];
   if(!it) return;
   openAddStaff(it);
+  // 面接時適性検査の要約が一緒に届いていれば、診断連携欄へ自動反映する（FUS-275）
+  if (it.aptitudeSummary) {
+    editingDiag.diagInterviewAptitude = { savedAt: new Date().toISOString(), summary: it.aptitudeSummary };
+    renderDiagRows();
+  }
   intake.splice(i,1);
   saveIntake(intake);
   renderIntakeBanner();
