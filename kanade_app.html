@@ -492,8 +492,14 @@ function factCheckBlock(floorKey, c) {
 
 // ---------- 選考ステータス（FUS-269） ----------
 const STAGE_OPTIONS = ['面接前','1次面接','2次面接','最終面接'];
-const OUTCOME_OPTIONS = ['検討中','採用','不採用'];
+const OUTCOME_OPTIONS = ['検討中','採用','不採用']; // 2026-08-19再設計でUI表示からは削除。データ構造は後方互換のため残置（未使用）
+const JUDGMENT_OPTIONS = ['－','1次面接','2次面接','最終面接','不採用'];
 const REFERRAL_CALC_METHODS = ['手動入力','年収の◯％','月収の◯ヶ月分'];
+const REFERRAL_CALC_HINTS = {
+  '手動入力': '💡 契約書の記載どおりに金額をそのまま入力してください。',
+  '年収の◯％': '💡 一般的な人材紹介の標準方式です（例：理論年収の30%等）。',
+  '月収の◯ヶ月分': '💡 エージェント契約書に「月収の◯ヶ月分」と明記されている場合に使う方式です。'
+};
 
 function computeReferralFee(c) {
   if (c.referralFeeCalcMethod === '年収の◯％') {
@@ -542,9 +548,9 @@ function addCandidate() {
     // フェーズ3
     rjp:'', rjp_reason:'',
     consistency_ennea:'', consistency_ego:'',
-    hunch:'', judgment:'',
+    hunch:'', judgment: JUDGMENT_OPTIONS[0],
     // 追加情報（2026-08-16柴山さん指定・FUS-239）
-    contactNote:'', turnoverReason:'', desiredStartDate:'', referralRoute:'', referralFee:'',
+    contactNote:'', turnoverReason:'', qualifications:'', desiredStartDate:'', referralRoute:'', referralFee:'',
     // 選考ステータス（2026-08-19柴山さん指定・FUS-269）
     stage: STAGE_OPTIONS[0], outcome: OUTCOME_OPTIONS[0],
     rejectReason:'', isBlacklisted:false, blacklistNote:'',
@@ -651,25 +657,25 @@ function candItemHtml(c) {
     <div class="cand-item ${c.id===currentId?'current':''}" onclick="selectCandidate(${c.id})">
       <div>
         <div class="nm">${c.isBlacklisted?'🚫 ':''}${esc(c.name)}</div>
-        <div class="meta">${esc(c.position)||'—'} · ${fmtDate(c.date)} · <span class="pill" style="padding:1px 6px;font-size:10px;">${esc(c.stage||STAGE_OPTIONS[0])}</span></div>
+        <div class="meta">${esc(c.position)||'—'} · ${fmtDate(c.date)} · <span class="pill" style="padding:1px 6px;font-size:10px;">${esc(c.judgment||JUDGMENT_OPTIONS[0])}</span></div>
       </div>
       <div class="sc">${totalOf(c)}<span style="font-size:11px;color:var(--text3)">/55</span></div>
       <div class="del" onclick="deleteCandidate(${c.id}, event)" title="削除">✕</div>
     </div>`;
 }
+// 一覧のグループ分け：judgmentベース（2026-08-19再設計。outcomeフィールドは後方互換のため
+// データ構造に残すが、表示・グルーピングには使わない）。'不採用'以外は選考中扱い（'最終面接'も含む）
 function renderList() {
   const wrap = document.getElementById('cand-list');
   if (!candidates.length) { wrap.innerHTML = '<div class="empty">まだ候補者がいません。</div>'; return; }
 
-  const inProgress = candidates.filter(c => (c.outcome||OUTCOME_OPTIONS[0])==='検討中');
-  const hired = candidates.filter(c => c.outcome==='採用');
-  const rejected = candidates.filter(c => c.outcome==='不採用');
-  const stageOrder = (c) => { const i = STAGE_OPTIONS.indexOf(c.stage); return i<0 ? 999 : i; };
-  inProgress.sort((a,b) => stageOrder(a)-stageOrder(b));
+  const inProgress = candidates.filter(c => c.judgment!=='不採用');
+  const rejected = candidates.filter(c => c.judgment==='不採用');
+  const judgmentOrder = (c) => { const i = JUDGMENT_OPTIONS.indexOf(c.judgment); return i<0 ? 0 : i; };
+  inProgress.sort((a,b) => judgmentOrder(a)-judgmentOrder(b));
 
   let html = '';
   if (inProgress.length) html += `<div class="list-group-title">選考中（${inProgress.length}）</div>` + inProgress.map(candItemHtml).join('');
-  if (hired.length) html += `<div class="list-group-title" style="color:var(--green);">採用（${hired.length}）</div>` + hired.map(candItemHtml).join('');
   if (rejected.length) html += `<div class="list-group-title" style="color:var(--red);">不採用（${rejected.length}）</div>` + rejected.map(candItemHtml).join('');
   wrap.innerHTML = html;
 }
@@ -711,22 +717,14 @@ function renderInterview() {
     </div>
   </div>
 
-  <!-- 選考ステータス（2026-08-19柴山さん指定・FUS-269） -->
+  <!-- 選考ステータス（2026-08-19柴山さん指定・FUS-269／同日再設計で最終結果欄は削除しプロファイルタブの最終判定へ統合） -->
   <div class="section">
     <div class="section-title">選考ステータス</div>
-    <div class="two-col">
-      <div class="field"><label>選考ステージ</label><select onchange="updateBasicField('stage', this.value)">
-        ${optList(STAGE_OPTIONS, c.stage||STAGE_OPTIONS[0])}
-      </select></div>
-      <div class="field"><label>最終結果</label><select onchange="updateBasicField('outcome', this.value)">
-        ${optList(OUTCOME_OPTIONS, c.outcome||OUTCOME_OPTIONS[0])}
-      </select></div>
-    </div>
-    ${c.outcome==='不採用' ? `
+    <div class="field"><label>選考ステージ</label><select onchange="updateBasicField('stage', this.value)">
+      ${optList(STAGE_OPTIONS, c.stage||STAGE_OPTIONS[0])}
+    </select></div>
+    ${c.judgment==='不採用' ? `
     <div class="field"><label>不採用理由</label><textarea oninput="setField('rejectReason', this.value)">${esc(c.rejectReason)}</textarea></div>` : ''}
-    <div class="field"><label><input type="checkbox" ${c.isBlacklisted?'checked':''} onchange="updateBasicField('isBlacklisted', this.checked)"> ブラックリスト対象</label></div>
-    ${c.isBlacklisted ? `
-    <div class="field"><label>ブラックリスト理由</label><textarea oninput="setField('blacklistNote', this.value)">${esc(c.blacklistNote)}</textarea></div>` : ''}
   </div>
 
   <!-- 追加情報（2026-08-16柴山さん指定・FUS-239） -->
@@ -734,6 +732,7 @@ function renderInterview() {
     <div class="section-title">追加情報</div>
     <div class="field"><label>連絡先と注意点（何時ごろ連絡可能か・留守電で応答可能か等）</label><textarea oninput="setField('contactNote', this.value)" placeholder="例：090-xxxx-xxxx／平日18時以降・留守電可">${esc(c.contactNote)}</textarea></div>
     <div class="field"><label>転職理由</label><textarea oninput="setField('turnoverReason', this.value)">${esc(c.turnoverReason)}</textarea></div>
+    <div class="field"><label>資格情報等</label><textarea oninput="setField('qualifications', this.value)" placeholder="例：介護福祉士／普通自動車第一種免許">${esc(c.qualifications)}</textarea></div>
     <div class="two-col">
       <div class="field"><label>入職希望日</label><input type="date" value="${esc(c.desiredStartDate)}" onchange="setField('desiredStartDate', this.value)"></div>
       <div class="field"><label>紹介ルート</label><select onchange="setField('referralRoute', this.value)">
@@ -751,6 +750,7 @@ function renderInterview() {
       ${c.referralFeeCalcMethod && c.referralFeeCalcMethod!=='手動入力' ? `
       <div class="field"><label>${c.referralFeeCalcMethod==='年収の◯％'?'料率（％）':'月数（ヶ月）'}</label><input type="number" min="0" step="0.1" value="${c.referralFeeCalcRate||''}" onchange="updateReferralCalc('referralFeeCalcRate', this.value ? Number(this.value) : '')"></div>` : ''}
     </div>
+    <div class="note-box" style="margin-bottom:10px">${REFERRAL_CALC_HINTS[c.referralFeeCalcMethod||REFERRAL_CALC_METHODS[0]]||''}</div>
     <div class="field"><label>紹介料（円）${c.referralFeeCalcMethod && c.referralFeeCalcMethod!=='手動入力' ? '（自動計算・上書き可）' : ''}</label>
       <input type="number" min="0" value="${c.referralFee||''}" onchange="setField('referralFee', this.value ? Number(this.value) : '')"></div>
   </div>
@@ -965,12 +965,15 @@ function renderProfile() {
   <div class="section">
     <div class="section-title">最終判定（決定は柴山さん）</div>
     <div class="field">
-      <select onchange="setField('judgment', this.value); renderProfile()">
-        ${optList(['','採用推薦','2次面談','見送り'], c.judgment)}
+      <select onchange="updateBasicField('judgment', this.value)">
+        ${optList(JUDGMENT_OPTIONS, c.judgment||JUDGMENT_OPTIONS[0])}
       </select>
     </div>
+    <div class="field"><label><input type="checkbox" ${c.isBlacklisted?'checked':''} onchange="updateBasicField('isBlacklisted', this.checked)"> ブラックリスト対象</label></div>
+    ${c.isBlacklisted ? `
+    <div class="field"><label>ブラックリスト理由</label><textarea oninput="setField('blacklistNote', this.value)">${esc(c.blacklistNote)}</textarea></div>` : ''}
     <div class="note-box">※ スコア圏はあくまで参考。判定は面接官が決めます（奏は提示、決定は人）。</div>
-    ${c.judgment==='採用推薦' ? `
+    ${c.judgment==='最終面接' ? `
     <div class="btn-row" style="margin-top:10px">
       <button class="btn btn-primary" onclick="sendToRoster('${c.id}')">📇 採用確定 → 職員台帳へ引き継ぐ</button>
     </div>
@@ -1117,36 +1120,36 @@ function seedKanadeAppDemoDataIfEmpty(){
     aiFactCheck_values:'', aiFactCheck_valuesAt:'',
     rjp:'', rjp_reason:'',
     consistency_ennea:'', consistency_ego:'',
-    hunch:'', judgment:'',
-    contactNote:'', turnoverReason:'', desiredStartDate:'', referralRoute:'', referralFee:'',
+    hunch:'', judgment: JUDGMENT_OPTIONS[0],
+    contactNote:'', turnoverReason:'', qualifications:'', desiredStartDate:'', referralRoute:'', referralFee:'',
     rejectReason:'', isBlacklisted:false, blacklistNote:'',
     desiredAnnualSalary:'', desiredMonthlySalary:'',
     referralFeeCalcMethod:'手動入力', referralFeeCalcRate:''
   };
   candidates.push({ ...base, id: newId(),
     name:'デモ候補者太郎', position:'介護職員', date:'2026-08-25', interviewer:'デモ面接官',
-    stage:'1次面接', outcome:'検討中',
+    stage:'1次面接', judgment:'1次面接',
     contactNote:'平日18時以降・留守電可', turnoverReason:'デモ用の転職理由サンプル',
-    desiredStartDate:'2026-10-01', referralRoute:'ハロワ'
+    qualifications:'介護福祉士', desiredStartDate:'2026-10-01', referralRoute:'ハロワ'
   });
   candidates.push({ ...base, id: newId(),
     name:'デモ候補者花子', position:'児童指導員', date:'2026-08-26', interviewer:'デモ面接官',
-    stage:'2次面接', outcome:'検討中',
+    stage:'2次面接', judgment:'2次面接',
     referralFeeCalcMethod:'年収の◯％', desiredAnnualSalary:5000000, referralFeeCalcRate:30
   });
   candidates.push({ ...base, id: newId(),
     name:'デモ候補者次郎', position:'児発管', date:'2026-08-27', interviewer:'デモ面接官',
-    stage:'最終面接', outcome:'採用', judgment:'採用推薦',
+    stage:'最終面接', judgment:'最終面接',
     referralFeeCalcMethod:'月収の◯ヶ月分', desiredMonthlySalary:300000, referralFeeCalcRate:1.5
   });
   candidates.push({ ...base, id: newId(),
     name:'デモ候補者三郎', position:'介護職員', date:'2026-08-20', interviewer:'デモ面接官',
-    stage:'1次面接', outcome:'不採用', judgment:'見送り',
+    stage:'1次面接', judgment:'不採用',
     rejectReason:'デモ：経験・スキルが募集要件と合わなかった'
   });
   candidates.push({ ...base, id: newId(),
     name:'デモ候補者四郎（要注意）', position:'介護職員', date:'2026-08-15', interviewer:'デモ面接官',
-    stage:'1次面接', outcome:'不採用', judgment:'見送り',
+    stage:'1次面接', judgment:'不採用',
     rejectReason:'デモ：面接時のマナーに重大な問題があった',
     isBlacklisted:true, blacklistNote:'デモ：暴言・威圧的な言動があったため今後の応募は受け付けない'
   });
