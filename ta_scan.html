@@ -282,9 +282,11 @@ tr:hover td{background:rgba(79,195,247,0.03);}
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
       <button class="btn btn-primary btn-sm" onclick="copyExport()">📋 コピー</button>
       <button class="btn btn-success btn-sm" onclick="saveToRoster()">💾 受検者リストに保存</button>
+      <button class="btn btn-primary btn-sm" onclick="copyForKanadeRoster()">📇 職員台帳へコピー</button>
       <button class="btn btn-print btn-sm" onclick="window.print()">🖨️ 印刷</button>
       <span id="copy-ok" style="color:var(--accent2);font-size:0.8rem;align-self:center;display:none;">✓ コピーしました</span>
       <span id="save-ok" style="color:var(--accent2);font-size:0.8rem;align-self:center;display:none;">✓ 保存しました</span>
+      <span id="kanade-copy-ok" style="color:var(--accent2);font-size:0.8rem;align-self:center;display:none;">✓ 職員台帳用にコピーしました</span>
     </div>
   </div>
 
@@ -681,6 +683,23 @@ function saveToRoster() {
   const ok = document.getElementById('save-ok');
   ok.style.display = 'inline';
   setTimeout(() => ok.style.display = 'none', 2000);
+}
+
+// 職員台帳（kanade_roster.html）の診断連携用エクスポート（FUS-254）
+function copyForKanadeRoster() {
+  if (!lastResult) { alert('先に診断を完了してください。'); return; }
+  const payload = {
+    diagType: 'taScan',
+    name: lastResult.name,
+    savedAt: lastResult.savedAt,
+    summary: `KSA:${lastResult.ksa} / ギャップ:${lastResult.ksaGap>0?'+':''}${lastResult.ksaGap}% / SL:${lastResult.slStage||''}`
+  };
+  navigator.clipboard.writeText(JSON.stringify(payload)).then(() => {
+    const ok = document.getElementById('kanade-copy-ok');
+    ok.style.display = 'inline';
+    setTimeout(() => { ok.style.display = 'none'; }, 2500);
+    alert('職員台帳用データをコピーしました。\nkanade_roster.htmlの職員編集画面「📥 診断結果を貼り付け」に貼り付けてください。');
+  });
 }
 
 function copyExport() {

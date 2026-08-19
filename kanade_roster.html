@@ -104,7 +104,8 @@ td{padding:6px 8px;border-bottom:1px solid var(--border);white-space:nowrap;}
     <div class="table-wrap">
       <table>
         <thead><tr>
-          <th>氏名</th><th>法人</th><th>事業所</th><th>雇用形態</th><th>入職日</th><th>在籍状態</th><th>操作</th>
+          <th>氏名</th><th>法人</th><th>事業所</th><th>雇用形態</th><th>入職日</th><th>在籍状態</th>
+          <th>🧠ミツメル</th><th>👥TA/KSA</th><th>🎯PM</th><th>操作</th>
         </tr></thead>
         <tbody id="roster-tbody"></tbody>
       </table>
@@ -169,6 +170,10 @@ td{padding:6px 8px;border-bottom:1px solid var(--border);white-space:nowrap;}
       </select></div>
     </div>
     <div class="form-group" id="st-leave-date-group" style="display:none;"><label>退職日</label><input type="date" id="st-leave-date"></div>
+
+    <div class="subsection-title">診断連携</div>
+    <div class="note">各診断ツールで受検後「📇 職員台帳へコピー」を押し、コピーされたJSONをここに貼り付けてください。</div>
+    <div id="diag-rows"></div>
 
     <div class="subsection-title">雇用形態</div>
     <div class="form-row">
@@ -483,6 +488,11 @@ function currentRosterScope(){
   if(!document.getElementById('chk-show-retired').checked) list=list.filter(s=>s.status!=='退職済み');
   return list;
 }
+function diagCell(diag){
+  if (!diag) return '<span class="tag" style="color:var(--sub);">未実施</span>';
+  const at = (diag.savedAt||'').slice(0,10);
+  return `<span class="tag tag-active" title="${esc(diag.summary||'')}">✅ ${at}</span>`;
+}
 function statusTagClass(status){
   if(status==='在職中') return 'tag-active';
   if(status==='休職中') return 'tag-leave';
@@ -504,6 +514,9 @@ function renderRoster(){
       <td><span class="tag">${s.employmentType||''}</span></td>
       <td>${s.hireDate||'─'}</td>
       <td class="${statusTagClass(s.status)}" style="font-weight:600;">${s.status||'在職中'}</td>
+      <td>${diagCell(s.diagMitsumeruScan)}</td>
+      <td>${diagCell(s.diagTaScan)}</td>
+      <td>${diagCell(s.diagPmScan)}</td>
       <td>
         <button class="btn btn-secondary btn-xs" onclick="openEditStaff('${s.id}')">編集</button>
         <button class="btn btn-danger btn-xs" onclick="deleteStaff('${s.id}')">削除</button>
@@ -522,6 +535,43 @@ function deleteStaff(id){
 // ════════════════════════════════════════════════════
 let editingStaffId=null;
 const WORK_PATTERN_COUNT=4;
+
+// 診断連携（FUS-254）
+const DIAG_TYPES = [
+  {key:'diagMitsumeruScan', label:'🧠 ミツメルスキャン', url:'./mitsumeru_scan.html', type:'mitsumeruScan'},
+  {key:'diagTaScan', label:'👥 チームアセスメント(TA/KSA)', url:'./ta_scan.html', type:'taScan'},
+  {key:'diagPmScan', label:'🎯 PM診断', url:'./pm_scan.html', type:'pmScan'},
+];
+let editingDiag = {};
+function renderDiagRows(){
+  document.getElementById('diag-rows').innerHTML = DIAG_TYPES.map(d=>{
+    const cur = editingDiag[d.key];
+    const statusHtml = cur
+      ? `<span class="tag tag-active">✅ ${(cur.savedAt||'').slice(0,10)}・${esc(cur.summary||'')}</span> <button class="btn btn-danger btn-xs" onclick="clearDiag('${d.key}')">解除</button>`
+      : '<span class="tag">未実施</span>';
+    return `<div style="margin-bottom:10px;padding:8px;background:var(--bg);border-radius:6px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+        <span style="font-size:0.82rem;">${d.label}</span>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">${statusHtml} <a href="${d.url}" target="_blank" rel="noopener" class="btn btn-secondary btn-xs" style="text-decoration:none;">開く →</a></div>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:6px;">
+        <input type="text" id="diag-paste-${d.key}" placeholder="コピーしたJSONをここに貼り付け" style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:5px 8px;font-size:0.75rem;">
+        <button class="btn btn-primary btn-xs" onclick="pasteDiag('${d.key}','${d.type}')">登録</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function clearDiag(key){ editingDiag[key]=null; renderDiagRows(); }
+function pasteDiag(key, expectedType){
+  const raw = document.getElementById('diag-paste-'+key).value.trim();
+  if(!raw){ alert('貼り付け内容が空です'); return; }
+  let data;
+  try{ data = JSON.parse(raw); }catch(e){ alert('JSONの読み取りに失敗しました。診断ツールの「📇 職員台帳へコピー」でコピーした内容をそのまま貼り付けてください。'); return; }
+  if(data.diagType !== expectedType){ alert('別の診断ツールのデータのようです（想定：'+expectedType+'、実際：'+(data.diagType||'不明')+'）。正しい診断ツールからコピーしてください。'); return; }
+  editingDiag[key] = { savedAt: data.savedAt, summary: data.summary, name: data.name };
+  document.getElementById('diag-paste-'+key).value='';
+  renderDiagRows();
+}
 
 function renderWorkPatternFields(){
   const box=document.getElementById('work-patterns');
@@ -604,6 +654,8 @@ function resetStaffForm(){
   toggleFixedTermFields();
   toggleBonusDetail();
   onStaffStatusChange();
+  editingDiag = {};
+  renderDiagRows();
 }
 
 function openAddStaff(prefill){
@@ -685,6 +737,12 @@ function openEditStaff(id){
   toggleFixedTermFields();
   toggleBonusDetail();
   onStaffStatusChange();
+  editingDiag = {
+    diagMitsumeruScan: s.diagMitsumeruScan||null,
+    diagTaScan: s.diagTaScan||null,
+    diagPmScan: s.diagPmScan||null,
+  };
+  renderDiagRows();
   openModal('modal-staff');
 }
 
@@ -750,6 +808,9 @@ function confirmSaveStaff(){
     referralContact: document.getElementById('st-referral-contact').value.trim(),
     referralPhone: document.getElementById('st-referral-phone').value.trim(),
     notes: document.getElementById('st-notes').value.trim(),
+    diagMitsumeruScan: editingDiag.diagMitsumeruScan||null,
+    diagTaScan: editingDiag.diagTaScan||null,
+    diagPmScan: editingDiag.diagPmScan||null,
   };
   const roster=getRoster();
   if(editingStaffId){
