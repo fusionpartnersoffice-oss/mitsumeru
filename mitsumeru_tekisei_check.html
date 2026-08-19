@@ -1029,17 +1029,16 @@ function sendAllToAdmin(){
 
   const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(compactList)))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
   const url = `https://fusionpartnersoffice-oss.github.io/mitsumeru/nagi_system.html?d=${encoded}`;
-  const nameList = roster.map(r=>r.name).join('、');
 
   if(navigator.share){
     navigator.share({
       title: `【診断データ送信】${roster.length}名分`,
-      text: `${roster.length}名（${nameList}）の診断データを送信します。リンクを開いてインポートしてください。`,
+      text: `${roster.length}名分の診断データを送信します。リンクを開いてインポートしてください。`,
       url: url
     }).catch(()=>{});
   } else {
     const subject = encodeURIComponent(`【診断データ送信】${roster.length}名分`);
-    const body = encodeURIComponent(`${roster.length}名（${nameList}）の診断データです。\n\n以下のリンクを開いてインポートしてください：\n${url}`);
+    const body = encodeURIComponent(`${roster.length}名分の診断データです（受検者氏名は本文には記載していません。リンク先でインポートすると氏名を含む詳細が表示されます）。\n\n以下のリンクを開いてインポートしてください：\n${url}`);
     window.open(`mailto:?subject=${subject}&body=${body}`);
   }
   // nagi_candidatesにも書き込む（同一origin）
