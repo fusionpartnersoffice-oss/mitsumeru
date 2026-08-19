@@ -306,7 +306,8 @@
 
   <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
     <button class="btn btn-primary btn-sm" onclick="exportCSV()">⬇️ CSVダウンロード</button>
-    <button class="btn btn-success btn-sm" onclick="exportRosterJSON()">📤 凪システムへ一括エクスポート</button>
+    <button class="btn btn-success btn-sm" onclick="sendRosterToKanadeRoster()">📇 全員を職員台帳へ送る</button>
+    <button class="btn btn-secondary btn-sm" onclick="exportRosterJSON()" title="非推奨：職員台帳を経由しない直接連携です">📤 凪システムへ直接エクスポート（非推奨）</button>
     <button class="btn btn-danger btn-sm" onclick="clearRoster()">🗑️ 全件削除</button>
   </div>
 
@@ -461,6 +462,13 @@ let currentPage = 0;
 let prevPage = 0;
 let lastResult = null;
 
+// 受検者/管理者モード分離（FUS-274・2026-08-19）。URLに ?admin=1 を付けた時のみ管理者機能を表示
+const IS_ADMIN = new URLSearchParams(location.search).get('admin') === '1';
+function applyModeVisibility(){
+  const rosterBtn = document.querySelector('.header-nav-btn[onclick="showRoster()"]');
+  if (rosterBtn) rosterBtn.style.display = IS_ADMIN ? '' : 'none';
+}
+
 // ═══════════════════════════════════════════════
 // 質問レンダリング
 // ═══════════════════════════════════════════════
@@ -518,6 +526,7 @@ function goTo(n) {
 }
 
 function showRoster() {
+  if (!IS_ADMIN) { alert('受検者一覧・管理機能は管理者モード（URLに ?admin=1 を付けてアクセス）でのみ利用できます。'); return; }
   prevPage = currentPage;
   renderRoster();
   goTo(5);
@@ -776,6 +785,7 @@ function seedScanDemoDataIfEmpty() {
   localStorage.setItem(ROSTER_KEY, JSON.stringify(roster));
 }
 seedScanDemoDataIfEmpty();
+applyModeVisibility();
 
 function saveToRoster() {
   if (!lastResult) { alert('先に診断を完了してください。'); return; }
@@ -858,6 +868,22 @@ function deleteEntry(idx) {
   localStorage.setItem(ROSTER_KEY, JSON.stringify(roster));
   cloudSaveRoster(roster);
   renderRoster();
+}
+
+// 職員台帳（kanade_roster.html）経由への統一（FUS-274・v5配線ロジック）
+// kanade_app.htmlのsendToRoster()と同じパターン：kanade_roster_intakeキーへ氏名をpushする
+function sendRosterToKanadeRoster() {
+  const roster = loadRoster();
+  if (!roster.length) { alert('送るデータがありません。'); return; }
+  let intake = [];
+  try { intake = JSON.parse(localStorage.getItem('kanade_roster_intake') || '[]'); } catch(e) { intake = []; }
+  roster.forEach(r => {
+    const parts = (r.name || '').trim().split(/\s+/);
+    intake.push({ sei: parts[0] || '', mei: parts.slice(1).join(' ') || '', hireDate: null });
+  });
+  localStorage.setItem('kanade_roster_intake', JSON.stringify(intake));
+  alert(roster.length + '名分を職員台帳へ引き継ぎました。kanade_roster.htmlを開いてください。\n（診断結果自体は各受検者の結果画面「📇 職員台帳へコピー」から個別に貼り付けてください）');
+  window.open('./kanade_roster.html', '_blank');
 }
 
 function exportRosterJSON() {
