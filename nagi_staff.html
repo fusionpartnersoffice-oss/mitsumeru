@@ -52,6 +52,10 @@ main{max-width:1080px;margin:0 auto;padding:20px 16px 80px;}
 table{width:100%;border-collapse:collapse;font-size:0.78rem;}
 th{text-align:left;padding:6px 8px;color:var(--sub);border-bottom:1px solid var(--border);white-space:nowrap;}
 td{padding:6px 8px;border-bottom:1px solid var(--border);white-space:nowrap;}
+/* FUS-278：列数増加（13列）に伴い、横スクロール中も事業所・氏名が見えるよう先頭2列を固定する */
+#page-roster table th:nth-child(1),#page-roster table td:nth-child(1){position:sticky;left:0;width:110px;min-width:110px;max-width:110px;background:var(--card);z-index:2;white-space:normal;}
+#page-roster table th:nth-child(2),#page-roster table td:nth-child(2){position:sticky;left:110px;width:100px;min-width:100px;max-width:100px;background:var(--card);z-index:2;white-space:normal;box-shadow:2px 0 4px -2px rgba(0,0,0,0.3);}
+#page-roster thead th{background:var(--card);}
 
 .rc-danger{color:var(--danger);} .rc-warn{color:var(--warn);} .rc-safe{color:var(--accent2);}
 .lsrp-D{color:var(--danger);font-weight:700;} .lsrp-W{color:var(--warn);font-weight:700;} .lsrp-S{color:var(--accent2);}
@@ -111,6 +115,7 @@ td{padding:6px 8px;border-bottom:1px solid var(--border);white-space:nowrap;}
           <th title="エゴグラム A：冷静さ（大人）">冷静さ</th>
           <th title="エゴグラム FC：自由さ（自由な子ども）">自由さ</th>
           <th title="エゴグラム AC：まわりに合わせる度合い（順応した子ども）">協調性</th>
+          <th title="KSAギャップ＝個人KSA% − 事業所平均TA%（プラスが大きいほど知識と実行力の乖離が大きい）">KSAギャップ</th>
           <th>RC判定（理由）</th><th>LSRP判定（理由）</th><th>操作</th>
         </tr></thead>
         <tbody id="staff-tbody"></tbody>
@@ -233,6 +238,18 @@ function getOffices(corpId){ const a=getAllOffices(); return corpId?a.filter(o=>
 function getAllStaff(){ return load('nagi_staff'); }
 function getStaffById(id){ return getAllStaff().find(s=>s.id===id)||null; }
 function getStaffByOffice(oid){ return getAllStaff().filter(s=>s.officeId===oid); }
+
+// KSAギャップ（FUS-278・nagi_system.htmlのgetKSAGap/getOfficeAvgTAと同一ロジックを移植）
+function getKSAGap(ksa, avgTask, avgSocial){
+  return (n(ksa)/80 - (n(avgTask)+n(avgSocial))/112)*100;
+}
+function getOfficeAvgTA(officeId){
+  const staff=getAllStaff().filter(s=>s.officeId===officeId&&(n(s.task)>0||n(s.social)>0));
+  if(!staff.length) return {avgTask:0,avgSoc:0,count:0};
+  const avgTask=staff.reduce((a,s)=>a+n(s.task),0)/staff.length;
+  const avgSoc=staff.reduce((a,s)=>a+n(s.social),0)/staff.length;
+  return {avgTask,avgSoc,count:staff.length};
+}
 function getStaffByCorp(cid){ return getAllStaff().filter(s=>s.corpId===cid); }
 function openModal(id){ document.getElementById(id).classList.add('open'); }
 function closeModal(id){ document.getElementById(id).classList.remove('open'); }
@@ -342,6 +359,7 @@ function renderStaffList(){
   const empty=document.getElementById('staff-empty');
   if(!staff.length){ tbody.innerHTML=''; empty.style.display='block'; return; }
   empty.style.display='none';
+  const officeAvgCache={};
   tbody.innerHTML=staff.map(s=>{
     const off=offices.find(o=>o.id===s.officeId);
     const pm=getPMStyle(s.p,s.m);
@@ -349,6 +367,14 @@ function renderStaffList(){
     const lsrpL=getLSRPLabel(s.lsrp?.total||0);
     const egoAssessed = !!s.ego;
     const ego=s.ego||{};
+    let ksaGapCell='─（未実施）';
+    if(s.ksa!=null){
+      if(!officeAvgCache[s.officeId]) officeAvgCache[s.officeId]=getOfficeAvgTA(s.officeId);
+      const avg=officeAvgCache[s.officeId];
+      const gap=getKSAGap(s.ksa,avg.avgTask,avg.avgSoc);
+      const color=gap>20?'var(--danger)':gap>10?'var(--warn)':'inherit';
+      ksaGapCell=`<span style="color:${color};font-weight:600;">${gap>0?'+':''}${gap.toFixed(1)}%</span>`;
+    }
     return `<tr>
       <td>${off?.name||'─'}</td>
       <td style="font-weight:600;">${s.name}</td>
@@ -356,6 +382,7 @@ function renderStaffList(){
       <td>${s.task==null?'─（未実施）':n(s.task)}</td><td>${s.social==null?'─（未実施）':n(s.social)}</td>
       <td style="font-weight:700;">${pm.label}</td>
       <td>${egoAssessed?n(ego.CP):'─'}</td><td>${egoAssessed?n(ego.NP):'─'}</td><td>${egoAssessed?n(ego.A):'─'}</td><td>${egoAssessed?n(ego.FC):'─'}</td><td>${egoAssessed?n(ego.AC):'─'}</td>
+      <td>${ksaGapCell}</td>
       <td class="${rc.cls}" style="font-weight:600;">${egoAssessed?rc.display:'─（診断未実施）'}</td>
       <td class="${lsrpL.cls}">${lsrpL.display}</td>
       <td><button class="btn btn-secondary btn-xs" onclick="openStaffDetail('${s.id}')">詳細</button></td>
