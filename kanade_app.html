@@ -1104,9 +1104,7 @@ document.querySelectorAll('.mode-tab').forEach(t=> t.addEventListener('click', (
 // 実機確認用デモデータ（2026-08-18・柴山さんご依頼。候補者が0件の初回表示時のみ投入）
 function seedKanadeAppDemoDataIfEmpty(){
   if (candidates.length > 0) return;
-  candidates.push({
-    id: newId(), name:'デモ候補者太郎',
-    position:'介護職員', date:'2026-08-25', interviewer:'デモ面接官',
+  const base = {
     egoCP:'', egoNP:'', egoA:'', egoFC:'', egoAC:'', ennea:'', enneaWing:'', p1note:'',
     lsrp1:'', lsrp2:'', lsrpNote:'', lsrpConsent:false, lsrpConsentDate:'',
     aiHypothesis:'', aiHypothesisAt:'',
@@ -1119,13 +1117,38 @@ function seedKanadeAppDemoDataIfEmpty(){
     aiFactCheck_values:'', aiFactCheck_valuesAt:'',
     rjp:'', rjp_reason:'',
     consistency_ennea:'', consistency_ego:'',
-    hunch:'', judgment:'採用推薦',
-    contactNote:'平日18時以降・留守電可', turnoverReason:'デモ用の転職理由サンプル',
-    desiredStartDate:'2026-10-01', referralRoute:'ハロワ', referralFee:'',
-    stage:'2次面接', outcome:'検討中',
+    hunch:'', judgment:'',
+    contactNote:'', turnoverReason:'', desiredStartDate:'', referralRoute:'', referralFee:'',
     rejectReason:'', isBlacklisted:false, blacklistNote:'',
     desiredAnnualSalary:'', desiredMonthlySalary:'',
     referralFeeCalcMethod:'手動入力', referralFeeCalcRate:''
+  };
+  candidates.push({ ...base, id: newId(),
+    name:'デモ候補者太郎', position:'介護職員', date:'2026-08-25', interviewer:'デモ面接官',
+    stage:'1次面接', outcome:'検討中',
+    contactNote:'平日18時以降・留守電可', turnoverReason:'デモ用の転職理由サンプル',
+    desiredStartDate:'2026-10-01', referralRoute:'ハロワ'
+  });
+  candidates.push({ ...base, id: newId(),
+    name:'デモ候補者花子', position:'児童指導員', date:'2026-08-26', interviewer:'デモ面接官',
+    stage:'2次面接', outcome:'検討中',
+    referralFeeCalcMethod:'年収の◯％', desiredAnnualSalary:5000000, referralFeeCalcRate:30
+  });
+  candidates.push({ ...base, id: newId(),
+    name:'デモ候補者次郎', position:'児発管', date:'2026-08-27', interviewer:'デモ面接官',
+    stage:'最終面接', outcome:'採用', judgment:'採用推薦',
+    referralFeeCalcMethod:'月収の◯ヶ月分', desiredMonthlySalary:300000, referralFeeCalcRate:1.5
+  });
+  candidates.push({ ...base, id: newId(),
+    name:'デモ候補者三郎', position:'介護職員', date:'2026-08-20', interviewer:'デモ面接官',
+    stage:'1次面接', outcome:'不採用', judgment:'見送り',
+    rejectReason:'デモ：経験・スキルが募集要件と合わなかった'
+  });
+  candidates.push({ ...base, id: newId(),
+    name:'デモ候補者四郎（要注意）', position:'介護職員', date:'2026-08-15', interviewer:'デモ面接官',
+    stage:'1次面接', outcome:'不採用', judgment:'見送り',
+    rejectReason:'デモ：面接時のマナーに重大な問題があった',
+    isBlacklisted:true, blacklistNote:'デモ：暴言・威圧的な言動があったため今後の応募は受け付けない'
   });
   save();
 }
