@@ -225,6 +225,7 @@
 
 <div class="mode-tabs">
   <button class="mode-tab active" data-screen="list">候補者</button>
+  <button class="mode-tab" data-screen="rejected">不採用</button>
   <button class="mode-tab" data-screen="interview">面接</button>
   <button class="mode-tab" data-screen="profile">プロファイル</button>
 </div>
@@ -248,6 +249,14 @@
   <div class="section">
     <div class="section-title">候補者一覧</div>
     <div id="cand-list"></div>
+  </div>
+</div>
+
+<!-- ============ 不採用 ============ -->
+<div class="screen" id="screen-rejected">
+  <div class="section">
+    <div class="section-title">不採用者一覧</div>
+    <div id="rejected-list"></div>
   </div>
 </div>
 
@@ -494,7 +503,7 @@ function factCheckBlock(floorKey, c) {
 // ---------- 選考ステータス（FUS-269） ----------
 const STAGE_OPTIONS = ['面接前','1次面接','2次面接','最終面接'];
 const OUTCOME_OPTIONS = ['検討中','採用','不採用']; // 2026-08-19再設計でUI表示からは削除。データ構造は後方互換のため残置（未使用）
-const JUDGMENT_OPTIONS = ['－','1次面接','2次面接','最終面接','不採用'];
+const JUDGMENT_OPTIONS = ['－','1次面接','2次面接','最終面接','採用','不採用'];
 const REFERRAL_CALC_METHODS = ['手動入力','年収の◯％','月収の◯ヶ月分'];
 const REFERRAL_CALC_HINTS = {
   '手動入力': '💡 契約書の記載どおりに金額をそのまま入力してください。',
@@ -669,21 +678,31 @@ function candItemHtml(c) {
       <div class="del" onclick="deleteCandidate(${c.id}, event)" title="削除">✕</div>
     </div>`;
 }
-// 一覧のグループ分け：judgmentベース（2026-08-19再設計。outcomeフィールドは後方互換のため
-// データ構造に残すが、表示・グルーピングには使わない）。'不採用'以外は選考中扱い（'最終面接'も含む）
+// 一覧のグループ分け：judgmentベース（2026-08-21再設計・FUS-291）。候補者タブは
+// 選考中/採用の2枠のみ（不採用は候補者タブには出さず、専用の不採用タブへ分離）
 function renderList() {
   const wrap = document.getElementById('cand-list');
   if (!candidates.length) { wrap.innerHTML = '<div class="empty">まだ候補者がいません。</div>'; return; }
 
-  const inProgress = candidates.filter(c => c.judgment!=='不採用');
-  const rejected = candidates.filter(c => c.judgment==='不採用');
+  const inProgress = candidates.filter(c => c.judgment!=='不採用' && c.judgment!=='採用');
+  const hired = candidates.filter(c => c.judgment==='採用');
   const judgmentOrder = (c) => { const i = JUDGMENT_OPTIONS.indexOf(c.judgment); return i<0 ? 0 : i; };
   inProgress.sort((a,b) => judgmentOrder(a)-judgmentOrder(b));
 
   let html = '';
   if (inProgress.length) html += `<div class="list-group-title">選考中（${inProgress.length}）</div>` + inProgress.map(candItemHtml).join('');
-  if (rejected.length) html += `<div class="list-group-title" style="color:var(--red);">不採用（${rejected.length}）</div>` + rejected.map(candItemHtml).join('');
+  if (hired.length) html += `<div class="list-group-title" style="color:var(--green);">採用（${hired.length}）</div>` + hired.map(candItemHtml).join('');
+  if (!inProgress.length && !hired.length) html = '<div class="empty">選考中・採用の候補者がいません（不採用者は「不採用」タブをご確認ください）。</div>';
   wrap.innerHTML = html;
+}
+
+function renderRejectedList() {
+  const wrap = document.getElementById('rejected-list');
+  if (!wrap) return;
+  const rejected = candidates.filter(c => c.judgment==='不採用');
+  wrap.innerHTML = rejected.length
+    ? rejected.map(candItemHtml).join('')
+    : '<div class="empty">不採用の候補者はいません。</div>';
 }
 
 // ---------- レンダリング：面接 ----------
@@ -981,9 +1000,9 @@ function renderProfile() {
     <div class="note-box">※ スコア圏はあくまで参考。判定は面接官が決めます（奏は提示、決定は人）。</div>
     ${c.judgment==='最終面接' ? `
     <div class="btn-row" style="margin-top:10px">
-      <button class="btn btn-primary" onclick="sendToRoster('${c.id}')">📇 採用確定 → 職員台帳へ引き継ぐ</button>
+      <button class="btn btn-primary" onclick="confirmHireAndMoveToHired('${c.id}')">📇 採用確定 → 職員台帳へ引き継ぐ</button>
     </div>
-    <div class="note-box" style="margin-top:8px">氏名・入職希望日を職員台帳（kanade_roster.html）へ引き継ぎます。法人・事業所・雇用条件等の残りの項目は台帳側で入力してください。</div>` : ''}
+    <div class="note-box" style="margin-top:8px">氏名・入職希望日を職員台帳（kanade_roster.html）へ引き継ぎ、候補者タブの「採用」枠へ移動します。法人・事業所・雇用条件等の残りの項目は台帳側で入力してください。</div>` : ''}
   </div>
 
   <div class="section">
@@ -1062,6 +1081,14 @@ ${c.judgment||'未判定'}
 `;
 }
 
+// 採用確定：judgmentを「採用」へ更新し（候補者タブの採用枠へ自動移動）、職員台帳へ引き継ぐ（FUS-291）
+function confirmHireAndMoveToHired(id) {
+  const c = candidates.find(x=>x.id===id) || cur();
+  if (!c) return;
+  updateBasicField('judgment', '採用');
+  sendToRoster(id);
+}
+
 function sendToRoster(id) {
   const c = candidates.find(x=>x.id===id) || cur();
   if (!c) return;
@@ -1109,6 +1136,7 @@ function switchScreen(name) {
   if (name === 'profile') renderProfile();
   else if (name === 'interview') renderInterview();
   else if (name === 'list') { renderList(); renderAptitudeInbox(); }
+  else if (name === 'rejected') renderRejectedList();
   window.scrollTo(0,0);
 }
 let toastT;
