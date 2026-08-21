@@ -247,7 +247,21 @@
     <div id="staff-list" class="card-list">
       <div class="empty-state">施設を選択し、職員を登録してください</div>
     </div>
-    <button class="btn-primary" style="margin-top:12px;" onclick="showStaffForm()">＋ 新規職員を登録</button>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">
+      <button class="btn-primary" onclick="showStaffForm()">＋ 新規職員を登録</button>
+      <button class="btn-secondary" onclick="openRosterImport()">📥 職員台帳から取り込む</button>
+    </div>
+    <div class="note" style="margin-top:6px;">職員台帳（kanade_roster.html）に登録済みの職員の氏名・在籍期間を取り込めます。契約勤務日数・時間・シフトチーム区分等、シフト管理固有の項目はこちらで別途入力してください。</div>
+  </div>
+
+  <!-- 職員台帳からの取り込みモーダル（FUS-296） -->
+  <div id="roster-import-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:500;align-items:center;justify-content:center;padding:20px;">
+    <div style="background:var(--card,#fff);border-radius:12px;padding:20px;max-width:480px;width:100%;max-height:80vh;overflow-y:auto;">
+      <div class="section-title">職員台帳から取り込む</div>
+      <div class="note" id="roster-import-note" style="margin-bottom:10px;"></div>
+      <div id="roster-import-list"></div>
+      <button class="btn-secondary" style="margin-top:12px;" onclick="closeRosterImport()">閉じる</button>
+    </div>
   </div>
 
   <div id="staff-form" class="section" style="display:none;">
@@ -675,6 +689,63 @@ function showStaffForm(id) {
 function hideStaffForm() {
   document.getElementById('staff-form').style.display = 'none';
   editingStaffId = null;
+}
+
+// ═══════════════════════════════════════════════
+// 職員台帳（kanade_roster.html）からの取り込み（FUS-296）
+// v5アーキテクチャ方針：職員データは職員台帳を正とし、シフト側は氏名・在籍期間を
+// 取り込んで参照する。契約勤務日数・時間・シフトチーム区分等のシフト管理固有の
+// 項目は職員台帳側に存在しないため、取り込み後もシフト側で個別に入力する
+// （シフト作成ロジック本体・既存データ構造には触れない、配線のみの追加）
+// ═══════════════════════════════════════════════
+function loadRosterStaff() {
+  try { return JSON.parse(localStorage.getItem('kanade_roster_staff') || '[]'); } catch(e) { return []; }
+}
+function openRosterImport() {
+  const fid = currentStaffFacilityId();
+  if (!fid) { alert('先に対象施設を選択してください。'); return; }
+  const roster = loadRosterStaff().filter(s => s.status !== '退職済み');
+  const note = document.getElementById('roster-import-note');
+  const listEl = document.getElementById('roster-import-list');
+  if (!roster.length) {
+    note.textContent = '職員台帳（kanade_roster.html）に登録済みの職員がいません。';
+    listEl.innerHTML = '';
+  } else {
+    note.textContent = '取り込みたい職員をクリックしてください（在職中・休職中のみ表示）。';
+    listEl.innerHTML = roster.map(s => `
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px;border-bottom:1px solid #eee;cursor:pointer;" onclick="importFromRoster('${s.id}')">
+        <span>${s.name}${s.status==='休職中'?'（休職中）':''}</span>
+        <span style="font-size:0.75rem;color:#888;">${s.hireDate||''}〜${s.leaveDate||''}</span>
+      </div>`).join('');
+  }
+  document.getElementById('roster-import-overlay').style.display = 'flex';
+}
+function closeRosterImport() {
+  document.getElementById('roster-import-overlay').style.display = 'none';
+}
+function importFromRoster(rosterId) {
+  const roster = loadRosterStaff();
+  const rs = roster.find(x => x.id === rosterId);
+  if (!rs) return;
+  const fid = currentStaffFacilityId();
+  // 同一施設内で氏名が既存の場合は上書き更新（重複登録防止・在籍期間の再同期）、無ければ新規追加
+  const existing = staffList.find(s => s.facilityId === fid && s.name === rs.name);
+  if (existing) {
+    existing.name = rs.name;
+    existing.joinDate = rs.hireDate || existing.joinDate;
+    existing.leaveDate = rs.leaveDate || existing.leaveDate;
+    saveStaffList(staffList);
+    closeRosterImport();
+    renderStaffList();
+    alert(rs.name + 'さんの氏名・在籍期間を職員台帳の内容で更新しました。契約勤務日数・時間等は既存の値のまま変更していません。');
+    return;
+  }
+  closeRosterImport();
+  showStaffForm();
+  document.getElementById('s-name').value = rs.name;
+  document.getElementById('s-join-date').value = rs.hireDate || '';
+  document.getElementById('s-leave-date').value = rs.leaveDate || '';
+  alert(rs.name + 'さんの氏名・在籍期間を取り込みました。契約勤務日数・時間・シフトチーム区分等を入力して保存してください。');
 }
 
 function editStaff(id) { showStaffForm(id); }
