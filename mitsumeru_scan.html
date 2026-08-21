@@ -151,6 +151,7 @@
   <div style="width:28px;height:28px;background:linear-gradient(135deg,#4fc3f7,#1565c0);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">🔍</div>
   <h1>ミツメルスキャン <span style="font-size:0.68rem;font-weight:400;color:var(--sub);">v0.3 | Fusion Partners</span></h1>
   <button class="header-nav-btn" onclick="showRoster()">📋 受検者一覧</button>
+  <button class="header-nav-btn" id="admin-login-btn" onclick="promptAdminLogin()">🔑 管理者ログイン</button>
 </header>
 
 <div class="progress-wrap" id="progress-wrap">
@@ -462,11 +463,30 @@ let currentPage = 0;
 let prevPage = 0;
 let lastResult = null;
 
-// 受検者/管理者モード分離（FUS-274・2026-08-19）。URLに ?admin=1 を付けた時のみ管理者機能を表示
-const IS_ADMIN = new URLSearchParams(location.search).get('admin') === '1';
+// 受検者/管理者モード分離（FUS-274・2026-08-19）。URLに ?admin=1 を付けるか、
+// 🔑管理者ログイン（パスワード方式・FUS-293）で管理者機能を表示する。
+// 注意：パスワードはクライアント側の簡易な誤操作防止であり、本格的なセキュリティ機能ではない
+// （柴山さんと合意済み・?admin=1方式も後方互換のため残置）
+const ADMIN_UNLOCK_KEY = 'mitsumeru_scan_admin_unlocked';
+const ADMIN_PASSWORD = 'fusion2026';
+let IS_ADMIN = new URLSearchParams(location.search).get('admin') === '1' || localStorage.getItem(ADMIN_UNLOCK_KEY) === '1';
 function applyModeVisibility(){
   const rosterBtn = document.querySelector('.header-nav-btn[onclick="showRoster()"]');
   if (rosterBtn) rosterBtn.style.display = IS_ADMIN ? '' : 'none';
+  const loginBtn = document.getElementById('admin-login-btn');
+  if (loginBtn) loginBtn.style.display = IS_ADMIN ? 'none' : '';
+}
+function promptAdminLogin(){
+  const pw = prompt('管理者パスワードを入力してください');
+  if (pw === null) return;
+  if (pw === ADMIN_PASSWORD) {
+    localStorage.setItem(ADMIN_UNLOCK_KEY, '1');
+    IS_ADMIN = true;
+    applyModeVisibility();
+    alert('管理者モードを有効にしました。');
+  } else {
+    alert('パスワードが違います。');
+  }
 }
 
 // ═══════════════════════════════════════════════
