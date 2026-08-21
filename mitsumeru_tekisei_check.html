@@ -481,8 +481,12 @@ let lastResult = null;
 // 🔑管理者ログイン（パスワード方式・FUS-293）で管理者機能を表示する。
 // 注意：パスワードはクライアント側の簡易な誤操作防止であり、本格的なセキュリティ機能ではない
 // （柴山さんと合意済み・?admin=1方式も後方互換のため残置）
+// 🔴2026-08-21緊急対応（FUS-296）：旧パスワードを平文でソースへ書いていたため公開リポジトリへ
+// 漏洩した。パスワードは変更のうえSHA-256ハッシュのみをソースへ保持する方式へ変更した
+// （クライアント側実行のためハッシュ化も完全な防御にはならないが、grep等でのパスワード直読み
+// は防げる。新パスワードは柴山さんへ別経路で共有済み・ソースには一切含めない）
 const ADMIN_UNLOCK_KEY = 'mitsumeru_tekisei_admin_unlocked';
-const ADMIN_PASSWORD = 'fusion2026';
+const ADMIN_PASSWORD_HASH = 'd34ae6b141c7473409f3d4feb6f64d7c34c1228dc578476b36fae974cc833e70';
 let IS_ADMIN = new URLSearchParams(location.search).get('admin') === '1' || localStorage.getItem(ADMIN_UNLOCK_KEY) === '1';
 function applyModeVisibility(){
   const sendBtn = document.querySelector('.header-nav-btn[onclick="sendAllToAdmin()"]');
@@ -492,10 +496,15 @@ function applyModeVisibility(){
   const loginBtn = document.getElementById('admin-login-btn');
   if (loginBtn) loginBtn.style.display = IS_ADMIN ? 'none' : '';
 }
-function promptAdminLogin(){
+async function sha256Hex(text){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+async function promptAdminLogin(){
   const pw = prompt('管理者パスワードを入力してください');
   if (pw === null) return;
-  if (pw === ADMIN_PASSWORD) {
+  const hash = await sha256Hex(pw);
+  if (hash === ADMIN_PASSWORD_HASH) {
     localStorage.setItem(ADMIN_UNLOCK_KEY, '1');
     IS_ADMIN = true;
     applyModeVisibility();
