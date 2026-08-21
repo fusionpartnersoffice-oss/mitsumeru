@@ -3099,14 +3099,16 @@ function loadSample(){
   ]);
 
   // ── NDB動線（新規利用者獲得パイプライン） ──
+  // 稼働率3項目（capacity/workdays/monthlyVisits）はFUS-277で追加された新項目。
+  // FUS-289：loadSample()が未対応だったため追加（各事業所の物語に沿った値）
   save('nagi_pipe',[
-    // デイサービス：居宅介護支援からの紹介が主。見学→成約率は高い
-    {officeId:o1, approach:60, inquiry:18, visit:12, contract:8, repeat:7},
-    // グループホーム：入居待ち状態。成約率は高いが母数が少ない
-    {officeId:o2, approach:24, inquiry:10, visit:7, contract:5, repeat:5},
-    // 訪問介護：営業不足・アプローチ数が少なく慢性的な稼働不足
-    {officeId:o3, approach:30, inquiry:6, visit:3, contract:1, repeat:1},
-    // FusionOS Labo：note発信・SNS経由の問い合わせが主。成約率は高い
+    // デイサービス：居宅介護支援からの紹介が主。見学→成約率は高い。稼働率も良好(約85%)
+    {officeId:o1, approach:60, inquiry:18, visit:12, contract:8, repeat:7, capacity:15, workdays:25, monthlyVisits:320},
+    // グループホーム：入居待ち状態。成約率は高いが母数が少ない。稼働率はほぼ満床(約96%)
+    {officeId:o2, approach:24, inquiry:10, visit:7, contract:5, repeat:5, capacity:9, workdays:30, monthlyVisits:260},
+    // 訪問介護：営業不足・アプローチ数が少なく慢性的な稼働不足。稼働率も低迷(50%)
+    {officeId:o3, approach:30, inquiry:6, visit:3, contract:1, repeat:1, capacity:20, workdays:25, monthlyVisits:250},
+    // FusionOS Labo：note発信・SNS経由の問い合わせが主。定員制の施設ではないため稼働率3項目は対象外（未入力のまま）
     {officeId:o4, approach:40, inquiry:8, visit:5, contract:3, repeat:3},
   ]);
 
