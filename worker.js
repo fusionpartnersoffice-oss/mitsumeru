@@ -1473,9 +1473,27 @@ async function writeVaultMarkdown(env, accessToken, date, record, folderId) {
   // 2026-07-25設計指示：Vault直下に散らからないよう専用サブフォルダへ集約する（Picker再選択不要）
   const dailyFolderId = await getCachedDailyFolderId(env, accessToken, folderId, 'ミツメル日次記録');
   const filename = `${date}.md`;
-  const content = buildVaultMarkdown(date, record);
+  let content = buildVaultMarkdown(date, record);
   const existing = await findVaultFile(accessToken, dailyFolderId, filename);
-  if (existing) return overwriteVaultFile(accessToken, existing.id, content);
+  if (existing) {
+    // FUS-295（2026-08-21発見）恒久修正：buildVaultMarkdown()は固定セクションのみを再生成するため、
+    // note-publish-watch（別タスク）が同日中に追記した「## note公開」節は、この上書きで
+    // 消えてしまっていた（8/16・8/21で実際にデータ消失が発生）。上書き前に既存ファイルの
+    // note公開節を読み取り、あれば新しい内容へ引き継ぐ。
+    try {
+      const existingRes = await fetch(`https://www.googleapis.com/drive/v3/files/${existing.id}?alt=media`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      const existingContent = await existingRes.text();
+      const notePublish = parseVaultMarkdown(existingContent).notePublish;
+      if (notePublish) {
+        content = content.trimEnd() + `\n\n## note公開\n${notePublish}\n`;
+      }
+    } catch (e) {
+      // 既存内容の読み取りに失敗しても朝夜の保存自体は止めない（note公開節の引き継ぎのみ諦める）
+    }
+    return overwriteVaultFile(accessToken, existing.id, content);
+  }
   return createVaultFile(accessToken, dailyFolderId, filename, content);
 }
 
