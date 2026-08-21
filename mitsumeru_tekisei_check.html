@@ -997,10 +997,10 @@ function sendToAdmin(){
   const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(compact)))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
   const url = `https://fusionpartnersoffice-oss.github.io/mitsumeru/nagi_system.html?d=${encoded}`;
 
-  // Web Share API（モバイル対応）
+  // Web Share API（モバイル対応）※件名・本文に実名を出さない（FUS-290・FUS-271と同方式）
   if(navigator.share){
     navigator.share({
-      title: `【診断完了】${lastResult.name}`,
+      title: '【診断完了】1名分',
       text: '診断が完了しました。下のリンクを開いてインポートしてください。',
       url: url
     }).then(()=>{
@@ -1008,8 +1008,8 @@ function sendToAdmin(){
     }).catch(()=>{});
   } else {
     // デスクトップ：メールで送信
-    const subject = encodeURIComponent(`【診断完了】${lastResult.name}`);
-    const body = encodeURIComponent(`診断が完了しました。\n\n以下のリンクを開いてインポートしてください：\n${url}`);
+    const subject = encodeURIComponent('【診断完了】1名分');
+    const body = encodeURIComponent(`診断が完了しました（受検者氏名は本文には記載していません。リンク先でインポートすると氏名を含む詳細が表示されます）。\n\n以下のリンクを開いてインポートしてください：\n${url}`);
     window.open(`mailto:?subject=${subject}&body=${body}`);
     document.getElementById('send-ok').style.display='block';
   }
@@ -1201,8 +1201,9 @@ function sendToInterviewToolByEmail(idx) {
   const data = buildInterviewToolExportData(r);
   const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(data)))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
   const url = `${location.origin}${location.pathname.replace(/mitsumeru_tekisei_check\.html$/, 'kanade_app.html')}?intake=${encoded}`;
-  const subject = encodeURIComponent(`【適性検査結果】${r.name || ''}`);
-  const body = encodeURIComponent(`${r.name || ''}様の適性検査結果です。\n\n以下のリンクを開くと、面接ツール（奏）の受信箱に自動で取り込まれます：\n${url}`);
+  // 件名・本文に実名を出さない（FUS-290・FUS-271と同方式。氏名はリンク先のintakeデータにのみ含まれる）
+  const subject = encodeURIComponent('【適性検査結果】1名分');
+  const body = encodeURIComponent('適性検査結果です（受検者氏名は本文には記載していません。リンク先で取り込むと氏名を含む詳細が表示されます）。\n\n以下のリンクを開くと、面接ツール（奏）の受信箱に自動で取り込まれます：\n' + url);
   window.open(`mailto:?subject=${subject}&body=${body}`);
 }
 
