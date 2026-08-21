@@ -1276,9 +1276,26 @@ function dismissInboxItem(i){
   renderAptitudeInbox();
 }
 
+// 旧judgment値（FUS-269再設計前：''/採用推薦/2次面談/見送り）を新5択へ移行する（FUS-288）。
+// 柴山さん実ブラウザで、再設計前に作られた候補者データがそのまま残り、
+// 新デザインのグルーピング・バッジが正しく機能しない実害が確認されたための対応
+const JUDGMENT_MIGRATION_MAP = { '採用推薦': '最終面接', '2次面談': '2次面接', '見送り': '不採用', '': JUDGMENT_OPTIONS[0] };
+function migrateLegacyJudgmentData() {
+  let migrated = 0;
+  candidates.forEach(c => {
+    if (!JUDGMENT_OPTIONS.includes(c.judgment)) {
+      c.judgment = JUDGMENT_MIGRATION_MAP[c.judgment] !== undefined ? JUDGMENT_MIGRATION_MAP[c.judgment] : JUDGMENT_OPTIONS[0];
+      migrated++;
+    }
+    if (!STAGE_OPTIONS.includes(c.stage)) { c.stage = STAGE_OPTIONS[0]; migrated++; }
+  });
+  if (migrated) save();
+}
+
 // 起動
 processIntakeFromURL();
 load();
+migrateLegacyJudgmentData();
 seedKanadeAppDemoDataIfEmpty();
 renderList(); renderInterview(); renderProfile();
 renderAptitudeInbox();
