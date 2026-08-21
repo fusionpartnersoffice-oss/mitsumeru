@@ -667,12 +667,17 @@ function updateLiveTotal() {
 }
 
 // ---------- レンダリング：候補者リスト ----------
+// 適性検査（フェーズ1/2：エゴグラム・エニアグラム・LSRP）の実施有無判定（FUS-275のsendToRoster()
+// と同一条件を共通化。FUS-292で一覧バッジにも使用）
+function hasAptitudeData(c) {
+  return !!(c.egoCP || c.egoNP || c.egoA || c.egoFC || c.egoAC || c.ennea || c.lsrp1 || c.lsrp2);
+}
 function candItemHtml(c) {
   return `
     <div class="cand-item ${c.id===currentId?'current':''}" onclick="selectCandidate(${c.id})">
       <div>
         <div class="nm">${c.isBlacklisted?'🚫 ':''}${esc(c.name)}</div>
-        <div class="meta">${esc(c.position)||'—'} · ${fmtDate(c.date)} · <span class="pill" style="padding:1px 6px;font-size:10px;">${esc(c.judgment||JUDGMENT_OPTIONS[0])}</span></div>
+        <div class="meta">${esc(c.position)||'—'} · ${fmtDate(c.date)} · <span class="pill" style="padding:1px 6px;font-size:10px;">${esc(c.judgment||JUDGMENT_OPTIONS[0])}</span>${hasAptitudeData(c) ? ' · <span class="pill" style="padding:1px 6px;font-size:10px;color:var(--green);border-color:var(--green);" title="適性検査（ミツメルスキャン等）実施済み">🧭 適性済</span>' : ''}</div>
       </div>
       <div class="sc">${totalOf(c)}<span style="font-size:11px;color:var(--text3)">/55</span></div>
       <div class="del" onclick="deleteCandidate(${c.id}, event)" title="削除">✕</div>
@@ -1094,7 +1099,7 @@ function sendToRoster(id) {
   if (!c) return;
   const nameParts = (c.name||'').trim().split(/\s+/);
   // 面接時適性検査（フェーズ1/2）の実施有無を判定し、実施済みなら要約を職員台帳へ引き継ぐ（FUS-275）
-  const hasAptitude = c.egoCP || c.egoNP || c.egoA || c.egoFC || c.egoAC || c.ennea || c.lsrp1 || c.lsrp2;
+  const hasAptitude = hasAptitudeData(c);
   const aptitudeSummary = hasAptitude
     ? `エゴグラム:CP${c.egoCP||'-'}/NP${c.egoNP||'-'}/A${c.egoA||'-'}/FC${c.egoFC||'-'}/AC${c.egoAC||'-'} / エニアグラム:${c.ennea||'-'} / LSRP:${(c.lsrp1||c.lsrp2)?(c.lsrp1||'-')+'/'+(c.lsrp2||'-'):'-'}`
     : null;
