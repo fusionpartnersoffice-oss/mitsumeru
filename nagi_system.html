@@ -1088,6 +1088,17 @@ function getKSAGap(ksa, avgTask, avgSocial){
   return (n(ksa)/80 - (n(avgTask)+n(avgSocial))/112)*100;
 }
 
+// KSAギャップの解釈ラベル（FUS-294・2026-08-21）：プラス方向（知識先行・裸の王様リスク）に
+// 加えてマイナス方向（自信不足・過小評価リスク）にも同じ粒度でラベルを付ける。
+// ≤-20%は柴山さん確定仕様、-10%〜-20%の「要モニタリング」対称形は設計仮置き（要確認）
+function getKSAGapLabel(gap){
+  if(gap>=20) return {color:'var(--danger)', text:'🚨 裸の王様リスク'};
+  if(gap>=10) return {color:'var(--warn)', text:'⚠️ 要モニタリング'};
+  if(gap<=-20) return {color:'var(--danger)', text:'😟 自信不足リスク'};
+  if(gap<=-10) return {color:'var(--warn)', text:'⚠️ 要モニタリング'};
+  return {color:'var(--accent2)', text:'✅ 正常範囲'};
+}
+
 // 事業所の部署平均Task/Social（TA実施済スタッフのみ）
 function getOfficeAvgTA(officeId){
   const staff=getAllStaff().filter(s=>s.officeId===officeId&&(n(s.task)>0||n(s.social)>0));
@@ -3325,7 +3336,8 @@ function openStaffDetail(staffId){
   const enn=s.enn||[];
   const offAvg=getOfficeAvgTA(s.officeId);
   const gap=getKSAGap(s.ksa, offAvg.avgTask, offAvg.avgSoc);
-  const gapColor=gap>20?'var(--danger)':gap>10?'var(--warn)':'var(--accent2)';
+  const gapLabel=getKSAGapLabel(gap);
+  const gapColor=gapLabel.color;
   const rcColor=rc.cls==='rc-danger'?'var(--danger)':rc.cls==='rc-warn'?'var(--warn)':'var(--accent2)';
   const lsrpColor=lsrpL.cls==='lsrp-D'?'var(--danger)':lsrpL.cls==='lsrp-W'?'var(--warn)':'var(--accent2)';
 
@@ -3352,7 +3364,7 @@ function openStaffDetail(staffId){
           <div><span class="karte-label">Task行動</span><br><span class="karte-val" style="font-size:1.2rem;">${n(s.task)}</span><span style="font-size:0.72rem;color:var(--sub);"> /64</span></div>
           <div><span class="karte-label">Social行動</span><br><span class="karte-val" style="font-size:1.2rem;">${n(s.social)}</span><span style="font-size:0.72rem;color:var(--sub);"> /64</span></div>
           <div><span class="karte-label">SL段階</span><br><span class="karte-val" style="font-size:1.3rem;color:var(--accent);">${slStage}</span></div>
-          <div><span class="karte-label">KSA Gap</span><br><span class="karte-val" style="color:${gapColor};">${gap>0?'+':''}${gap.toFixed(1)}%</span></div>
+          <div><span class="karte-label">KSA Gap</span><br><span class="karte-val" style="color:${gapColor};">${gap>0?'+':''}${gap.toFixed(1)}%</span><br><span style="font-size:0.68rem;color:${gapColor};">${n(s.ksa)>0?gapLabel.text:''}</span></div>
         </div>
         <div class="karte-sl-box">
           <div class="karte-sl-rec">📌 ${slInfo.rec||'─'}</div>

@@ -243,6 +243,14 @@ function getStaffByOffice(oid){ return getAllStaff().filter(s=>s.officeId===oid)
 function getKSAGap(ksa, avgTask, avgSocial){
   return (n(ksa)/80 - (n(avgTask)+n(avgSocial))/112)*100;
 }
+// KSAギャップの解釈ラベル（FUS-294・nagi_system.htmlのgetKSAGapLabel()と同一ロジックを移植）
+function getKSAGapLabel(gap){
+  if(gap>=20) return {color:'var(--danger)', text:'🚨 裸の王様リスク'};
+  if(gap>=10) return {color:'var(--warn)', text:'⚠️ 要モニタリング'};
+  if(gap<=-20) return {color:'var(--danger)', text:'😟 自信不足リスク'};
+  if(gap<=-10) return {color:'var(--warn)', text:'⚠️ 要モニタリング'};
+  return {color:'var(--accent2)', text:'✅ 正常範囲'};
+}
 function getOfficeAvgTA(officeId){
   const staff=getAllStaff().filter(s=>s.officeId===officeId&&(n(s.task)>0||n(s.social)>0));
   if(!staff.length) return {avgTask:0,avgSoc:0,count:0};
@@ -372,8 +380,8 @@ function renderStaffList(){
       if(!officeAvgCache[s.officeId]) officeAvgCache[s.officeId]=getOfficeAvgTA(s.officeId);
       const avg=officeAvgCache[s.officeId];
       const gap=getKSAGap(s.ksa,avg.avgTask,avg.avgSoc);
-      const color=gap>20?'var(--danger)':gap>10?'var(--warn)':'inherit';
-      ksaGapCell=`<span style="color:${color};font-weight:600;">${gap>0?'+':''}${gap.toFixed(1)}%</span>`;
+      const gapLabel=getKSAGapLabel(gap);
+      ksaGapCell=`<span style="color:${gapLabel.color};font-weight:600;">${gap>0?'+':''}${gap.toFixed(1)}%</span><br><span style="font-size:0.68rem;color:${gapLabel.color};">${gapLabel.text}</span>`;
     }
     return `<tr>
       <td>${off?.name||'─'}</td>
