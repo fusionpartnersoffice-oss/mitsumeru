@@ -1184,8 +1184,13 @@ function seedKanadeAppDemoDataIfEmpty(){
   });
   candidates.push({ ...base, id: newId(),
     name:'デモ候補者次郎', position:'児発管', date:'2026-08-27', interviewer:'デモ面接官',
-    stage:'最終面接', judgment:'最終面接',
+    stage:'最終面接', judgment:'採用',
     referralFeeCalcMethod:'月収の◯ヶ月分', desiredMonthlySalary:300000, referralFeeCalcRate:1.5
+  });
+  candidates.push({ ...base, id: newId(),
+    name:'デモ候補者五郎', position:'生活相談員', date:'2026-08-28', interviewer:'デモ面接官',
+    stage:'最終面接', judgment:'最終面接',
+    referralFeeCalcMethod:'手動入力'
   });
   candidates.push({ ...base, id: newId(),
     name:'デモ候補者三郎', position:'介護職員', date:'2026-08-20', interviewer:'デモ面接官',
