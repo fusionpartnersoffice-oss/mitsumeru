@@ -1175,7 +1175,10 @@ function seedKanadeAppDemoDataIfEmpty(){
     name:'デモ候補者太郎', position:'介護職員', date:'2026-08-25', interviewer:'デモ面接官',
     stage:'1次面接', judgment:'1次面接',
     contactNote:'平日18時以降・留守電可', turnoverReason:'デモ用の転職理由サンプル',
-    qualifications:'介護福祉士', desiredStartDate:'2026-10-01', referralRoute:'ハロワ'
+    qualifications:'介護福祉士', desiredStartDate:'2026-10-01', referralRoute:'ハロワ',
+    // FUS-308（2026-08-22・明日8/23実機検収準備）：候補者一覧の「🧭適性済」バッジ
+    // （FUS-292）の実機確認用に、適性検査データ（フェーズ1/2）を最小限投入
+    egoCP:5, egoNP:6, egoA:6, egoFC:5, egoAC:4, ennea:'タイプ9（調停者）'
   });
   candidates.push({ ...base, id: newId(),
     name:'デモ候補者花子', position:'児童指導員', date:'2026-08-26', interviewer:'デモ面接官',
