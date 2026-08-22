@@ -796,6 +796,27 @@ function loadSampleData(){
   alert('✅ サンプルデータ7件を読み込みました。');
 }
 
+// 実機確認用デモデータ（2026-08-22・FUS-306・柴山さんの明日8/23実機検収に向けて緊急追加）。
+// 既存のloadSampleData()（確認ダイアログ付き・7件・手動起動のみ）とは別に、
+// kanade_shift.html/kanade_roster.htmlのseedDemoDataIfEmptyパターンを踏襲し、
+// 受検者が0件の初回表示時のみ自動で少数（2件）投入する。既存の診断ロジック・
+// loadSampleData()自体には一切触れない
+function seedTaDemoDataIfEmpty(){
+  const roster = loadRoster();
+  if (roster.length > 0) return;
+  const corp='社会福祉法人 やまびこ会', d='2026-06-14';
+  saveRoster([
+    {type:'team_assessment',name:'デモ 太郎',corp,office:'デイサービス やまびこ',role:'リーダークラス',date:d,
+     task:41,social:24,ksa:68,ksaGap:15.3,slStage:'M3',
+     taskItems:[6,5,5,5,5,5,5,5],socialItems:[3,3,4,3,3,3,2,3],
+     ksaItems:[5,4,4,4,4,5,4,4,5,4,4,4,4,4,4,3],savedAt:'2026-06-14T09:05:00.000Z'},
+    {type:'team_assessment',name:'デモ 花子',corp,office:'グループホーム こもれび',role:'一般職',date:d,
+     task:28,social:38,ksa:55,ksaGap:3.1,slStage:'M2',
+     taskItems:[4,3,4,3,4,3,4,3],socialItems:[5,5,5,5,5,4,5,4],
+     ksaItems:[4,3,4,3,4,3,4,3,4,3,3,4,3,4,3,3],savedAt:'2026-06-14T09:10:00.000Z'},
+  ]);
+}
+
 function clearRoster() {
   if (!confirm('全件削除しますか？この操作は元に戻せません')) return;
   localStorage.removeItem(ROSTER_KEY);
@@ -962,6 +983,7 @@ function init() {
   renderQuestions();
   renderKSAQuestions();
   updateProgress();
+  seedTaDemoDataIfEmpty();
 }
 
 init();
