@@ -869,17 +869,32 @@ async function handleVaultAsakanRead(request, env) {
     // 2026-08-01再設計（柴山さん・設計壁打ち）：タップ式反応を廃止し「見出し＋要約を読んで
     // コメントを書く」形に変更したため、見出し行の直後（次の見出し・区切り線・見出しレベル
     // 変化の直前まで）にある要約段落もあわせて抽出する。
+    // 2026-08-22是正（柴山さん実害報告・2回目の同種事故）：朝刊フォーマットが再度変化し、
+    // 「### [タイトル](url)」から「**N. [タイトル](url)**」（太字箇条書き・##は区分見出しのみに使用）
+    // へドリフトしていたため、再び見出し0件になっていた。SKILL.md側がMarkdown構文レベルを
+    // 明示的に固定していないことが根本原因（別途SKILL.md是正を依頼済み）。ここでは同種の再発に
+    // 備え、正規表現を単一パターンへの依存から複数パターン許容へ変更し、多少の表記ゆれでは
+    // 壊れない設計にする。
+    const HEADING_PATTERNS = [
+      /^#{2,4}\s*\[([^\]]+)\]/,       // ### [タイトル] / ## [タイトル]（##は通常区分見出しのため[が無く該当しない想定）
+      /^\*\*\d+\.\s*\[([^\]]+)\]/,    // **1. [タイトル]**（2026-08-22〜の太字箇条書き形式）
+    ];
     const lines = content.split('\n');
     const headings = [];
     let idx = 0;
     for (let i = 0; i < lines.length; i++) {
-      const headingMatch = lines[i].match(/^###\s*\[([^\]]+)\]/);
+      let headingMatch = null;
+      for (const pattern of HEADING_PATTERNS) {
+        headingMatch = lines[i].match(pattern);
+        if (headingMatch) break;
+      }
       if (!headingMatch) continue;
       idx += 1;
       const summaryLines = [];
       for (let j = i + 1; j < lines.length; j++) {
         const line = lines[j];
         if (/^#{1,6}\s/.test(line) || /^---\s*$/.test(line)) break;
+        if (HEADING_PATTERNS.some(p => p.test(line))) break; // 次の項目に到達したら打ち切る
         if (line.trim()) summaryLines.push(line.trim());
       }
       headings.push({ index: idx, heading: headingMatch[1].trim(), summary: summaryLines.join(' ') });
