@@ -944,14 +944,14 @@
     <div class="field">
       <label>MUST（好きなこと・得意なこと）</label>
       <div style="display:flex;gap:8px;align-items:flex-start;">
-        <textarea id="p-must" placeholder="例：組織設計、数値分析、人材育成" style="flex:1;min-height:60px;"></textarea>
+        <textarea id="p-must" autocomplete="off" placeholder="例：組織設計、数値分析、人材育成" style="flex:1;min-height:60px;"></textarea>
         <button id="voice-btn-p-must" class="voice-btn" onclick="toggleVoiceInput('p-must','voice-btn-p-must')" title="音声入力（タップで開始／停止）">🎤</button>
       </div>
     </div>
     <div class="field">
       <label>NEVER（嫌いなこと・苦手なこと）</label>
       <div style="display:flex;gap:8px;align-items:flex-start;">
-        <textarea id="p-never" placeholder="例：精神論、穴埋め作業、優先順位づけ" style="flex:1;min-height:60px;"></textarea>
+        <textarea id="p-never" autocomplete="off" placeholder="例：精神論、穴埋め作業、優先順位づけ" style="flex:1;min-height:60px;"></textarea>
         <button id="voice-btn-p-never" class="voice-btn" onclick="toggleVoiceInput('p-never','voice-btn-p-never')" title="音声入力（タップで開始／停止）">🎤</button>
       </div>
     </div>
@@ -1096,7 +1096,7 @@
     <div class="field">
       <label>具体的に何がありましたか？</label>
       <div style="display:flex;gap:8px;align-items:flex-start;">
-        <textarea id="m-noise-detail" placeholder="誰のどんな言葉・行動に削られたか、事実だけを吐き出す" style="flex:1;"></textarea>
+        <textarea id="m-noise-detail" autocomplete="off" placeholder="誰のどんな言葉・行動に削られたか、事実だけを吐き出す" style="flex:1;"></textarea>
         <button id="voice-btn-m-noise-detail" class="voice-btn" onclick="toggleVoiceInput('m-noise-detail','voice-btn-m-noise-detail')" title="音声入力（タップで開始／停止）">🎤</button>
       </div>
     </div>
@@ -1118,7 +1118,7 @@
     <div class="field">
       <label>今日の一言（任意）</label>
       <div style="display:flex;gap:8px;align-items:flex-start;">
-        <textarea id="m-want" oninput="saveMorning()" placeholder="面接前で緊張している、など。なければ空欄でOK" style="flex:1;min-height:60px;"></textarea>
+        <textarea id="m-want" autocomplete="off" oninput="saveMorning()" placeholder="面接前で緊張している、など。なければ空欄でOK" style="flex:1;min-height:60px;"></textarea>
         <button id="voice-btn-m-want" class="voice-btn" onclick="toggleVoiceInput('m-want','voice-btn-m-want')" title="音声入力（タップで開始／停止）">🎤</button>
       </div>
     </div>
