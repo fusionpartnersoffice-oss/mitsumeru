@@ -245,8 +245,8 @@ function getKSAGap(ksa, avgTask, avgSocial){
 }
 // KSAギャップの解釈ラベル（FUS-294・nagi_system.htmlのgetKSAGapLabel()と同一ロジックを移植）
 function getKSAGapLabel(gap){
-  if(gap>=20) return {color:'var(--danger)', text:'🚨 裸の王様リスク'};
-  if(gap>=10) return {color:'var(--warn)', text:'⚠️ 要モニタリング'};
+  if(gap>20) return {color:'var(--danger)', text:'🚨 裸の王様リスク'};
+  if(gap>10) return {color:'var(--warn)', text:'⚠️ 要モニタリング'};
   if(gap<=-20) return {color:'var(--danger)', text:'😟 自信不足リスク'};
   if(gap<=-10) return {color:'var(--warn)', text:'⚠️ 要モニタリング'};
   return {color:'var(--accent2)', text:'✅ 正常範囲'};

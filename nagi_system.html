@@ -1092,8 +1092,8 @@ function getKSAGap(ksa, avgTask, avgSocial){
 // 加えてマイナス方向（自信不足・過小評価リスク）にも同じ粒度でラベルを付ける。
 // ≤-20%は柴山さん確定仕様、-10%〜-20%の「要モニタリング」対称形は設計仮置き（要確認）
 function getKSAGapLabel(gap){
-  if(gap>=20) return {color:'var(--danger)', text:'🚨 裸の王様リスク'};
-  if(gap>=10) return {color:'var(--warn)', text:'⚠️ 要モニタリング'};
+  if(gap>20) return {color:'var(--danger)', text:'🚨 裸の王様リスク'};
+  if(gap>10) return {color:'var(--warn)', text:'⚠️ 要モニタリング'};
   if(gap<=-20) return {color:'var(--danger)', text:'😟 自信不足リスク'};
   if(gap<=-10) return {color:'var(--warn)', text:'⚠️ 要モニタリング'};
   return {color:'var(--accent2)', text:'✅ 正常範囲'};
