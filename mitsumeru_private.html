@@ -2843,6 +2843,14 @@ function jumpToToday() {
 document.addEventListener('visibilitychange', checkDateRollover);
 window.addEventListener('focus', checkDateRollover);
 setInterval(checkDateRollover, 60000);
+// 2026-08-26是正（柴山さん2回目の実害報告・朝タブ/夜タブに前日の内容が残る）：
+// visibilitychange/focus/60秒間隔はいずれも、ページのJS実行コンテキストが生きている前提の検知手段。
+// ブラウザのbfcache（ページを再読み込みせず凍結保存し、タブ復帰時にJSを再実行しないまま
+// DOMごと復元する挙動。モバイルで発生しやすい）で復元された場合、これらのイベントが
+// 確実に発火する保証が無く、日付が変わっていても前日のDOM内容（フォーム値・debug-btnの
+// 選択状態）がそのまま表示され続ける可能性がある。bfcache復元時に必ず発火するpageshow
+// イベント（event.persistedがtrueの時が復元・falseが通常読み込み）でも明示的にチェックする。
+window.addEventListener('pageshow', checkDateRollover);
 
 function saveProfile() {
   const profile = {
