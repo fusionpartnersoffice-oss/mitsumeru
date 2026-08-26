@@ -2820,8 +2820,14 @@ let _appToday = TODAY;
 // 押すまで前日のデータを表示し続ける作りだった。「いちいち上書きしろというのか」という指摘の通り、
 // 手動確認を挟む設計自体が使いにくかったため、宵越し入力（意図的に過去/未来日を選んでいる時）で
 // なければ自動で切り替えるよう変更する。wasOnTodayの判定ロジックはそのまま安全策として活かす。
-async function checkDateRollover() {
-  if (document.hidden) return;
+async function checkDateRollover(skipHiddenGuard) {
+  // 2026-08-26是正（設計・3回目の対策不奏功を受けた4回目の対応）：
+  // 従来はdocument.hiddenならここで即return していたが、pageshowイベント（bfcache復元時に
+  // 発火。まさに「非表示から復帰した瞬間」を捉えるために追加した検知手段）が、documentの
+  // 可視状態の更新より先に発火するモバイル実機挙動が既知のため、このガードがpageshow経由の
+  // 呼び出しを無効化してしまっていた疑いがある（開発2回目の対応commit 89174c4のpageshow追加が
+  // 効いていなかった一因）。pageshowからの呼び出しはskipHiddenGuard=trueでガードを無視する。
+  if (document.hidden && !skipHiddenGuard) return;
   const fresh = localDateStr(new Date());
   if (fresh === _appToday) return;                 // 日付は変わっていない
   const wasOnToday = (targetDate === _appToday);   // 手動で過去日を選んでいなければ true
@@ -2850,7 +2856,7 @@ setInterval(checkDateRollover, 60000);
 // 確実に発火する保証が無く、日付が変わっていても前日のDOM内容（フォーム値・debug-btnの
 // 選択状態）がそのまま表示され続ける可能性がある。bfcache復元時に必ず発火するpageshow
 // イベント（event.persistedがtrueの時が復元・falseが通常読み込み）でも明示的にチェックする。
-window.addEventListener('pageshow', checkDateRollover);
+window.addEventListener('pageshow', () => checkDateRollover(true));
 
 function saveProfile() {
   const profile = {
