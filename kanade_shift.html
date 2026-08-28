@@ -121,6 +121,16 @@
   .result-warn { background: #fdf3e0; border: 1px solid var(--gold); color: #7a5b00; }
 
   .empty-state { text-align: center; color: var(--text3); font-size: 12px; padding: 30px 0; }
+
+  /* FUS-272 Phase7：印刷スタイル。シフトカレンダー（#shift-result-area）のみを印刷対象にし、
+     それ以外（ヘッダー・タブ・入力フォーム・警告注記・ボタン類）は印刷時に非表示にする。 */
+  @media print {
+    .header, .mode-tabs, .no-print, #screen-shift .section:first-of-type { display: none !important; }
+    .warn-note { display: none !important; }
+    body { background: #fff; color: #111; }
+    .calc-table, .calc-table th, .calc-table td { border-color: #999 !important; }
+    .card-list, .section-title { color: #111; }
+  }
 </style>
 </head>
 <body>
@@ -133,6 +143,7 @@
 <div class="mode-tabs">
   <button class="mode-tab active" onclick="switchTab('facility')">🏢 施設マスタ</button>
   <button class="mode-tab" onclick="switchTab('staff')">👤 職員マスタ</button>
+  <button class="mode-tab" onclick="switchTab('leave')">🗓️ 休み希望</button>
   <button class="mode-tab" onclick="switchTab('check')">✅ 法定基準チェック</button>
   <button class="mode-tab" onclick="switchTab('shift')">📅 シフト作成</button>
   <button class="mode-tab" onclick="switchTab('contract')">⏱ 契約時間・有給管理</button>
@@ -321,6 +332,21 @@
   </div>
 </div>
 
+<!-- ══════════ FUS-272 Phase6：休み希望 ══════════ -->
+<div id="screen-leave" class="screen">
+  <div class="section">
+    <div class="section-title">対象施設・対象月</div>
+    <div class="field-row">
+      <div class="field"><label>施設</label><select id="leave-facility-select" onchange="renderLeaveScreen()"></select></div>
+      <div class="field"><label>対象年月</label><input type="month" id="leave-month" onchange="renderLeaveScreen()"></div>
+    </div>
+    <div class="note">職員ごとに、対象月の休み希望日をクリックして選択してください（選択と同時に自動保存されます）。ここで選んだ休み希望日は、モジュールA（シフト作成）で自動的に除外されます。</div>
+  </div>
+  <div id="leave-result-area">
+    <div class="empty-state">施設と対象年月を選択してください</div>
+  </div>
+</div>
+
 <!-- ══════════ モジュールB：法定基準チェック ══════════ -->
 <div id="screen-check" class="screen">
   <div class="section">
@@ -434,16 +460,22 @@ function seedDemoDataIfEmpty(currentFacilities, currentStaff) {
   const fac1 = { id: 'fac_demo_kani_ok', name: 'ほのぼのはうす可児（充足パターン）', pref: '岐阜県', type: '放課後等デイサービス', gender: '混合', u1: 10, u2: 0, u3: 0, u4: 0, u5: 0, u6: 0, nightRange: '22:00〜05:00' };
   const fac2 = { id: 'fac_demo_kani_ng', name: 'つくしんぼ可児（人員不足パターン）', pref: '岐阜県', type: '放課後等デイサービス', gender: '混合', u1: 10, u2: 0, u3: 0, u4: 0, u5: 0, u6: 0, nightRange: '22:00〜05:00' };
 
-  const mkStaff = (id, facilityId, name, gender, role, shiftTeam) => ({
+  const mkStaff = (id, facilityId, name, gender, role, shiftTeam, leaveRequests) => ({
     id, facilityId, name, gender, role, shiftTeam,
     contractDays: 20, contractHours: 40, actualMonthlyDays: 0, actualWeeklyHours: 0,
     paidLeaveRemaining: 10, paidLeaveTakenThisYear: 0,
+    leaveRequests: leaveRequests || {},
   });
+
+  // FUS-272：休み希望のデモデータ（当月5日・15日を希望している例）。「休み希望」タブ・
+  // シフト生成への反映のどちらもデモ施設だけで確認できるようにするため。
+  const demoNow = new Date();
+  const demoMonthKey = demoNow.getFullYear() + '-' + String(demoNow.getMonth() + 1).padStart(2, '0');
 
   const demoStaff = [
     mkStaff('staff_demo_A_kanri', 'fac_demo_kani_ok', '管理者A', '女性', '管理者', '対象外'),
     mkStaff('staff_demo_A_jihatsukan', 'fac_demo_kani_ok', '児発管A', '女性', '児発管', '対象外'),
-    mkStaff('staff_demo_A_shien1', 'fac_demo_kani_ok', '児童指導員A1', '女性', '児童指導員', '昼team'),
+    mkStaff('staff_demo_A_shien1', 'fac_demo_kani_ok', '児童指導員A1', '女性', '児童指導員', '昼team', { [demoMonthKey]: [5, 15] }),
     mkStaff('staff_demo_A_shien2', 'fac_demo_kani_ok', '保育士A1', '男性', '保育士', '昼team'),
     mkStaff('staff_demo_B_kanri', 'fac_demo_kani_ng', '管理者B', '女性', '管理者', '対象外'),
     mkStaff('staff_demo_B_jihatsukan', 'fac_demo_kani_ng', '児発管B', '女性', '児発管', '対象外'),
@@ -468,11 +500,12 @@ let editingStaffId = null;
 // ═══════════════════════════════════════════════
 function switchTab(tab) {
   document.querySelectorAll('.mode-tab').forEach((t,i) => {
-    t.classList.toggle('active', ['facility','staff','check','shift','contract','warnings'][i] === tab);
+    t.classList.toggle('active', ['facility','staff','leave','check','shift','contract','warnings'][i] === tab);
   });
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-'+tab).classList.add('active');
   if (tab === 'staff') { populateFacilitySelect('staff-facility-select'); renderStaffList(); }
+  if (tab === 'leave') { populateFacilitySelect('leave-facility-select'); renderLeaveScreen(); }
   if (tab === 'check') { populateFacilitySelect('check-facility-select'); renderLegalCheck(); }
   if (tab === 'shift') { populateFacilitySelect('shift-facility-select'); renderShiftScreen(); }
   if (tab === 'contract') { populateFacilitySelect('contract-facility-select'); renderContractLeave(); }
@@ -781,9 +814,13 @@ function saveStaff() {
     paidLeaveTakenThisYear: parseInt(document.getElementById('s-paid-leave-taken').value)||0,
     joinDate: document.getElementById('s-join-date').value || null,
     leaveDate: document.getElementById('s-leave-date').value || null,
+    leaveRequests: {},
   };
   if (editingStaffId) {
     const idx = staffList.findIndex(s => s.id === editingStaffId);
+    // FUS-272：休み希望（leaveRequests）はこの職員登録・編集フォームの対象外のため、
+    // 既存の値をそのまま引き継ぐ（この保存で消さない）。
+    data.leaveRequests = staffList[idx].leaveRequests || {};
     recordStaffContractChange(staffList[idx], data);
     staffList[idx] = data;
   } else {
@@ -792,6 +829,62 @@ function saveStaff() {
   saveStaffList(staffList);
   hideStaffForm();
   renderStaffList();
+}
+
+// ═══════════════════════════════════════════════
+// FUS-272 Phase6：休み希望
+// ═══════════════════════════════════════════════
+function leaveDaysInMonth(year, month) { return new Date(year, month, 0).getDate(); }
+
+function toggleLeaveDay(staffId, monthKey, day) {
+  const s = staffList.find(x => x.id === staffId);
+  if (!s) return;
+  if (!s.leaveRequests) s.leaveRequests = {};
+  if (!s.leaveRequests[monthKey]) s.leaveRequests[monthKey] = [];
+  const arr = s.leaveRequests[monthKey];
+  const idx = arr.indexOf(day);
+  if (idx >= 0) arr.splice(idx, 1); else arr.push(day);
+  saveStaffList(staffList);
+  renderLeaveScreen();
+}
+
+function renderLeaveScreen() {
+  const fid = document.getElementById('leave-facility-select').value;
+  const monthVal = document.getElementById('leave-month').value; // "YYYY-MM"
+  const box = document.getElementById('leave-result-area');
+  if (!fid) { box.innerHTML = '<div class="empty-state">施設を選択してください</div>'; return; }
+  if (!monthVal) { box.innerHTML = '<div class="empty-state">対象年月を選択してください</div>'; return; }
+  const [year, month] = monthVal.split('-').map(Number);
+  const days = leaveDaysInMonth(year, month);
+  // 昼team・夜teamの対象者のみ（対象外の管理者・児発管は休み希望管理の対象にしない＝シフト生成に無関係なため）
+  const list = staffList.filter(s => s.facilityId === fid && (s.shiftTeam === '昼team' || s.shiftTeam === '夜team'));
+  if (!list.length) { box.innerHTML = '<div class="empty-state">この施設に昼team・夜team所属の職員がまだいません（職員マスタで設定してください）</div>'; return; }
+  const dayHeaders = Array.from({length: days}, (_,i) => i+1);
+  box.innerHTML = `
+    <div class="section">
+      <div class="section-title">休み希望入力（クリックで選択・解除）</div>
+      <div style="overflow-x:auto;">
+        <table style="border-collapse:collapse;font-size:11px;white-space:nowrap;">
+          <thead><tr>
+            <th style="position:sticky;left:0;background:var(--bg,#fff);padding:4px 8px;border:0.5px solid var(--border,#ddd);text-align:left;">職員</th>
+            ${dayHeaders.map(d => `<th style="padding:2px 4px;border:0.5px solid var(--border,#ddd);">${d}</th>`).join('')}
+          </tr></thead>
+          <tbody>
+            ${list.map(s => {
+              const requested = (s.leaveRequests && s.leaveRequests[monthVal]) || [];
+              return `<tr>
+                <td style="position:sticky;left:0;background:var(--bg,#fff);padding:4px 8px;border:0.5px solid var(--border,#ddd);">${s.name}（${s.shiftTeam}）</td>
+                ${dayHeaders.map(d => {
+                  const on = requested.includes(d);
+                  return `<td style="padding:0;border:0.5px solid var(--border,#ddd);text-align:center;cursor:pointer;background:${on?'#fbeaea':'transparent'};" onclick="toggleLeaveDay('${s.id}','${monthVal}',${d})">${on?'休':''}</td>`;
+                }).join('')}
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+      <div class="note" style="margin-top:8px;">セルをクリックすると「休」希望として登録・解除されます。モジュールA（シフト作成）で同月・同施設のシフトを生成すると、ここで登録した希望日には割り当てられません。</div>
+    </div>`;
 }
 
 // ═══════════════════════════════════════════════
@@ -916,8 +1009,15 @@ function nightStatusFor(staffIdx, day, teamSize) {
   return '休み';
 }
 
+// FUS-272 Phase6：指定職員が指定日に休み希望を出しているか判定
+function isOnLeaveRequest(staff, monthKey, day) {
+  const reqs = staff && staff.leaveRequests && staff.leaveRequests[monthKey];
+  return Array.isArray(reqs) && reqs.includes(day);
+}
+
 function generateShiftForFacility(facility, allStaff, year, month) {
   const daysInMonth = new Date(year, month, 0).getDate();
+  const monthKey = year + '-' + String(month).padStart(2, '0'); // FUS-272：休み希望のキーと揃える
   const facilityStaff = allStaff.filter(s => s.facilityId === facility.id);
 
   const dayTeamAll   = facilityStaff.filter(s => s.shiftTeam === '昼team');
@@ -929,24 +1029,36 @@ function generateShiftForFacility(facility, allStaff, year, month) {
   const dayCount = {};
   dayTeam.forEach(s => dayCount[s.id] = 0);
   let dayPointer = 0;
+  let nightLeaveConflicts = 0;
 
   const rows = [];
   for (let day = 1; day <= daysInMonth; day++) {
     const dateObj = new Date(year, month - 1, day);
     const weekday = ['日','月','火','水','木','金','土'][dateObj.getDay()];
 
-    // 夜勤：ラウンドロビン（team人数N>=3なら3日1セットのルールを自動的に満たす）
+    // 夜勤：ラウンドロビン（team人数N>=3なら3日1セットのルールを自動的に満たす）。
+    // FUS-272：本来の担当者が休み希望を出している日は、3日1セットの数式を崩さないため
+    // 自動で他の人へ振り替えず、あえて未割当のまま「競合」として残す（最終判断は人が行う）。
     let nightPerson = null;
-    if (nightTeam.length) nightPerson = nightTeam[(day - 1) % nightTeam.length];
+    let nightLeaveConflict = false;
+    if (nightTeam.length) {
+      const candidate = nightTeam[(day - 1) % nightTeam.length];
+      if (isOnLeaveRequest(candidate, monthKey, day)) {
+        nightLeaveConflict = true;
+        nightLeaveConflicts++;
+      } else {
+        nightPerson = candidate;
+      }
+    }
 
-    // 昼勤：ラウンドロビン。契約勤務日数（月あたり）の上限に達したメンバーは飛ばす
+    // 昼勤：ラウンドロビン。契約勤務日数（月あたり）の上限に達した、または休み希望日のメンバーは飛ばす
     let dayPerson = null;
     if (dayTeam.length) {
       let attempts = 0;
       while (attempts < dayTeam.length) {
         const candidate = dayTeam[dayPointer % dayTeam.length];
         dayPointer++;
-        if (dayCount[candidate.id] < (candidate.contractDays || 0)) {
+        if (dayCount[candidate.id] < (candidate.contractDays || 0) && !isOnLeaveRequest(candidate, monthKey, day)) {
           dayPerson = candidate;
           dayCount[candidate.id]++;
           break;
@@ -960,15 +1072,15 @@ function generateShiftForFacility(facility, allStaff, year, month) {
     if (day >= 2 && nightTeam.length) {
       const prevIdx = (day - 2) % nightTeam.length;
       const prevPerson = nightTeam[prevIdx];
-      if (prevPerson && prevPerson.id !== (nightPerson && nightPerson.id)) {
+      if (prevPerson && prevPerson.id !== (nightPerson && nightPerson.id) && !isOnLeaveRequest(prevPerson, monthKey, day - 1)) {
         note = `${prevPerson.name}：明け`;
       }
     }
 
-    rows.push({ day, weekday, nightPerson, dayPerson, note });
+    rows.push({ day, weekday, nightPerson, dayPerson, note, nightLeaveConflict });
   }
 
-  return { rows, dayTeam, nightTeam, excludedByGender, daysInMonth };
+  return { rows, dayTeam, nightTeam, excludedByGender, daysInMonth, nightLeaveConflicts };
 }
 
 function generateShift() {
@@ -1092,8 +1204,9 @@ function renderShiftScreen() {
   if (!nightTeam.length) warnings.push('⚠ 夜teamに割り当てられた職員がいません（職員マスタで「夜team」を設定してください）');
   if (nightTeam.length > 0 && nightTeam.length < 3) warnings.push(`⚠ 夜teamが${nightTeam.length}名のため、3日1セット（夜勤→明け→休み）のルールを満たすには本来3名以上が必要です。人数不足のまま生成しています。`);
   const unassignedDays = rows.filter(r => dayTeam.length && !r.dayPerson).length;
-  if (unassignedDays > 0) warnings.push(`⚠ ${unassignedDays}日分、昼勤担当が契約日数の上限により割り当てできませんでした（契約勤務日数の見直しが必要な可能性があります）`);
+  if (unassignedDays > 0) warnings.push(`⚠ ${unassignedDays}日分、昼勤担当が契約日数の上限、または休み希望との競合により割り当てできませんでした（契約勤務日数の見直し、または人員体制の再検討が必要な可能性があります）`);
   if (excludedByGender.length) warnings.push(`⚠ 性別配慮制約により${excludedByGender.length}名（${excludedByGender.map(s=>s.name).join('・')}）を自動除外しました（施設の性別構成：${facility.gender}）`);
+  if (result.nightLeaveConflicts > 0) warnings.push(`⚠【FUS-272】夜勤${result.nightLeaveConflicts}日分、本来のローテーション担当者が休み希望日と重なりました。3日1セットのローテーションを崩さないため自動では振り替えず、あえて未割当のまま残しています。人の目で振替を検討してください（「休み希望」タブで希望日を確認できます）。`);
 
   const calendarRows = buildCalendarRows(facility, staffList, result);
 
@@ -1146,8 +1259,9 @@ function renderShiftScreen() {
   area.innerHTML = `
     <div class="section">
       <div class="section-title">${facility.name}（${year}年${month}月） — 昼team${dayTeam.length}名／夜team${nightTeam.length}名</div>
+      <button class="btn-secondary no-print" onclick="window.print()" style="margin-bottom:10px;">🖨️ 印刷 / PDF保存</button>
       <div class="note">夜間支援時間帯：${facility.nightRange || '22:00〜05:00'}（★出典未確認のため設定可能な変数。埼玉県資料・厚労省資料で該当箇所を再確認してから正式反映すること）</div>
-      <div class="warn-note">⚠️【FUS-245 Phase2・必読】カレンダーの○×表示は、従来どおりの契約日数ラウンドロビンの結果をそのまま表示しています（施設マスタの休業日・休み希望等はまだシフト生成ロジックには反映されていません）。</div>
+      <div class="warn-note">⚠️【FUS-245 Phase2・必読】カレンダーの○×表示は、契約日数ラウンドロビンの結果をそのまま表示しています（施設マスタの休業日はまだシフト生成ロジックには反映されていません）。**休み希望（FUS-272）は反映済みです**（「休み希望」タブで入力した日は自動的に除外されます）。</div>
       <div class="warn-note">⚠️【FUS-245 Phase3〜5・必読】週法定時間判定・常勤換算(FTE)・所定人員充足・法定労働日数上限は、いずれも★暫定計算です（一次資料未確認・安全側の原則で判定基準を厳しめに設定しています）。正式な労務判断には使用せず、必ず社会保険労務士等の専門家に確認してください。</div>
       ${warnings.map(w => `<div class="warn-note">${w}</div>`).join('')}
       <div style="overflow-x:auto;">
