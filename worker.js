@@ -209,6 +209,21 @@ export default {
       }
     }
 
+    // 安全装置⑥（2026-08-28・FUS-337緊急対応）：scan_ プレフィックス（mitsumeru_scan.html・
+    // mitsumeru_tekisei_check.html・ta_scan.html・pm_scan.htmlの受検者ロスター＝採用候補者の
+    // 適性検査結果を含む）は、GET（一覧の閲覧＝管理者操作）のみtoken必須にする。
+    // PUT（受検者本人による診断結果の保存）はtoken無しの受検者が行う操作のため、
+    // 引き続き無認証で許可する（保護対象は「誰でも読める」であり「誰でも保存できる」ではない）。
+    if (key.startsWith('scan_') && request.method === 'GET') {
+      const token = url.searchParams.get('token');
+      if (!env.PRIVATE_ACCESS_TOKEN || token !== env.PRIVATE_ACCESS_TOKEN) {
+        return new Response(JSON.stringify({ error: 'reading scan_ rosters requires a valid token' }), {
+          status: 401,
+          headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
     if (request.method === 'PUT') {
       let body;
       try {

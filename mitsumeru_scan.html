@@ -749,9 +749,23 @@ async function cloudSaveRoster(roster) {
   }
 }
 
+// FUS-337（2026-08-28緊急対応）：scan_プレフィックスのGET（一覧の閲覧＝管理者操作）は
+// worker.js側でtoken必須になった。PUT（受検者本人の保存）は引き続き無認証のため変更なし。
+// 4ツール共通のキー名（mitsumeru_scan_access_token）で、一度入力すれば使い回せる。
+const SCAN_ACCESS_TOKEN_KEY = 'mitsumeru_scan_access_token';
+function getScanAccessToken() {
+  let t = localStorage.getItem(SCAN_ACCESS_TOKEN_KEY);
+  if (!t) {
+    t = prompt('受検者一覧の閲覧には管理者アクセストークンが必要です。トークンを入力してください（インフラより配布済み）');
+    if (t && t.trim()) localStorage.setItem(SCAN_ACCESS_TOKEN_KEY, t.trim());
+  }
+  return t ? t.trim() : '';
+}
+
 async function cloudLoadRoster() {
   try {
-    const res = await fetch(`${SYNC_URL}?key=${encodeURIComponent(CLOUD_ROSTER_KEY)}`);
+    const token = getScanAccessToken();
+    const res = await fetch(`${SYNC_URL}?key=${encodeURIComponent(CLOUD_ROSTER_KEY)}&token=${encodeURIComponent(token)}`);
     if (!res.ok) return null;
     const json = await res.json();
     if (!json.value) return null;
