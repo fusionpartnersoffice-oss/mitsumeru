@@ -3074,24 +3074,34 @@ function closeModal(id){ document.getElementById(id).classList.remove('open'); }
 // ════════════════════════════════════════════════════
 
 function loadSample(){
-  if(!confirm('医療・福祉施設のサンプルデータを読み込みますか？\n（既存データは上書きされます）\n\n【サンプル構成】\n社会福祉法人 やまびこ会\n・デイサービス やまびこ\n・グループホーム こもれび\n・訪問介護ステーション')) return;
+  if(!confirm('医療・福祉施設のサンプルデータを読み込みますか？\n（法人・事業所マスタは既存データに追加されます。同名のサンプル法人が既にある場合は再投入しません。\n財務・パイプライン等のサンプル数値データは、このサンプル用の法人・事業所に対してのみ上書きされます）\n\n【サンプル構成】\n社会福祉法人 やまびこ会\n・デイサービス やまびこ\n・グループホーム こもれび\n・訪問介護ステーション')) return;
 
-  const c1=uid(), c2=uid();
+  // FUS-309是正（2026-08-28）：以前はnagi_corps/nagi_officesを丸ごと置き換えており、
+  // kanade_roster.html等の他ツールが共有キー(nagi_corps/nagi_offices)へ投入した
+  // 法人・事業所データが、このサンプルロードで消えてしまう不具合があった。
+  // 既存データを保持したまま追記する方式に変更。再度押しても同名法人が重複しないよう、
+  // 「社会福祉法人 やまびこ会」が既に存在すればそのIDを再利用する（無ければ新規発行）。
+  const existingCorpsForSample=getCorps();
+  const existingSampleCorp=existingCorpsForSample.find(c=>c.name==='社会福祉法人 やまびこ会');
+  const existingSampleCorp2=existingCorpsForSample.find(c=>c.name==='Fusion Partners');
+  const c1=existingSampleCorp?existingSampleCorp.id:uid();
+  const c2=existingSampleCorp2?existingSampleCorp2.id:uid();
   const o1=uid(),o2=uid(),o3=uid(),o4=uid();
 
-  // ── 法人 ──
-  save('nagi_corps',[
-    {id:c1,name:'社会福祉法人 やまびこ会'},
-    {id:c2,name:'Fusion Partners'},
-  ]);
+  // ── 法人（既存データを保持したまま、サンプル法人が無ければ追加） ──
+  const mergedCorps=existingCorpsForSample.filter(c=>c.id!==c1&&c.id!==c2);
+  mergedCorps.push({id:c1,name:'社会福祉法人 やまびこ会'},{id:c2,name:'Fusion Partners'});
+  save('nagi_corps',mergedCorps);
 
-  // ── 事業所 ──
-  save('nagi_offices',[
+  // ── 事業所（このサンプル法人〔c1・c2〕配下の既存事業所だけ入れ替え、他法人の事業所は保持） ──
+  const mergedOffices=getAllOffices().filter(o=>o.corpId!==c1&&o.corpId!==c2);
+  mergedOffices.push(
     {id:o1,corpId:c1,name:'デイサービス やまびこ'},
     {id:o2,corpId:c1,name:'グループホーム こもれび'},
     {id:o3,corpId:c1,name:'訪問介護ステーション'},
     {id:o4,corpId:c2,name:'FusionOS Labo'},
-  ]);
+  );
+  save('nagi_offices',mergedOffices);
 
   // ── 財務データ（月次） ──
   // デイサービス：定員30名・稼働率85%・介護報酬単価約9,000円/日
