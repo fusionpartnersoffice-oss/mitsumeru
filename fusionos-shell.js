@@ -13,9 +13,12 @@
 (function () {
   var CURRENT = (location.pathname.split('/').pop() || 'mitsumeru_private.html');
 
+  var DASHBOARD_URL = 'https://claude.ai/code/artifact/63e6c8d0-bdba-4cf3-847c-8f337cc33563';
+
   var TOOLS = [
     { label: 'ミツメル', href: 'mitsumeru_private.html', group: 'core' },
     { label: '朝刊', href: 'mitsumeru_private.html', group: 'core' },
+    { label: 'ダッシュボード', href: DASHBOARD_URL, group: 'core', external: true },
     { label: '奏 Kanade', href: 'kanade_hub.html', group: 'tool' },
     { label: '凪 Nagi', href: 'nagi_hub.html', group: 'tool' },
     { label: '響 Hibiki', href: 'hibiki_koe.html', group: 'tool' },
@@ -63,7 +66,8 @@
 
   function itemHtml(t) {
     var active = t.href === CURRENT ? ' active' : '';
-    return '<a class="fos-item' + active + '" href="' + t.href + '">'
+    var targetAttr = t.external ? ' target="_blank" rel="noopener"' : '';
+    return '<a class="fos-item' + active + '" href="' + t.href + '"' + targetAttr + '>'
       + '<span class="fos-dot"></span>' + t.label + '</a>';
   }
   function futureHtml(f) {
@@ -83,6 +87,7 @@
   var bnItems = [
     { label: 'ミツメル', href: 'mitsumeru_private.html', ico: '📓' },
     { label: '朝刊', href: 'mitsumeru_private.html', ico: '📰' },
+    { label: 'ダッシュボード', href: DASHBOARD_URL, ico: '📊', external: true },
     { label: '奏', href: 'kanade_hub.html', ico: '🧰' },
     { label: '凪', href: 'nagi_hub.html', ico: '🧭' },
     { label: '響', href: 'hibiki_koe.html', ico: '🎙️' },
@@ -92,7 +97,8 @@
   var bottomNavHtml = '<nav id="fos-shell-bottomnav" aria-label="FusionOSナビゲーション">'
     + bnItems.map(function (b) {
       var active = b.href === CURRENT ? ' active' : '';
-      return '<a class="' + active.trim() + '" href="' + b.href + '">'
+      var targetAttr = b.external ? ' target="_blank" rel="noopener"' : '';
+      return '<a class="' + active.trim() + '" href="' + b.href + '"' + targetAttr + '>'
         + '<span class="fos-ico">' + b.ico + '</span><span>' + b.label + '</span></a>';
     }).join('')
     + '</nav>';
