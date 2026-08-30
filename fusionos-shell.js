@@ -62,7 +62,7 @@
     + '@media(max-width:820px){#fos-shell-bottomnav{display:flex;}}';
 
   var brandHtml =
-    '<div class="fos-brand"><img src="logo.png" alt="Fusion Partners"><span>FusionOS</span></div>';
+    '<div class="fos-brand"><img src="logo-mark-transparent.png" alt="Fusion Partners"><span>FusionOS</span></div>';
 
   function itemHtml(t) {
     var active = t.href === CURRENT ? ' active' : '';

@@ -650,6 +650,12 @@
     background: var(--bg2); border-top: 1px solid var(--border);
     padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
     justify-content: space-around; align-items: stretch;
+    /* FUS-353⑤（2026-08-30）：スマホ実機で夜タブ（最も縦に長いタブ）のみボトムナビが
+       消える報告あり。Browser pane（375px幅エミュレーション）では再現せず、実機
+       WebKit特有のposition:fixed描画バグの可能性が高い。既知の緩和策として、
+       独自の合成レイヤーへ昇格させ描画を安定させる（transform/will-change）。 */
+    transform: translateZ(0);
+    will-change: transform;
   }
   @media (max-width: 820px) {
     .bottom-nav { display: flex; }
@@ -692,7 +698,7 @@
      弦・勤務表は「今後（就職後）」として無効表示のまま残す。 -->
 <aside class="sidebar" id="private-sidebar">
   <div class="sidebar-brand">
-    <img src="logo.png" alt="Fusion Partners" class="brand-mark">
+    <img src="logo-mark-transparent.png" alt="Fusion Partners" class="brand-mark">
     <span class="brand-word">FusionOS</span>
   </div>
   <div class="side-group-label">Core</div>
@@ -1320,19 +1326,14 @@
     </div>
   </div>
 
-  <!-- 夜の入眠サポート（2026-07-29・柴山さん本人指示・設計発注）：超軽量な記録→翌朝、
-       淡々と鏡のように返す設計。タップのみで完結し、入力を強制しない。
-       FUS-349③（2026-08-30・壁打ちで柴山さんご本人が訂正）：チェックボックスの選択肢が
-       実態に合わず答えにくいとのご指摘を受け、既存の「5つのデバッグ」と同じ〇△✕方式へ
-       置き換える。旧選択肢は削除せず取り消し線表示で残す（正典「消さず殺す」準拠）。 -->
+  <!-- FUS-353④（2026-08-30・柴山さん実機指摘・設計確認）：「今夜のふり返り」独立セクションは
+       補足欄（e-sleep-note）が6つのデバッグ内Q6へ統合されたため非表示化。コードは削除せず
+       コメントアウトで残す（正典「消さず殺す」準拠・チケット許諾）。
   <div class="section">
     <div class="section-title">今夜のふり返り（任意・タップだけでOK）</div>
-    <!-- FUS-352③（2026-08-30・柴山さん実機指摘）：「今夜は眠れる？」は下の
-         「6つのデバッグ」内へQ15として統合済み（DOM位置はそちらへ移動）。
-         ここには補足欄・旧選択肢のみ残す。 -->
     <div class="field">
       <label>補足（任意・書かなくてよい）</label>
-      <textarea id="e-sleep-note" name="private-field-e-sleep-note" autocomplete="off" oninput="saveEvening()" placeholder="書かなくてOK" style="min-height:40px;"></textarea>
+      <textarea id="e-sleep-note-old" name="private-field-e-sleep-note-old" autocomplete="off" placeholder="書かなくてOK" style="min-height:40px;"></textarea>
     </div>
     <div class="field" style="opacity:.45;text-decoration:line-through;margin-top:10px;">
       <label>旧・当てはまるものがあれば（複数可・FUS-349で〇△✕方式へ置き換え。実態に合わず答えにくいとのご指摘のため廃止）</label>
@@ -1344,6 +1345,7 @@
       </div>
     </div>
   </div>
+  -->
 
   <!-- FUS-349④（2026-08-30・設計確定スコープ）：#思考タグの表示ロジック。
        設計回答：「壁打ち後のAIコメント自動生成」機能自体は存在しないため、今回のスコープは
@@ -1387,7 +1389,7 @@
     <div class="section-title">6つのデバッグ</div>
 
     <div class="debug-item">
-      <div class="debug-label">Q10 役割のデバッグ</div>
+      <div class="debug-label">Q1 役割のデバッグ</div>
       <div class="debug-desc">その行動は「穴埋め」か「設計」か？ミスが二度と起きない仕組みを一行でも書き換えたか？</div>
       <div class="debug-score">
         <button class="debug-btn" onclick="selectDebug(this,'d1','maru')">〇</button>
@@ -1401,7 +1403,7 @@
     </div>
 
     <div class="debug-item">
-      <div class="debug-label">Q11 委譲のデバッグ</div>
+      <div class="debug-label">Q2 委譲のデバッグ</div>
       <div class="debug-desc">それはAIや仕組みに渡せる余地はないか？誰がやっても同じ結果が出るフローに落とし込めるか？</div>
       <div class="debug-score">
         <button class="debug-btn" onclick="selectDebug(this,'d2','maru')">〇</button>
@@ -1415,7 +1417,7 @@
     </div>
 
     <div class="debug-item">
-      <div class="debug-label">Q12 動機のデバッグ</div>
+      <div class="debug-label">Q3 動機のデバッグ</div>
       <div class="debug-desc">「自分がやった方が早い」という誘惑に負けていないか？ドラえもんのヒゲが顔を出していないか？</div>
       <div class="debug-score">
         <button class="debug-btn" onclick="selectDebug(this,'d3','maru')">〇</button>
@@ -1429,7 +1431,7 @@
     </div>
 
     <div class="debug-item">
-      <div class="debug-label">Q13 資産のデバッグ</div>
+      <div class="debug-label">Q4 資産のデバッグ</div>
       <div class="debug-desc">今日の活動は「消費」か「投資」か？未来の自分の時間を増やすマニュアル化・テンプレート化を行ったか？</div>
       <div class="debug-score">
         <button class="debug-btn" onclick="selectDebug(this,'d4','maru')">〇</button>
@@ -1443,7 +1445,7 @@
     </div>
 
     <div class="debug-item">
-      <div class="debug-label">Q14 余白のデバッグ</div>
+      <div class="debug-label">Q5 余白のデバッグ</div>
       <div class="debug-desc">1440分のうち、アーキテクトとして思考した時間は？実務に飲み込まれず「凪」の時間を確保できたか？</div>
       <div class="debug-score">
         <button class="debug-btn" onclick="selectDebug(this,'d5','maru')">〇</button>
@@ -1462,11 +1464,15 @@
          この要素は.debug-itemクラスを共有せず.debug-item-sleep（別クラス・同一スタイル）
          のままにする（インデックスのズレ防止・FUS-349で発見済みの回避策を維持）。 -->
     <div class="debug-item-sleep" id="sleep-quality-item">
-      <div class="debug-label">Q15 今夜は眠れる？</div>
+      <div class="debug-label">Q6 今夜は眠れる？</div>
       <div class="debug-score">
         <button class="debug-btn" onclick="selectSleepQuality(this,'maru')">〇</button>
         <button class="debug-btn" onclick="selectSleepQuality(this,'sankaku')">△</button>
         <button class="debug-btn" onclick="selectSleepQuality(this,'batsu')">✕</button>
+      </div>
+      <div style="display:flex;gap:8px;align-items:flex-start;">
+        <textarea id="e-sleep-note" name="private-field-e-sleep-note" autocomplete="off" oninput="saveEvening()" placeholder="補足（任意・書かなくてOK）" style="flex:1;"></textarea>
+        <button id="voice-btn-e-sleep-note" class="voice-btn" onclick="toggleVoiceInput('e-sleep-note','voice-btn-e-sleep-note')" title="音声入力（タップで開始／停止）">🎤</button>
       </div>
     </div>
   </div>
