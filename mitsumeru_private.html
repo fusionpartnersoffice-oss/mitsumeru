@@ -279,6 +279,22 @@
   .checkbox-item input { display: none; }
   .checkbox-item.checked { background: var(--accent) !important; color: var(--bg) !important; border-color: var(--accent) !important; font-weight: 500; }
 
+  /* FUS-349④：#思考ストリーム（モックアップの.stream/.thoughtパターンを移植） */
+  .stream { display: flex; flex-direction: column; gap: 10px; }
+  .thought {
+    display: flex; gap: 10px; padding: 11px 13px;
+    border: 0.5px solid var(--border); border-radius: 10px; background: var(--bg2);
+  }
+  .thought .who {
+    flex: none; width: 30px; height: 30px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 700; color: #fff; background: var(--accent);
+  }
+  .thought.ai .who { background: var(--green); }
+  .thought .txt { flex: 1; font-size: 13px; line-height: 1.6; }
+  .thought .txt .tag { color: var(--gold); font-weight: 500; margin-right: 4px; }
+  .thought .time { flex: none; font-size: 11px; color: var(--text3); align-self: flex-start; }
+
   .debug-item, .debug-item-sleep {
     background: var(--bg2);
     border: 0.5px solid var(--border);
@@ -1317,6 +1333,17 @@
         <label class="checkbox-item"><input type="checkbox" value="Kindleから動画に流れた" disabled>📱 Kindle→動画に流れた</label>
         <label class="checkbox-item"><input type="checkbox" value="その他" disabled>その他</label>
       </div>
+    </div>
+  </div>
+
+  <!-- FUS-349④（2026-08-30・設計確定スコープ）：#思考タグの表示ロジック。
+       設計回答：「壁打ち後のAIコメント自動生成」機能自体は存在しないため、今回のスコープは
+       ①#思考ストリームUIの実装②既存の人間側#思考タグ記録（memos配列・tag='G'）の表示、のみ。
+       AI側の吹き出しはデータが来るまで単純に0件（非表示）。ダミー生成はしない。 -->
+  <div class="section">
+    <div class="section-title">#思考（随時メモ）</div>
+    <div class="stream" id="thought-stream">
+      <span style="color:var(--text3);font-size:12px;">本日の#思考タグ付きメモはまだありません</span>
     </div>
   </div>
 
@@ -3101,6 +3128,8 @@ function switchTab(tab) {
   // FUS-349②：朝刊はサイドバーの独立項目（screen-asakan）になったため、
   // 'memo'（随時メモ本体）ではなく'asakan'選択時にloadAsakanPanel()を呼ぶ。
   if (tab === 'asakan') loadAsakanPanel();
+  // FUS-349④：夜タブ表示時に#思考ストリームを最新化（他タブでのメモ追加を反映）
+  if (tab === 'evening') renderThoughtStream();
   // FUS-349①：サイドバー・ボトムナビのactive状態を同期（morning=ミツメル・asakan=朝刊のみ対応項目あり）
   const sidebar = document.getElementById('private-sidebar');
   if (sidebar) {
@@ -3279,6 +3308,7 @@ function renderMemos() {
   if (memos.length === 0) {
     list.innerHTML = '<span style="color:var(--text3);font-size:12px;">まだメモがありません</span>';
     renderMemoTodaySummary();
+    renderThoughtStream();
     return;
   }
   const tagColors = { HP: '#1359a0', P: '#148053', V: 'var(--red)', G: 'var(--gold)' };
@@ -3297,6 +3327,27 @@ function renderMemos() {
   `).join('');
   updateEveningMemoPreview();
   renderMemoTodaySummary();
+  renderThoughtStream();
+}
+
+// FUS-349④（2026-08-30・設計確定スコープ）：#思考ストリーム。既存memos配列（tag='G'）から
+// 抽出するだけで、新規の保存経路・AI呼び出しは追加しない。AI側の吹き出しはデータが無いため
+// 現状表示なし（設計指示：ダミー生成はしない）。
+function renderThoughtStream() {
+  const el = document.getElementById('thought-stream');
+  if (!el) return;
+  const thoughts = memos.filter(m => m.tag === 'G');
+  if (thoughts.length === 0) {
+    el.innerHTML = '<span style="color:var(--text3);font-size:12px;">本日の#思考タグ付きメモはまだありません</span>';
+    return;
+  }
+  el.innerHTML = thoughts.map(m => `
+    <div class="thought">
+      <div class="who">柴</div>
+      <div class="txt"><span class="tag">#思考</span>${m.content}</div>
+      <div class="time">${m.time ? m.time.substring(0,2)+':'+m.time.substring(2,4) : '--:--'}</div>
+    </div>
+  `).join('');
 }
 
 // 「今日の積み上げ」軽量パネル（2026-07-26設計指示・AI不使用・既存memos配列の集計のみ）
