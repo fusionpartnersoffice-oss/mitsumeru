@@ -69,6 +69,11 @@
     background: var(--bg);
     color: var(--text);
     min-height: 100vh;
+    /* FUS-353⑤の再是正（2026-08-30・柴山さん実機再指摘）：真因は#evening-memo-preview
+       （夜タブ専用）が長文・長いURLで折り返されず横あふれしていたこと（⑥の修正漏れ）。
+       ページが横に伸びるとスマホでposition:fixedのボトムナビが正しい位置に描画されない
+       既知の挙動があるため、再発防止のバックストップとしてoverflow-x:hiddenも付与する。 */
+    overflow-x: hidden;
     padding: 0 0 80px 0;
   }
 
@@ -3326,8 +3331,8 @@ function updateEveningMemoPreview() {
       <span style="color:${tagColors[m.tag]};font-weight:500;min-width:44px;font-size:12px;">${tagIcons[m.tag]}#${tagLabels[m.tag]}</span>
       <span style="color:var(--text3);min-width:38px;font-size:12px;">${m.time ? m.time.substring(0,2)+':'+m.time.substring(2,4) : '--:--'}</span>
       ${m.pomos!==null?`<span style="color:var(--accent);min-width:36px;font-size:12px;">${m.pomos}ポモ</span>`:'<span style="min-width:36px;"></span>'}
-      <div style="flex:1;">
-        <span style="font-size:13px;">${m.content}</span>
+      <div style="flex:1;min-width:0;">
+        <span style="font-size:13px;overflow-wrap:break-word;word-break:break-word;">${m.content}</span>
         ${m.image ? `<div style="margin-top:4px;"><a href="${m.image}" target="_blank" style="font-size:12px;color:var(--accent);text-decoration:none;">📷 画像を開く →</a></div>` : ''}
       </div>
     </div>
