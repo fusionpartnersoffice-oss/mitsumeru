@@ -31,7 +31,12 @@
   ];
 
   var CSS = ''
-    + '#fos-shell-sidebar{position:fixed;top:0;left:0;bottom:0;width:220px;background:#2a2620;color:#c9bea5;'
+    /* FUS-354（2026-08-30・柴山さん実機指摘・設計是正）：以前は壁打ち初期の却下済み
+       濃色サイドバー案（#2a2620/#c9bea5/#7a4a24）を誤って転記していた。
+       モックアップ確定版で実際に.sidebar/.side-itemへ適用されている値
+       （--bg2:#e3d9c2 / --text2:#5c5747 / --green-soft:#e7ebda / --green:#5f7a4a）へ是正。 */
+    + '#fos-shell-sidebar{position:fixed;top:0;left:0;bottom:0;width:220px;background:#e3d9c2;color:#5c5747;'
+    + 'border-right:1px solid #d3c6a8;'
     + 'padding:22px 14px;overflow-y:auto;z-index:9998;display:flex;flex-direction:column;gap:4px;'
     + 'font-family:"Noto Sans JP","Zen Kaku Gothic New",sans-serif;box-sizing:border-box;}'
     + '#fos-shell-sidebar *{box-sizing:border-box;}'
@@ -42,10 +47,10 @@
     + '#fos-shell-sidebar .fos-group-label{font-size:10px;letter-spacing:.14em;color:#8c8570;'
     + 'padding:14px 10px 6px;text-transform:uppercase;}'
     + '#fos-shell-sidebar .fos-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;'
-    + 'font-size:13.5px;cursor:pointer;color:#c9bea5;text-decoration:none;}'
+    + 'font-size:13.5px;cursor:pointer;color:#5c5747;text-decoration:none;}'
     + '#fos-shell-sidebar .fos-item .fos-dot{width:6px;height:6px;border-radius:50%;background:#d3c6a8;flex:none;}'
-    + '#fos-shell-sidebar .fos-item.active{background:#7a4a24;color:#ece4d3;font-weight:700;}'
-    + '#fos-shell-sidebar .fos-item.active .fos-dot{background:#a8672e;}'
+    + '#fos-shell-sidebar .fos-item.active{background:#e7ebda;color:#5f7a4a;font-weight:700;}'
+    + '#fos-shell-sidebar .fos-item.active .fos-dot{background:#5f7a4a;}'
     + '#fos-shell-sidebar .fos-item.future{opacity:.55;pointer-events:none;}'
     + '#fos-shell-sidebar .fos-item.future .fos-tag{margin-left:auto;font-size:9px;border:1px solid #5c5747;'
     + 'padding:1px 5px;border-radius:4px;color:#8c8570;}'

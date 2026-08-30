@@ -42,12 +42,14 @@
     --text3: #8c8570;
     --accent: #a8672e;
     --green: #5f7a4a;
+    --green-soft: #e7ebda;
     --red: #a8452e;
     --gold: #a8672e;
     --card: #f7f2e6;
-    --sidebar-bg: #2a2620;
-    --sidebar-text: #c9bea5;
-    --sidebar-active: #7a4a24;
+    /* FUS-354（2026-08-30・柴山さん実機指摘・設計是正）：--sidebar-bg/--sidebar-text/
+       --sidebar-active（濃色サイドバー案）は、モックアップ確定版の.sidebarでは実際には
+       未使用（.sidebarはvar(--bg2)、.side-item.activeはvar(--green-soft)/var(--green)を
+       使用）だった。壁打ち初期の却下済み配色トークンを誤って参照していたため削除する。 */
     /* ビジュアル改善案2（2026-07-26・設計発注・柴山さん承認）：タブごとの色分け。
        ステータス色（--green/--red・警告バナー等）には触れず、タブの「今どこにいるか」を
        示す控えめな差し色のみを追加する。data-tab属性はswitchTab()が付与（下記参照）。 */
@@ -600,7 +602,7 @@
      既存要素群にはmargin-leftだけ与える形で追加する（既存構造は無変更）。 */
   .sidebar {
     position: fixed; top: 0; left: 0; bottom: 0; width: 220px;
-    background: var(--sidebar-bg); color: var(--sidebar-text);
+    background: var(--bg2); color: var(--text2); border-right: 1px solid var(--border);
     padding: 22px 14px; overflow-y: auto; z-index: 150;
     display: flex; flex-direction: column; gap: 4px;
   }
@@ -610,11 +612,11 @@
   }
   .sidebar .side-item {
     display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 8px;
-    font-size: 13.5px; cursor: pointer; color: var(--sidebar-text); text-decoration: none;
+    font-size: 13.5px; cursor: pointer; color: var(--text2); text-decoration: none;
   }
   .sidebar .side-item .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border); flex: none; }
-  .sidebar .side-item.active { background: var(--sidebar-active); color: var(--bg); font-weight: 700; }
-  .sidebar .side-item.active .dot { background: var(--gold); }
+  .sidebar .side-item.active { background: var(--green-soft); color: var(--green); font-weight: 700; }
+  .sidebar .side-item.active .dot { background: var(--green); }
   .sidebar .side-item.future { opacity: .55; pointer-events: none; }
   .sidebar .side-item.future .tag {
     margin-left: auto; font-size: 9px; border: 1px solid var(--border);
