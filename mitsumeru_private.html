@@ -29,21 +29,25 @@
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap');
 
   :root {
-    /* 2026-07-26全面刷新①（柴山さん厳命・設計判断確定）：和紙・クリームトーンから
-       明るいニュートラル地へ、アクセントは藍(#2c3e6e・今日のタブ色分けで「夜」に
-       使っている色と同一)を基調に格上げ。--green/--red/--goldは②で調整するため
-       ここでは意図的に据え置き（色相・意味の対応関係を壊さないため）。 */
-    --bg: #f7f7f9;
-    --bg2: #eef0f3;
-    --border: #dcdfe4;
-    --text: #24242c;
-    --text2: #55565f;
-    --text3: #93949c;
-    --accent: #2c3e6e;
-    --green: #2d7a52;
-    --red: #c0392b;
-    --gold: #b8860b;
-    --card: #ffffff;
+    /* FUS-349（2026-08-30・柴山さん直接発注のUI/UX改造）⑦配色：Fusion Partners実際の
+       ロゴ・名刺の配色（ベージュ/アイボリー地×ブロンズ調アクセント）へ統一。
+       旧・藍基調（#2c3e6e）は`_旧版`として退避せず、この1箇所を上書きする形で更新
+       （消さず殺す対象は「文書」であり、CSS変数値そのものではないため）。
+       --green/--red/--goldはステータス色として維持しつつ、モックアップに合わせて調整。 */
+    --bg: #ece4d3;
+    --bg2: #e3d9c2;
+    --border: #d3c6a8;
+    --text: #2a2620;
+    --text2: #5c5747;
+    --text3: #8c8570;
+    --accent: #a8672e;
+    --green: #5f7a4a;
+    --red: #a8452e;
+    --gold: #a8672e;
+    --card: #f7f2e6;
+    --sidebar-bg: #2a2620;
+    --sidebar-text: #c9bea5;
+    --sidebar-active: #7a4a24;
     /* ビジュアル改善案2（2026-07-26・設計発注・柴山さん承認）：タブごとの色分け。
        ステータス色（--green/--red・警告バナー等）には触れず、タブの「今どこにいるか」を
        示す控えめな差し色のみを追加する。data-tab属性はswitchTab()が付与（下記参照）。 */
@@ -573,9 +577,126 @@
     padding: 20px;
   }
   .consent-overlay.active { display: flex; }
+
+  /* FUS-349（2026-08-30・柴山さん直接発注）：左サイドバー新設。
+     既存のbody直下フラット構造（.header/.mode-tabs/各#screen-*が並ぶ）を
+     ラップし直すと影響範囲が広すぎるため、サイドバーをposition:fixedにし、
+     既存要素群にはmargin-leftだけ与える形で追加する（既存構造は無変更）。 */
+  .sidebar {
+    position: fixed; top: 0; left: 0; bottom: 0; width: 220px;
+    background: var(--sidebar-bg); color: var(--sidebar-text);
+    padding: 22px 14px; overflow-y: auto; z-index: 150;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .sidebar .side-group-label {
+    font-size: 10px; letter-spacing: .14em; color: var(--text3);
+    padding: 14px 10px 6px; text-transform: uppercase;
+  }
+  .sidebar .side-item {
+    display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 8px;
+    font-size: 13.5px; cursor: pointer; color: var(--sidebar-text); text-decoration: none;
+  }
+  .sidebar .side-item .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border); flex: none; }
+  .sidebar .side-item.active { background: var(--sidebar-active); color: var(--bg); font-weight: 700; }
+  .sidebar .side-item.active .dot { background: var(--gold); }
+  .sidebar .side-item.future { opacity: .55; pointer-events: none; }
+  .sidebar .side-item.future .tag {
+    margin-left: auto; font-size: 9px; border: 1px solid var(--border);
+    padding: 1px 5px; border-radius: 4px; color: var(--text3);
+  }
+  .sidebar-brand { padding: 4px 10px 18px; font-size: 15px; font-weight: 700; color: var(--gold); letter-spacing: .05em; }
+
+  @media (min-width: 821px) {
+    .header, .mode-tabs, .sync-bar, #date-rollover-bar, #apikey-missing-bar, .screen {
+      margin-left: 220px;
+    }
+  }
+  @media (max-width: 820px) {
+    .sidebar { display: none; }
+    body { padding-bottom: 64px; }
+  }
+
+  /* モバイル/タブレット用ボトムナビ（820px以下のみ表示） */
+  .bottom-nav {
+    display: none; position: fixed; left: 0; right: 0; bottom: 0; z-index: 140;
+    background: var(--bg2); border-top: 1px solid var(--border);
+    padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+    justify-content: space-around; align-items: stretch;
+  }
+  @media (max-width: 820px) {
+    .bottom-nav { display: flex; }
+  }
+  .bn-item {
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    padding: 6px 4px; border-radius: 8px; color: var(--text3); flex: 1;
+    font-size: 10px; cursor: pointer; min-width: 0; text-decoration: none;
+  }
+  .bn-item .bn-ico { font-size: 18px; line-height: 1; }
+  .bn-item .bn-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  .bn-item.active { color: var(--green); font-weight: 700; }
+  .bn-more-sheet {
+    display: none; position: fixed; left: 0; right: 0; bottom: 0; z-index: 160;
+    background: var(--card); border-top: 1px solid var(--border);
+    border-radius: 16px 16px 0 0; padding: 16px 18px calc(16px + env(safe-area-inset-bottom));
+    box-shadow: 0 -8px 24px rgba(0,0,0,.18);
+  }
+  .bn-more-sheet.open { display: block; }
+  .bn-more-sheet .bn-sheet-title { font-size: 11px; letter-spacing: .1em; color: var(--text3); text-transform: uppercase; margin-bottom: 10px; }
+  .bn-more-sheet .side-item {
+    padding: 11px 8px; color: var(--text2); text-decoration: none;
+    display: flex; align-items: center; gap: 10px; font-size: 13.5px; cursor: pointer;
+  }
+  .bn-more-sheet .side-item.future { opacity: .55; pointer-events: none; }
+  .bn-more-sheet .side-item.future .tag {
+    margin-left: auto; font-size: 9px; border: 1px solid var(--border);
+    padding: 1px 5px; border-radius: 4px; color: var(--text3);
+  }
+  .bn-more-sheet .side-item .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border); flex: none; }
+  .bn-more-backdrop { display: none; position: fixed; inset: 0; background: rgba(20,16,10,.35); z-index: 155; }
+  .bn-more-backdrop.open { display: block; }
 </style>
 </head>
 <body data-tab="morning">
+
+<!-- FUS-349（2026-08-30）：左サイドバー。PC（821px以上）のみ表示。
+     奏・凪・響・3minエマージェンシー・なぜなぜ分析は別ファイル（既存の独立ページ）への
+     直接遷移。ミツメルスキャンは設定タブへ統合済み（既存のopenScanWithConsent()を利用）。
+     弦・勤務表は「今後（就職後）」として無効表示のまま残す。 -->
+<aside class="sidebar" id="private-sidebar">
+  <div class="sidebar-brand">FusionOS</div>
+  <div class="side-group-label">Core</div>
+  <div class="side-item active" onclick="switchTab('morning')"><span class="dot"></span> ミツメル</div>
+  <div class="side-item" onclick="switchTab('memo')"><span class="dot"></span> 朝刊</div>
+  <div class="side-group-label">ツール</div>
+  <a class="side-item" href="kanade_hub.html"><span class="dot"></span> 奏 Kanade</a>
+  <a class="side-item" href="nagi_hub.html"><span class="dot"></span> 凪 Nagi</a>
+  <a class="side-item" href="hibiki_koe.html"><span class="dot"></span> 響 Hibiki</a>
+  <a class="side-item" href="index.html"><span class="dot"></span> 3minエマージェンシー</a>
+  <a class="side-item" href="naze_naze.html"><span class="dot"></span> なぜなぜ分析</a>
+  <div class="side-group-label">今後（就職後）</div>
+  <div class="side-item future"><span class="dot"></span> 弦 Yuzuru <span class="tag">未定</span></div>
+  <div class="side-item future"><span class="dot"></span> 勤務表 <span class="tag">配属待ち</span></div>
+</aside>
+
+<!-- モバイル/タブレット用ボトムナビ（820px以下のみ表示） -->
+<nav class="bottom-nav" aria-label="モバイルナビゲーション" id="private-bottom-nav">
+  <div class="bn-item active" id="bn-mitsumeru" onclick="switchTab('morning')"><span class="bn-ico">📓</span><span class="bn-label">ミツメル</span></div>
+  <div class="bn-item" id="bn-asakan" onclick="switchTab('memo')"><span class="bn-ico">📰</span><span class="bn-label">朝刊</span></div>
+  <div class="bn-item" onclick="location.href='kanade_hub.html'"><span class="bn-ico">🧰</span><span class="bn-label">ツール</span></div>
+  <a class="bn-item" href="index.html"><span class="bn-ico">⚡</span><span class="bn-label">3min</span></a>
+  <div class="bn-item" onclick="document.getElementById('bn-more-sheet').classList.add('open');document.getElementById('bn-more-backdrop').classList.add('open');">
+    <span class="bn-ico">⋯</span><span class="bn-label">その他</span>
+  </div>
+</nav>
+<div class="bn-more-backdrop" id="bn-more-backdrop" onclick="this.classList.remove('open');document.getElementById('bn-more-sheet').classList.remove('open');"></div>
+<div class="bn-more-sheet" id="bn-more-sheet">
+  <div class="bn-sheet-title">ツール一覧</div>
+  <a class="side-item" href="kanade_hub.html"><span class="dot"></span> 奏 Kanade</a>
+  <a class="side-item" href="nagi_hub.html"><span class="dot"></span> 凪 Nagi</a>
+  <a class="side-item" href="hibiki_koe.html"><span class="dot"></span> 響 Hibiki</a>
+  <a class="side-item" href="naze_naze.html"><span class="dot"></span> なぜなぜ分析</a>
+  <div class="side-item future"><span class="dot"></span> 弦 Yuzuru <span class="tag">未定</span></div>
+</div>
 
 <!-- PRIVATE版：デモ・同意オーバーレイなし -->
 
@@ -684,8 +805,11 @@
   <button class="mode-tab" onclick="switchTab('memo')">随時メモ</button>
   <button class="mode-tab" onclick="switchTab('evening')">夜</button>
   <button class="mode-tab" onclick="switchTab('output')">出力</button>
-  <button class="mode-tab" onclick="switchTab('profile')">設定</button>
-  <button class="mode-tab" onclick="switchTab('tools')">ツール</button>
+  <!-- FUS-349⑤：ツールタブ廃止・サイドバーへ統合（奏/凪/響/3min/なぜなぜ分析は
+       外部の独立ページへ、ミツメルスキャンは設定タブへ）。#screen-toolsのHTML/JSは
+       データ非破壊のため削除せず、単に導線を外している（アクセス手段は無いが
+       残置＝正典「消さず殺す」に準拠）。 -->
+  <button class="mode-tab" onclick="switchTab('profile')" style="margin-left:auto;">設定</button>
 </div>
 <div class="sync-bar">
   <span id="sync-status" class="sync-badge"></span>
@@ -2937,8 +3061,9 @@ MUST:${p.must} NEVER:${p.never}
 }
 
 function switchTab(tab) {
+  // FUS-349⑤是正：mode-tabsから「ツール」ボタンを撤去したため、配列もDOM順（5個）に合わせる。
   document.querySelectorAll('.mode-tab').forEach((t,i) => {
-    t.classList.toggle('active', ['morning','memo','evening','output','profile','tools'][i] === tab);
+    t.classList.toggle('active', ['morning','memo','evening','output','profile'][i] === tab);
   });
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-'+tab).classList.add('active');
@@ -2946,6 +3071,17 @@ function switchTab(tab) {
   document.body.setAttribute('data-tab', tab);
   if (tab === 'profile') updateEgoBar();
   if (tab === 'memo') loadAsakanPanel();
+  // FUS-349①：サイドバー・ボトムナビのactive状態を同期（morning=ミツメル・memo=朝刊のみ対応項目あり）
+  const sidebar = document.getElementById('private-sidebar');
+  if (sidebar) {
+    const items = sidebar.querySelectorAll('.side-item');
+    if (items[0]) items[0].classList.toggle('active', tab === 'morning');
+    if (items[1]) items[1].classList.toggle('active', tab === 'memo');
+  }
+  const bnMitsumeru = document.getElementById('bn-mitsumeru');
+  const bnAsakan = document.getElementById('bn-asakan');
+  if (bnMitsumeru) bnMitsumeru.classList.toggle('active', tab === 'morning');
+  if (bnAsakan) bnAsakan.classList.toggle('active', tab === 'memo');
 }
 
 function selectTag(btn, tag) {
