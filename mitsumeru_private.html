@@ -279,7 +279,7 @@
   .checkbox-item input { display: none; }
   .checkbox-item.checked { background: var(--accent) !important; color: var(--bg) !important; border-color: var(--accent) !important; font-weight: 500; }
 
-  .debug-item {
+  .debug-item, .debug-item-sleep {
     background: var(--bg2);
     border: 0.5px solid var(--border);
     border-radius: 6px;
@@ -1286,21 +1286,35 @@
   </div>
 
   <!-- 夜の入眠サポート（2026-07-29・柴山さん本人指示・設計発注）：超軽量な記録→翌朝、
-       淡々と鏡のように返す設計。タップのみで完結し、入力を強制しない。 -->
+       淡々と鏡のように返す設計。タップのみで完結し、入力を強制しない。
+       FUS-349③（2026-08-30・壁打ちで柴山さんご本人が訂正）：チェックボックスの選択肢が
+       実態に合わず答えにくいとのご指摘を受け、既存の「5つのデバッグ」と同じ〇△✕方式へ
+       置き換える。旧選択肢は削除せず取り消し線表示で残す（正典「消さず殺す」準拠）。 -->
   <div class="section">
     <div class="section-title">今夜のふり返り（任意・タップだけでOK）</div>
-    <div class="field">
-      <label>当てはまるものがあれば（複数可・なければそのままでOK）</label>
-      <div class="checkbox-group" id="e-sleep-checkin-group">
-        <label class="checkbox-item" onclick="toggleCheck(this,event); saveEvening()"><input type="checkbox" value="早めに寝られそう">😴 今日は早めに寝られそう</label>
-        <label class="checkbox-item" onclick="toggleCheck(this,event); saveEvening()"><input type="checkbox" value="寝酒した">🍺 寝酒した</label>
-        <label class="checkbox-item" onclick="toggleCheck(this,event); saveEvening()"><input type="checkbox" value="Kindleから動画に流れた">📱 Kindle→動画に流れた</label>
-        <label class="checkbox-item" onclick="toggleCheck(this,event); saveEvening()"><input type="checkbox" value="その他">その他</label>
+    <!-- FUS-349③：既存d1-d5の復元処理はdocument.querySelectorAll('.debug-item')の
+         DOM順インデックスに依存しているため、この要素は.debug-itemクラスを共有せず
+         .debug-item-sleep（別クラス・同一スタイル）にする（インデックスのズレ防止）。 -->
+    <div class="debug-item-sleep" id="sleep-quality-item">
+      <div class="debug-label">今夜は眠れる？</div>
+      <div class="debug-score">
+        <button class="debug-btn" onclick="selectSleepQuality(this,'maru')">〇</button>
+        <button class="debug-btn" onclick="selectSleepQuality(this,'sankaku')">△</button>
+        <button class="debug-btn" onclick="selectSleepQuality(this,'batsu')">✕</button>
       </div>
     </div>
     <div class="field">
       <label>補足（任意・書かなくてよい）</label>
       <textarea id="e-sleep-note" name="private-field-e-sleep-note" autocomplete="off" oninput="saveEvening()" placeholder="書かなくてOK" style="min-height:40px;"></textarea>
+    </div>
+    <div class="field" style="opacity:.45;text-decoration:line-through;margin-top:10px;">
+      <label>旧・当てはまるものがあれば（複数可・FUS-349で〇△✕方式へ置き換え。実態に合わず答えにくいとのご指摘のため廃止）</label>
+      <div class="checkbox-group" id="e-sleep-checkin-group">
+        <label class="checkbox-item"><input type="checkbox" value="早めに寝られそう" disabled>😴 今日は早めに寝られそう</label>
+        <label class="checkbox-item"><input type="checkbox" value="寝酒した" disabled>🍺 寝酒した</label>
+        <label class="checkbox-item"><input type="checkbox" value="Kindleから動画に流れた" disabled>📱 Kindle→動画に流れた</label>
+        <label class="checkbox-item"><input type="checkbox" value="その他" disabled>その他</label>
+      </div>
     </div>
   </div>
 
@@ -1562,7 +1576,7 @@
 
 <script>
 let counts = { noise: 0, pomo: 0, try100: 0, 'memo-pomo': 0 };
-let debugScores = { d1: '', d2: '', d3: '', d4: '', d5: '' };
+let debugScores = { d1: '', d2: '', d3: '', d4: '', d5: '', sleep: '' };
 let calendarCSV = '';
 let delayCSV = '';
 let aiCalendarComment = '';
@@ -1978,6 +1992,16 @@ function applyEveningData(d) {
         if (btns[btnIdx]) btns[btnIdx].classList.add('selected-'+cls);
       }
     });
+    // FUS-349③：sleepキーはd1-d5とは別要素（.debug-item-sleep）のためIDで直接復元する
+    const sleepScore = debugScores.sleep;
+    const sleepItem = document.getElementById('sleep-quality-item');
+    if (sleepScore && sleepItem) {
+      const cls = sleepScore==='〇'?'maru':sleepScore==='△'?'sankaku':'batsu';
+      const btns = sleepItem.querySelectorAll('.debug-btn');
+      btns.forEach(b=>b.classList.remove('selected-maru','selected-sankaku','selected-batsu'));
+      const btnIdx = {maru:0,sankaku:1,batsu:2}[cls];
+      if (btns[btnIdx]) btns[btnIdx].classList.add('selected-'+cls);
+    }
   }
   initAdvanceSchedule(d.advanceSchedule || []);
 }
@@ -2879,7 +2903,7 @@ async function changeTargetDate(newDate) {
 
   // UI初期化
   memos = []; counts = { noise:0, pomo:0, try100:0, 'memo-pomo':0 };
-  debugScores = { d1:'', d2:'', d3:'', d4:'', d5:'' };
+  debugScores = { d1:'', d2:'', d3:'', d4:'', d5:'', sleep:'' };
   const _t100El = document.getElementById('try100-count'); if (_t100El) _t100El.textContent = '0';
   const bodyEl=document.getElementById('m-body'), moodEl=document.getElementById('m-mood'), courseEl=document.getElementById('m-course');
   if(bodyEl){bodyEl.value=3; document.getElementById('m-body-val').textContent=3;}
@@ -3395,6 +3419,18 @@ function selectDebug(btn, key, val) {
   });
   btn.classList.add('selected-'+val);
   debugScores[key] = val === 'maru' ? '〇' : val === 'sankaku' ? '△' : '✕';
+  saveEvening();
+}
+
+// FUS-349③（2026-08-30）：入眠サポートの〇△✕。既存selectDebug()と同パターンだが
+// debugScores.d1〜d5（5つのデバッグ用インデックス）と混ざらないよう専用キー'sleep'を使う。
+function selectSleepQuality(btn, val) {
+  const parent = btn.closest('.debug-item-sleep');
+  parent.querySelectorAll('.debug-btn').forEach(b => {
+    b.classList.remove('selected-maru','selected-sankaku','selected-batsu');
+  });
+  btn.classList.add('selected-'+val);
+  debugScores.sleep = val === 'maru' ? '〇' : val === 'sankaku' ? '△' : '✕';
   saveEvening();
 }
 
