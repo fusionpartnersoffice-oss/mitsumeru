@@ -666,7 +666,7 @@
   <div class="sidebar-brand">FusionOS</div>
   <div class="side-group-label">Core</div>
   <div class="side-item active" onclick="switchTab('morning')"><span class="dot"></span> ミツメル</div>
-  <div class="side-item" onclick="switchTab('memo')"><span class="dot"></span> 朝刊</div>
+  <div class="side-item" onclick="switchTab('asakan')"><span class="dot"></span> 朝刊</div>
   <div class="side-group-label">ツール</div>
   <a class="side-item" href="kanade_hub.html"><span class="dot"></span> 奏 Kanade</a>
   <a class="side-item" href="nagi_hub.html"><span class="dot"></span> 凪 Nagi</a>
@@ -681,7 +681,7 @@
 <!-- モバイル/タブレット用ボトムナビ（820px以下のみ表示） -->
 <nav class="bottom-nav" aria-label="モバイルナビゲーション" id="private-bottom-nav">
   <div class="bn-item active" id="bn-mitsumeru" onclick="switchTab('morning')"><span class="bn-ico">📓</span><span class="bn-label">ミツメル</span></div>
-  <div class="bn-item" id="bn-asakan" onclick="switchTab('memo')"><span class="bn-ico">📰</span><span class="bn-label">朝刊</span></div>
+  <div class="bn-item" id="bn-asakan" onclick="switchTab('asakan')"><span class="bn-ico">📰</span><span class="bn-label">朝刊</span></div>
   <div class="bn-item" onclick="location.href='kanade_hub.html'"><span class="bn-ico">🧰</span><span class="bn-label">ツール</span></div>
   <a class="bn-item" href="index.html"><span class="bn-ico">⚡</span><span class="bn-label">3min</span></a>
   <div class="bn-item" onclick="document.getElementById('bn-more-sheet').classList.add('open');document.getElementById('bn-more-backdrop').classList.add('open');">
@@ -831,19 +831,21 @@
 </div>
 
 <!-- 随時メモ -->
-<div id="screen-memo" class="screen">
-  <div class="date-display" id="memo-date"></div>
-
-  <!-- 朝刊反応（2026-07-30・柴山さん直命・生成⇔検証ループ／2026-07-31・柴山さん最終決定により
-       朝タブから随時メモタブへ再移動、さらにタブの一番上へ移動：本部が毎朝生成する朝刊の
-       見出しへタップ1つで反応を残せるようにし、サルベージが翌朝拾って情報収集の精度を上げる。
-       入力必須にしない。 -->
+<!-- FUS-349②（2026-08-30）：朝刊をサイドバーの独立項目へ分離。中身の移動のみで、
+     asakan-panel・asakan-list等の既存ID・loadAsakanPanel()呼び出しロジックは無変更
+     （データ・機能は壊さない。単に配置場所を随時メモタブの外へ出しただけ）。 -->
+<div id="screen-asakan" class="screen">
+  <div class="date-display" id="asakan-date"></div>
   <div class="section" id="asakan-panel">
     <div class="section-title">📰 今朝の朝刊、どうでしたか</div>
     <div id="asakan-list" style="font-size:13px;color:var(--text2);line-height:1.8;">
       <span style="color:var(--text3);font-size:12px;">読み込み中...</span>
     </div>
   </div>
+</div>
+
+<div id="screen-memo" class="screen">
+  <div class="date-display" id="memo-date"></div>
 
   <div class="section">
     <div class="section-title">随時メモ — Keepの代わりに</div>
@@ -2943,6 +2945,8 @@ function setDates() {
   document.getElementById('morning-date').textContent = fmt(now);
   document.getElementById('evening-date').textContent = fmt(now);
   document.getElementById('memo-date').textContent = fmt(now);
+  const asakanDateEl = document.getElementById('asakan-date');
+  if (asakanDateEl) asakanDateEl.textContent = fmt(now);
   document.getElementById('m-date').value = targetDate;
   setNowTime();
 }
@@ -3094,18 +3098,20 @@ function switchTab(tab) {
   // ビジュアル改善案2（2026-07-26・設計発注）：タブごとの色分け。class付与のみ、他ロジックは無変更。
   document.body.setAttribute('data-tab', tab);
   if (tab === 'profile') updateEgoBar();
-  if (tab === 'memo') loadAsakanPanel();
-  // FUS-349①：サイドバー・ボトムナビのactive状態を同期（morning=ミツメル・memo=朝刊のみ対応項目あり）
+  // FUS-349②：朝刊はサイドバーの独立項目（screen-asakan）になったため、
+  // 'memo'（随時メモ本体）ではなく'asakan'選択時にloadAsakanPanel()を呼ぶ。
+  if (tab === 'asakan') loadAsakanPanel();
+  // FUS-349①：サイドバー・ボトムナビのactive状態を同期（morning=ミツメル・asakan=朝刊のみ対応項目あり）
   const sidebar = document.getElementById('private-sidebar');
   if (sidebar) {
     const items = sidebar.querySelectorAll('.side-item');
     if (items[0]) items[0].classList.toggle('active', tab === 'morning');
-    if (items[1]) items[1].classList.toggle('active', tab === 'memo');
+    if (items[1]) items[1].classList.toggle('active', tab === 'asakan');
   }
   const bnMitsumeru = document.getElementById('bn-mitsumeru');
   const bnAsakan = document.getElementById('bn-asakan');
   if (bnMitsumeru) bnMitsumeru.classList.toggle('active', tab === 'morning');
-  if (bnAsakan) bnAsakan.classList.toggle('active', tab === 'memo');
+  if (bnAsakan) bnAsakan.classList.toggle('active', tab === 'asakan');
 }
 
 function selectTag(btn, tag) {
