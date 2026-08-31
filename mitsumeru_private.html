@@ -1285,8 +1285,8 @@
       <label>本日のタスクコース</label>
       <div class="score-row">
         <span style="font-size:11px;color:var(--text3)">超甘口</span>
-        <input type="range" min="1" max="6" id="m-course" oninput="updateCourse(this.value); saveMorning()">
-        <span style="font-size:11px;color:var(--text3)">地獄</span>
+        <input type="range" min="1" max="5" value="3" id="m-course" oninput="updateCourse(this.value); saveMorning()">
+        <span style="font-size:11px;color:var(--text3)">激辛</span>
       </div>
       <div id="course-badge" style="margin-top:10px;text-align:center;padding:8px;border-radius:6px;font-size:13px;font-weight:500;background:var(--bg2);border:0.5px solid var(--border);">
         コース3 — 中辛：いつもより少なめで動く
@@ -2094,6 +2094,12 @@ window.addEventListener('DOMContentLoaded', async function() {
   const lsDelay    = lsLoad('delay');
 
   applyMorningData(lsMorning);
+  // FUS-363①（2026-08-31・柴山さん実機発見）：保存データが無い日（新規の日）は
+  // applyMorningData()がd===nullで即returnし、m-courseのスライダー実表示値
+  // （value属性未設定時のブラウザ標準丸め値）とcourse-badgeの決め打ちHTML文言が
+  // 同期されないまま放置されていた。保存データの有無によらず、常に実値でバッジを揃える。
+  const courseElInit = document.getElementById('m-course');
+  if (courseElInit) updateCourse(courseElInit.value);
   applyEveningData(lsEvening);
   if (!lsEvening || !lsEvening.advanceSchedule) initAdvanceSchedule([]);
   applyMemosData(lsMemos);
@@ -2952,7 +2958,6 @@ const courseData = {
   3: { name: '中辛', desc: 'いつもより少なめで動く', bg: '#e8f5ee', color: '#148053' },
   4: { name: '辛口', desc: '通常モード', bg: '#fff0e8', color: '#c25a00' },
   5: { name: '激辛', desc: '全力モード', bg: '#fde8e8', color: 'var(--red)' },
-  6: { name: '地獄', desc: '締め切り・本番前', bg: '#2a1a1a', color: '#ff6644' },
 };
 
 function updateCourse(val) {
