@@ -2961,12 +2961,20 @@ const courseData = {
 };
 
 function updateCourse(val) {
-  const c = courseData[val];
+  // FUS-363是正（2026-09-01・設計差し戻し）：6段階→5段階廃止(FUS-363②)より前に
+  // 保存された旧データ（course=6等）を復元する経路で、courseData[val]がundefinedになり
+  // 未捕捉例外が発生していた。範囲外の値は1〜5へクランプしてから参照する。
+  let v = parseInt(val, 10);
+  if (!Number.isFinite(v)) v = 3;
+  v = Math.min(5, Math.max(1, v));
+  const c = courseData[v];
   const badge = document.getElementById('course-badge');
-  badge.textContent = `コース${val} — ${c.name}：${c.desc}`;
+  badge.textContent = `コース${v} — ${c.name}：${c.desc}`;
   badge.style.background = c.bg;
   badge.style.color = c.color;
   badge.style.borderColor = c.color + '44';
+  const slider = document.getElementById('m-course');
+  if (slider && slider.value != v) slider.value = v;
 }
 
 async function changeTargetDate(newDate) {
