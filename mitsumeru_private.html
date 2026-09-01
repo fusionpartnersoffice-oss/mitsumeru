@@ -1645,6 +1645,19 @@
 </div>
 
 <script>
+// FUS-369（2026-09-01・柴山さん実機報告・設計原因特定）：メモ本文をinnerHTMLへ
+// テンプレートリテラルで直接展開している箇所が複数あり、本文に<や>が含まれると
+// ブラウザがタグと誤解釈しDOM構造が壊れる（編集/削除ボタンが消える等）。
+// 表示用HTMLへ挿入する全箇所で、この関数を通してからテンプレートへ渡す。
+function escapeHtml(s) {
+  if (s === null || s === undefined) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 let counts = { noise: 0, pomo: 0, try100: 0, 'memo-pomo': 0 };
 let debugScores = { d1: '', d2: '', d3: '', d4: '', d5: '', sleep: '' };
 let calendarCSV = '';
@@ -3350,7 +3363,7 @@ function updateEveningMemoPreview() {
       <span style="color:var(--text3);min-width:38px;font-size:12px;">${m.time ? m.time.substring(0,2)+':'+m.time.substring(2,4) : '--:--'}</span>
       ${m.pomos!==null?`<span style="color:var(--accent);min-width:36px;font-size:12px;">${m.pomos}ポモ</span>`:'<span style="min-width:36px;"></span>'}
       <div style="flex:1;min-width:0;">
-        <span style="font-size:13px;overflow-wrap:break-word;word-break:break-word;">${m.content}</span>
+        <span style="font-size:13px;overflow-wrap:break-word;word-break:break-word;">${escapeHtml(m.content)}</span>
         ${m.image ? `<div style="margin-top:4px;"><a href="${m.image}" target="_blank" style="font-size:12px;color:var(--accent);text-decoration:none;">📷 画像を開く →</a></div>` : ''}
       </div>
     </div>
@@ -3372,7 +3385,7 @@ function renderMemos() {
       <span style="color:var(--text3);min-width:38px;font-size:12px;">${m.time ? m.time.substring(0,2)+':'+m.time.substring(2,4) : '--:--'}</span>
       ${m.pomos!==null?`<span style="color:var(--accent);min-width:36px;font-size:12px;">${m.pomos}ポモ</span>`:'<span style="min-width:36px;"></span>'}
       <div style="flex:1;min-width:0;">
-        <span style="font-size:13px;line-height:1.6;overflow-wrap:break-word;word-break:break-word;">${m.content}</span>
+        <span style="font-size:13px;line-height:1.6;overflow-wrap:break-word;word-break:break-word;">${escapeHtml(m.content)}</span>
         ${m.image ? `<div style="margin-top:4px;"><a href="${m.image}" target="_blank" style="font-size:12px;color:var(--accent);text-decoration:none;">📷 画像を開く →</a></div>` : ''}
       </div>
       <button onclick="editMemo(${i})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:0 4px;flex-shrink:0;">✏️</button>
@@ -3398,7 +3411,7 @@ function renderThoughtStream() {
   el.innerHTML = thoughts.map(m => `
     <div class="thought">
       <div class="who">柴</div>
-      <div class="txt"><span class="tag">#思考</span>${m.content}</div>
+      <div class="txt"><span class="tag">#思考</span>${escapeHtml(m.content)}</div>
       <div class="time">${m.time ? m.time.substring(0,2)+':'+m.time.substring(2,4) : '--:--'}</div>
     </div>
   `).join('');
@@ -3421,7 +3434,7 @@ function renderMemoTodaySummary() {
   const recent = memos.slice(-3).reverse();
   const recentHtml = recent.map(m => {
     const t = m.time ? `${m.time.substring(0,2)}:${m.time.substring(2,4)}` : '--:--';
-    return `<div style="font-size:12px;color:var(--text2);padding:2px 0;">[${t}] ${tagIcons[m.tag]||''}${m.content}</div>`;
+    return `<div style="font-size:12px;color:var(--text2);padding:2px 0;">[${t}] ${tagIcons[m.tag]||''}${escapeHtml(m.content)}</div>`;
   }).join('');
   el.innerHTML = `
     <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:8px;">
@@ -4625,7 +4638,7 @@ function downloadHTML() {
         <span style="color:#9a8a7a;font-size:12px;min-width:40px;">${m.time ? m.time.substring(0,2)+':'+m.time.substring(2,4) : '--:--'}</span>
         ${m.pomos!==null?`<span style="color:#8a7a6a;font-size:12px;min-width:40px;">${m.pomos}ポモ</span>`:''}
         <div style="flex:1;">
-          <p style="margin:0;font-size:14px;line-height:1.7;color:#3a3028;">${m.content}</p>
+          <p style="margin:0;font-size:14px;line-height:1.7;color:#3a3028;">${escapeHtml(m.content)}</p>
           ${m.image?`<img src="${m.image}" style="margin-top:8px;max-width:100%;max-height:300px;border-radius:6px;border:1px solid #e8e4dc;">`: ''}
         </div>
       </div>
