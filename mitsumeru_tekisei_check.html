@@ -486,7 +486,7 @@ let lastResult = null;
 // （クライアント側実行のためハッシュ化も完全な防御にはならないが、grep等でのパスワード直読み
 // は防げる。新パスワードは柴山さんへ別経路で共有済み・ソースには一切含めない）
 const ADMIN_UNLOCK_KEY = 'mitsumeru_tekisei_admin_unlocked';
-const ADMIN_PASSWORD_HASH = 'd34ae6b141c7473409f3d4feb6f64d7c34c1228dc578476b36fae974cc833e70';
+const ADMIN_PASSWORD_HASH = '363cc1b45ab73b7cc7e64fbc528e7498625928413522d78c52b81b88ef7962c9';
 let IS_ADMIN = new URLSearchParams(location.search).get('admin') === '1' || localStorage.getItem(ADMIN_UNLOCK_KEY) === '1';
 function applyModeVisibility(){
   const sendBtn = document.querySelector('.header-nav-btn[onclick="sendAllToAdmin()"]');
