@@ -4752,9 +4752,9 @@ async function loadPastRecords() {
       </div>
       <div class="past-record-body" id="past-body-${idx}">HP:${hp} / MP:${mp}
 \u968F\u6642\u30E1\u30E2\uFF1A${memoCount}\u4EF6
-${r.memosObj && Array.isArray(r.memosObj.data) ? r.memosObj.data.map(m=>`#${m.tag} ${m.time ? m.time.substring(0,2)+':'+m.time.substring(2,4) : ''} ${m.content}`).join('\n') : ''}
-\u88DC\u8DB3\uFF1A${summary||'\u306A\u3057'}
-\u660E\u65E5\u306E\u4E88\u5B9A\uFF1A${r.evening ? (r.evening['e-tomorrow']||'\u306A\u3057') : '\u306A\u3057'}</div>
+${r.memosObj && Array.isArray(r.memosObj.data) ? r.memosObj.data.map(m=>`#${m.tag} ${m.time ? m.time.substring(0,2)+':'+m.time.substring(2,4) : ''} ${escapeHtml(m.content)}`).join('\n') : ''}
+\u88DC\u8DB3\uFF1A${escapeHtml(summary)||'\u306A\u3057'}
+\u660E\u65E5\u306E\u4E88\u5B9A\uFF1A${r.evening ? (escapeHtml(r.evening['e-tomorrow'])||'\u306A\u3057') : '\u306A\u3057'}</div>
     </div>`;
   }).join('');
 }
