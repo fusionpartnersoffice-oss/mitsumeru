@@ -472,7 +472,7 @@ let lastResult = null;
 // （クライアント側実行のためハッシュ化も完全な防御にはならないが、grep等でのパスワード直読み
 // は防げる。新パスワードは柴山さんへ別経路で共有済み・ソースには一切含めない）
 const ADMIN_UNLOCK_KEY = 'mitsumeru_scan_admin_unlocked';
-const ADMIN_PASSWORD_HASH = '363cc1b45ab73b7cc7e64fbc528e7498625928413522d78c52b81b88ef7962c9';
+const ADMIN_PASSWORD_HASH = '30e1781cf093ce91f83119ea391272d9b53241a2e02010219ece97162d42fd0b';
 let IS_ADMIN = new URLSearchParams(location.search).get('admin') === '1' || localStorage.getItem(ADMIN_UNLOCK_KEY) === '1';
 function applyModeVisibility(){
   const rosterBtn = document.querySelector('.header-nav-btn[onclick="showRoster()"]');
