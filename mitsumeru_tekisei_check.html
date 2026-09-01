@@ -501,7 +501,9 @@ async function sha256Hex(text){
   return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
 }
 async function promptAdminLogin(){
-  const pw = prompt('管理者パスワードを入力してください');
+  // FUS-375追加是正（2026-09-01・柴山さん本人指定）：忘れやすいとのことでヒントを追加。
+  // パスワード自体は書かない（ハッシュ化の意味が無くなるため）。
+  const pw = prompt('管理者パスワードを入力してください\n（ヒント：社名の略称＋数字2桁）');
   if (pw === null) return;
   const hash = await sha256Hex(pw);
   if (hash === ADMIN_PASSWORD_HASH) {
