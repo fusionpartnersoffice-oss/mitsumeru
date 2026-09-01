@@ -4493,6 +4493,11 @@ ${_tomorrowIchigon}`;
   const outputPayload = { text, _ts: Date.now() };
   localStorage.setItem(lsKey('output'), JSON.stringify(outputPayload));
   cloudSave('output', outputPayload);
+  // FUS-379是正（2026-09-01・柴山さん実害報告・設計原因特定）：朝の「モードを判定する」
+  // （3970行）・夜の締め（3570行）はどちらもsyncToVault()を呼んでいるが、この
+  // 「翌日戦略を生成する」ボタンだけ実装当初から呼び出しが無く、AI生成結果がVaultへ
+  // 反映されない状態だった。cloudSave('output',...)の直後に追加する。
+  syncToVault();
 
   // ダッシュボード自動反映（2026-07-26・設計発注）：失敗してもgenerateEvening()全体は
   // 失敗にしない（画面の出力生成は必ず成功させる）。ダッシュボードファイル未設定
