@@ -863,10 +863,9 @@ async function handleVaultAsakanRead(request, env) {
     }
     const accessToken = await getVaultAccessToken(env);
     const deskFolderId = await getCachedDailyFolderId(env, accessToken, oauthFolderId, '01_今日のデスク');
-    // 2026-09-04是正（柴山さん実害報告）：実際の朝刊ファイルは「01_今日のデスク」直下ではなく
-    // その中の「朝刊」サブフォルダに保存されている（8/21時点で既にこの構成）。
-    // 直下のみを検索していたため、ファイルが存在しても常に「まだ生成されていません」と
-    // 誤表示していた。サブフォルダを解決してから検索するよう修正する。
+    // FUS-395是正（2026-09-04・設計）：朝刊の実際の生成先は`01_今日のデスク\朝刊\`サブフォルダ
+    // （morning-news-fukushi SKILL.md参照）だが、本関数はトップ直下しか検索しておらず、
+    // 常に「本日の朝刊はまだ生成されていません」を返す長期バグになっていた。サブフォルダを検索対象にする。
     const asakanFolderId = await getCachedDailyFolderId(env, accessToken, deskFolderId, '朝刊');
     const today = jstDateStr().replace(/-/g, '');
     const filename = `朝刊_医療福祉_${today}.md`;
