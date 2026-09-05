@@ -863,9 +863,14 @@ async function handleVaultAsakanRead(request, env) {
     }
     const accessToken = await getVaultAccessToken(env);
     const deskFolderId = await getCachedDailyFolderId(env, accessToken, oauthFolderId, '01_今日のデスク');
+    // 2026-09-04是正（柴山さん実害報告）：実際の朝刊ファイルは「01_今日のデスク」直下ではなく
+    // その中の「朝刊」サブフォルダに保存されている（8/21時点で既にこの構成）。
+    // 直下のみを検索していたため、ファイルが存在しても常に「まだ生成されていません」と
+    // 誤表示していた。サブフォルダを解決してから検索するよう修正する。
+    const asakanFolderId = await getCachedDailyFolderId(env, accessToken, deskFolderId, '朝刊');
     const today = jstDateStr().replace(/-/g, '');
     const filename = `朝刊_医療福祉_${today}.md`;
-    const found = await findVaultFile(accessToken, deskFolderId, filename);
+    const found = await findVaultFile(accessToken, asakanFolderId, filename);
     if (!found) {
       // 前提が崩れた時（06:06前・生成失敗）は無理に埋めず、正直に「まだ無い」と返す
       return new Response(JSON.stringify({ ok: true, none: true, reason: '本日の朝刊はまだ生成されていません' }), { status: 200, headers });
