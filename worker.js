@@ -1331,6 +1331,9 @@ lv: ${yamlSafe(lvBase)}
 type: mitsumeru-daily
 ---`;
 
+  // FUS-20是正（2026-09-05・柴山さん実機フィードバック）：AI生成ナラティブ（翌日戦略・
+  // 参謀からの一言）は反映自体はできていたが、セクション順が下の方すぎてスクロールしないと
+  // 見えなかった。ステータス直後、他の生入力項目より先に表示する順序へ変更する。
   return `${frontmatter}
 
 # ミツメル日次記録 ${date}
@@ -1341,11 +1344,14 @@ type: mitsumeru-daily
 ## ステータス
 HP：${hp || '—'}／MP：${mp || '—'}
 
-## 今日の一言
-${want}
+## 翌日戦略（AI生成・全文）
+${tomorrowPlanFull || '（記載なし）'}
 
 ## 参謀からの一言（AI生成）
 ${morningAdvice || '（記載なし）'}
+
+## 今日の一言
+${want}
 
 ## 随時メモ
 ${memosText}
@@ -1355,9 +1361,6 @@ ${supplement}
 
 ## 明日の設計
 ${tomorrow}
-
-## 翌日戦略（AI生成・全文）
-${tomorrowPlanFull || '（記載なし）'}
 
 ## 先送りタスク
 ${delay}
