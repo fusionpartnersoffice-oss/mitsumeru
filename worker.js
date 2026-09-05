@@ -678,7 +678,11 @@ async function handleVaultDashboardSetup(request, env) {
 // 「次の面接の準備」「判断待ち」等の既存セクションには一切触れない。
 const DASHBOARD_BLOCK_START = '<!-- MITSUMERU_TODAY_START -->';
 const DASHBOARD_BLOCK_END = '<!-- MITSUMERU_TODAY_END -->';
-const DASHBOARD_INSERT_ANCHOR = '## 🗂 入口';
+// FUS-20是正の続き（2026-09-06・柴山さん実機指摘）：旧アンカー'## 🗂 入口'は現行の
+// 代表ダッシュボード.mdに実在せず（総務側の再構成で消滅済み）、常にelse分岐（末尾追記）に
+// 落ちてスクロールしないと見えない位置に入っていた。タイトル行「# 代表ダッシュボード」は
+// 総務側の自動更新でも書き換えられない安定した行のため、これを新アンカーにする。
+const DASHBOARD_INSERT_ANCHOR = '# 代表ダッシュボード';
 
 // ダンプボックス：種類を問わずファイルをVaultの00_inboxフォルダへアップロードする（2026-07-28・設計発注）。
 // 「放り込むだけで完結する」がゴール。整理は別作業（対象外）。
@@ -773,11 +777,15 @@ async function handleVaultDashboardWrite(request, env) {
     if (top1) lines.push(`- 最優先：${top1}`);
     const block = `${DASHBOARD_BLOCK_START}\n${lines.join('\n')}\n${DASHBOARD_BLOCK_END}`;
 
-    const markerRe = new RegExp(DASHBOARD_BLOCK_START.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '[\\s\\S]*?' + DASHBOARD_BLOCK_END.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-    if (markerRe.test(content)) {
-      content = content.replace(markerRe, block);
-    } else if (content.includes(DASHBOARD_INSERT_ANCHOR)) {
-      content = content.replace(DASHBOARD_INSERT_ANCHOR, `${block}\n\n${DASHBOARD_INSERT_ANCHOR}`);
+    // FUS-20是正の続き（2026-09-06・柴山さん実機指摘）：旧実装は既存ブロックを「その場で
+    // 置換」するだけだったため、一度末尾（旧アンカー消失時のフォールバック）に入ってしまうと
+    // 二度とアンカー直後へ移動できなかった。既存ブロックを一旦除去してから、毎回アンカー直後へ
+    // 再挿入する方式（自己修復）に変更する。
+    const markerRe = new RegExp('\\n*' + DASHBOARD_BLOCK_START.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '[\\s\\S]*?' + DASHBOARD_BLOCK_END.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\n*');
+    content = content.replace(markerRe, '\n');
+    if (content.includes(DASHBOARD_INSERT_ANCHOR)) {
+      // アンカー（タイトル行）の直後へ挿入する（アンカーの前ではない）。
+      content = content.replace(DASHBOARD_INSERT_ANCHOR, `${DASHBOARD_INSERT_ANCHOR}\n\n${block}`);
     } else {
       content = content.trimEnd() + '\n\n' + block + '\n';
     }
