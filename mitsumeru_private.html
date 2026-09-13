@@ -2558,7 +2558,7 @@ async function loadAsakanPanel() {
       return;
     }
     asakanItems = {};
-    (data.headings || []).forEach(h => { asakanItems[h.index] = { heading: h.heading, summary: h.summary || '' }; });
+    (data.headings || []).forEach(h => { asakanItems[h.index] = { heading: h.heading, url: h.url || null, summary: h.summary || '' }; });
     const todayStr = localDateStr(new Date());
     const prefix = `【朝刊】${todayStr}：`;
     const foundIdx = memos.findIndex(m => m.tag === 'G' && typeof m.content === 'string' && m.content.startsWith(prefix));
@@ -2582,8 +2582,11 @@ function renderAsakanPanel() {
     ? memos[asakanAllMemoIndex].content.replace(/^【朝刊】[^：]*：/, '') : '';
   const listHtml = indices.map(idx => {
     const it = asakanItems[idx];
+    const headingHtml = it.url
+      ? `<a href="${escapeAsakanHtml(it.url)}" target="_blank" rel="noopener" style="color:var(--text);text-decoration:underline;text-decoration-color:var(--border);">${escapeAsakanHtml(it.heading)} <span style="font-size:11px;color:var(--text3);">↗</span></a>`
+      : escapeAsakanHtml(it.heading);
     return `<div style="margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border);">
-      <div style="margin-bottom:4px;font-weight:500;">${escapeAsakanHtml(it.heading)}</div>
+      <div style="margin-bottom:4px;font-weight:500;">${headingHtml}</div>
       <div style="font-size:12px;color:var(--text3);margin-bottom:8px;">${escapeAsakanHtml(it.summary)}</div>
     </div>`;
   }).join('');

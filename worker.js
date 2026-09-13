@@ -902,9 +902,15 @@ async function handleVaultAsakanRead(request, env) {
     // 明示的に固定していないことが根本原因（別途SKILL.md是正を依頼済み）。ここでは同種の再発に
     // 備え、正規表現を単一パターンへの依存から複数パターン許容へ変更し、多少の表記ゆれでは
     // 壊れない設計にする。
+    // 2026-09-13追記（柴山さん依頼・設計）：見出しの[タイトル](url)から、タイトルに続く
+    // URLも合わせて抽出する（第2捕捉群）。Vault側は元々リンク形式で保存されており、
+    // これまでタイトル部分だけ取り出してURLを捨てていたため、ミツメル側では元記事へ
+    // 遷移できなかった。
+    // ⚠️URL部分`(...)`は任意（`?`）にする。過去2回、フォーマット微変化で見出し0件になる
+    // 事故が起きているため、URLが無い行でも見出し自体は必ず拾えるようにし、表記ゆれに強くする。
     const HEADING_PATTERNS = [
-      /^#{2,4}\s*\[([^\]]+)\]/,       // ### [タイトル] / ## [タイトル]（##は通常区分見出しのため[が無く該当しない想定）
-      /^\*\*\d+\.\s*\[([^\]]+)\]/,    // **1. [タイトル]**（2026-08-22〜の太字箇条書き形式）
+      /^#{2,4}\s*\[([^\]]+)\](?:\(([^)]+)\))?/,       // ### [タイトル](url) / ## [タイトル]（url無しも許容）
+      /^\*\*\d+\.\s*\[([^\]]+)\](?:\(([^)]+)\))?/,    // **1. [タイトル](url)**（url無しも許容）
     ];
     const lines = content.split('\n');
     const headings = [];
@@ -924,7 +930,7 @@ async function handleVaultAsakanRead(request, env) {
         if (HEADING_PATTERNS.some(p => p.test(line))) break; // 次の項目に到達したら打ち切る
         if (line.trim()) summaryLines.push(line.trim());
       }
-      headings.push({ index: idx, heading: headingMatch[1].trim(), summary: summaryLines.join(' ') });
+      headings.push({ index: idx, heading: headingMatch[1].trim(), url: headingMatch[2] ? headingMatch[2].trim() : null, summary: summaryLines.join(' ') });
     }
     if (!headings.length) {
       // 配線完全性チェック（設計指摘・2026-08-01）：ファイルは見つかったのに見出しが0件の場合、
