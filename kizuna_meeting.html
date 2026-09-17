@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FusionOS 会議管理ツール — きずな | Fusion Partners</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<script src="https://cdn.jsdelivr.net/npm/html-docx-js/dist/html-docx.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#eef1f4; --panel:#ffffff; --navy:#0b1929; --navy2:#1c3248;
+  --text:#1a2535; --dim:#5b6b7a; --dim2:#8a98a8; --border:#dde3e8;
+}
+html,body{background:var(--bg);font-family:'Hiragino Kaku Gothic Pro','Meiryo','Yu Gothic',sans-serif;color:var(--text);-webkit-font-smoothing:antialiased;min-height:100%;font-size:14px;}
+.topbar{position:sticky;top:0;z-index:20;background:var(--navy);color:#fff;padding:11px 20px;display:flex;align-items:center;justify-content:space-between;}
+.topbar-brand{color:#fff;text-decoration:none;font-weight:700;font-size:13px;letter-spacing:.5px;}
+.topbar-back{color:#8fa3b8;text-decoration:none;font-size:11.5px;}
+.topbar-back:hover{color:#fff;}
+
+.layout{display:flex;gap:20px;max-width:1180px;margin:0 auto;padding:20px;align-items:flex-start;}
+.editor-pane{flex:0 0 380px;display:flex;flex-direction:column;gap:14px;}
+.preview-wrap{flex:1;display:flex;flex-direction:column;gap:14px;align-items:center;}
+
+.mode-tabs{display:flex;gap:6px;}
+.mode-tab{flex:1;padding:9px 6px;font-size:11.5px;font-weight:700;border:1px solid var(--border);border-radius:5px;background:var(--panel);color:var(--dim);cursor:pointer;}
+.mode-tab.active{background:var(--navy);color:#fff;border-color:var(--navy);}
+
+.field-card{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:14px 16px;}
+.field-card h3{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim2);margin-bottom:10px;font-weight:700;}
+.field-row{margin-bottom:10px;}
+.field-row:last-child{margin-bottom:0;}
+.field-row label{display:block;font-size:11px;color:var(--dim);margin-bottom:4px;}
+.field-row input[type=text],.field-row select,.field-row textarea{width:100%;padding:7px 9px;font-size:13px;border:1px solid var(--border);border-radius:4px;background:#fbfcfd;color:var(--text);font-family:inherit;}
+.field-row textarea{min-height:64px;resize:vertical;line-height:1.6;}
+.field-row input:focus,.field-row select:focus,.field-row textarea:focus{outline:none;border-color:var(--navy2);}
+
+.action-row{display:flex;flex-direction:column;gap:8px;}
+.btn{padding:10px 14px;border-radius:5px;border:1px solid var(--border);background:var(--panel);color:var(--navy);font-size:13px;font-weight:600;cursor:pointer;text-align:center;}
+.btn:hover{background:#f4f6f8;}
+.btn-primary{background:var(--navy);color:#fff;border-color:var(--navy);}
+.btn-primary:hover{background:var(--navy2);}
+.save-indicator{font-size:11px;color:var(--dim2);text-align:center;min-height:14px;}
+
+.history-panel{width:210mm;max-width:100%;background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:14px 16px;}
+.history-panel h3{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim2);margin-bottom:10px;font-weight:700;}
+.history-empty{font-size:12px;color:var(--dim2);}
+.history-item{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);cursor:pointer;font-size:13px;}
+.history-item:last-child{border-bottom:none;}
+.history-item:hover{color:var(--navy2);}
+.history-item .h-date{color:var(--dim2);font-size:11.5px;min-width:6.5em;}
+.history-item .h-type{color:var(--navy2);font-size:11px;font-weight:700;margin-right:6px;}
+
+/* ===== A4プレビュー（doc_studio.htmlと同じ構造を流用） ===== */
+.a4-page{width:210mm;min-height:297mm;background:#fff;box-shadow:0 2px 12px rgba(0,0,0,.12);padding:18mm 16mm;color:#1a1a1a;}
+.a4-header{border-bottom:3px solid var(--navy);padding-bottom:10px;margin-bottom:18px;}
+.a4-kicker{font-size:10px;letter-spacing:3px;color:var(--dim2);text-transform:uppercase;margin-bottom:6px;}
+.a4-title{font-size:22px;font-weight:700;color:var(--navy);line-height:1.4;}
+.a4-facility{margin-top:10px;font-size:13px;color:var(--text);line-height:1.9;}
+.a4-facility b{color:var(--navy);}
+.a4-section{margin-bottom:16px;}
+.a4-section h4{font-size:12px;letter-spacing:1px;color:var(--navy);margin-bottom:6px;}
+.a4-body{font-size:13px;line-height:1.9;white-space:pre-wrap;color:#222;}
+.a4-footer{margin-top:auto;padding-top:14px;border-top:1px solid #ddd;font-size:11px;color:#888;text-align:center;}
+.a4-empty{color:#aaa;font-style:italic;}
+
+@media print{
+  body{background:#fff;}
+  .topbar,.editor-pane,.history-panel{display:none !important;}
+  .layout{padding:0;max-width:none;display:block;}
+  .preview-wrap{display:block;}
+  .a4-page{box-shadow:none;width:auto;min-height:0;margin:0;padding:0;}
+}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <a class="topbar-brand" href="./index_full.html">🧭 FusionOS</a>
+  <a class="topbar-back" href="./yuzuru_hub.html">← 弦へ戻る</a>
+</div>
+
+<div class="layout">
+  <div class="editor-pane">
+    <div class="mode-tabs">
+      <button class="mode-tab active" id="mode-tab-edit" onclick="switchMode('edit')">編集</button>
+      <button class="mode-tab" id="mode-tab-view" onclick="switchMode('view')" disabled>閲覧中（履歴）</button>
+    </div>
+
+    <div class="field-card">
+      <h3>会議メタ情報</h3>
+      <div class="field-row"><label>日付</label><input type="text" id="m-date" placeholder="例：2026-09-17" oninput="onEdit()"></div>
+      <div class="field-row">
+        <label>会議種別</label>
+        <select id="m-type" onchange="onEdit()">
+          <option value="">未選択</option>
+          <option value="定例">定例</option>
+          <option value="単発">単発</option>
+          <option value="壁打ち">壁打ち</option>
+          <option value="その他">その他</option>
+        </select>
+      </div>
+      <div class="field-row"><label>参加者（カンマ区切り）</label><input type="text" id="m-participants" placeholder="例：柴山、太田さん" oninput="onEdit()"></div>
+    </div>
+
+    <div class="field-card">
+      <h3>決まったこと</h3>
+      <div class="field-row"><textarea id="m-decided" placeholder="誰が・何を決めたか" oninput="onEdit()"></textarea></div>
+    </div>
+
+    <div class="field-card">
+      <h3>次のアクション</h3>
+      <div class="field-row"><textarea id="m-next" placeholder="誰が・いつまでに何をするか" oninput="onEdit()"></textarea></div>
+    </div>
+
+    <div class="field-card">
+      <h3>議論したが決まらなかったこと</h3>
+      <div class="field-row"><textarea id="m-pending" placeholder="持ち越し事項" oninput="onEdit()"></textarea></div>
+    </div>
+
+    <div class="field-card">
+      <h3>自由メモ</h3>
+      <div class="field-row"><textarea id="m-memo" placeholder="文字起こし全文の貼り付け先など（要約はしません）" style="min-height:120px;" oninput="onEdit()"></textarea></div>
+    </div>
+
+    <div class="field-card action-row">
+      <button class="btn btn-primary" id="btn-save-meeting" onclick="saveMeetingToHistory()">💾 この会議を履歴に保存</button>
+      <button class="btn" onclick="window.print()">🖨️ 印刷 / PDF保存</button>
+      <button class="btn" onclick="exportWord()">📄 Wordで開く</button>
+      <button class="btn" id="btn-new-meeting" style="display:none;" onclick="startNewMeeting()">＋ 新しい会議を編集</button>
+      <div class="save-indicator" id="save-indicator"></div>
+    </div>
+  </div>
+
+  <div class="preview-wrap">
+    <div class="a4-page" id="doc-container">
+      <div class="a4-header">
+        <div class="a4-kicker">Fusion Partners — 会議記録</div>
+        <div class="a4-title" id="p-title">（日付未入力）</div>
+        <div class="a4-facility" id="p-meta"></div>
+      </div>
+      <div id="p-content"></div>
+      <div class="a4-footer">Fusion Partners　｜　fusion.partners.office@gmail.com</div>
+    </div>
+
+    <div class="history-panel">
+      <h3>会議履歴（日付降順・クリックで閲覧）</h3>
+      <div id="history-list"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// FUS-256 v1（2026-09-17・設計発注）：doc_studio.htmlの入力→プレビュー→Word/PDF出力パターンを
+// そのまま転用し、要約AIは実装しない（柴山さんの所感「APIゴリゴリ使うだけ」を踏まえた割り切り）。
+// 履歴一覧はdoc_studioには無い新規機能：会議ごとにlocalStorageへ個別保存し、日付降順で一覧表示する。
+const DRAFT_KEY = 'kizuna_meeting_draft_v1';           // 編集中の下書き（doc_studioのDRAFT_KEYと同じ役割）
+const HISTORY_INDEX_KEY = 'kizuna_meeting_history_v1'; // 保存済み会議の一覧（{id, date, type, participants, savedAt}[]）
+const RECORD_PREFIX = 'kizuna_meeting_record_';        // 会議ごとの本体（RECORD_PREFIX + id）
+
+let meeting = defaultMeeting();
+let mode = 'edit'; // 'edit'（新規/継続編集）｜'view'（履歴の閲覧のみ）
+
+function defaultMeeting() {
+  return { date:'', type:'', participants:'', decided:'', next:'', pending:'', memo:'' };
+}
+
+function val(id) { return document.getElementById(id).value; }
+
+function pullFormIntoMeeting() {
+  meeting.date = val('m-date');
+  meeting.type = val('m-type');
+  meeting.participants = val('m-participants');
+  meeting.decided = val('m-decided');
+  meeting.next = val('m-next');
+  meeting.pending = val('m-pending');
+  meeting.memo = val('m-memo');
+}
+
+function populateFormFromMeeting() {
+  document.getElementById('m-date').value = meeting.date || '';
+  document.getElementById('m-type').value = meeting.type || '';
+  document.getElementById('m-participants').value = meeting.participants || '';
+  document.getElementById('m-decided').value = meeting.decided || '';
+  document.getElementById('m-next').value = meeting.next || '';
+  document.getElementById('m-pending').value = meeting.pending || '';
+  document.getElementById('m-memo').value = meeting.memo || '';
+}
+
+function setFormDisabled(disabled) {
+  ['m-date','m-type','m-participants','m-decided','m-next','m-pending','m-memo'].forEach(id => {
+    document.getElementById(id).disabled = disabled;
+  });
+  document.getElementById('btn-save-meeting').style.display = disabled ? 'none' : 'block';
+  document.getElementById('btn-new-meeting').style.display = disabled ? 'block' : 'none';
+}
+
+// ===== 編集中の下書き（自動保存・doc_studioのsaveDraft/loadDraftと同じ考え方） =====
+function loadDraft() {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch(e) {}
+  return null;
+}
+function saveDraft() {
+  localStorage.setItem(DRAFT_KEY, JSON.stringify({ meeting, _ts: Date.now() }));
+  const ind = document.getElementById('save-indicator');
+  ind.textContent = '下書きを保存しました ' + new Date().toLocaleTimeString('ja-JP');
+  clearTimeout(ind._t);
+  ind._t = setTimeout(() => { ind.textContent = ''; }, 2500);
+}
+
+function onEdit() {
+  if (mode !== 'edit') return;
+  pullFormIntoMeeting();
+  renderPreview();
+  saveDraft();
+}
+
+// ===== 履歴（新規・doc_studioには無い機能） =====
+function loadHistoryIndex() {
+  try { return JSON.parse(localStorage.getItem(HISTORY_INDEX_KEY) || '[]'); } catch(e) { return []; }
+}
+function saveHistoryIndex(list) {
+  localStorage.setItem(HISTORY_INDEX_KEY, JSON.stringify(list));
+}
+
+function saveMeetingToHistory() {
+  pullFormIntoMeeting();
+  const id = 'm_' + Date.now();
+  localStorage.setItem(RECORD_PREFIX + id, JSON.stringify(meeting));
+  const list = loadHistoryIndex();
+  list.push({ id, date: meeting.date || '（日付未入力）', type: meeting.type || '', participants: meeting.participants || '', savedAt: Date.now() });
+  saveHistoryIndex(list);
+  // 保存後は下書きをクリアし、次の会議を編集できる状態にする（保存済み記録自体は履歴に残る＝消さず殺す）
+  localStorage.removeItem(DRAFT_KEY);
+  meeting = defaultMeeting();
+  populateFormFromMeeting();
+  renderPreview();
+  renderHistoryList();
+  const ind = document.getElementById('save-indicator');
+  ind.textContent = '履歴へ保存しました ' + new Date().toLocaleTimeString('ja-JP');
+  clearTimeout(ind._t);
+  ind._t = setTimeout(() => { ind.textContent = ''; }, 2500);
+}
+
+function renderHistoryList() {
+  const box = document.getElementById('history-list');
+  const list = loadHistoryIndex().slice().sort((a, b) => (b.date || '').localeCompare(a.date || '') || b.savedAt - a.savedAt);
+  if (!list.length) {
+    box.innerHTML = '<div class="history-empty">保存済みの会議記録はまだありません。</div>';
+    return;
+  }
+  box.innerHTML = list.map(item => `
+    <div class="history-item" onclick="viewHistoryItem('${item.id}')">
+      <span><span class="h-type">${escapeHtml(item.type || '種別未設定')}</span>${escapeHtml(item.participants || '')}</span>
+      <span class="h-date">${escapeHtml(item.date || '')}</span>
+    </div>
+  `).join('');
+}
+
+// v1は閲覧のみ（編集不可）。プレビュー欄へ表示するだけで、下書き・履歴一覧には触れない。
+function viewHistoryItem(id) {
+  let record;
+  try { record = JSON.parse(localStorage.getItem(RECORD_PREFIX + id) || 'null'); } catch(e) { record = null; }
+  if (!record) { alert('この記録は読み込めませんでした。'); return; }
+  mode = 'view';
+  meeting = record;
+  populateFormFromMeeting();
+  setFormDisabled(true);
+  document.getElementById('mode-tab-edit').classList.remove('active');
+  document.getElementById('mode-tab-view').classList.add('active');
+  renderPreview();
+}
+
+function startNewMeeting() {
+  mode = 'edit';
+  meeting = loadDraft()?.meeting || defaultMeeting();
+  populateFormFromMeeting();
+  setFormDisabled(false);
+  document.getElementById('mode-tab-edit').classList.add('active');
+  document.getElementById('mode-tab-view').classList.remove('active');
+  renderPreview();
+}
+
+function switchMode(m) {
+  if (m === 'edit') startNewMeeting();
+  // 'view'タブはクリック不可（disabled）。viewHistoryItem経由でのみ入る。
+}
+
+// ===== プレビュー描画 =====
+function renderPreview() {
+  const date = (meeting.date || '').trim();
+  const type = (meeting.type || '').trim();
+  const participants = (meeting.participants || '').trim();
+
+  document.getElementById('p-title').textContent = date || '（日付未入力）';
+  document.getElementById('p-title').classList.toggle('a4-empty', !date);
+
+  const metaLines = [];
+  if (type) metaLines.push(`<b>種別：</b>${escapeHtml(type)}`);
+  if (participants) metaLines.push(`参加者：${escapeHtml(participants)}`);
+  document.getElementById('p-meta').innerHTML = metaLines.join('<br>');
+
+  const sections = [
+    ['決まったこと', meeting.decided],
+    ['次のアクション', meeting.next],
+    ['議論したが決まらなかったこと', meeting.pending],
+    ['自由メモ', meeting.memo],
+  ];
+  document.getElementById('p-content').innerHTML = sections.map(([label, text]) => {
+    const t = (text || '').trim();
+    return `<div class="a4-section"><h4>${escapeHtml(label)}</h4><div class="a4-body ${t ? '' : 'a4-empty'}">${escapeHtml(t || '（未入力）')}</div></div>`;
+  }).join('');
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// ===== Wordエクスポート（doc_studio.htmlのexportWord/fixDocxPageSizeToA4をそのまま再利用） =====
+async function exportWord() {
+  const container = document.getElementById('doc-container').outerHTML;
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>${container}</body></html>`;
+  const rawBlob = htmlDocx.asBlob(html);
+  const blob = await fixDocxPageSizeToA4(rawBlob);
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const filename = (meeting.date || '会議記録') + '.docx';
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+async function fixDocxPageSizeToA4(blob) {
+  try {
+    const zip = await JSZip.loadAsync(blob);
+    const docXmlPath = 'word/document.xml';
+    const docFile = zip.file(docXmlPath);
+    if (!docFile) return blob;
+    let xml = await docFile.async('string');
+    xml = xml.replace(/<w:pgSz\b[^>]*\/?>/g, tag =>
+      tag.replace(/w:w="\d+"/, 'w:w="11906"').replace(/w:h="\d+"/, 'w:h="16838"')
+    );
+    zip.file(docXmlPath, xml);
+    return await zip.generateAsync({ type: 'blob', mimeType: blob.type });
+  } catch (e) {
+    return blob;
+  }
+}
+
+window.addEventListener('DOMContentLoaded', function() {
+  const draft = loadDraft();
+  if (draft && draft.meeting) meeting = draft.meeting;
+  populateFormFromMeeting();
+  renderPreview();
+  renderHistoryList();
+});
+</script>
+</body>
+</html>
