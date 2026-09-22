@@ -2526,6 +2526,18 @@ function formatJobSearchStatusText(jobSearchStatus) {
   return parts.join('\n\n');
 }
 
+// 2026-09-23是正（設計・柴山さん実害報告）：9/19瑞鳳会入社後も、朝の助言が
+// 「求人を1件開いて判定する」等の就活文脈のTop3タスクを出し続けていた事故への対応。
+// ダッシュボードの「🏥 瑞鳳会・着任準備」欄の実在＝既に就業中、として扱う。
+function formatEmploymentOverrideBlock(jobSearchStatus) {
+  if (!jobSearchStatus || !jobSearchStatus.employed) return '';
+  const statusText = jobSearchStatus.employmentStatus
+    ? `\n【現在の着任状況（代表ダッシュボードより）】\n${jobSearchStatus.employmentStatus}\n`
+    : '';
+  return `\n**🔴最優先の前提（就業状況）：柴山さんは既に瑞鳳会（老健施設）へ入社・就業中です。就職活動は終わっています。**${statusText}
+**MUST/NEVER（防空レーダー15箇条）は求人選別・面接対策の基準として使わないこと。** 「求人を開いて判定する」「NEVERの8箇条と照らす」「応募する」「書類を絞り込む」のような、就活を前提にしたタスク・言葉を一切出さないこと。今日のTop3タスクは、現在の職場（瑞鳳会）での実際の業務・人間関係・組織適応に関する具体的な行動のみを対象にすること。MUST/NEVERを使う場合も、「職場でこの価値観をどう守るか・活かすか」という現職での意思決定の物差しとして使うこと。\n`;
+}
+
 // 朝刊反応（2026-07-30・柴山さん直命・生成⇔検証ループ／2026-08-01再設計・柴山さん×設計壁打ち／
 // 2026-08-04再設計・柴山さん直命「各項目にコメント欄は要らない。まとめて思考として一気にコメント
 // する」）：タップ式反応（👍/🤷/👎）は蒸留の役に立たないと判断され廃止。見出し＋要約を読み物として
@@ -4017,6 +4029,11 @@ async function calcMorning() {
   const jobSearchStatusBlock = jobSearchStatusText
     ? `\n【直近の面接・選考状況（代表ダッシュボードより）】\n${jobSearchStatusText}\n**この情報を必ず踏まえて助言すること。** 面接が既に完了している・選考が進んでいる会社について、まだ応募・検討段階であるかのような的外れな助言（「応募を検討しては」「書類を絞り込め」等）をしないこと。\n**上記の面接・選考状況から内定の有無を判断すること（「内定」という記載が無ければ内定0件として扱う）。内定が0件の間は、MUST/NEVER（防空レーダー15箇条）を「応募を切る基準」として使わないこと。代わりに「面接で何を確認すべきか・どこを見極めるかの下調べ」として使うこと（例：「面接でN-3に該当しないか確認してみませんか」であって、「N-3に該当しそうだから応募を外しましょう」ではない）。内定が出てから初めて絞り込み・除外の話をすること。**\n`
     : '';
+  // 2026-09-23是正（設計・柴山さん実害報告）：9/19瑞鳳会入社後も就活文脈のTop3が出続けた事故。
+  // 就活ステータス欄が空になったこと（=内定/面接情報が無い）を「就活継続中」と誤読させないため、
+  // 就業中フラグが立っている場合は明示的に上書き指示を注入する。
+  const employmentOverrideBlock = formatEmploymentOverrideBlock(morningContext.jobSearchStatus);
+  const isEmployed = !!(morningContext.jobSearchStatus && morningContext.jobSearchStatus.employed);
 
   // 夜の入眠サポート（2026-07-29・柴山さん本人指示）：前日夜のチェックインが無い日は
   // このブロック自体を出さない（無理に埋めない・言及しない）。
@@ -4036,7 +4053,7 @@ ${learningLogText}
 ・現在時間帯：${timeOfDay}（「朝タブ」の名称や「おはよう」に固執しない）
 ・今日という日のゆるい着眼点候補：${todayLens}（今日の一言と噛み合う時だけ使ってよい。今日の一言の内容と合わないなら無視すること。強制する主軸ではない）
 ・${vaultContextText}${recallLine}
-${jobSearchStatusBlock}${sleepCheckinBlock}
+${employmentOverrideBlock}${jobSearchStatusBlock}${sleepCheckinBlock}
 【今朝の状態】
 HP: ${hpAdj}/100、MP: ${mp}/100
 モード: ${modeText}
@@ -4060,14 +4077,21 @@ ${formatRuleList(MORNING_PROMPT_RULES.factConstraints)}
 トーン厳守：
 ${formatRuleList(MORNING_PROMPT_RULES.tone)}
 
-【今日のTop3タスク】
+【今日のTop3タスク】${isEmployed ? `
+**🔴柴山さんは既に瑞鳳会へ入社・就業中です。就職活動は終わっています。** MUST/NEVER（防空レーダー15箇条）は「求人選別・応募判定の基準」としては使わないこと。「求人を1件開いて判定する」「応募する」「NEVERの8箇条と照らす」のようなタスクは出さないこと。
+コース${courseVal}（${course.name}）の柴山さんが今日「これだけはやる」3つを、現在の職場（瑞鳳会）での実務・人間関係・組織適応に関する具体的な行動として決めてください。
+D-blockモードなら最小限の具体行動、通常モード以上なら積極的に。
+タスクは「〇〇する」で終わる物理的な動作レベルで書いてください。
+**厳守**：ミツメル自体の操作（記録する・入力する・振り返る等）をタスクとして提案しないこと。柴山さんの実生活・実務上の行動のみを対象にする。
+- LSRP（${_lsrpText}）を意思決定の癖・リスクの取り方の傾向として、Top3タスクの組み立てか上記【参謀からの一言】のどちらかで必ず1回具体的に反映すること
+- キャリアアンカー（${_anchorText}）を「柴山さんにとって譲れないもの」として、Top3タスクの選定理由（なぜこの3つを選んだか）に必ず1回具体的に反映すること` : `
 MUST「${_mustText}」とNEVER「${_neverText}」を判断基準に、
 コース${courseVal}（${course.name}）の柴山さんが今日「これだけはやる」3つを決めてください。
 D-blockモードなら最小限の具体行動、通常モード以上なら積極的に。
 タスクは「〇〇する」で終わる物理的な動作レベルで書いてください。
 **厳守**：ミツメル自体の操作（記録する・入力する・振り返る等）をタスクとして提案しないこと。柴山さんの実生活・実務上の行動のみを対象にする。
 - LSRP（${_lsrpText}）を意思決定の癖・リスクの取り方の傾向として、Top3タスクの組み立てか上記【参謀からの一言】のどちらかで必ず1回具体的に反映すること
-- キャリアアンカー（${_anchorText}）を「柴山さんにとって譲れないもの」として、Top3タスクの選定理由（なぜこの3つを選んだか）に必ず1回具体的に反映すること${jobSearchStatusText ? '\n- 【直近の面接・選考状況】が実在する場合、そこに書かれた選考の進み具合を必ず踏まえること（例：既に面接済み・二次面接待ち等の会社に対し「まず応募する」「書類を絞り込む」等、選考が始まっていない前提のタスクを提案しないこと）' : ''}`;
+- キャリアアンカー（${_anchorText}）を「柴山さんにとって譲れないもの」として、Top3タスクの選定理由（なぜこの3つを選んだか）に必ず1回具体的に反映すること${jobSearchStatusText ? '\n- 【直近の面接・選考状況】が実在する場合、そこに書かれた選考の進み具合を必ず踏まえること（例：既に面接済み・二次面接待ち等の会社に対し「まず応募する」「書類を絞り込む」等、選考が始まっていない前提のタスクを提案しないこと）' : ''}`}`;
 
   const loading = document.getElementById('morning-loading');
   const advice = document.getElementById('morning-advice');
@@ -4133,7 +4157,7 @@ async function runAIEveningAnalysis(promptContext) {
   const { tomorrow, delay, hp, mp, eveSummary, profileText, p, v, g, debugText,
           endHP, endMP, counts, lvBaseFormatted, dateStr, trend7, must, never, ego, enea1, rc, supplement,
           try100, feedback, notebooklm, todayNotePublish,
-          jobSearchStatusText } = promptContext;
+          jobSearchStatusText, isEmployed, employmentOverrideText } = promptContext;
 
   const hpNum = parseInt(endHP), mpNum = parseInt(endMP);
   const isLowEnergy = (!isNaN(hpNum) && hpNum <= 70) || (!isNaN(mpNum) && mpNum <= 70);
@@ -4157,7 +4181,7 @@ ${delay || 'なし'}
 
 【明日に持ち越すエネルギー（夜の締め後）】HP:${endHP}/100 MP:${endMP}/100
 ${limitNote}
-${jobSearchStatusText ? `\n【直近の面接・選考状況（代表ダッシュボードより）】\n${jobSearchStatusText}\n**この情報を必ず踏まえて明日の設計をすること。** 面接が既に完了している・選考が進んでいる会社について、まだ応募・検討段階であるかのような的外れな助言をしないこと。\n**上記から内定の有無を判断すること（「内定」という記載が無ければ内定0件として扱う）。内定が0件の間は、MUST/NEVER（防空レーダー15箇条）を「応募を切る基準」として使わないこと。代わりに「面接で確認すべき点」としてのみ使うこと。内定が出てから初めて絞り込み・除外の話をすること。**\n` : ''}
+${isEmployed ? `\n**🔴柴山さんは既に瑞鳳会へ入社・就業中です。就職活動は終わっています。**\n${employmentOverrideText ? `【現在の着任状況（代表ダッシュボードより）】\n${employmentOverrideText}\n` : ''}MUST/NEVER（防空レーダー15箇条）は「求人選別・応募判定の基準」としては使わないこと。「求人を開いて判定する」「応募する」「書類を絞り込む」のような就活を前提にしたタスク・言葉を明日の設計に出さないこと。明日の設計は現在の職場（瑞鳳会）での実務・人間関係・組織適応に関する具体的な内容とすること。\n` : (jobSearchStatusText ? `\n【直近の面接・選考状況（代表ダッシュボードより）】\n${jobSearchStatusText}\n**この情報を必ず踏まえて明日の設計をすること。** 面接が既に完了している・選考が進んでいる会社について、まだ応募・検討段階であるかのような的外れな助言をしないこと。\n**上記から内定の有無を判断すること（「内定」という記載が無ければ内定0件として扱う）。内定が0件の間は、MUST/NEVER（防空レーダー15箇条）を「応募を切る基準」として使わないこと。代わりに「面接で確認すべき点」としてのみ使うこと。内定が出てから初めて絞り込み・除外の話をすること。**\n` : '')}
 
 指定日：${dateStr}
 過去7日間トレンド：${trend7}
@@ -4179,7 +4203,7 @@ NotebookLM要約：${notebooklm || 'なし'}
 - **文体は「エレガントに毒を吐く」（正典「文体・トーン」準拠）。精神論を排した知的な語り口で、断言はするが攻撃的にはならない。この文体は全セクションで一貫させること**
 - ネガティブな事実を伝える時は、事実を正確に、薄めずに伝えること。ユーモア・オチで着地させることを目的にしないこと。事実で終えてよい。軽い一言を添えるかは任意であり、添えることで事実の重さが下がるなら添えないこと
 - 説明的・事務的な言い回しを避け、柴山さんご本人が実際に使う生きた言い回しに近づけること（分析の正確さ・具体性は犠牲にしない）
-- 明日の行動戦略のタスク優先順位はMUST「${must}」に照らして判断すること。NEVER「${never}」に反する提案は絶対にしないこと
+- 明日の行動戦略のタスク優先順位はMUST「${must}」に照らして判断すること。NEVER「${never}」に反する提案は絶対にしないこと${isEmployed ? '（ただし就業中のため、これを求人選別・応募判定の基準としては使わないこと。現職での意思決定の物差しとして使うこと）' : ''}
 - **MUST/NEVERの項目を「M-1」「N-3」のような記号・番号だけで済ませないこと。** 参照する場合は、その項目が具体的に何を指しているか（中身）を必ず本文中に書き出すこと（2026-07-28・実際の出力で発生した問題への是正）
 - エゴグラム（${ego}）またはエニアグラム第1位（${enea1}）を、V(ノイズ)分析かTOMORROW_MESSAGEで必ず1回具体的に言及すること
 - RC（${rc}）を組織適応の傾向として、TOMORROW_PLAN（翌日の設計・戦略立案）で必ず1回具体的に反映すること
@@ -4367,7 +4391,8 @@ HP: ${hp}→${endHP} ／ MP: ${mp}→${endMP}
 
   const learningLogTextEvening = await fetchLearningLogText();
   // 配線漏れの是正（2026-07-28設計発注）：朝と同じダッシュボード面接・物差し情報を夜にも渡す
-  const jobSearchStatusEvening = formatJobSearchStatusText(await fetchJobSearchStatus(targetDate || localDateStr(new Date())));
+  const jobSearchStatusRawEvening = await fetchJobSearchStatus(targetDate || localDateStr(new Date()));
+  const jobSearchStatusEvening = formatJobSearchStatusText(jobSearchStatusRawEvening);
   // 配線漏れの是正（2026-08-13設計発注・FUS-208）：note-publish-watch（サーバー側）が
   // 当日のミツメル日次記録へ「## note公開」節を追記する運用に合わせ、既存のfetchVaultContext
   // （朝と同じ関数・同じ認証トークン経路・新規シークレット不要）を夜にも呼び、当日分のnote公開実績を拾う。
@@ -4379,7 +4404,11 @@ HP: ${hp}→${endHP} ／ MP: ${mp}→${endMP}
     endHP, endMP, counts, lvBaseFormatted, dateStr, trend7,
     must: _eMust, never: _eNever, ego: _eEgo, enea1: _eEnea1, rc: _eRc, supplement,
     try100, feedback, notebooklm, todayNotePublish,
-    jobSearchStatusText: jobSearchStatusEvening
+    jobSearchStatusText: jobSearchStatusEvening,
+    isEmployed: !!(jobSearchStatusRawEvening && jobSearchStatusRawEvening.employed),
+    employmentOverrideText: jobSearchStatusRawEvening && jobSearchStatusRawEvening.employed
+      ? (jobSearchStatusRawEvening.employmentStatus || '瑞鳳会・着任準備欄より就業中と確認')
+      : ''
   });
 
   // ② 確定アポ CSV（確定アポ + AI①）
