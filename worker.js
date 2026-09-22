@@ -840,11 +840,20 @@ async function handleVaultDashboardRead(request, env) {
 
     const interviews = extractSection('次の面接');
     const yardstick = extractSection('今の物差し');
+    // 2026-09-23是正（設計・柴山さん実害報告）：就活中専用の2欄（次の面接／今の物差し）しか
+    // 見ておらず、「既に入社・就業中である」という状態を検知する配線が存在しなかった。
+    // 結果、9/19瑞鳳会入社後もjobSearchStatusが空のまま返り、朝の助言プロンプトがMUST/NEVER
+    // （防空レーダー15箇条＝元は求人選別基準）を就活文脈で使い続け、「求人を1件開いて判定」等の
+    // 的外れなTop3タスクを生成し続けていた。「🏥 瑞鳳会・着任準備」欄の実在を、既に就業中かどうかの
+    // 判定材料として追加する。
+    const employmentSection = extractSection('瑞鳳会・着任準備');
 
     return new Response(JSON.stringify({
       ok: true, none: false,
       interviews: interviews ? interviews.body : null,
       yardstick: yardstick ? yardstick.body : null,
+      employed: !!employmentSection,
+      employmentStatus: employmentSection ? employmentSection.body : null,
     }), { status: 200, headers });
   } catch (e) {
     // 設計書の方針（学習ログ・前回記録と同じ）：読み込み失敗時もプロンプト生成自体は
