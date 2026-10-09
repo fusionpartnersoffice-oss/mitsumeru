@@ -2652,6 +2652,9 @@ async function buildMorningContext(dateForVault) {
   // ⑥ダッシュボードの面接・物差し状況（2026-07-28設計発注・配線漏れの是正。読み込みのみ）
   context.jobSearchStatus = await fetchJobSearchStatus(dateForVault || localDateStr(new Date()));
 
+  // ⑥-2参謀の前提（最新）（2026-10-10・柴山さん承認）：Vaultの固定名ファイルから毎回最新を読む。
+  context.sanchoPremise = await fetchSanchoPremise();
+
   // ⑦夜の入眠サポート（2026-07-29・柴山さん本人指示・設計発注）：前日夜のチェックインを読む。
   // localStorage参照のみ（trend7と同じ既存パターン）。デバイスをまたぐ場合は取得できないことがある。
   const baseDate = dateForVault ? new Date(dateForVault) : new Date();
@@ -2749,6 +2752,42 @@ async function fetchLearningLogText() {
   } catch (e) {}
   return result;
 }
+// 参謀の前提（最新）（2026-10-10・柴山さん承認・設計）：朝の参謀AIが「今の職場の実態」を
+// 古い記録（過去のダッシュボード欄・補助情報）ではなく最新の前提から読むための取得口。
+// Vaultの固定名ファイル`_参謀の前提_最新.md`をWorker経由で読む（毎回取得・キャッシュなし。
+// 学習ログと違い1日1回の更新ではなく、戦略書が更新された直後から反映させたいため）。
+// 取得できない時は null を返し、朝プロンプトは前提ブロックなしで通常どおり進む。
+async function fetchSanchoPremise() {
+  try {
+    const token = getPrivateToken();
+    if (!token) return null;
+    const res = await fetch(`${SYNC_URL}/vault-sancho-premise`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
+    });
+    const data = await res.json();
+    if (data.ok && !data.none && data.text) {
+      return { text: data.text, modifiedTime: data.modifiedTime || null };
+    }
+  } catch (e) {}
+  return null;
+}
+
+// 前提ブロックの文言化。他のどの情報よりも優先させる（古い記録との食い違いを前提側で解決させる）。
+// 前提ファイルが3日以上更新されていない場合は、古い可能性を参謀自身に伝えさせる。
+function formatSanchoPremiseBlock(premise) {
+  if (!premise || !premise.text) return '';
+  let ageNote = '';
+  if (premise.modifiedTime) {
+    const days = Math.floor((Date.now() - new Date(premise.modifiedTime).getTime()) / 86400000);
+    ageNote = days >= 3
+      ? `（⚠️この前提の最終更新は${days}日前です。古い可能性があるため、断定せず「前提が古いかもしれません」と一言添えること）`
+      : `（最終更新：${String(premise.modifiedTime).slice(0, 10)}）`;
+  }
+  return `\n【今の職場の最新の前提${ageNote}】\n${premise.text}\n**この前提を、他のどの情報（過去の記録・プロファイル・補助情報・過去の提案）よりも優先して信頼すること。** 食い違う場合は必ずこの前提を正とすること。前提に書かれていない人物の役割・指揮系統・報告先・予定を、過去の記録や一般論から推測して補わないこと。「すでに決着済み・今は提案しないこと」に書かれた内容は、形を変えても提案しないこと。\n`;
+}
+
 function savePrivateTokenFromSettings() {
   const token = (document.getElementById('private-access-token-input') || {value:''}).value.trim();
   if (!token) return;
@@ -4035,6 +4074,29 @@ async function calcMorning() {
   const employmentOverrideBlock = formatEmploymentOverrideBlock(morningContext.jobSearchStatus);
   const isEmployed = !!(morningContext.jobSearchStatus && morningContext.jobSearchStatus.employed);
 
+  // 2026-10-10是正（設計・柴山さん承認）：「現ケアマネ」「施設長への報告」等、9/21時点の古い前提が
+  // 毎朝そのまま注入されていた（ダッシュボードの古い欄の本文を渡していたため・Worker側で停止済み）。
+  // 代わりに、Vaultの固定名ファイル`_参謀の前提_最新.md`（戦略書の最新版から定時タスクが毎回書き直す）を
+  // 毎回読み、他のどの情報よりも優先させる。
+  const sanchoPremiseBlock = formatSanchoPremiseBlock(morningContext.sanchoPremise);
+
+  // 2026-10-10追加（専務の要望・柴山さん承認）：MPが底の時期は「新しく動く」提案を出さず、
+  // 休む・決めるだけ・やらない提案に絞る。判定は①前夜の締め後MP＜30（日次記録本文「翌日戦略」の
+  // 確定値。frontmatterは朝の値のため使わない）②今朝のMP＜30、のどちらか。前夜の記録が無い日・
+  // 前回記録が前日でない日は①を判定しない。
+  const LOW_MP_THRESHOLD = 30;
+  const vcForLowMp = morningContext.vaultContext;
+  const prevCloseMp = (vcForLowMp && vcForLowMp.ok && !vcForLowMp.none && vcForLowMp.daysSince === 1
+    && vcForLowMp.closeMp != null && vcForLowMp.closeMp !== '') ? parseInt(vcForLowMp.closeMp, 10) : null;
+  const lowMpReasons = [];
+  if (prevCloseMp !== null && !isNaN(prevCloseMp) && prevCloseMp < LOW_MP_THRESHOLD) lowMpReasons.push(`前夜の締め後のMPが${prevCloseMp}`);
+  if (mp < LOW_MP_THRESHOLD) lowMpReasons.push(`今朝のMPが${mp}`);
+  const lowMpMode = lowMpReasons.length > 0;
+  const lowMpReasonText = lowMpReasons.join('・');
+  const lowMpBlock = lowMpMode
+    ? `\n**🔴今日はMPが底の日です（${lowMpReasonText}）。** 【参謀からの一言】でも【今日のTop3タスク】でも、「新しく動く」提案は一切出さないこと（新しい人への働きかけ・新しい確認や報告や相談・新しい調べ物・新しい仕組みづくり・新しい判断を求めること）。出してよいのは「休む・決めるだけ・やらない」の提案だけ。\n`
+    : '';
+
   // 夜の入眠サポート（2026-07-29・柴山さん本人指示）：前日夜のチェックインが無い日は
   // このブロック自体を出さない（無理に埋めない・言及しない）。
   const sleepCheckinText = formatSleepCheckinText(morningContext.sleepCheckin);
@@ -4053,7 +4115,7 @@ ${learningLogText}
 ・現在時間帯：${timeOfDay}（「朝タブ」の名称や「おはよう」に固執しない）
 ・今日という日のゆるい着眼点候補：${todayLens}（今日の一言と噛み合う時だけ使ってよい。今日の一言の内容と合わないなら無視すること。強制する主軸ではない）
 ・${vaultContextText}${recallLine}
-${employmentOverrideBlock}${jobSearchStatusBlock}${sleepCheckinBlock}
+${employmentOverrideBlock}${sanchoPremiseBlock}${lowMpBlock}${jobSearchStatusBlock}${sleepCheckinBlock}
 【今朝の状態】
 HP: ${hpAdj}/100、MP: ${mp}/100
 モード: ${modeText}
@@ -4077,7 +4139,14 @@ ${formatRuleList(MORNING_PROMPT_RULES.factConstraints)}
 トーン厳守：
 ${formatRuleList(MORNING_PROMPT_RULES.tone)}
 
-【今日のTop3タスク】${isEmployed ? `
+【今日のTop3タスク】${lowMpMode ? `
+**🔴今日はMPが底の日（${lowMpReasonText}）なので、いつもの「これだけはやる3つ」は出しません。** 代わりに、「新しく動かない」ための3つを出してください。次の3種類から、今日の状況に合うものを3つ選ぶこと（同じ種類を重ねてよい）：
+・「いるだけで合格」と決める（今日の合格ラインを下げる）
+・定時で上がる／早退してよいと決める（時間で区切る）
+・すでに決まっている方針を一言で思い出す（【今の職場の最新の前提】に書かれた内容だけ。新しい判断はしない）
+【今の職場の最新の前提】に「割り切りの3語」など具体的な言葉が書かれていれば、その言葉をそのまま使うこと。
+新しい人への働きかけ、新しい確認・報告・相談、新しい調べ物、仕組みづくり、MUST/NEVERの照合、LSRPやキャリアアンカーを根拠にした新しい行動の提案は一切しないこと。
+書式は「〇〇する」「〇〇しない」で終わる短い1文を3つ。各項目の「選んだ理由」は1文以内。` : isEmployed ? `
 **🔴柴山さんは既に瑞鳳会へ入社・就業中です。就職活動は終わっています。** MUST/NEVER（防空レーダー15箇条）は「求人選別・応募判定の基準」としては使わないこと。「求人を1件開いて判定する」「応募する」「NEVERの8箇条と照らす」のようなタスクは出さないこと。
 コース${courseVal}（${course.name}）の柴山さんが今日「これだけはやる」3つを、現在の職場（瑞鳳会）での実務・人間関係・組織適応に関する具体的な行動として決めてください。
 D-blockモードなら最小限の具体行動、通常モード以上なら積極的に。

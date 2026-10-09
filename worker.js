@@ -112,6 +112,11 @@ export default {
       return handleVaultLearningLog(request, env);
     }
 
+    // ===== 参謀の前提（最新）：固定名ファイルの読み込み（2026-10-10・柴山さん承認・設計） =====
+    if (url.pathname === '/vault-sancho-premise' && request.method === 'POST') {
+      return handleVaultSanchoPremise(request, env);
+    }
+
     // ===== ダンプボックス：種類を問わずファイルをVaultへ放り込む（2026-07-28・設計発注・柴山さん承認） =====
     if (url.pathname === '/vault-inbox-upload' && request.method === 'POST') {
       return handleVaultInboxUpload(request, env);
@@ -848,12 +853,16 @@ async function handleVaultDashboardRead(request, env) {
     // 判定材料として追加する。
     const employmentSection = extractSection('瑞鳳会・着任準備');
 
+    // 2026-10-10是正（設計・柴山さん承認）：上のemploymentStatus（欄の本文）を朝プロンプトへそのまま
+    // 渡していたが、この欄は9/21を最後に誰も更新しておらず、「現ケアマネ」「施設長への報告」等の
+    // 古い前提が毎朝丸ごと注入されていた（10/8〜10/10の参謀が同じ助言を繰り返した原因）。
+    // 本文は返さず、「就業中か」のフラグだけ残す。最新の前提は /vault-sancho-premise（固定名ファイル）から読む。
     return new Response(JSON.stringify({
       ok: true, none: false,
       interviews: interviews ? interviews.body : null,
       yardstick: yardstick ? yardstick.body : null,
       employed: !!employmentSection,
-      employmentStatus: employmentSection ? employmentSection.body : null,
+      employmentStatus: null,
     }), { status: 200, headers });
   } catch (e) {
     // 設計書の方針（学習ログ・前回記録と同じ）：読み込み失敗時もプロンプト生成自体は
@@ -1574,9 +1583,14 @@ function parseVaultMarkdown(content) {
     const m = content.match(re);
     return m ? m[1].trim() : '';
   };
+  // 前夜確定HP/MP（2026-10-10追加）：frontmatterのhp/mpはその日の「朝」の値。夜の締め後の値は
+  // 本文「## 翌日戦略（AI生成・全文）」の「HP：68/100　MP：27/100」行にある。夜の入力が無い日は null。
+  const closeMatch = section('翌日戦略[^\\n]*').match(/HP\s*[：:]\s*(\d+)\s*\/\s*100[\s　]*MP\s*[：:]\s*(\d+)\s*\/\s*100/);
   return {
     hp: fm.hp !== undefined && fm.hp !== 'null' ? fm.hp : null,
     mp: fm.mp !== undefined && fm.mp !== 'null' ? fm.mp : null,
+    closeHp: closeMatch ? closeMatch[1] : null,
+    closeMp: closeMatch ? closeMatch[2] : null,
     want: section('今日の一言'),
     supplement: section('補足'),
     tomorrow: section('明日の設計'),
@@ -1652,12 +1666,67 @@ async function handleVaultMorningContext(request, env) {
       ok: true, none: false,
       prevDate, daysSince,
       hp: parsed.hp, mp: parsed.mp,
+      closeHp: parsed.closeHp, closeMp: parsed.closeMp,
       want: parsed.want, supplement: parsed.supplement,
       tomorrow: parsed.tomorrow, delay: parsed.delay,
       todayNotePublish,
     }), { status: 200, headers });
   } catch (e) {
     return new Response(JSON.stringify({ ok: false, error: e.message }), { status: 500, headers });
+  }
+}
+
+// 参謀の前提（最新）（2026-10-10・柴山さん承認・設計）：朝の参謀AIが「今の職場の実態」を
+// 古い記録ではなく最新の前提から読むための窓口。Vaultの`ミツメル日次記録\`直下の固定名ファイル
+// `_参謀の前提_最新.md`を読むだけ（学習ログと同じ読み方・同じ権限で読める）。ファイルの中身は
+// 設計の定時タスク（dashboard-viewer-auto-refresh）が最新の戦略書から毎回書き直す。
+// ファイルが無い・空・読めない場合はnoneで静かにスキップ（朝プロンプト自体は止めない）。
+// modifiedTimeを返し、呼び出し側が「更新から何日経った前提か」を判定できるようにする。
+const SANCHO_PREMISE_FILENAME = '_参謀の前提_最新.md';
+async function handleVaultSanchoPremise(request, env) {
+  const headers = { ...CORS_HEADERS, 'Content-Type': 'application/json' };
+  let token;
+  try {
+    const body = await request.json();
+    token = body.token;
+  } catch (e) {
+    return new Response(JSON.stringify({ ok: false, error: 'リクエストの形式が不正です' }), { status: 400, headers });
+  }
+  if (!env.PRIVATE_ACCESS_TOKEN || token !== env.PRIVATE_ACCESS_TOKEN) {
+    return new Response(JSON.stringify({ ok: false, error: 'private data requires a valid token' }), { status: 401, headers });
+  }
+
+  const kv = getKV(env);
+  const oauthFolderId = await kv.get('vault_oauth_folder');
+  if (!oauthFolderId) {
+    return new Response(JSON.stringify({ ok: true, none: true }), { status: 200, headers });
+  }
+
+  try {
+    const accessToken = await getVaultAccessToken(env);
+    const dailyFolderId = await getCachedDailyFolderId(env, accessToken, oauthFolderId, 'ミツメル日次記録');
+    const query = encodeURIComponent(`name='${SANCHO_PREMISE_FILENAME}' and '${dailyFolderId}' in parents and trashed=false`);
+    const listRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id,name,modifiedTime)`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    const listData = await listRes.json();
+    if (!listRes.ok) throw new Error('前提ファイル検索失敗: ' + JSON.stringify(listData));
+    const found = (listData.files || [])[0];
+    if (!found) {
+      return new Response(JSON.stringify({ ok: true, none: true, reason: '前提ファイルが未作成です' }), { status: 200, headers });
+    }
+    const contentRes = await fetch(`https://www.googleapis.com/drive/v3/files/${found.id}?alt=media`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    const content = (await contentRes.text()).trim();
+    if (!content) {
+      return new Response(JSON.stringify({ ok: true, none: true, reason: '前提ファイルが空です' }), { status: 200, headers });
+    }
+    // プロンプトの肥大を防ぐ上限（通常は1,500字程度を想定）
+    const text = content.length > 6000 ? content.slice(0, 6000) : content;
+    return new Response(JSON.stringify({ ok: true, none: false, text, modifiedTime: found.modifiedTime }), { status: 200, headers });
+  } catch (e) {
+    return new Response(JSON.stringify({ ok: true, none: true, error: e.message }), { status: 200, headers });
   }
 }
 
