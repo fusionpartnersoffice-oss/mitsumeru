@@ -1625,7 +1625,9 @@ async function handleVaultMorningContext(request, env) {
     const accessToken = await getVaultAccessToken(env);
     const dailyFolderId = await getCachedDailyFolderId(env, accessToken, oauthFolderId, 'ミツメル日次記録');
     const query = encodeURIComponent(`'${dailyFolderId}' in parents and trashed=false and mimeType='text/markdown'`);
-    const listRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=${query}&orderBy=name desc&pageSize=5&fields=files(id,name)`, {
+    // 2026-10-10：pageSize 5→10。名前降順では`_`始まりのファイル（_HPMP推移・学習ログ・参謀の前提）が
+    // 日付ファイルより先に並ぶため、固定名ファイルを足すたびに前日記録が5件の枠から押し出される危険があった。
+    const listRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=${query}&orderBy=name desc&pageSize=10&fields=files(id,name)`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     const listData = await listRes.json();
