@@ -4433,19 +4433,32 @@ HP: ${hp}→${endHP} ／ MP: ${mp}→${endMP}
 
   // 柱B（2026-07-21）：カレンダー分類＋ナレーションを1回のAPI呼び出しへ統合
   // 7日間トレンド・プロファイルは、旧②プロンプトでのみ使っていたが、統合呼び出しでも必要なため先に計算する
-  const trend7 = (() => {
-    const results = [];
-    const today = new Date();
+  // 2026-10-14是正（秘書指摘・設計）：旧実装は朝の申告値（morningのhp-val/mp-val）の平均を「過去7日平均」として
+  // 渡していたが、比べる相手（endHP/endMP）は夜の締め後の値で、別物同士の比較になっていた
+  // （実例：10/13夜の評価が「過去7日平均HP94・MP55」と比べていた。94/55は10/6〜10/12の朝の値の平均で、
+  // 同期間の夜の値の平均は71/14。10/13夜の75/45は本来「平均より上」だった）。
+  // 夜の締め後の値（evening の hp-close-val/mp-close-val）の平均に変更し、何の平均か・何日分かをラベルに明記する。
+  // 端末のlocalStorageに無い日はKV（cloudLoad）から補う。基準日は評価対象日（targetDate）で、その前日までの7日間
+  // （日付をまたいで入力した夜でも、評価対象日自身を平均に含めない）。夜の記録が無い日は含めない。
+  const trend7 = await (async () => {
+    const base = targetDate ? new Date(targetDate) : new Date();
+    const days = [];
     for (let i = 1; i <= 7; i++) {
-      const d = new Date(today); d.setDate(d.getDate() - i);
-      const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-      const m = lsLoad('morning', ds);
-      if (m && m['hp-val']) results.push({ ds, hp: parseInt(m['hp-val'])||0, mp: parseInt(m['mp-val']||'0')||0 });
+      const d = new Date(base); d.setDate(d.getDate() - i);
+      days.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`);
     }
-    if (!results.length) return '記録なし';
+    const pickClose = (e) => (e && e['hp-close-val'] != null && e['hp-close-val'] !== '' && e['mp-close-val'] != null && e['mp-close-val'] !== '')
+      ? { hp: parseInt(e['hp-close-val'], 10), mp: parseInt(e['mp-close-val'], 10) } : null;
+    const rows = await Promise.all(days.map(async ds => {
+      let r = pickClose(lsLoad('evening', ds));
+      if (!r) { try { r = pickClose(await cloudLoad('evening', ds)); } catch (e) {} }
+      return r;
+    }));
+    const results = rows.filter(r => r && !isNaN(r.hp) && !isNaN(r.mp));
+    if (!results.length) return '夜の締め後の記録なし';
     const avgHP = Math.round(results.reduce((s,r)=>s+r.hp,0)/results.length);
     const avgMP = Math.round(results.reduce((s,r)=>s+r.mp,0)/results.length);
-    return `過去${results.length}日平均 HP:${avgHP} MP:${avgMP}`;
+    return `直近7日（${days[6]}〜${days[0]}）のうち夜の締め後の値が残っている${results.length}日分の平均 HP:${avgHP} MP:${avgMP}（朝の申告値ではなく、夜の締め後の値の平均。今夜の値と比べるのはこちら）`;
   })();
   const _epSaved = localStorage.getItem('mitsumeru_private_profile');
   const _ep = _epSaved ? JSON.parse(_epSaved) : {};
