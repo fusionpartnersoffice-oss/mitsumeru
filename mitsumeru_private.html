@@ -4437,8 +4437,10 @@ HP: ${hp}→${endHP} ／ MP: ${mp}→${endMP}
   // 渡していたが、比べる相手（endHP/endMP）は夜の締め後の値で、別物同士の比較になっていた
   // （実例：10/13夜の評価が「過去7日平均HP94・MP55」と比べていた。94/55は10/6〜10/12の朝の値の平均で、
   // 同期間の夜の値の平均は71/14。10/13夜の75/45は本来「平均より上」だった）。
-  // 夜の締め後の値（evening の hp-close-val/mp-close-val）の平均に変更し、何の平均か・何日分かをラベルに明記する。
-  // 端末のlocalStorageに無い日はKV（cloudLoad）から補う。基準日は評価対象日（targetDate）で、その前日までの7日間
+  // 夜の締め後の値の平均に変更し、何の平均か・何日分かをラベルに明記する。
+  // 元データ：Vault日次記録の本文「翌日戦略」の確定値（Worker /vault-close-history）。端末側の夜の記録
+  // （hp-close-val/mp-close-val）は毎日0時の日付切替でsaveEvening()に上書きされて消えるため主には使えず、
+  // Vaultから取れなかった日だけ補助に使う。基準日は評価対象日（targetDate）で、その前日までの7日間
   // （日付をまたいで入力した夜でも、評価対象日自身を平均に含めない）。夜の記録が無い日は含めない。
   const trend7 = await (async () => {
     const base = targetDate ? new Date(targetDate) : new Date();
@@ -4447,9 +4449,23 @@ HP: ${hp}→${endHP} ／ MP: ${mp}→${endMP}
       const d = new Date(base); d.setDate(d.getDate() - i);
       days.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`);
     }
+    const byDate = {};
+    try {
+      const token = getPrivateToken();
+      if (token) {
+        const res = await fetch(`${SYNC_URL}/vault-close-history`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token, date: targetDate || localDateStr(new Date()) }),
+        });
+        const data = await res.json();
+        if (data.ok && Array.isArray(data.rows)) data.rows.forEach(r => { byDate[r.date] = { hp: r.closeHp, mp: r.closeMp }; });
+      }
+    } catch (e) {}
     const pickClose = (e) => (e && e['hp-close-val'] != null && e['hp-close-val'] !== '' && e['mp-close-val'] != null && e['mp-close-val'] !== '')
       ? { hp: parseInt(e['hp-close-val'], 10), mp: parseInt(e['mp-close-val'], 10) } : null;
     const rows = await Promise.all(days.map(async ds => {
+      if (byDate[ds]) return byDate[ds];
       let r = pickClose(lsLoad('evening', ds));
       if (!r) { try { r = pickClose(await cloudLoad('evening', ds)); } catch (e) {} }
       return r;

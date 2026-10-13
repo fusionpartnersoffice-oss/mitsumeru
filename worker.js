@@ -112,6 +112,11 @@ export default {
       return handleVaultLearningLog(request, env);
     }
 
+    // ===== 夜の評価用：直近の夜の締め後HP/MPの履歴（2026-10-14・秘書指摘・設計） =====
+    if (url.pathname === '/vault-close-history' && request.method === 'POST') {
+      return handleVaultCloseHistory(request, env);
+    }
+
     // ===== 参謀の前提（最新）：固定名ファイルの読み込み（2026-10-10・柴山さん承認・設計） =====
     if (url.pathname === '/vault-sancho-premise' && request.method === 'POST') {
       return handleVaultSanchoPremise(request, env);
@@ -1675,6 +1680,71 @@ async function handleVaultMorningContext(request, env) {
     }), { status: 200, headers });
   } catch (e) {
     return new Response(JSON.stringify({ ok: false, error: e.message }), { status: 500, headers });
+  }
+}
+
+// 夜の評価用：直近7日の「夜の締め後HP/MP」の履歴（2026-10-14・秘書指摘・設計）。
+// 経緯：夜の評価の「過去7日平均」が朝の申告値の平均になっており、夜の締め後の値と比べていた。
+// 端末側（localStorage/KV）の夜の記録は、毎日0時の日付切替でsaveEvening()が記録オブジェクトを
+// 丸ごと上書きするため、締めで保存したhp-close-val/mp-close-valが残らない。確実に残っているのは
+// Vault日次記録の本文「翌日戦略」の「HP：68/100　MP：27/100」行（柴山さんの画面に出る値そのもの）なので、
+// そこから読む。対象日（date）の前日までの7日間。夜の入力が無かった日は行を返さない。読み取り専用。
+async function handleVaultCloseHistory(request, env) {
+  const headers = { ...CORS_HEADERS, 'Content-Type': 'application/json' };
+  let token, target;
+  try {
+    const body = await request.json();
+    token = body.token;
+    target = body.date || jstDateStr();
+  } catch (e) {
+    return new Response(JSON.stringify({ ok: false, error: 'リクエストの形式が不正です' }), { status: 400, headers });
+  }
+  if (!env.PRIVATE_ACCESS_TOKEN || token !== env.PRIVATE_ACCESS_TOKEN) {
+    return new Response(JSON.stringify({ ok: false, error: 'private data requires a valid token' }), { status: 401, headers });
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(target)) {
+    return new Response(JSON.stringify({ ok: false, error: 'dateはYYYY-MM-DD形式で指定してください' }), { status: 400, headers });
+  }
+
+  const kv = getKV(env);
+  const oauthFolderId = await kv.get('vault_oauth_folder');
+  if (!oauthFolderId) {
+    return new Response(JSON.stringify({ ok: true, none: true }), { status: 200, headers });
+  }
+
+  try {
+    // 対象日の前日から遡る7日分の日付文字列（UTC正午起点で日付計算のずれを避ける）
+    const wanted = [];
+    for (let i = 1; i <= 7; i++) {
+      const d = new Date(target + 'T12:00:00Z');
+      d.setUTCDate(d.getUTCDate() - i);
+      wanted.push(d.toISOString().slice(0, 10));
+    }
+    const accessToken = await getVaultAccessToken(env);
+    const dailyFolderId = await getCachedDailyFolderId(env, accessToken, oauthFolderId, 'ミツメル日次記録');
+    const query = encodeURIComponent(`'${dailyFolderId}' in parents and trashed=false and mimeType='text/markdown'`);
+    const listRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=${query}&orderBy=name desc&pageSize=40&fields=files(id,name)`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    const listData = await listRes.json();
+    if (!listRes.ok) throw new Error('一覧取得失敗: ' + JSON.stringify(listData));
+    const files = (listData.files || []).filter(f => wanted.includes(f.name.replace('.md', '')) && /^\d{4}-\d{2}-\d{2}\.md$/.test(f.name));
+
+    const rows = (await Promise.all(files.map(async f => {
+      try {
+        const r = await fetch(`https://www.googleapis.com/drive/v3/files/${f.id}?alt=media`, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        const parsed = parseVaultMarkdown(await r.text());
+        if (parsed.closeHp == null || parsed.closeMp == null) return null;
+        return { date: f.name.replace('.md', ''), closeHp: parseInt(parsed.closeHp, 10), closeMp: parseInt(parsed.closeMp, 10) };
+      } catch (e) { return null; }
+    }))).filter(Boolean).sort((a, b) => (a.date < b.date ? -1 : 1));
+
+    return new Response(JSON.stringify({ ok: true, none: rows.length === 0, from: wanted[wanted.length - 1], to: wanted[0], rows }), { status: 200, headers });
+  } catch (e) {
+    // 取得失敗時も夜の評価自体は止めない（呼び出し側が端末側の記録で補う／記録なしとして扱う）
+    return new Response(JSON.stringify({ ok: true, none: true, error: e.message }), { status: 200, headers });
   }
 }
 
