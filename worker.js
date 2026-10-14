@@ -1360,11 +1360,20 @@ function buildVaultMarkdown(date, record) {
   // frontmatter（ミツメルv9・2026-07-24・Dataview対応。設計書§1-3準拠）：
   // hp/mp/lvを数値のままYAMLへ入れることで、Obsidian側で「今月のHP推移」等を
   // Dataviewクエリで即座に集計できるようにする。値が無い項目はnullにし、集計側で除外可能にする。
+  // 2026-10-14追加（秘書依頼・柴山さん了承・GitHub mitsumeru#2）：hp/mpは「夜の確定値があればそれ、無ければ朝の値」
+  // （上のとおり設計当初からの意味）だが、夜の確定値が毎日0時の保存で消えていた間は実際には朝の値だった。
+  // 値の意味を読む側が取り違えないよう、朝の値・夜の確定値を明示するキーを別に持たせる（既存キーは変更しない）。
+  // 夜の確定値が無い日（夜の入力が無い／修正前の日）は hp_close/mp_close が null。
+  const hasClose = (v) => v !== undefined && v !== null && v !== '';
   const frontmatter = `---
 date: ${date}
 hp: ${yamlSafe(hp)}
 mp: ${yamlSafe(mp)}
 lv: ${yamlSafe(lvBase)}
+hp_morning: ${yamlSafe(morning['hp-val'] || '')}
+mp_morning: ${yamlSafe(morning['mp-val'] || '')}
+hp_close: ${yamlSafe(hasClose(evening['hp-close-val']) ? evening['hp-close-val'] : '')}
+mp_close: ${yamlSafe(hasClose(evening['mp-close-val']) ? evening['mp-close-val'] : '')}
 type: mitsumeru-daily
 ---`;
 
@@ -1379,7 +1388,7 @@ type: mitsumeru-daily
 - ステータス：日次ログ（自動生成・上書きなし）
 
 ## ステータス
-HP：${hp || '—'}／MP：${mp || '—'}
+HP：${(hp === '' || hp === null || hp === undefined) ? '—' : hp}／MP：${(mp === '' || mp === null || mp === undefined) ? '—' : mp}
 
 ## 翌日戦略（AI生成・全文）
 ${tomorrowPlanFull || '（記載なし）'}

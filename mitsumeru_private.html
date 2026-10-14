@@ -1817,6 +1817,14 @@ function saveEvening() {
   data['advanceSchedule'] = getAdvanceScheduleData();
   // 夜の入眠サポート（2026-07-29・柴山さん本人指示）：既存項目は無変更、新規追加のみ
   data['sleepCheckin'] = Array.from(document.querySelectorAll('#e-sleep-checkin-group .checked input')).map(i => i.value);
+  // 2026-10-14是正（秘書依頼・柴山さん了承・GitHub mitsumeru#2）：この関数は記録を一から作り直して丸ごと上書きする
+  // ため、saveEveningHPMPClose()が保存した夜の確定値（hp-close-val/mp-close-val）が消えていた
+  // （毎日0時の日付切替でも、翌日戦略の生成時にも）。結果、Vault日次記録のHP/MPが夜の確定値にならず
+  // 朝の値のままだった。既に保存済みの確定値は引き継ぐ。
+  const _prevEv = lsLoad('evening', dateAtSave) || {};
+  ['hp-close-val', 'mp-close-val'].forEach(k => {
+    if (_prevEv[k] !== undefined && _prevEv[k] !== null && _prevEv[k] !== '') data[k] = _prevEv[k];
+  });
   localStorage.setItem(lsKey('evening', dateAtSave), JSON.stringify(data));
   cloudSaveDebounced('evening', data, dateAtSave);
 }
@@ -4372,6 +4380,11 @@ function parseSchedule(text) {
 }
 
 async function generateEvening() {
+  // 2026-10-14是正（秘書依頼・柴山さん了承・GitHub mitsumeru#2）：「翌日戦略」に書かれる夜の締め後HP/MPは
+  // 下で毎回再計算して文章に使うだけで、「今日のHP/MPを締める」ボタンを押さない限りどこにも保存されなかった。
+  // 画面に出る値とVault日次記録の値が一致するよう、生成の冒頭で必ず保存する（saveEvening()より先に保存して
+  // おくと、続くsaveEvening()のデバウンス保存にも同じ値が引き継がれ、後から古い値で上書きされない）。
+  { const _c0 = computeDayClose(); if (_c0.hasMorning) saveEveningHPMPClose(_c0.endHP, _c0.endMP); }
   saveEvening();
   const supplement  = document.getElementById('e-supplement').value.trim();
   const tomorrow    = (document.getElementById('e-tomorrow') || {value:''}).value.trim();
