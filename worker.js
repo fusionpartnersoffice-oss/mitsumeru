@@ -247,6 +247,12 @@ export default {
         });
       }
 
+      // 夜の確定値の保護（2026-10-14・柴山さん了承・GitHub mitsumeru#2の追加対策＝案A）：
+      // 夜の記録の保存で確定値(hp-close-val/mp-close-val)を含まないものが来ても、KVに既にある確定値を消さない。
+      if (/^(private|test)_evening_\d{4}-\d{2}-\d{2}$/.test(key)) {
+        body = await mergeEveningCloseValues(env, key, body);
+      }
+
       // KV保存（TTL: 90日 = 7776000秒）
       await getKV(env).put(key, body, { expirationTtl: 7776000 });
 
@@ -1689,6 +1695,33 @@ async function handleVaultMorningContext(request, env) {
     }), { status: 200, headers });
   } catch (e) {
     return new Response(JSON.stringify({ ok: false, error: e.message }), { status: 500, headers });
+  }
+}
+
+// 夜の確定値の保護（2026-10-14・GitHub mitsumeru#2の追加対策＝案A）。
+// 経緯：夜の記録は保存のたびにオブジェクト全体を置き換える（KVのPUT）。確定値のローカルコピーが無い端末
+// （別端末・キャッシュ消去後・古いタブ）が、日付切替(0時)や夜タブの入力で保存すると、他の端末が保存した
+// 確定値がKVから消える。保存内容に確定値が無い（undefined/null/空）項目に限り、KVの既存値を引き継ぐ。
+// 保存内容に確定値がある場合は、その値で置き換える（締め直し・翌日戦略の再生成で最新値になる）。
+// 失敗時（KV読み取り・JSON解析の失敗）は何もせず、通常の保存を止めない。
+async function mergeEveningCloseValues(env, key, body) {
+  try {
+    const incoming = JSON.parse(body);
+    if (!incoming || typeof incoming !== 'object' || Array.isArray(incoming)) return body;
+    const lacks = (v) => v === undefined || v === null || v === '';
+    const fields = ['hp-close-val', 'mp-close-val'];
+    if (!fields.some(f => lacks(incoming[f]))) return body;
+    const prevRaw = await getKV(env).get(key);
+    if (!prevRaw) return body;
+    const prev = JSON.parse(prevRaw);
+    if (!prev || typeof prev !== 'object') return body;
+    let changed = false;
+    for (const f of fields) {
+      if (lacks(incoming[f]) && !lacks(prev[f])) { incoming[f] = prev[f]; changed = true; }
+    }
+    return changed ? JSON.stringify(incoming) : body;
+  } catch (e) {
+    return body;
   }
 }
 
