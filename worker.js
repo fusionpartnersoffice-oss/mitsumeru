@@ -253,6 +253,12 @@ export default {
         body = await mergeEveningCloseValues(env, key, body);
       }
 
+      // 上書き前の自動バックアップ（2026-10-15・柴山さん了承・案B-1）：随時メモ・朝・夜の記録の保存で、
+      // KVの既存内容より中身が減る保存が来たら、上書き前の内容を別キーへ退避する（動作は変えない）。
+      if (/^(private|test)_(memos|morning|evening)_\d{4}-\d{2}-\d{2}$/.test(key)) {
+        await backupBeforeShrink(env, key, body);
+      }
+
       // KV保存（TTL: 90日 = 7776000秒）
       await getKV(env).put(key, body, { expirationTtl: 7776000 });
 
@@ -1695,6 +1701,48 @@ async function handleVaultMorningContext(request, env) {
     }), { status: 200, headers });
   } catch (e) {
     return new Response(JSON.stringify({ ok: false, error: e.message }), { status: 500, headers });
+  }
+}
+
+// 上書き前の自動バックアップ（2026-10-15・柴山さん了承・案B-1）。
+// 経緯：毎日0時の日付切替で、開いたままのアプリの「手元の記憶」が空・古い画面が、KVの新しい内容を
+// 上書きする（10/14の随時メモ9件が空で上書きされた）。上書き自体は止めず（動作を変えない）、
+// 中身が減る保存の直前に、既存内容を `<prefix>_backup_<type>_<日付>_<epoch>` へ90日間退避する。
+// 「中身」の数え方：随時メモ＝メモの件数／朝・夜＝値が入っている項目の数（空・null・'—'・空配列は数えない）。
+// 退避キーはprivate_で始まるためトークン必須（GETで読むには?token=が要る）。失敗しても通常の保存は止めない。
+function countMeaningful(type, obj) {
+  if (!obj || typeof obj !== 'object') return 0;
+  if (type === 'memos') return Array.isArray(obj.data) ? obj.data.length : 0;
+  let n = 0;
+  for (const [k, v] of Object.entries(obj)) {
+    if (k === '_ts') continue;
+    if (v === null || v === undefined || v === '' || v === '—') continue;
+    if (Array.isArray(v) && v.length === 0) continue;
+    if (typeof v === 'object' && !Array.isArray(v) && Object.keys(v).length === 0) continue;
+    n++;
+  }
+  return n;
+}
+async function backupBeforeShrink(env, key, body) {
+  try {
+    const m = key.match(/^(private|test)_(memos|morning|evening)_(\d{4}-\d{2}-\d{2})$/);
+    if (!m) return;
+    const [, prefix, type, date] = m;
+    const kv = getKV(env);
+    const prevRaw = await kv.get(key);
+    if (!prevRaw) return;
+    const prev = JSON.parse(prevRaw);
+    const incoming = JSON.parse(body);
+    const before = countMeaningful(type, prev);
+    const after = countMeaningful(type, incoming);
+    if (before === 0 || after >= before) return;
+    const backupKey = `${prefix}_backup_${type}_${date}_${Date.now()}`;
+    await kv.put(backupKey, JSON.stringify({
+      backedUpAt: new Date().toISOString(), from: key,
+      reason: `${type}: ${before}→${after}`, prevCount: before, newCount: after, prev,
+    }), { expirationTtl: 7776000 });
+  } catch (e) {
+    // バックアップに失敗しても、通常の保存は止めない
   }
 }
 
