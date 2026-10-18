@@ -1779,10 +1779,21 @@ function getLVBase() {
 }
 
 // ===== データ保存（日付キー + KV即時同期）=====
-function saveMemos() {
+// 日付切替の安全装置（2026-10-18・柴山さん了承・案B-2/C1〜C3）：切替の読み込み中（画面が初期値に戻っている間）に
+// 保存が走ると、初期値の画面が前日分のKVを上書きする。読み込みが終わるまで保存を無視する。
+// 20秒で自動解除（読み込みの失敗で保存が永久に止まらないようにする）。varなのは巻き上げのため（初期化順に依存しない）。
+var _dateSwitchLoadingUntil = 0;
+var _dateSwitchInFlight = false;
+function _isDateSwitchLoading() { return Date.now() < _dateSwitchLoadingUntil; }
+
+function saveMemos(opts) {
+  if (_isDateSwitchLoading()) return;
   const payload = { data: memos, _ts: Date.now() };
   localStorage.setItem(lsKey('memos'), JSON.stringify(payload));
-  cloudSave('memos', payload);
+  // 「最後の1件を削除」「リセット」のような意図した空の保存には印を付ける（Workerが空での上書きを拒否するため。
+  // 印はKVに保存される前に取り除かれる）。0時の自動保存などには付けない。
+  const cloudPayload = (opts && opts.allowEmpty) ? { ...payload, _allowEmpty: true } : payload;
+  cloudSave('memos', cloudPayload);
   // 設計指示（2026-07-26）：随時メモもVaultへ反映する（日中の情報反映手段の拡充）。
   // 是正：saveMemos()は「追加する」「削除」「リセット」いずれも単発の明示的操作であり
   // 連続入力ではないため、デバウンスの必要性が無い一方、直後にタブを閉じるリスクは朝入力と同じ。
@@ -1799,6 +1810,7 @@ function insertIntoTextarea(id, text) {
 }
 
 function saveEvening() {
+  if (_isDateSwitchLoading()) return;
   // 2026-07-31発見（柴山さんの実運用「夜の入力直後に翌日へ手動切替」で再現・実機検証済み）：
   // cloudSaveDebounced()は1.5秒後に発火するが、date引数を省略すると発火時点の
   // グローバル変数targetDateを読みに行く。その1.5秒の間にtargetDateが切り替わっていると、
@@ -1943,6 +1955,7 @@ function initAdvanceSchedule(data) {
   base.forEach(r => addAdvanceRow(r));
 }
 function saveMorning() {
+  if (_isDateSwitchLoading()) return;
   // saveEvening()と同じ理由（2026-07-31発見）：cloudSaveDebounced発火時のtargetDate参照ズレを防ぐため、
   // 呼び出し時点のtargetDateをここで固定する。
   const dateAtSave = targetDate;
@@ -2999,15 +3012,53 @@ function updateCourse(val) {
   if (slider && slider.value != v) slider.value = v;
 }
 
+// 日付切替の事故対策（2026-10-18・柴山さん了承・GitHub mitsumeru#2の続き・案B-2/C1〜C3）。
+// 経緯：10/14・10/16・10/17の0時、および10/18 11:34に、開いたままのPCの画面が、スマホで入れた内容を知らないまま
+// 切替前の保存を行い、KVの随時メモ・朝の記録を空・古い内容・初期値で上書きした。
+//  C1：切替前の保存は、KVのほうが新しい（＝他の端末が先に書いた）なら行わない。確認できない場合も行わない
+//  C2：切替で朝の結果表示（HP/MP・参謀の一言・モード）を初期値に戻す（前日の結果が翌日分として保存されるのを防ぐ）
+//  C3：切替の読み込み中は保存を無視する／切替の最中に再度切替が走らないようにする
+async function flushBeforeDateSwitch() {
+  const date = targetDate;
+  const types = ['morning', 'evening', 'memos'];
+  const savers = { morning: saveMorning, evening: saveEvening, memos: saveMemos };
+  const decisions = await Promise.all(types.map(async type => {
+    try {
+      const local = lsLoad(type, date);
+      const st = await cloudLoadStatus(type, date);
+      if (!st.ok) return false;                      // KVの状態を確認できないなら保存しない
+      const kv = st.value;
+      if (!kv) return true;                          // KVに記録が無い → 従来どおり保存
+      if (!local) return false;                      // この端末に記録が無い → 保存する中身が無い
+      return (kv._ts || 0) <= (local._ts || 0);      // KVのほうが新しい → この画面は古いので保存しない
+    } catch (e) { return false; }
+  }));
+  types.forEach((t, i) => { if (decisions[i]) savers[t](); });
+}
+
 async function changeTargetDate(newDate) {
   if (!newDate || newDate === targetDate) return;
-  // 現在のデータを保存してから切り替え
-  saveMorning(); saveEvening(); saveMemos();
+  if (_dateSwitchInFlight) return;
+  _dateSwitchInFlight = true;
+  try { await _changeTargetDateImpl(newDate); }
+  finally { _dateSwitchLoadingUntil = 0; _dateSwitchInFlight = false; }
+}
+
+async function _changeTargetDateImpl(newDate) {
+  // 現在のデータを保存してから切り替え（C1：KVのほうが新しければ保存しない）
+  await flushBeforeDateSwitch();
+  _dateSwitchLoadingUntil = Date.now() + 20000;   // C3：ここから読み込み完了までの保存を無視する
   targetDate = newDate;
   document.getElementById('m-date').value = newDate;
 
   // UI初期化
   memos = []; counts = { noise:0, pomo:0, try100:0, 'memo-pomo':0 };
+  // C2：朝の結果表示を前日から持ち越さない（新しい日の記録があれば、この後のapplyMorningDataが値を入れ直す）
+  { const _hpE = document.getElementById('hp-val'), _mpE = document.getElementById('mp-val'),
+          _mb = document.getElementById('mode-badge'), _adv = document.getElementById('morning-advice');
+    if (_hpE) _hpE.textContent = '—'; if (_mpE) _mpE.textContent = '—';
+    if (_mb) { _mb.textContent = '判定中...'; _mb.className = 'mode-badge'; }
+    if (_adv) { _adv.textContent = ''; _adv.classList.remove('visible'); } }
   debugScores = { d1:'', d2:'', d3:'', d4:'', d5:'', sleep:'' };
   const _t100El = document.getElementById('try100-count'); if (_t100El) _t100El.textContent = '0';
   const bodyEl=document.getElementById('m-body'), moodEl=document.getElementById('m-mood'), courseEl=document.getElementById('m-course');
@@ -3504,7 +3555,7 @@ function deleteMemo(i) {
     if (editingMemoIndex === i) { cancelEditMemo(); }
     else if (editingMemoIndex > i) { editingMemoIndex -= 1; }
   }
-  saveMemos();
+  saveMemos({ allowEmpty: memos.length === 0 });
   renderMemos();
   calcAutoCount();
 }
@@ -3515,7 +3566,7 @@ function clearMemos() {
     const badge = document.getElementById('memo-editing-badge');
     if (badge) badge.style.display = 'none';
     memos = [];
-    saveMemos();
+    saveMemos({ allowEmpty: true });
     renderMemos();
     calcAutoCount();
   }
