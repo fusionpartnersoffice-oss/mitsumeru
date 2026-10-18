@@ -253,6 +253,19 @@ export default {
         body = await mergeEveningCloseValues(env, key, body);
       }
 
+      // 案B-2（2026-10-18・柴山さん了承＝10/15「直してください」の範囲）：0時の日付切替などで、手元の記憶が
+      // 空・初期値の画面が、KVにある中身のある記録を上書きする事故（10/14・10/16・10/17の随時メモ、10/18の朝の記録）を拒否する。
+      if (/^(private|test)_(memos|morning)_\d{4}-\d{2}-\d{2}$/.test(key)) {
+        const verdict = await guardDestructiveOverwrite(env, key, body);
+        if (verdict.refuse) {
+          return new Response(JSON.stringify({ ok: true, skipped: true, reason: verdict.reason }), {
+            status: 200,
+            headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+          });
+        }
+        body = verdict.body;
+      }
+
       // 上書き前の自動バックアップ（2026-10-15・柴山さん了承・案B-1）：随時メモ・朝・夜の記録の保存で、
       // KVの既存内容より中身が減る保存が来たら、上書き前の内容を別キーへ退避する（動作は変えない）。
       if (/^(private|test)_(memos|morning|evening)_\d{4}-\d{2}-\d{2}$/.test(key)) {
@@ -1701,6 +1714,51 @@ async function handleVaultMorningContext(request, env) {
     }), { status: 200, headers });
   } catch (e) {
     return new Response(JSON.stringify({ ok: false, error: e.message }), { status: 500, headers });
+  }
+}
+
+// 案B-2：中身のある記録を、空・初期値で上書きする保存を拒否する（2026-10-18・柴山さん了承）。
+// 拒否は「保存しない」だけで、呼び出し側には成功(ok:true, skipped:true)を返す（アプリの画面は止めない）。
+// ①随時メモ：KVに1件以上あるのに、保存内容が0件。ただし保存内容に `_allowEmpty:true`（アプリが「最後の1件を削除」
+//   「リセット」の操作で付ける印）があれば許可する。この印は保存前に取り除く
+// ②朝の記録：KVに数値のHP/MPがあるのに、保存内容のHP・MPが両方とも「—」・空で、参謀の一言も空（＝初期値の画面）
+// 拒否した事実は `private_guard_log_<種類>_<日付>_<epoch>`（30日・件数のみで本文なし）へ残す。失敗しても保存は止めない。
+async function guardDestructiveOverwrite(env, key, body) {
+  try {
+    const m = key.match(/^(private|test)_(memos|morning)_(\d{4}-\d{2}-\d{2})$/);
+    if (!m) return { refuse: false, body };
+    const [, prefix, type, date] = m;
+    const incoming = JSON.parse(body);
+    if (!incoming || typeof incoming !== 'object' || Array.isArray(incoming)) return { refuse: false, body };
+    let allowEmpty = false;
+    if (type === 'memos' && incoming._allowEmpty) {
+      allowEmpty = true;
+      delete incoming._allowEmpty;
+      body = JSON.stringify(incoming);
+    }
+    const kv = getKV(env);
+    const prevRaw = await kv.get(key);
+    if (!prevRaw) return { refuse: false, body };
+    const prev = JSON.parse(prevRaw);
+    let reason = null;
+    if (type === 'memos') {
+      const before = Array.isArray(prev && prev.data) ? prev.data.length : 0;
+      const after = Array.isArray(incoming.data) ? incoming.data.length : 0;
+      if (!allowEmpty && before >= 1 && after === 0) reason = `memos-empty-overwrite:${before}→0`;
+    } else {
+      const isNum = (v) => /^\d+$/.test(String(v == null ? '' : v).trim());
+      const isBlank = (v) => v === undefined || v === null || v === '' || v === '—';
+      if (isNum(prev && prev['hp-val']) && isBlank(incoming['hp-val']) && isBlank(incoming['mp-val']) && isBlank(incoming['morning-advice'])) {
+        reason = 'morning-default-overwrite';
+      }
+    }
+    if (!reason) return { refuse: false, body };
+    try {
+      await kv.put(`${prefix}_guard_log_${type}_${date}_${Date.now()}`, JSON.stringify({ at: new Date().toISOString(), key, reason }), { expirationTtl: 2592000 });
+    } catch (e) { /* ログに失敗しても拒否の判定は変えない */ }
+    return { refuse: true, reason, body };
+  } catch (e) {
+    return { refuse: false, body };
   }
 }
 
