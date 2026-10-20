@@ -4302,7 +4302,7 @@ ${profileText}
 ${eveSummary || ''}
 
 【明日の確定アポ】
-${tomorrow || 'なし'}
+${tomorrow || '入力なし（確定アポの記載が無いだけ。明日が勤務日か休日かは、このシステムでは判定できていない＝不明）'}
 
 【先送りタスクリスト】
 ${delay || 'なし'}
@@ -4328,6 +4328,7 @@ NotebookLM要約：${notebooklm || 'なし'}
 - 該当事実がない場合は「特になし」と明記。語尾は「です・ます」調
 - 上の「今日の終わり方（消耗・成長・デバッグ結果）」を必ず踏まえ、明日の負荷を調整すること
 - 上記に明記されていない予定・出来事を創作しないこと（「明日の確定アポ」に無いものを勝手に補わない）
+- 「明日の確定アポ」が「入力なし」のとき、「明日はアポなしの日」「予定のない日」「休日」と断定しないこと（勤務日の可能性がある。勤務日か休日かは不明と扱い、事実として書けるのは「確定アポの入力がない」ことだけ）
 - **文体は「エレガントに毒を吐く」（正典「文体・トーン」準拠）。精神論を排した知的な語り口で、断言はするが攻撃的にはならない。この文体は全セクションで一貫させること**
 - ネガティブな事実を伝える時は、事実を正確に、薄めずに伝えること。ユーモア・オチで着地させることを目的にしないこと。事実で終えてよい。軽い一言を添えるかは任意であり、添えることで事実の重さが下がるなら添えないこと
 - 説明的・事務的な言い回しを避け、柴山さんご本人が実際に使う生きた言い回しに近づけること（分析の正確さ・具体性は犠牲にしない）
@@ -4920,6 +4921,27 @@ async function generateWeeklySummary() {
   const records = [];
   const today = new Date();
 
+  // 2026-10-20是正（総務・Cowork依頼）：旧実装は朝の申告値(hp-val/mp-val)だけを集計し、夜の締め後の値が
+  // 反映されず平均が実際より明るく出ていた。夜の値は端末側(hp-close-val)が毎日0時の日付切替で消えるため、
+  // 夜の評価(trend7)と同じくVault日次記録(/vault-close-history)を主に、端末側を補助に使う。
+  // 基準日はtomorrow（前日から遡る7日＝今日-6日〜今日）。取得失敗時は端末側の値だけで続行する。
+  const closeByDate = {};
+  try {
+    const token = getPrivateToken();
+    if (token) {
+      const tmr = new Date(today); tmr.setDate(today.getDate() + 1);
+      const res = await fetch(`${SYNC_URL}/vault-close-history`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, date: localDateStr(tmr) }),
+      });
+      const data = await res.json();
+      if (data.ok && Array.isArray(data.rows)) data.rows.forEach(r => { closeByDate[r.date] = { hp: r.closeHp, mp: r.closeMp }; });
+    }
+  } catch (e) {}
+  const pickWeeklyClose = (e) => (e && e['hp-close-val'] != null && e['hp-close-val'] !== '' && e['mp-close-val'] != null && e['mp-close-val'] !== '')
+    ? { hp: parseInt(e['hp-close-val'], 10), mp: parseInt(e['mp-close-val'], 10) } : null;
+
   for (let i = 6; i >= 0; i--) {
     const d = new Date(today);
     d.setDate(today.getDate() - i);
@@ -4929,14 +4951,16 @@ async function generateWeeklySummary() {
     ]);
     const lsM = lsLoad('morning', dateStr), lsE = lsLoad('evening', dateStr), lsMm = lsLoad('memos', dateStr);
     const morning = newerOf(lsM, kvM), evening = newerOf(lsE, kvE), memosObj = newerOf(lsMm, kvMm);
-    if (!morning && !evening) continue;
+    const close = closeByDate[dateStr] || pickWeeklyClose(evening);
+    if (!morning && !evening && !close) continue;
     const mArr = memosObj ? (Array.isArray(memosObj.data) ? memosObj.data : []) : [];
     const pomoTotal = mArr.filter(m => m.tag === 'P').reduce((s, m) => s + (m.pomos || 0), 0);
     const hp = morning ? morning['hp-val'] : '—';
     const mp = morning ? morning['mp-val'] : '—';
+    const closeText = close ? `夜の締め後 HP:${close.hp} MP:${close.mp}` : '夜の締め後の値なし（夜未締め）';
     records.push(
       `## ${dateStr}\n` +
-      `HP:${hp} MP:${mp} ポモ:${pomoTotal}\n` +
+      `朝の申告 HP:${hp} MP:${mp} ／ ${closeText} ／ ポモ:${pomoTotal}\n` +
       `実績:${mArr.filter(m => m.tag === 'P').map(m => m.content).join(' / ') || 'なし'}\n` +
       `ノイズ:${mArr.filter(m => m.tag === 'V').map(m => m.content).join(' / ') || 'なし'}\n` +
       `補足:${evening ? (evening['e-supplement'] || '') : ''}`
@@ -4956,6 +4980,7 @@ async function generateWeeklySummary() {
   const prompt = `あなたはFusion Partners代表の「SuccessOS 統合経営参謀」です。
 以下は${startDate}〜${endDate}の7日間の記録です。週次サマリーを生成してください。
 上記の記録に書かれていない出来事・要因を創作しないこと。記録にない場合は「特になし」と書くこと。
+HP/MPの平均・最低・傾向は「夜の締め後」の値で出すこと（朝の申告値は参考。夜の値がある日は夜の値を優先し、朝と夜の差も消耗として読むこと）。夜の値がない日は「夜未締め」と明記し、朝の値だけで平均に混ぜないこと。
 文体：硬い分析レポート的な言い回しは避け、口語的で柔らかい言い方にすること。
 
 ${records.join('\n\n')}
