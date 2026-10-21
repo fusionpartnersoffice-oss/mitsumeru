@@ -4919,6 +4919,7 @@ async function generateWeeklySummary() {
   box.classList.remove('visible');
 
   const records = [];
+  const closeRows = [];
   const today = new Date();
 
   // 2026-10-20是正（総務・Cowork依頼）：旧実装は朝の申告値(hp-val/mp-val)だけを集計し、夜の締め後の値が
@@ -4958,6 +4959,7 @@ async function generateWeeklySummary() {
     const hp = morning ? morning['hp-val'] : '—';
     const mp = morning ? morning['mp-val'] : '—';
     const closeText = close ? `夜の締め後 HP:${close.hp} MP:${close.mp}` : '夜の締め後の値なし（夜未締め）';
+    if (close && !isNaN(close.hp) && !isNaN(close.mp)) closeRows.push({ date: dateStr, hp: close.hp, mp: close.mp });
     records.push(
       `## ${dateStr}\n` +
       `朝の申告 HP:${hp} MP:${mp} ／ ${closeText} ／ ポモ:${pomoTotal}\n` +
@@ -4974,6 +4976,17 @@ async function generateWeeklySummary() {
     return;
   }
 
+  const closeStatsText = (() => {
+    if (!closeRows.length) return '【夜の締め後の確定集計】夜の締め後の値が残っている日はありません。';
+    const avg = k => (closeRows.reduce((s, r) => s + r[k], 0) / closeRows.length).toFixed(1);
+    const top = (k, f) => closeRows.reduce((a, r) => f(r[k], a[k]) ? r : a);
+    const hi = (k) => top(k, (x, y) => x > y), lo = (k) => top(k, (x, y) => x < y);
+    const over50 = closeRows.filter(r => r.mp > 50).map(r => r.date);
+    return `【夜の締め後の確定集計（コード計算済み・${closeRows.length}日分）】\n` +
+      `HP 平均${avg('hp')} 最高${hi('hp').hp}（${hi('hp').date}） 最低${lo('hp').hp}（${lo('hp').date}）\n` +
+      `MP 平均${avg('mp')} 最高${hi('mp').mp}（${hi('mp').date}） 最低${lo('mp').mp}（${lo('mp').date}）\n` +
+      `夜MPが50を超えた日：${over50.length ? over50.join('、') : 'なし'}`;
+  })();
   const startDate = (() => { const d = new Date(today); d.setDate(today.getDate() - 6); return localDateStr(d); })();
   const endDate = localDateStr(today);
 
@@ -4981,6 +4994,8 @@ async function generateWeeklySummary() {
 以下は${startDate}〜${endDate}の7日間の記録です。週次サマリーを生成してください。
 上記の記録に書かれていない出来事・要因を創作しないこと。記録にない場合は「特になし」と書くこと。
 HP/MPの平均・最低・傾向は「夜の締め後」の値で出すこと（朝の申告値は参考。夜の値がある日は夜の値を優先し、朝と夜の差も消耗として読むこと）。夜の値がない日は「夜未締め」と明記し、朝の値だけで平均に混ぜないこと。
+${closeStatsText}
+上の【夜の締め後の確定集計】の数字は計算済みです。平均・最高・最低・日数は自分で計算し直さず、そのまま使うこと。「〜を超えた日がない」「一度も〜ない」のような全体への断定は、上の確定集計と各日の記録に照らして事実と合うときだけ書くこと。
 文体：硬い分析レポート的な言い回しは避け、口語的で柔らかい言い方にすること。
 
 ${records.join('\n\n')}
