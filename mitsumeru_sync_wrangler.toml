@@ -12,3 +12,6 @@ id = "e24983bd97e14af19e323e5c51001cf1"
 
 [triggers]
 crons = []
+
+[placement]
+region = "aws:us-east-1"
