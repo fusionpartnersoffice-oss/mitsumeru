@@ -1155,6 +1155,9 @@ async function handleSyncVault(request, env) {
       : await getGoogleAccessToken(env, 'https://www.googleapis.com/auth/drive.file');   // 旧方式フォールバック
     const folderId = useOAuth ? oauthFolderId : env.GOOGLE_VAULT_FOLDER_ID;
     const file = await writeVaultMarkdown(env, accessToken, date, record, folderId); // G3-Vault
+    if (file && file.skipped) {
+      return new Response(JSON.stringify({ ok: true, date, skipped: file.skipped }), { status: 200, headers });
+    }
     return new Response(JSON.stringify({ ok: true, date, fileId: file.id, method: useOAuth ? 'oauth2' : 'service_account' }), { status: 200, headers });
   } catch (e) {
     return new Response(JSON.stringify({ ok: false, error: e.message }), { status: 500, headers });
@@ -1508,14 +1511,27 @@ async function getCachedDailyFolderId(env, accessToken, parentId, folderName) {
 }
 
 // Google Drive API v3。指定フォルダ内から同名ファイルを検索する（読書メモの追記判定と共用）。
+// 同名が複数ヒットしたとき（GitHub fusion-partners-board#541：同じ日のファイルが2つできた事故）は、
+// 更新が新しく中身のある方を返す。空の記録ファイルは約830〜1,030B、実データのある日は数KBのため、
+// この大きさ未満は「中身が無い」とみなす（該当が無ければ単に更新が新しい方を選ぶ）。
+const VAULT_EMPTY_FILE_MAX_BYTES = 1100;
 async function findVaultFile(accessToken, folderId, filename) {
   const query = encodeURIComponent(`name='${filename}' and '${folderId}' in parents and trashed=false`);
-  const searchRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id,name)`, {
+  const searchRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id,name,modifiedTime,size)`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
   const searchData = await searchRes.json();
   if (!searchRes.ok) throw new Error('Vault検索失敗: ' + JSON.stringify(searchData));
-  return (searchData.files || [])[0] || null;
+  const files = searchData.files || [];
+  if (files.length <= 1) return files[0] || null;
+  const sorted = files.slice().sort((a, b) => String(b.modifiedTime || '').localeCompare(String(a.modifiedTime || '')));
+  const withContent = sorted.filter(f => Number(f.size || 0) >= VAULT_EMPTY_FILE_MAX_BYTES);
+  const chosen = withContent[0] || sorted[0];
+  console.log('[findVaultFile] 同名ファイルが複数あります:', JSON.stringify({
+    filename, count: files.length, chosen: chosen.id,
+    files: files.map(f => ({ id: f.id, modifiedTime: f.modifiedTime, size: f.size })),
+  }));
+  return chosen;
 }
 
 // 指定フォルダに新規ファイルを作成する（multipart POST）。
@@ -1577,12 +1593,32 @@ async function overwriteVaultFile(accessToken, fileId, content) {
 
 // Google Drive API v3。指定フォルダ内に同名ファイルがあれば内容を更新（PATCH）、
 // なければ新規作成（multipart POST）。同日再実行しても重複作成しない。
+// その日の記録に、書き出す価値のある中身が1つでもあるか。HP/MPの「—」や空文字は初期値であり中身ではない。
+// （GitHub fusion-partners-board#541：前日夕方や早朝に、中身の無い翌日分・当日分のファイルが新規作成され、
+// 後から実データのファイルと同名で2つになった。空の記録は新規作成しない。）
+function hasVaultRecordContent(record) {
+  const filled = (v) => v !== undefined && v !== null && String(v).trim() !== '' && String(v).trim() !== '—';
+  const morning = (record && record.morning) || {};
+  const evening = (record && record.evening) || {};
+  const memos = (record && record.memos && Array.isArray(record.memos.data)) ? record.memos.data : [];
+  const output = (record && record.output) || {};
+  if (['hp-val', 'mp-val', 'm-want', 'morning-advice'].some(k => filled(morning[k]))) return true;
+  if (Object.keys(evening).some(k => (k.startsWith('e-') || k === 'hp-close-val' || k === 'mp-close-val') && filled(evening[k]))) return true;
+  if (memos.length > 0) return true;
+  if (filled(output.text)) return true;
+  return false;
+}
+
 async function writeVaultMarkdown(env, accessToken, date, record, folderId) {
   // 2026-07-25設計指示：Vault直下に散らからないよう専用サブフォルダへ集約する（Picker再選択不要）
   const dailyFolderId = await getCachedDailyFolderId(env, accessToken, folderId, 'ミツメル日次記録');
   const filename = `${date}.md`;
   let content = buildVaultMarkdown(date, record);
   const existing = await findVaultFile(accessToken, dailyFolderId, filename);
+  if (!existing && !hasVaultRecordContent(record)) {
+    console.log('[writeVaultMarkdown] 中身の無い記録のため新規作成しません:', date);
+    return { skipped: 'empty' };
+  }
   if (existing) {
     // FUS-295（2026-08-21発見）恒久修正：buildVaultMarkdown()は固定セクションのみを再生成するため、
     // note-publish-watch（別タスク）が同日中に追記した「## note公開」節は、この上書きで
