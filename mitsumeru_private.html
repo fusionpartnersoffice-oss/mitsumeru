@@ -2803,6 +2803,46 @@ async function fetchSanchoPremise() {
   return null;
 }
 
+// 翌日のGoogleカレンダー（primary）の予定を取得し、夜の評価の「明日の確定アポ」用の文字列にする
+// （2026-11-10・秘書依頼・設計方針A）。手入力(manual)は「カレンダーに無い予定の追記」として併記する。
+// 取得失敗（未連携・権限・通信）と「予定ゼロ」を区別する。失敗でも夜の評価自体は止めない。
+async function buildTomorrowAppointmentText(dateStr, manual) {
+  const manualText = (manual || '').trim();
+  const dispDate = dateStr.slice(5).replace('-', '/');
+  let calLine;
+  try {
+    if (isTestMode()) {
+      calLine = 'カレンダー未連携（テストモード）のため予定の有無は不明';
+    } else {
+      const token = getPrivateToken();
+      if (!token) {
+        calLine = 'カレンダー未連携のため予定の有無は不明';
+      } else {
+        const res = await fetch(`${SYNC_URL}/calendar-tomorrow`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token, date: dateStr }),
+        });
+        const data = await res.json();
+        if (data && data.ok) {
+          calLine = data.events.length
+            ? data.events.map(ev => ev.allDay
+                ? `${dispDate} 終日 ${ev.title}${ev.location ? `（場所：${ev.location}）` : ''}`
+                : `${dispDate} ${ev.start}${ev.end ? '〜' + ev.end : ''} ${ev.title}${ev.location ? `（場所：${ev.location}）` : ''}`).join('\n')
+            : `${dispDate}のGoogleカレンダーには予定は登録されていません（勤務日か休日かは不明）`;
+        } else if (data && data.reason === 'not_linked') {
+          calLine = 'カレンダー未連携のため予定の有無は不明';
+        } else {
+          calLine = `カレンダー取得失敗（${(data && data.error) || '原因不明'}）。予定の有無は不明`;
+        }
+      }
+    }
+  } catch (e) {
+    calLine = `カレンダー取得失敗（通信エラー: ${e.message}）。予定の有無は不明`;
+  }
+  return `【Googleカレンダー（自動取得）】\n${calLine}\n【手入力の追記（カレンダーに無い予定）】\n${manualText || 'なし'}`;
+}
+
 // 前提ブロックの文言化。他のどの情報よりも優先させる（古い記録との食い違いを前提側で解決させる）。
 // 前提ファイルが3日以上更新されていない場合は、古い可能性を参謀自身に伝えさせる。
 function formatSanchoPremiseBlock(premise) {
@@ -3743,7 +3783,9 @@ const VAULT_OAUTH_APP_ID = '755434055032';
 // ローカルファイルシステム経由でVaultへ直接書き込む朝刊ファイル（日付ごとに新規生成される
 // ため個別Picker選択が現実的でない）が読めなかった。drive.readonlyを追加し、Vault配下の
 // 既存ファイルを読み取れるようにする（drive.fileは維持＝既存の書き込み機能は無変更）。
-const VAULT_OAUTH_SCOPE = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly';
+// 2026-11-10（秘書依頼・設計方針A）：夜の評価で翌日のGoogleカレンダー(primary)を読むため calendar.readonly を追加。
+// 3つをまとめて要求する（再認可でrefresh_tokenが置き換わるため、drive系を外すと既存のVault書き出しが壊れる）。
+const VAULT_OAUTH_SCOPE = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/calendar.readonly';
 
 function setVaultOAuthMsg(text, isError) {
   const el = document.getElementById('vault-oauth-setup-msg');
@@ -4310,7 +4352,7 @@ ${profileText}
 ${eveSummary || ''}
 
 【明日の確定アポ】
-${tomorrow || '入力なし（確定アポの記載が無いだけ。明日が勤務日か休日かは、このシステムでは判定できていない＝不明）'}
+${tomorrow}
 
 【先送りタスクリスト】
 ${delay || 'なし'}
@@ -4338,7 +4380,8 @@ NotebookLM要約：${notebooklm || 'なし'}
 - 上記に明記されていない予定・出来事を創作しないこと（「明日の確定アポ」に無いものを勝手に補わない）
 - 利用者さん（施設の利用者）の情報を扱うタスク（利用者の情報・排泄・ケアプラン・カルテ内容の整理、引き継ぎ用のまとめ、聞き取り記録など）を明日の設計・タスクに出さないこと（個人情報保護）
 - 「明日の確定アポ」に面接・見学・通院・休日など柴山さん自身の予定が書かれているときは、その予定の準備（持ち物・場所・時間の確認）以外の追加タスクを出さないこと（追加タスク0件でよい）。曜日や勤務日かどうかは、書かれていない限り推測しないこと
-- 「明日の確定アポ」が「入力なし」のとき、「明日はアポなしの日」「予定のない日」「休日」と断定しないこと（勤務日の可能性がある。勤務日か休日かは不明と扱い、事実として書けるのは「確定アポの入力がない」ことだけ）
+- 「明日の確定アポ」に「予定の有無は不明」「予定は登録されていない」「入力なし」とあるとき、「明日はアポなしの日」「予定のない日」「休日」と断定しないこと（勤務日の可能性がある。勤務日か休日かは不明と扱い、事実として書けるのは、その欄に書かれている内容だけ）。「カレンダー取得失敗」「カレンダー未連携」のときは、予定がある可能性を残して書くこと
+- 「明日の確定アポ」の【Googleカレンダー】の行は自動取得した予定です。時刻・タイトル・場所を書かれたとおりに使い、書かれていない内容（相手の人柄・手続きの中身・持ち物など）を補わないこと
 - **文体は「エレガントに毒を吐く」（正典「文体・トーン」準拠）。精神論を排した知的な語り口で、断言はするが攻撃的にはならない。この文体は全セクションで一貫させること**
 - ネガティブな事実を伝える時は、事実を正確に、薄めずに伝えること。ユーモア・オチで着地させることを目的にしないこと。事実で終えてよい。軽い一言を添えるかは任意であり、添えることで事実の重さが下がるなら添えないこと
 - 説明的・事務的な言い回しを避け、柴山さんご本人が実際に使う生きた言い回しに近づけること（分析の正確さ・具体性は犠牲にしない）
@@ -4457,6 +4500,13 @@ async function generateEvening() {
   saveEvening();
   const supplement  = document.getElementById('e-supplement').value.trim();
   const tomorrow    = (document.getElementById('e-tomorrow') || {value:''}).value.trim();
+  // 翌日(=評価対象日の次の日)のGoogleカレンダーの予定＋手入力の追記。AIへ渡す「明日の確定アポ」はこちらを使う
+  // （CSV化のparseSchedule(tomorrow)は手入力だけを対象に従来どおり）。
+  const tomorrowForAI = await buildTomorrowAppointmentText((() => {
+    const b = targetDate ? new Date(targetDate + 'T12:00:00') : new Date();
+    b.setDate(b.getDate() + 1);
+    return localDateStr(b);
+  })(), tomorrow);
   const delay       = document.getElementById('e-delay').value.trim();
   const try100      = document.getElementById('e-try100').value.trim();
   const feedback    = document.getElementById('e-feedback').value.trim();
@@ -4579,7 +4629,7 @@ HP: ${hp}→${endHP} ／ MP: ${mp}→${endMP}
   const todayVaultCtx = await fetchVaultContext(targetDate || localDateStr(new Date()));
   const todayNotePublish = (todayVaultCtx && todayVaultCtx.todayNotePublish) || '';
   const aiResult = await runAIEveningAnalysis({
-    tomorrow, delay, hp, mp, eveSummary,
+    tomorrow: tomorrowForAI, delay, hp, mp, eveSummary,
     profileText: getProfileText() + learningLogTextEvening, p, v, g, debugText,
     endHP, endMP, counts, lvBaseFormatted, dateStr, trend7,
     must: _eMust, never: _eNever, ego: _eEgo, enea1: _eEnea1, rc: _eRc, supplement,

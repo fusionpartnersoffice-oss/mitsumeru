@@ -112,6 +112,11 @@ export default {
       return handleVaultLearningLog(request, env);
     }
 
+    // ===== 夜の評価用：翌日のGoogleカレンダー（primary）の予定（2026-11-10・秘書依頼・設計方針A） =====
+    if (url.pathname === '/calendar-tomorrow' && request.method === 'POST') {
+      return handleCalendarTomorrow(request, env);
+    }
+
     // ===== 夜の評価用：直近の夜の締め後HP/MPの履歴（2026-10-14・秘書指摘・設計） =====
     if (url.pathname === '/vault-close-history' && request.method === 'POST') {
       return handleVaultCloseHistory(request, env);
@@ -1873,6 +1878,88 @@ async function mergeEveningCloseValues(env, key, body) {
 // 丸ごと上書きするため、締めで保存したhp-close-val/mp-close-valが残らない。確実に残っているのは
 // Vault日次記録の本文「翌日戦略」の「HP：68/100　MP：27/100」行（柴山さんの画面に出る値そのもの）なので、
 // そこから読む。対象日（date）の前日までの7日間。夜の入力が無かった日は行を返さない。読み取り専用。
+// 指定日（JST）のGoogleカレンダー（primary）の予定を返す。夜の評価の「明日の確定アポ」へ自動で入れるため
+// （2026-11-10・秘書依頼・設計方針A：Vault用OAuthに calendar.readonly を足して柴山さんが連携をやり直す）。
+// ・返すのは「開始・終了・タイトル・場所」だけ。説明欄(description)・参加者などは取得もせず返さない
+//   （健康・退職手続き等の機微情報が入りうるため・設計指示）。
+// ・取得失敗（認証・権限・API・通信）と「予定ゼロ」を区別する。失敗は ok:false と reason を返す。
+function parseCalendarEvents(items, date) {
+  return (items || [])
+    .filter(e => e && e.status !== 'cancelled')
+    .map(e => {
+      const s = e.start || {}, en = e.end || {};
+      const allDay = !!s.date && !s.dateTime;
+      const hm = (iso) => {
+        const m = String(iso || '').match(/T(\d{2}):(\d{2})/);
+        return m ? `${m[1]}:${m[2]}` : '';
+      };
+      return {
+        allDay,
+        start: allDay ? date : hm(s.dateTime),
+        end: allDay ? '' : hm(en.dateTime),
+        title: e.summary || '（タイトルなし）',
+        location: e.location || '',
+      };
+    });
+}
+
+async function handleCalendarTomorrow(request, env) {
+  const headers = { ...CORS_HEADERS, 'Content-Type': 'application/json' };
+  let token, date;
+  try {
+    const body = await request.json();
+    token = body.token;
+    date = body.date;
+  } catch (e) {
+    return new Response(JSON.stringify({ ok: false, reason: 'bad_request', error: 'リクエストの形式が不正です' }), { status: 400, headers });
+  }
+  if (!env.PRIVATE_ACCESS_TOKEN || token !== env.PRIVATE_ACCESS_TOKEN) {
+    return new Response(JSON.stringify({ ok: false, reason: 'unauthorized', error: 'private data requires a valid token' }), { status: 401, headers });
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date || '')) {
+    return new Response(JSON.stringify({ ok: false, reason: 'bad_request', error: 'dateはYYYY-MM-DD形式で指定してください' }), { status: 400, headers });
+  }
+
+  const fail = (reason, error, extra) =>
+    new Response(JSON.stringify({ ok: false, reason, error, ...(extra || {}) }), { status: 200, headers });
+
+  const kv = getKV(env);
+  if (!(await kv.get('vault_oauth_refresh'))) {
+    return fail('not_linked', 'Google連携（OAuth）が未設定です');
+  }
+
+  let accessToken;
+  try {
+    accessToken = await getVaultAccessToken(env);
+  } catch (e) {
+    return fail('auth', 'アクセストークンの取得に失敗しました: ' + e.message);
+  }
+
+  try {
+    const timeMin = encodeURIComponent(`${date}T00:00:00+09:00`);
+    const timeMax = encodeURIComponent(`${date}T23:59:59+09:00`);
+    const fields = encodeURIComponent('items(status,summary,start,end,location)');
+    const res = await fetch(
+      `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime&maxResults=50&timeZone=Asia%2FTokyo&fields=${fields}`,
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const apiReason = (data && data.error && (data.error.errors && data.error.errors[0] && data.error.errors[0].reason)) || (data && data.error && data.error.status) || '';
+      if (res.status === 401) return fail('auth', 'カレンダーの認証が切れています（連携のやり直しが必要）', { status: res.status, apiReason });
+      if (res.status === 403) {
+        const reason = /accessNotConfigured|SERVICE_DISABLED/i.test(JSON.stringify(data)) ? 'api_disabled' : 'scope';
+        return fail(reason, reason === 'api_disabled' ? 'Google Calendar APIが有効になっていません' : 'カレンダー閲覧が許可されていません（連携のやり直しが必要）', { status: res.status, apiReason });
+      }
+      return fail('api', `カレンダーAPIがエラーを返しました（HTTP ${res.status}）`, { status: res.status, apiReason });
+    }
+    const events = parseCalendarEvents(data.items, date);
+    return new Response(JSON.stringify({ ok: true, date, count: events.length, events }), { status: 200, headers });
+  } catch (e) {
+    return fail('network', 'カレンダーの取得で通信エラー: ' + e.message);
+  }
+}
+
 async function handleVaultCloseHistory(request, env) {
   const headers = { ...CORS_HEADERS, 'Content-Type': 'application/json' };
   let token, target;
