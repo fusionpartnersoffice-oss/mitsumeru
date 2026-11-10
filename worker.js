@@ -697,7 +697,7 @@ async function handleVaultDashboardSetup(request, env) {
       const tokenData = await tokenRes.json();
       console.log('[dashboard-setup] token交換レスポンス keys=', Object.keys(tokenData).join(','), ' has_refresh_token=', !!tokenData.refresh_token);
       if (!tokenData.refresh_token) {
-        console.error('[dashboard-setup] refresh_token取得失敗の詳細:', JSON.stringify(tokenData));
+        console.error('[dashboard-setup] refresh_token取得失敗の詳細:', JSON.stringify({ error: tokenData.error, error_description: tokenData.error_description }));
         return new Response(JSON.stringify({ ok: false, error: 'refresh_token取得失敗: ' + (tokenData.error_description || tokenData.error || 'レスポンスにrefresh_tokenが含まれていません（既に許可済みのスコープへの再認可のため、Google側がrefresh_tokenを省略した可能性があります）') }), { status: 502, headers });
       }
       await kv.put('vault_oauth_refresh', tokenData.refresh_token);
