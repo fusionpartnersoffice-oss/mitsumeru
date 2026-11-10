@@ -2803,8 +2803,8 @@ async function fetchSanchoPremise() {
   return null;
 }
 
-// 翌日のGoogleカレンダー（primary）の予定を取得し、夜の評価の「明日の確定アポ」用の文字列にする
-// （2026-11-10・秘書依頼・設計方針A）。手入力(manual)は「カレンダーに無い予定の追記」として併記する。
+// 翌日の予定を取得し、夜の評価の「明日の確定アポ」用の文字列にする（2026-11-10・設計方針変更：柴山さんの操作ゼロ案）。
+// 設計の定期タスクがカレンダーから書き出すVault「_明日の予定.md」をWorker経由で読む。手入力(manual)は「カレンダーに無い予定の追記」として併記する。
 // 取得失敗（未連携・権限・通信）と「予定ゼロ」を区別する。失敗でも夜の評価自体は止めない。
 async function buildTomorrowAppointmentText(dateStr, manual) {
   const manualText = (manual || '').trim();
@@ -2818,7 +2818,7 @@ async function buildTomorrowAppointmentText(dateStr, manual) {
       if (!token) {
         calLine = 'カレンダー未連携のため予定の有無は不明';
       } else {
-        const res = await fetch(`${SYNC_URL}/calendar-tomorrow`, {
+        const res = await fetch(`${SYNC_URL}/vault-tomorrow-schedule`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ token, date: dateStr }),
@@ -2826,9 +2826,7 @@ async function buildTomorrowAppointmentText(dateStr, manual) {
         const data = await res.json();
         if (data && data.ok) {
           calLine = data.events.length
-            ? data.events.map(ev => ev.allDay
-                ? `${dispDate} 終日 ${ev.title}${ev.location ? `（場所：${ev.location}）` : ''}`
-                : `${dispDate} ${ev.start}${ev.end ? '〜' + ev.end : ''} ${ev.title}${ev.location ? `（場所：${ev.location}）` : ''}`).join('\n')
+            ? data.events.map(ev => `${dispDate} ${ev}`).join('\n')
             : `${dispDate}のGoogleカレンダーには予定は登録されていません（勤務日か休日かは不明）`;
         } else if (data && data.reason === 'not_linked') {
           calLine = 'カレンダー未連携のため予定の有無は不明';
@@ -3783,9 +3781,7 @@ const VAULT_OAUTH_APP_ID = '755434055032';
 // ローカルファイルシステム経由でVaultへ直接書き込む朝刊ファイル（日付ごとに新規生成される
 // ため個別Picker選択が現実的でない）が読めなかった。drive.readonlyを追加し、Vault配下の
 // 既存ファイルを読み取れるようにする（drive.fileは維持＝既存の書き込み機能は無変更）。
-// 2026-11-10（秘書依頼・設計方針A）：夜の評価で翌日のGoogleカレンダー(primary)を読むため calendar.readonly を追加。
-// 3つをまとめて要求する（再認可でrefresh_tokenが置き換わるため、drive系を外すと既存のVault書き出しが壊れる）。
-const VAULT_OAUTH_SCOPE = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/calendar.readonly';
+const VAULT_OAUTH_SCOPE = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly';
 
 function setVaultOAuthMsg(text, isError) {
   const el = document.getElementById('vault-oauth-setup-msg');
