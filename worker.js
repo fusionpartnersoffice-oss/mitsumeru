@@ -1920,8 +1920,9 @@ async function handleCalendarTomorrow(request, env) {
     return new Response(JSON.stringify({ ok: false, reason: 'bad_request', error: 'dateはYYYY-MM-DD形式で指定してください' }), { status: 400, headers });
   }
 
+  // 確認用ログ（2026-11-10・設計指示）：ok/reason/count のみ。予定のタイトル・場所は出さない
   const fail = (reason, error, extra) =>
-    new Response(JSON.stringify({ ok: false, reason, error, ...(extra || {}) }), { status: 200, headers });
+    console.log('[calendar-tomorrow]', JSON.stringify({ date, ok: false, reason })) || new Response(JSON.stringify({ ok: false, reason, error, ...(extra || {}) }), { status: 200, headers });
 
   const kv = getKV(env);
   if (!(await kv.get('vault_oauth_refresh'))) {
@@ -1954,6 +1955,7 @@ async function handleCalendarTomorrow(request, env) {
       return fail('api', `カレンダーAPIがエラーを返しました（HTTP ${res.status}）`, { status: res.status, apiReason });
     }
     const events = parseCalendarEvents(data.items, date);
+    console.log('[calendar-tomorrow]', JSON.stringify({ date, ok: true, count: events.length }));
     return new Response(JSON.stringify({ ok: true, date, count: events.length, events }), { status: 200, headers });
   } catch (e) {
     return fail('network', 'カレンダーの取得で通信エラー: ' + e.message);
