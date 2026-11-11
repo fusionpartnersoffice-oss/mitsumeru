@@ -1964,13 +1964,11 @@ async function handleCalendarTomorrow(request, env) {
 
 async function handleVaultCloseHistory(request, env) {
   const headers = { ...CORS_HEADERS, 'Content-Type': 'application/json' };
-  let token, target, days;
+  let token, target;
   try {
     const body = await request.json();
     token = body.token;
     target = body.date || jstDateStr();
-    // 2026-11-12（設計指示）：月次用に期間を指定できるようにする。未指定は従来どおり7日、上限31日
-    days = body.days == null ? 7 : Math.min(31, Math.max(1, parseInt(body.days, 10) || 7));
   } catch (e) {
     return new Response(JSON.stringify({ ok: false, error: 'リクエストの形式が不正です' }), { status: 400, headers });
   }
@@ -1988,9 +1986,9 @@ async function handleVaultCloseHistory(request, env) {
   }
 
   try {
-    // 対象日の前日から遡るdays日分（既定7日）の日付文字列（UTC正午起点で日付計算のずれを避ける）
+    // 対象日の前日から遡る7日分の日付文字列（UTC正午起点で日付計算のずれを避ける）
     const wanted = [];
-    for (let i = 1; i <= days; i++) {
+    for (let i = 1; i <= 7; i++) {
       const d = new Date(target + 'T12:00:00Z');
       d.setUTCDate(d.getUTCDate() - i);
       wanted.push(d.toISOString().slice(0, 10));
@@ -1998,7 +1996,7 @@ async function handleVaultCloseHistory(request, env) {
     const accessToken = await getVaultAccessToken(env);
     const dailyFolderId = await getCachedDailyFolderId(env, accessToken, oauthFolderId, 'ミツメル日次記録');
     const query = encodeURIComponent(`'${dailyFolderId}' in parents and trashed=false and mimeType='text/markdown'`);
-    const listRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=${query}&orderBy=name desc&pageSize=${days + 40}&fields=files(id,name)`, {
+    const listRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=${query}&orderBy=name desc&pageSize=40&fields=files(id,name)`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     const listData = await listRes.json();
