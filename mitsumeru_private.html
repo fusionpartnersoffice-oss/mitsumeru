@@ -4594,8 +4594,12 @@ HP: ${hp}→${endHP} ／ MP: ${mp}→${endMP}
         if (data.ok && Array.isArray(data.rows)) data.rows.forEach(r => { byDate[r.date] = { hp: r.closeHp, mp: r.closeMp }; });
       }
     } catch (e) {}
-    const pickClose = (e) => (e && e['hp-close-val'] != null && e['hp-close-val'] !== '' && e['mp-close-val'] != null && e['mp-close-val'] !== '')
-      ? { hp: parseInt(e['hp-close-val'], 10), mp: parseInt(e['mp-close-val'], 10) } : null;
+    // 2026-11-12（QA指摘B・設計判断）：数値でない値はnull（＝夜未締め）にする
+    const pickClose = (e) => {
+      if (!(e && e['hp-close-val'] != null && e['hp-close-val'] !== '' && e['mp-close-val'] != null && e['mp-close-val'] !== '')) return null;
+      const hp = parseInt(e['hp-close-val'], 10), mp = parseInt(e['mp-close-val'], 10);
+      return (isNaN(hp) || isNaN(mp)) ? null : { hp, mp };
+    };
     const rows = await Promise.all(days.map(async ds => {
       if (byDate[ds]) return byDate[ds];
       let r = pickClose(lsLoad('evening', ds));
@@ -5010,8 +5014,12 @@ async function generateWeeklySummary() {
       if (data.ok && Array.isArray(data.rows)) data.rows.forEach(r => { closeByDate[r.date] = { hp: r.closeHp, mp: r.closeMp }; });
     }
   } catch (e) {}
-  const pickWeeklyClose = (e) => (e && e['hp-close-val'] != null && e['hp-close-val'] !== '' && e['mp-close-val'] != null && e['mp-close-val'] !== '')
-    ? { hp: parseInt(e['hp-close-val'], 10), mp: parseInt(e['mp-close-val'], 10) } : null;
+  // 2026-11-12（QA指摘B・設計判断）：数値でない値はnull（＝夜未締め）にする。AIへ「HP:NaN」を渡さない
+  const pickWeeklyClose = (e) => {
+    if (!(e && e['hp-close-val'] != null && e['hp-close-val'] !== '' && e['mp-close-val'] != null && e['mp-close-val'] !== '')) return null;
+    const hp = parseInt(e['hp-close-val'], 10), mp = parseInt(e['mp-close-val'], 10);
+    return (isNaN(hp) || isNaN(mp)) ? null : { hp, mp };
+  };
 
   for (let i = 6; i >= 0; i--) {
     const d = new Date(today);
@@ -5124,6 +5132,34 @@ async function generateMonthlySummary() {
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const records = [];
 
+  // 2026-11-12（QA指摘A・設計判断）：月次も週次と同じく、夜の締め後の値を優先する（da70384の直し漏れ）。
+  // /vault-close-history は基準日の前日から7日分を返すため、明日を基準に7日ずつ遡って今月1日まで集める。
+  // 取得失敗時は端末側の値だけで続行する。夜の値が無い日は「夜未締め」と明記する。
+  const closeByDate = {};
+  try {
+    const token = getPrivateToken();
+    if (token) {
+      const firstDay = `${year}-${String(month+1).padStart(2,'0')}-01`;
+      const anchor = new Date(now); anchor.setDate(now.getDate() + 1);
+      for (let k = 0; k < 6; k++) {
+        const res = await fetch(`${SYNC_URL}/vault-close-history`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token, date: localDateStr(anchor) }),
+        });
+        const data = await res.json();
+        if (data.ok && Array.isArray(data.rows)) data.rows.forEach(r => { closeByDate[r.date] = { hp: r.closeHp, mp: r.closeMp }; });
+        anchor.setDate(anchor.getDate() - 7);
+        if (localDateStr(anchor) <= firstDay) break;
+      }
+    }
+  } catch (e) {}
+  const pickMonthlyClose = (e) => {
+    if (!(e && e['hp-close-val'] != null && e['hp-close-val'] !== '' && e['mp-close-val'] != null && e['mp-close-val'] !== '')) return null;
+    const hp = parseInt(e['hp-close-val'], 10), mp = parseInt(e['mp-close-val'], 10);
+    return (isNaN(hp) || isNaN(mp)) ? null : { hp, mp };
+  };
+
   for (let d = 1; d <= daysInMonth; d++) {
     const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     if (dateStr > localDateStr(now)) break;
@@ -5132,10 +5168,12 @@ async function generateMonthlySummary() {
     ]);
     const lsM = lsLoad('morning', dateStr), lsE = lsLoad('evening', dateStr), lsMm = lsLoad('memos', dateStr);
     const morning = newerOf(lsM, kvM), evening = newerOf(lsE, kvE), memosObj = newerOf(lsMm, kvMm);
-    if (!morning && !evening) continue;
+    const close = closeByDate[dateStr] || pickMonthlyClose(evening);
+    if (!morning && !evening && !close) continue;
     const mArr = memosObj ? (Array.isArray(memosObj.data) ? memosObj.data : []) : [];
     const pomoTotal = mArr.filter(m=>m.tag==='P').reduce((s,m)=>s+(m.pomos||0),0);
-    records.push(`## ${dateStr}\nHP:${morning?morning['hp-val']:'\u2014'} MP:${morning?morning['mp-val']:'\u2014'} \u30DD\u30E2:${pomoTotal}\n\u5B9F\u7E3E:${mArr.filter(m=>m.tag==='P').map(m=>m.content).join('/')}\n\u30CE\u30A4\u30BA:${mArr.filter(m=>m.tag==='V').map(m=>m.content).join('/')}\n\u88DC\u8DB3:${evening?evening['e-supplement']||'':''}`.trim());
+    const closeText = close ? `\u591C\u306E\u7DE0\u3081\u5F8C HP:${close.hp} MP:${close.mp}` : '\u591C\u306E\u7DE0\u3081\u5F8C\u306E\u5024\u306A\u3057\uFF08\u591C\u672A\u7DE0\u3081\uFF09';
+    records.push(`## ${dateStr}\n\u671D\u306E\u7533\u544A HP:${morning?morning['hp-val']:'\u2014'} MP:${morning?morning['mp-val']:'\u2014'} \uFF0F ${closeText} \uFF0F \u30DD\u30E2:${pomoTotal}\n\u5B9F\u7E3E:${mArr.filter(m=>m.tag==='P').map(m=>m.content).join('/')}\n\u30CE\u30A4\u30BA:${mArr.filter(m=>m.tag==='V').map(m=>m.content).join('/')}\n\u88DC\u8DB3:${evening?evening['e-supplement']||'':''}`.trim());
   }
 
   if (records.length === 0) {
