@@ -883,6 +883,12 @@
   ⚠ APIキーが未設定です。設定タブ → APIキーで設定してください。
 </div>
 
+<!-- MP合図（2026-11-12・秘書経由Cowork発・柴山さん了承・設計仕様）：夜の締め後のMPが続けて低いとき、
+     責めない言葉で予定を増やさない合図を出す。判定はupdateMpSignalBar()。 -->
+<div id="mp-signal-bar" style="display:none;background:#eef4fb;border:0.5px solid #b9cfe8;color:#2f4f73;padding:9px 12px;font-size:13px;text-align:center;border-radius:6px;margin:8px 16px;line-height:1.6;">
+  🌙 今週は予定を増やさない。<br>MPが低めの日が続いています。新しい予定は、少し様子を見てからで大丈夫です。
+</div>
+
 <!-- 随時メモ -->
 <!-- FUS-349②（2026-08-30）：朝刊をサイドバーの独立項目へ分離。中身の移動のみで、
      asakan-panel・asakan-list等の既存ID・loadAsakanPanel()呼び出しロジックは無変更
@@ -1141,6 +1147,17 @@
   <button class="btn-secondary" onclick="openScanImport()" style="margin-bottom:10px;width:100%;">📥 スキャン結果をインポート（JSONを貼り付け）</button>
   <button class="btn-primary" onclick="saveProfile()">プロファイルを保存する</button>
   <div id="profile-saved" style="display:none;text-align:center;color:var(--green);font-size:13px;margin-top:10px;">✓ 保存しました。以降のアドバイスに反映されます。</div>
+
+  <!-- MP合図のしきい値（2026-11-12・柴山さん了承の依頼・設計仕様）：この端末のlocalStorageに保存する -->
+  <div class="section" style="margin-top:12px;">
+    <div class="section-title">🌙 MP合図のしきい値</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:8px;line-height:1.7;">直近7日の夜の締め後のMPのうち、新しい順に「日数」個がすべて「MP」未満のとき、画面上部に「今週は予定を増やさない」を表示します。</p>
+    <label style="font-size:13px;">MP（この値未満）：<input type="number" id="mp-signal-threshold" min="1" max="100" style="width:70px;"></label>
+    <label style="font-size:13px;margin-left:12px;">日数：<input type="number" id="mp-signal-days" min="1" max="7" style="width:60px;"></label>
+    <button class="btn-secondary" onclick="saveMpSignalConfig()" style="margin-top:8px;width:100%;">しきい値を保存する</button>
+    <div id="mp-signal-saved" style="display:none;font-size:12px;color:var(--green);margin-top:6px;">✓ 保存しました</div>
+  </div>
+
 
   <!-- UI/UX棚卸しPhase2④（2026-07-26・設計発注・柴山さん承認）：認証・連携系4ブロックを
        折りたたみグループへまとめる。ボタン・入力・onclick等は無変更、見た目のみの変更。 -->
@@ -3731,8 +3748,68 @@ function closeDayHPMP() {
   }
   renderDayClose(c, c.endHP, c.endMP);
   saveEveningHPMPClose(c.endHP, c.endMP);
+  updateMpSignalBar();
   syncToVault();
 }
+
+// ===== MP合図（2026-11-12・設計仕様）=====
+// 判定：基準日（今日）を含む直近7日の夜の締め後のMPを新しい順に集め、夜未締め（値なし・数値でない）
+// の日は飛ばす。新しい「日数」個がすべて「MP」未満なら表示。最新の値がしきい値以上なら消える。
+// しきい値は設定タブで変更可（既定MP50・3日。範囲外・壊れた値は既定へ）。窓は7日固定。
+// 値の取り方は週次・月次と同じ：まずVault（/vault-close-history）、取れなかった日だけ端末の夜の値で補う。
+// 取得に失敗しても例外は出さず、端末の値だけで続ける。
+const MP_SIGNAL_WINDOW = 7;
+const MP_SIGNAL_CFG_KEY = 'mitsumeru_private_mp_signal_cfg';
+function loadMpSignalConfig() {
+  let c = {};
+  try { c = JSON.parse(localStorage.getItem(MP_SIGNAL_CFG_KEY) || '{}') || {}; } catch (e) { c = {}; }
+  const t = parseInt(c.threshold, 10), d = parseInt(c.days, 10);
+  return { threshold: (t >= 1 && t <= 100) ? t : 50, days: (d >= 1 && d <= 7) ? d : 3 };
+}
+function saveMpSignalConfig() {
+  const t = parseInt(document.getElementById('mp-signal-threshold').value, 10);
+  const d = parseInt(document.getElementById('mp-signal-days').value, 10);
+  if (!(t >= 1 && t <= 100) || !(d >= 1 && d <= 7)) { alert('MPは1〜100、日数は1〜7で入力してください。'); return; }
+  localStorage.setItem(MP_SIGNAL_CFG_KEY, JSON.stringify({ threshold: t, days: d }));
+  const s = document.getElementById('mp-signal-saved'); if (s) s.style.display = 'block';
+  updateMpSignalBar();
+}
+function shouldShowMpSignal(baseDateStr, vaultMpByDate, cfg) {
+  const base = new Date(baseDateStr + 'T00:00:00');
+  const vals = [];
+  for (let i = 0; i < MP_SIGNAL_WINDOW && vals.length < cfg.days; i++) {
+    const d = new Date(base); d.setDate(base.getDate() - i);
+    const ds = localDateStr(d);
+    let v = parseInt((vaultMpByDate || {})[ds], 10);
+    if (isNaN(v)) { const ev = lsLoad('evening', ds); v = ev ? parseInt(ev['mp-close-val'], 10) : NaN; }
+    if (!isNaN(v)) vals.push(v);
+  }
+  return vals.length >= cfg.days && vals.every(v => v < cfg.threshold);
+}
+async function updateMpSignalBar() {
+  const cfg = loadMpSignalConfig();
+  const ti = document.getElementById('mp-signal-threshold'); if (ti) ti.value = cfg.threshold;
+  const di = document.getElementById('mp-signal-days'); if (di) di.value = cfg.days;
+  const today = localDateStr(new Date());
+  const vaultMpByDate = {};
+  try {
+    const token = getPrivateToken();
+    if (token) {
+      // /vault-close-history は基準日の前日から7日分を返すため、今日を含めるには明日を基準にする
+      const t = new Date(today + 'T00:00:00'); t.setDate(t.getDate() + 1);
+      const res = await fetch(`${SYNC_URL}/vault-close-history`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, date: localDateStr(t) }),
+      });
+      const data = await res.json();
+      if (data.ok && Array.isArray(data.rows)) data.rows.forEach(r => { vaultMpByDate[r.date] = r.closeMp; });
+    }
+  } catch (e) { /* 取得失敗は端末の値だけで続ける */ }
+  const bar = document.getElementById('mp-signal-bar');
+  if (bar) bar.style.display = shouldShowMpSignal(today, vaultMpByDate, cfg) ? 'block' : 'none';
+}
+window.addEventListener('DOMContentLoaded', function() { try { updateMpSignalBar(); } catch (e) { console.warn('[MP合図]', e); } });
 
 // 2026-08-04発見（秘書経由・柴山さん実害報告）：夜の締め(closeDayHPMP)で算出したHP/MPは
 // これまでrenderDayClose()による画面表示のみで、KV/localStorageへ一切保存されていなかった。
