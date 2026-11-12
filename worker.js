@@ -55,11 +55,6 @@ export default {
       return new Response(JSON.stringify({ ok: true, build: BUILD_VERSION }), { status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
     }
 
-    // ===== G連携基盤：ミツメルの記録をGoogleカレンダーへ自動書き出し（Phase1・私専用） =====
-    if (url.pathname === '/sync-calendar' && request.method === 'POST') {
-      return handleSyncCalendar(request, env);
-    }
-
     // ===== G連携基盤：ミツメルの記録をVault（Google Drive）へ自動書き出し（Phase2・私専用） =====
     if (url.pathname === '/sync-vault' && request.method === 'POST') {
       return handleSyncVault(request, env);
@@ -442,45 +437,6 @@ async function handleMe(request, env) {
   const date = (url.searchParams.get('date') || jstDateStr()).replace(/[^0-9-]/g, '').substring(0, 10);
   const record = await getPrivateDailyRecord(env, date);
   return new Response(JSON.stringify({ date, ...record }), { status: 200, headers });
-}
-
-// ═══════════════════════════════════════════════
-//  G連携基盤：ミツメルの記録をGoogleカレンダーへ自動書き出し（Phase1・柴山さんご本人専用）
-//  設計：06_イノベーション/Google連携基盤_統合実装設計_20260711.md §3
-//  G1：認証（サービスアカウントJWT）／G2：KV読み取り／G3-カレンダー：書き込み
-// ═══════════════════════════════════════════════
-
-async function handleSyncCalendar(request, env) {
-  const headers = { ...CORS_HEADERS, 'Content-Type': 'application/json' };
-
-  // Secret未設定時は無音でスキップする（エラーにしない）
-  if (!env.GOOGLE_SERVICE_ACCOUNT_KEY || !env.GOOGLE_CALENDAR_ID) {
-    return new Response(JSON.stringify({ ok: true, skipped: true, reason: 'Google連携が未設定です（Secret未登録）' }), { status: 200, headers });
-  }
-
-  let date;
-  try {
-    const body = await request.json();
-    date = body.date || jstDateStr();
-  } catch (e) {
-    date = jstDateStr();
-  }
-
-  try {
-    const record = await getPrivateDailyRecord(env, date);          // G2
-    const accessToken = await getGoogleAccessToken(env, 'https://www.googleapis.com/auth/calendar'); // G1
-    const event = await writeCalendarEvent(env, accessToken, date, record); // G3-カレンダー
-    return new Response(JSON.stringify({ ok: true, date, eventId: event.id }), { status: 200, headers });
-  } catch (e) {
-    // 2026-08-04是正（FP-0006・QA2指摘）：本エンドポイントは柴山さんご本人専用のベストエフォート
-    // 連携で、呼び出し元（syncToGoogleCalendar）も結果を無視するfire-and-forgetになっている
-    // （既存コメント「失敗しても既存機能には一切影響させない」参照）。実測でGOOGLE_CALENDAR_ID
-    // 側の404（notFound）を確認済み＝外部設定側の問題で、コード修正だけでは解消しない。
-    // 500（サーバ側の想定外エラー）として返すと監視・QAが「実装が壊れている」と誤検知するため、
-    // 他の任意連携（sync-vault等のvaultResult）と同じ「200でok:falseを返す」形に統一する。
-    console.error('[sync-calendar] 失敗（外部Google Calendar API起因の可能性）:', e.message);
-    return new Response(JSON.stringify({ ok: false, error: e.message }), { status: 200, headers });
-  }
 }
 
 // ── G2：KVデータ読み取りブロック ──
@@ -998,60 +954,6 @@ async function handleVaultAsakanRead(request, env) {
     // 学習ログ・前回記録と同じ方針：読み込み失敗時もok:trueのままnoneで返し、呼び出し元は無視できるようにする
     return new Response(JSON.stringify({ ok: true, none: true, error: e.message }), { status: 200, headers });
   }
-}
-
-// ── G3-カレンダー：カレンダー書き込みアダプタ ──
-// 同じ日に複数回実行されても重複作成しないよう、拡張プロパティ(mitsumeru_date)で既存イベントを検索し、
-// あれば更新（PATCH）、なければ新規作成（POST）する。
-function buildCalendarEventContent(date, record) {
-  const morning = record.morning || {};
-  const evening = record.evening || {};
-  const want = morning['m-want'] || '';
-  const hp = morning['hp-val'] || '—';
-  const mp = morning['mp-val'] || '—';
-  const supplement = evening['e-supplement'] || '';
-
-  const summary = `ミツメル：${date}の記録（HP${hp}／MP${mp}）`;
-  const descriptionLines = [];
-  if (want) descriptionLines.push(`今日の一言：${want}`);
-  descriptionLines.push(`HP：${hp}　MP：${mp}`);
-  if (supplement) descriptionLines.push(`補足：${supplement}`);
-  return { summary, description: descriptionLines.join('\n') };
-}
-
-async function writeCalendarEvent(env, accessToken, date, record) {
-  const calendarId = encodeURIComponent(env.GOOGLE_CALENDAR_ID);
-  const apiBase = `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events`;
-  const { summary, description } = buildCalendarEventContent(date, record);
-
-  const searchUrl = `${apiBase}?privateExtendedProperty=${encodeURIComponent('mitsumeru_date=' + date)}`;
-  const searchRes = await fetch(searchUrl, { headers: { Authorization: `Bearer ${accessToken}` } });
-  const searchData = await searchRes.json();
-  if (!searchRes.ok) {
-    throw new Error('カレンダー検索失敗: ' + JSON.stringify(searchData));
-  }
-  const existing = (searchData.items || [])[0];
-
-  const eventBody = {
-    summary,
-    description,
-    start: { date },
-    end: { date },
-    extendedProperties: { private: { mitsumeru_date: date } },
-  };
-
-  const url = existing ? `${apiBase}/${existing.id}` : apiBase;
-  const method = existing ? 'PATCH' : 'POST';
-  const res = await fetch(url, {
-    method,
-    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(eventBody),
-  });
-  const data = await res.json();
-  if (!res.ok || !data.id) {
-    throw new Error('カレンダー書き込み失敗: ' + JSON.stringify(data));
-  }
-  return data;
 }
 
 // 【一時】ダッシュボード自動反映（2026-07-26・設計発注）のOAuth許可範囲確認用。

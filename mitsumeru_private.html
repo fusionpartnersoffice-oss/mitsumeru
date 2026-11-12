@@ -3731,7 +3731,6 @@ function closeDayHPMP() {
   }
   renderDayClose(c, c.endHP, c.endMP);
   saveEveningHPMPClose(c.endHP, c.endMP);
-  syncToGoogleCalendar();
   syncToVault();
 }
 
@@ -3747,21 +3746,6 @@ function saveEveningHPMPClose(endHP, endMP) {
   const data = { ...existing, 'hp-close-val': endHP, 'mp-close-val': endMP, _ts: Date.now() };
   localStorage.setItem(lsKey('evening', dateAtSave), JSON.stringify(data));
   cloudSave('evening', data, dateAtSave);
-}
-
-// G連携基盤・G3-カレンダー：夜の締めのタイミングでGoogleカレンダーへ自動書き出し（柴山さんご本人専用）。
-// Secret未設定時はWorker側で無音スキップされる。失敗しても既存機能には一切影響させない。
-function syncToGoogleCalendar() {
-  // 原則6（2026-07-26・実装安全原則v2・設計指摘）：syncToVault()・startVaultOAuthSetup()には
-  // 既にテストモードガードがあったのに、同じ夜の締め処理から呼ばれる本関数だけ漏れていた。
-  // テストモード中は本物のGoogleカレンダーへの書き込みを止める。
-  if (isTestMode()) { console.warn('[テストモード] Googleカレンダーへの複製をスキップしました'); return; }
-  const date = targetDate || localDateStr(new Date());
-  fetch(`${SYNC_URL}/sync-calendar`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ date }),
-  }).catch(() => {});
 }
 
 // v10フルモデルチェンジ①DataLayer統合（2026-07-26・設計発注）：
