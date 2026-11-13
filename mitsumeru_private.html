@@ -1809,19 +1809,97 @@ var _dateSwitchLoadingUntil = 0;
 var _dateSwitchInFlight = false;
 function _isDateSwitchLoading() { return Date.now() < _dateSwitchLoadingUntil; }
 
+// ===== 随時メモの合流（#554・2026-11-13・設計仕様）=====
+// 旧実装はその日のメモを配列ごと保存し、読み込みは_tsの新しい配列をまるごと採用していたため、
+// 古い読み込みのまま保存した端末・タブが、他で追加したメモを消していた（後勝ち）。
+// メモ1件ずつに id と updatedAt を持たせ、削除は deleted（墓標 {id, updatedAt}）に残し、
+// 保存の直前と読み込みの時に、idごとに updatedAt の新しい方を採って合流する。
+// 墓標は payload.deleted に分けて持つ（payload.data は従来どおり「表示するメモだけ」なので、
+// AIへ渡す文・Vault・週次／月次など data を読む既存の処理は変えなくてよい）。
+// idの無い既存メモは time＋content を仮のidにする（編集・削除の時に、その仮idを本物のidとして固定する）。
+let memoTombstones = [];
+function memoId(m) { return (m && m.id) || ('legacy:' + (m && m.time || '') + '|' + (m && m.content || '')); }
+function newMemoId() { return 'm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+function memoPayloadParts(p) {
+  if (!p) return { data: [], deleted: [] };
+  if (Array.isArray(p)) return { data: p, deleted: [] };
+  return { data: Array.isArray(p.data) ? p.data : [], deleted: Array.isArray(p.deleted) ? p.deleted : [] };
+}
+function mergeMemoPayloads(a, b) {
+  const A = memoPayloadParts(a), B = memoPayloadParts(b);
+  const tomb = new Map();
+  [...A.deleted, ...B.deleted].forEach(t => {
+    if (!t || !t.id) return;
+    const u = t.updatedAt || 0;
+    if (!tomb.has(t.id) || tomb.get(t.id) < u) tomb.set(t.id, u);
+  });
+  const items = new Map();
+  [...A.data, ...B.data].forEach(m => {
+    if (!m) return;
+    const id = memoId(m);
+    const cur = items.get(id);
+    if (!cur || (m.updatedAt || 0) > (cur.updatedAt || 0)) items.set(id, m);
+  });
+  const data = [];
+  items.forEach((m, id) => { if (!(tomb.has(id) && tomb.get(id) >= (m.updatedAt || 0))) data.push(m); });
+  const deleted = [];
+  tomb.forEach((u, id) => deleted.push({ id, updatedAt: u }));
+  return { data, deleted };
+}
+// 合流結果を画面へ反映する。編集中・朝刊まとめの対象はidで追い直す（並びが変わってもずれないように）。
+function applyMergedMemos(merged) {
+  const editId = (editingMemoIndex !== null && memos[editingMemoIndex]) ? memoId(memos[editingMemoIndex]) : null;
+  const asakanId = (typeof asakanAllMemoIndex !== 'undefined' && asakanAllMemoIndex !== null && memos[asakanAllMemoIndex]) ? memoId(memos[asakanAllMemoIndex]) : null;
+  memos = merged.data;
+  memoTombstones = merged.deleted;
+  if (editId !== null) {
+    const i = memos.findIndex(m => memoId(m) === editId);
+    if (i >= 0) editingMemoIndex = i; else { editingMemoIndex = null; const badge = document.getElementById('memo-editing-badge'); if (badge) badge.style.display = 'none'; }
+  }
+  if (asakanId !== null) {
+    const i = memos.findIndex(m => memoId(m) === asakanId);
+    asakanAllMemoIndex = i >= 0 ? i : null;
+  }
+  calcAutoCount();
+  renderMemos();
+}
+// 削除の墓標を残す（memos から外す前に呼ぶ）
+function addMemoTombstone(m) {
+  memoTombstones = memoTombstones.filter(t => t.id !== memoId(m));
+  memoTombstones.push({ id: memoId(m), updatedAt: Date.now() });
+}
+
 function saveMemos(opts) {
   if (_isDateSwitchLoading()) return;
-  const payload = { data: memos, _ts: Date.now() };
+  const payload = { data: memos, deleted: memoTombstones, _ts: Date.now() };
   localStorage.setItem(lsKey('memos'), JSON.stringify(payload));
   // 「最後の1件を削除」「リセット」のような意図した空の保存には印を付ける（Workerが空での上書きを拒否するため。
   // 印はKVに保存される前に取り除かれる）。0時の自動保存などには付けない。
-  const cloudPayload = (opts && opts.allowEmpty) ? { ...payload, _allowEmpty: true } : payload;
-  cloudSave('memos', cloudPayload);
-  // 設計指示（2026-07-26）：随時メモもVaultへ反映する（日中の情報反映手段の拡充）。
-  // 是正：saveMemos()は「追加する」「削除」「リセット」いずれも単発の明示的操作であり
-  // 連続入力ではないため、デバウンスの必要性が無い一方、直後にタブを閉じるリスクは朝入力と同じ。
-  // debounceを使わず即座に呼ぶ。
-  syncToVault();
+  const allowEmpty = !!(opts && opts.allowEmpty);
+  const dateAtSave = targetDate;
+  // #554：KVへ送る直前にKVの最新を読み、idごとに合流してから保存する。読み込みに失敗した時は
+  // 従来どおり手元の内容で保存する（保存そのものは止めない）。
+  (async () => {
+    let kv = null;
+    try { kv = await cloudLoad('memos', dateAtSave); } catch (e) { kv = null; }
+    if (dateAtSave !== targetDate) {
+      // 待っている間に日付が切り替わった：手元の内容（保存時点のpayload）だけを合流して元の日へ保存する
+      const merged = mergeMemoPayloads(payload, kv);
+      const out = { ...merged, _ts: Date.now() };
+      localStorage.setItem(lsKey('memos', dateAtSave), JSON.stringify(out));
+      await cloudSave('memos', allowEmpty ? { ...out, _allowEmpty: true } : out, dateAtSave);
+      return;
+    }
+    // 待っている間の操作も含めるため、合流は「今の手元」とKVで行う
+    const merged = mergeMemoPayloads({ data: memos, deleted: memoTombstones }, kv);
+    const out = { ...merged, _ts: Date.now() };
+    localStorage.setItem(lsKey('memos'), JSON.stringify(out));
+    if (kv) applyMergedMemos(merged);
+    await cloudSave('memos', allowEmpty ? { ...out, _allowEmpty: true } : out);
+    // 設計指示（2026-07-26）：随時メモもVaultへ反映する（日中の情報反映手段の拡充）。デバウンスしない。
+    // #554：Vault同期はWorkerがKVから読むため、合流後のKV保存が終わってから呼ぶ（合流前の内容でVaultを書かない）。
+    syncToVault();
+  })();
 }
 function insertIntoTextarea(id, text) {
   const el = document.getElementById(id);
@@ -2083,6 +2161,7 @@ function applyEveningData(d) {
 function applyMemosData(d) {
   if (!d) return;
   memos = Array.isArray(d) ? d : (Array.isArray(d.data) ? d.data : []);
+  memoTombstones = (!Array.isArray(d) && Array.isArray(d.deleted)) ? d.deleted : [];
   calcAutoCount();
   renderMemos();
 }
@@ -2181,11 +2260,11 @@ window.addEventListener('DOMContentLoaded', async function() {
     return;
   }
 
-  const lsMemosTs  = lsMemos ? (lsMemos._ts||0) : 0;
-  const kvMemosTs  = kvMemos ? (kvMemos._ts||0) : 0;
-  if (kvMemos && kvMemosTs >= lsMemosTs) {
-    applyMemosData(kvMemos);
-    localStorage.setItem(lsKey('memos'), JSON.stringify(kvMemos));
+  // #554：_tsの新しい方をまるごと採るのをやめ、端末とKVをidごとに合流する
+  if (kvMemos) {
+    const mergedMemos = mergeMemoPayloads(lsMemos, kvMemos);
+    applyMemosData(mergedMemos);
+    localStorage.setItem(lsKey('memos'), JSON.stringify({ ...mergedMemos, _ts: Math.max(lsMemos ? (lsMemos._ts||0) : 0, kvMemos._ts||0) }));
   }
 
   if (kvProfile && kvProfile.name) {
@@ -2264,7 +2343,8 @@ window.addEventListener('DOMContentLoaded', async function() {
     await Promise.all([
       m  ? cloudSave('morning', m)  : Promise.resolve(),
       e  ? cloudSave('evening', e)  : Promise.resolve(),
-      mm ? cloudSave('memos', mm)   : Promise.resolve()
+      // #554：オフライン中の配列でKVを上書きせず、KVの最新とidごとに合流してから保存する
+      mm ? cloudLoad('memos').then(kv => cloudSave('memos', mergeMemoPayloads(mm, kv))) : Promise.resolve()
     ]);
     showSyncStatus('synced');
   });
@@ -2311,7 +2391,8 @@ async function forceSyncFromCloud() {
 
   if (kvMorning) { applyMorningData(kvMorning); localStorage.setItem(lsKey('morning'), JSON.stringify(kvMorning)); }
   if (kvEvening) { applyEveningData(kvEvening); localStorage.setItem(lsKey('evening'), JSON.stringify(kvEvening)); }
-  if (kvMemos)   { applyMemosData(kvMemos);     localStorage.setItem(lsKey('memos'),   JSON.stringify(kvMemos)); }
+  // #554：KVで置き換えず、端末とidごとに合流する（強制同期で端末側の追加を消さない）
+  if (kvMemos)   { const mm = { ...mergeMemoPayloads(lsLoad('memos'), kvMemos), _ts: kvMemos._ts || Date.now() }; applyMemosData(mm); localStorage.setItem(lsKey('memos'), JSON.stringify(mm)); }
 
   const bestOutput = newerOf(lsLoad('output'), kvOutput);
   if (bestOutput && bestOutput.text) {
@@ -2661,11 +2742,14 @@ function saveAsakanComment() {
   const todayStr = localDateStr(new Date());
   const content = `【朝刊】${todayStr}：${text}`;
   if (asakanAllMemoIndex !== null && memos[asakanAllMemoIndex]) {
-    memos[asakanAllMemoIndex].content = content;
+    const target = memos[asakanAllMemoIndex];
+    target.id = memoId(target); // #554：仮idのまま本文を変えると別メモ扱いになるため、先に固定する
+    target.content = content;
+    target.updatedAt = Date.now();
   } else {
     const now = new Date();
     const timeStr = `${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}`;
-    memos.push({ tag: 'G', time: timeStr, pomos: null, content, image: null });
+    memos.push({ id: newMemoId(), updatedAt: Date.now(), tag: 'G', time: timeStr, pomos: null, content, image: null });
     asakanAllMemoIndex = memos.length - 1;
   }
   saveMemos();
@@ -3117,7 +3201,7 @@ async function _changeTargetDateImpl(newDate) {
   document.getElementById('m-date').value = newDate;
 
   // UI初期化
-  memos = []; counts = { noise:0, pomo:0, try100:0, 'memo-pomo':0 };
+  memos = []; memoTombstones = []; counts = { noise:0, pomo:0, try100:0, 'memo-pomo':0 };
   // C2：朝の結果表示を前日から持ち越さない（新しい日の記録があれば、この後のapplyMorningDataが値を入れ直す）
   { const _hpE = document.getElementById('hp-val'), _mpE = document.getElementById('mp-val'),
           _mb = document.getElementById('mode-badge'), _adv = document.getElementById('morning-advice');
@@ -3155,7 +3239,8 @@ async function _changeTargetDateImpl(newDate) {
   const lsM = lsLoad('morning', newDate), lsE = lsLoad('evening', newDate), lsMm = lsLoad('memos', newDate);
   applyMorningData(newerOf(lsM, kvM));
   applyEveningData(newerOf(lsE, kvE));
-  const bestMm = newerOf(lsMm, kvMm); if (bestMm) applyMemosData(bestMm);
+  // #554：メモは_tsの新しい方をまるごと採らず、idごとに合流する
+  if (lsMm || kvMm) applyMemosData(mergeMemoPayloads(lsMm, kvMm));
 }
 
 function setDates() {
@@ -3442,12 +3527,16 @@ function addMemo() {
   const newMemo = { tag: selectedTag, time: timeStr, pomos, content, image: imgUrl };
   // 是正（2026-07-26）：編集中（editingMemoIndex !== null）なら新規追加ではなく上書きにする。
   // 編集開始時にsplice()していないため、ここに来るまでmemos配列は常に完全な状態を保っている。
+  // #554：新規はidを振り、編集は元のid（仮idなら固定して）を引き継ぐ。どちらも updatedAt を今にする
+  newMemo.updatedAt = Date.now();
   if (editingMemoIndex !== null) {
+    newMemo.id = memoId(memos[editingMemoIndex]);
     memos[editingMemoIndex] = newMemo;
     editingMemoIndex = null;
     const badge = document.getElementById('memo-editing-badge');
     if (badge) badge.style.display = 'none';
   } else {
+    newMemo.id = newMemoId();
     memos.push(newMemo);
   }
   saveMemos();
@@ -3613,6 +3702,7 @@ function editMemo(i) {
 }
 
 function deleteMemo(i) {
+  if (memos[i]) addMemoTombstone(memos[i]); // #554：消さずに墓標を残す（他の端末の古い配列で復活させない）
   memos.splice(i, 1);
   // 是正（2026-07-26）：削除で配列のインデックスがずれるため、編集中の対象がある場合は
   // 追随させる（削除された本人を編集中ならキャンセル、それより後ろなら1つ繰り上げる）
@@ -3630,6 +3720,7 @@ function clearMemos() {
     editingMemoIndex = null;
     const badge = document.getElementById('memo-editing-badge');
     if (badge) badge.style.display = 'none';
+    memos.forEach(addMemoTombstone); // #554：リセットも1件ずつ墓標を残す
     memos = [];
     saveMemos({ allowEmpty: true });
     renderMemos();
