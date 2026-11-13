@@ -1863,6 +1863,13 @@ function applyMergedMemos(merged) {
   calcAutoCount();
   renderMemos();
 }
+// #554：KVへ送る形を作る。空にしてよい印（_allowEmpty）は、合流の後の結果で決める。
+// 明示の操作（最後の1件の削除・リセット）か、合流後に data が0件で deleted が1件以上（＝全件が削除済み）なら付ける。
+// saveMemos とオフライン復帰時の保存の両方がこの関数を使う（条件の写しを作らない）。
+function memoCloudPayload(merged, allowEmpty) {
+  const empty = Array.isArray(merged.data) && merged.data.length === 0 && Array.isArray(merged.deleted) && merged.deleted.length > 0;
+  return (allowEmpty || empty) ? { ...merged, _allowEmpty: true } : merged;
+}
 // 削除の墓標を残す（memos から外す前に呼ぶ）
 function addMemoTombstone(m) {
   memoTombstones = memoTombstones.filter(t => t.id !== memoId(m));
@@ -1887,7 +1894,7 @@ function saveMemos(opts) {
       const merged = mergeMemoPayloads(payload, kv);
       const out = { ...merged, _ts: Date.now() };
       localStorage.setItem(lsKey('memos', dateAtSave), JSON.stringify(out));
-      await cloudSave('memos', (allowEmpty || (merged.data.length === 0 && merged.deleted.length > 0)) ? { ...out, _allowEmpty: true } : out, dateAtSave);
+      await cloudSave('memos', memoCloudPayload(out, allowEmpty), dateAtSave);
       return;
     }
     // 待っている間の操作も含めるため、合流は「今の手元」とKVで行う
@@ -1895,7 +1902,7 @@ function saveMemos(opts) {
     const out = { ...merged, _ts: Date.now() };
     localStorage.setItem(lsKey('memos'), JSON.stringify(out));
     if (kv) applyMergedMemos(merged);
-    await cloudSave('memos', (allowEmpty || (merged.data.length === 0 && merged.deleted.length > 0)) ? { ...out, _allowEmpty: true } : out);
+    await cloudSave('memos', memoCloudPayload(out, allowEmpty));
     // 設計指示（2026-07-26）：随時メモもVaultへ反映する（日中の情報反映手段の拡充）。デバウンスしない。
     // #554：Vault同期はWorkerがKVから読むため、合流後のKV保存が終わってから呼ぶ（合流前の内容でVaultを書かない）。
     syncToVault();
@@ -2344,7 +2351,7 @@ window.addEventListener('DOMContentLoaded', async function() {
       m  ? cloudSave('morning', m)  : Promise.resolve(),
       e  ? cloudSave('evening', e)  : Promise.resolve(),
       // #554：オフライン中の配列でKVを上書きせず、KVの最新とidごとに合流してから保存する
-      mm ? cloudLoad('memos').then(kv => cloudSave('memos', mergeMemoPayloads(mm, kv))) : Promise.resolve()
+      mm ? cloudLoad('memos').then(kv => cloudSave('memos', memoCloudPayload({ ...mergeMemoPayloads(mm, kv), _ts: Date.now() }, false))) : Promise.resolve()
     ]);
     showSyncStatus('synced');
   });
