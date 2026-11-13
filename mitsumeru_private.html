@@ -1887,7 +1887,7 @@ function saveMemos(opts) {
       const merged = mergeMemoPayloads(payload, kv);
       const out = { ...merged, _ts: Date.now() };
       localStorage.setItem(lsKey('memos', dateAtSave), JSON.stringify(out));
-      await cloudSave('memos', allowEmpty ? { ...out, _allowEmpty: true } : out, dateAtSave);
+      await cloudSave('memos', (allowEmpty || (merged.data.length === 0 && merged.deleted.length > 0)) ? { ...out, _allowEmpty: true } : out, dateAtSave);
       return;
     }
     // 待っている間の操作も含めるため、合流は「今の手元」とKVで行う
@@ -1895,7 +1895,7 @@ function saveMemos(opts) {
     const out = { ...merged, _ts: Date.now() };
     localStorage.setItem(lsKey('memos'), JSON.stringify(out));
     if (kv) applyMergedMemos(merged);
-    await cloudSave('memos', allowEmpty ? { ...out, _allowEmpty: true } : out);
+    await cloudSave('memos', (allowEmpty || (merged.data.length === 0 && merged.deleted.length > 0)) ? { ...out, _allowEmpty: true } : out);
     // 設計指示（2026-07-26）：随時メモもVaultへ反映する（日中の情報反映手段の拡充）。デバウンスしない。
     // #554：Vault同期はWorkerがKVから読むため、合流後のKV保存が終わってから呼ぶ（合流前の内容でVaultを書かない）。
     syncToVault();
