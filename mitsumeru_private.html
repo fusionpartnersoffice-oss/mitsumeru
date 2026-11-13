@@ -1875,6 +1875,16 @@ function addMemoTombstone(m) {
   memoTombstones = memoTombstones.filter(t => t.id !== memoId(m));
   memoTombstones.push({ id: memoId(m), updatedAt: Date.now() });
 }
+// #555：AIへ渡す文を作る前に、KVの最新と合流する（古いタブで、別のタブが削除したメモを渡さないため）。
+// 当日の画面の一覧は refreshMemosFromCloud()、過去日・週次・月次の記録は mergedMemosOf() を使う。
+// 取得に失敗した時は、手元の一覧のまま続ける。
+async function refreshMemosFromCloud() {
+  try {
+    const kv = await cloudLoad('memos');
+    if (kv) applyMergedMemos(mergeMemoPayloads({ data: memos, deleted: memoTombstones }, kv));
+  } catch (e) { /* 取得失敗は手元の一覧のまま続ける */ }
+}
+function mergedMemosOf(lsMm, kvMm) { return (lsMm || kvMm) ? mergeMemoPayloads(lsMm, kvMm) : null; }
 
 function saveMemos(opts) {
   if (_isDateSwitchLoading()) return;
@@ -2563,7 +2573,7 @@ async function getRecallMemo(dateStr) {
     try {
       const lsMm = lsLoad('memos', ds);
       const kvMm = await cloudLoad('memos', ds);
-      memosObj = newerOf(lsMm, kvMm);
+      memosObj = mergedMemosOf(lsMm, kvMm); // #555
     } catch (e) { memosObj = null; }
     const arr = memosObj && Array.isArray(memosObj.data) ? memosObj.data : [];
     arr.forEach(m => {
@@ -4651,6 +4661,7 @@ function parseSchedule(text) {
 }
 
 async function generateEvening() {
+  await refreshMemosFromCloud(); // #555：古いタブでも、削除済みのメモをAIへ渡さない
   // 2026-10-14是正（秘書依頼・柴山さん了承・GitHub mitsumeru#2）：「翌日戦略」に書かれる夜の締め後HP/MPは
   // 下で毎回再計算して文章に使うだけで、「今日のHP/MPを締める」ボタンを押さない限りどこにも保存されなかった。
   // 画面に出る値とVault日次記録の値が一致するよう、生成の冒頭で必ず保存する（saveEvening()より先に保存して
@@ -5188,7 +5199,7 @@ async function generateWeeklySummary() {
       cloudLoad('morning', dateStr), cloudLoad('evening', dateStr), cloudLoad('memos', dateStr)
     ]);
     const lsM = lsLoad('morning', dateStr), lsE = lsLoad('evening', dateStr), lsMm = lsLoad('memos', dateStr);
-    const morning = newerOf(lsM, kvM), evening = newerOf(lsE, kvE), memosObj = newerOf(lsMm, kvMm);
+    const morning = newerOf(lsM, kvM), evening = newerOf(lsE, kvE), memosObj = mergedMemosOf(lsMm, kvMm); // #555
     const close = closeByDate[dateStr] || pickWeeklyClose(evening);
     if (!morning && !evening && !close) continue;
     const mArr = memosObj ? (Array.isArray(memosObj.data) ? memosObj.data : []) : [];
@@ -5326,7 +5337,7 @@ async function generateMonthlySummary() {
       cloudLoad('morning', dateStr), cloudLoad('evening', dateStr), cloudLoad('memos', dateStr)
     ]);
     const lsM = lsLoad('morning', dateStr), lsE = lsLoad('evening', dateStr), lsMm = lsLoad('memos', dateStr);
-    const morning = newerOf(lsM, kvM), evening = newerOf(lsE, kvE), memosObj = newerOf(lsMm, kvMm);
+    const morning = newerOf(lsM, kvM), evening = newerOf(lsE, kvE), memosObj = mergedMemosOf(lsMm, kvMm); // #555
     const close = closeByDate[dateStr] || pickMonthlyClose(evening);
     if (!morning && !evening && !close) continue;
     const mArr = memosObj ? (Array.isArray(memosObj.data) ? memosObj.data : []) : [];
