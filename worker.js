@@ -846,13 +846,14 @@ async function handleVaultDashboardWrite(request, env) {
 // 元データ：各日のミツメル日次記録「## 随時メモ」の #体調 行から歩数・体重を拾う（同じ日に複数あれば最後のもの）。
 // 今日の分は、Vaultへの複製（syncToVault・待たずに走る）より先にこの処理が走りうるため、KVの随時メモを優先する。
 // ★機微情報（健康）：数字はダッシュボードにだけ書く。console.log等に数字を出さない。
-const HEALTH_STEPS_RE = /歩数\s*([\d,]+)/;
-const HEALTH_WEIGHT_RE = /体重\s*([\d.]+)/;
+const HEALTH_STEPS_RE = /歩数\s*[:：]?\s*([\d,，]+)/;
+const HEALTH_WEIGHT_RE = /体重\s*[:：]?\s*([\d.．]+)/;
 function extractHealthFromTexts(texts) {
   let steps = null, weight = null;
   texts.forEach(t => {
-    const s = String(t || '').match(HEALTH_STEPS_RE); if (s) steps = s[1];
-    const w = String(t || '').match(HEALTH_WEIGHT_RE); if (w) weight = w[1];
+    // 全角のカンマ・ピリオドは半角へ直す（秘書・Coworkの代筆で書き方がばらつく前提・設計指示）
+    const s = String(t || '').match(HEALTH_STEPS_RE); if (s) steps = s[1].replace(/，/g, ',');
+    const w = String(t || '').match(HEALTH_WEIGHT_RE); if (w) weight = w[1].replace(/．/g, '.');
   });
   return { steps, weight };
 }
