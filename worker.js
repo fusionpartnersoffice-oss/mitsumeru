@@ -527,15 +527,6 @@ async function getGoogleAccessToken(env, scope) {
   return data.access_token;
 }
 
-// ── G1-Vault：柴山さんご本人のOAuth2（案B・2026-07-25・設計指示）──
-// サービスアカウントは個人Driveに書き込み容量を持たない（storageQuotaExceeded・実測確認済み）
-// ため、Vault書き込みだけは柴山さんご本人のOAuth2 refresh_tokenで行う。
-// カレンダー用のgetGoogleAccessToken（サービスアカウントJWT）は一切変更しない
-// （設計書§4：回帰リスクの封じ込め）。
-// API呼び出し削減①（2026-07-26・設計発注）：アクセストークンはGoogle側で通常1時間有効なのに
-// 呼び出しのたびに毎回リフレッシュしていた（calcMorning()1回の押下で最大3回重複）。
-// KVに55分（3300秒）TTLでキャッシュし、有効期限内は再リフレッシュしない。
-// キャッシュミス・TTL切れ時は従来どおりリフレッシュするため、フォールバック動作は変えていない。
 // 響 運用標準書の置き場（2026-11-14・柴山さん承認・設計発注）：PC・スマホ・iPadで同じ運用標準書を見るため、
 // KVに1件の文書として置く。合言葉はミツメルと同じPRIVATE_ACCESS_TOKEN（ヘッダー X-Mitsumeru-Token で受け取り、
 // URLやログには出さない）。中身の合流（施設ごとに新しい方を採る）はページ側で行い、ここは出し入れだけ。
@@ -553,7 +544,8 @@ async function handleHibikiOps(request, env) {
     return new Response(JSON.stringify({ ok: true, value: raw ? JSON.parse(raw) : null }), { status: 200, headers });
   }
   const body = await request.text();
-  if (body.length > HIBIKI_OPS_MAX_BYTES) {
+  // 上限はバイトで数える（文字数で数えると日本語は約3倍まで通っていた・QA指摘）
+  if (new TextEncoder().encode(body).length > HIBIKI_OPS_MAX_BYTES) {
     return new Response(JSON.stringify({ ok: false, error: '大きすぎます（1MBまで）' }), { status: 413, headers });
   }
   let doc;
@@ -566,6 +558,15 @@ async function handleHibikiOps(request, env) {
   return new Response(JSON.stringify({ ok: true, savedAt }), { status: 200, headers });
 }
 
+// ── G1-Vault：柴山さんご本人のOAuth2（案B・2026-07-25・設計指示）──
+// サービスアカウントは個人Driveに書き込み容量を持たない（storageQuotaExceeded・実測確認済み）
+// ため、Vault書き込みだけは柴山さんご本人のOAuth2 refresh_tokenで行う。
+// カレンダー用のgetGoogleAccessToken（サービスアカウントJWT）は一切変更しない
+// （設計書§4：回帰リスクの封じ込め）。
+// API呼び出し削減①（2026-07-26・設計発注）：アクセストークンはGoogle側で通常1時間有効なのに
+// 呼び出しのたびに毎回リフレッシュしていた（calcMorning()1回の押下で最大3回重複）。
+// KVに55分（3300秒）TTLでキャッシュし、有効期限内は再リフレッシュしない。
+// キャッシュミス・TTL切れ時は従来どおりリフレッシュするため、フォールバック動作は変えていない。
 async function getVaultAccessToken(env) {
   const kv = getKV(env);
   const cached = await kv.get('vault_access_token_cache');
