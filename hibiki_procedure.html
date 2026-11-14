@@ -82,12 +82,12 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:9
       本ツールでは、利用者のICFアセスメント（🔴リスク項目）から支援手順書を生成・管理します。<br><br>
       <strong>入力したデータについて：</strong><br>
       ・お使いの端末（ブラウザ）内にのみ保存されます<br>
-      ・外部サーバーには送信されません（AI機能を除く）<br><br>
+      ・AI機能のボタンを押した時だけ、外部（Fusionの中継（hibiki-worker）を経由してAI）へ送られます<br><br>
       <strong>アセスメント（hibiki_v2.html）との関係：</strong><br>
       ・利用者一覧・ICF結果はアセスメント側のデータを読み取り専用で参照します。この画面からアセスメントを編集することはできません<br>
       ・支援計画（hibiki_plan.html）が無くても、単独で支援手順書を作成できます<br>
       ・以前のバージョンで支援手順書タブに入力していたデータは、初回に自動的にこちらへ引き継がれます<br><br>
-      <strong>AI機能について：</strong>入力内容の一部がClaudeのAPIに送信されます。個人を特定できる情報は仮名・イニシャルでご入力ください。<br><br>
+      <strong>AI機能について：</strong>入力内容の一部が、Fusionの中継（hibiki-worker）を経由してClaudeのAPIへ送られます。個人を特定できる情報は仮名・イニシャルでご入力ください。<br><br>
       上記をご確認のうえ、ご利用ください。
     </div>
     <button class="gate-btn" onclick="giveConsent()">確認しました・利用を開始する</button>

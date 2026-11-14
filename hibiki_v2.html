@@ -245,10 +245,10 @@ select option{background:var(--card);}
       本ツールでは、支援対象者のアセスメント情報を入力・管理します。<br><br>
       <strong>入力したデータについて：</strong><br>
       ・お使いの端末（ブラウザ）内にのみ保存されます<br>
-      ・外部サーバーには送信されません（AI機能を除く）<br>
+      ・AI機能のボタンを押した時だけ、外部（Fusionの中継（hibiki-worker）を経由してAI）へ送られます<br>
       ・タブを閉じてもデータは保持されます<br><br>
       <strong>AI機能（氷山・課題目標生成）について：</strong><br>
-      ・入力内容の一部がClaudeのAPIに送信されます<br>
+      ・入力内容の一部が、Fusionの中継（hibiki-worker）を経由してClaudeのAPIへ送られます<br>
       ・個人を特定できる情報は仮名・イニシャルでご入力ください<br><br>
       上記をご確認のうえ、ご利用ください。
     </div>
