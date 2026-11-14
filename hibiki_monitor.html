@@ -67,6 +67,18 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:9
 .btn-primary{width:100%;padding:11px;background:var(--accent);color:#1a0a1f;border:none;border-radius:8px;font-size:.88rem;font-weight:700;cursor:pointer;font-family:inherit;margin-top:6px;}
 
 .history-list{margin-top:14px;}
+.ai-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.ai-row .btn-primary{width:auto;flex:1;margin-top:0;}
+.mask-sw{display:flex;align-items:center;gap:6px;font-size:.8rem;color:var(--sub);cursor:pointer;}
+.ai-confirm{margin-top:12px;font-size:.82rem;}
+.ai-confirm details{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:10px;}
+.ai-confirm summary{cursor:pointer;color:var(--sub);}
+.ai-confirm pre{white-space:pre-wrap;word-break:break-all;font-family:inherit;font-size:.78rem;margin-top:8px;max-height:260px;overflow:auto;}
+.ai-btns{display:flex;gap:8px;}
+.ai-btns button{flex:1;padding:10px;border-radius:8px;font-family:inherit;font-weight:700;cursor:pointer;border:1px solid var(--border);}
+.ai-send{background:var(--accent);color:#1a0a1f;border:none !important;}
+.ai-cancel{background:transparent;color:var(--sub);}
+.ai-result{margin-top:12px;white-space:pre-wrap;font-size:.84rem;line-height:1.8;}
 .history-item{background:var(--card);border:1px solid var(--border);border-left:3px solid var(--border);border-radius:0 8px 8px 0;padding:10px 12px;margin-bottom:8px;}
 .history-item.trend-improve{border-left-color:var(--accent2);}
 .history-item.trend-flat{border-left-color:var(--warn);}
@@ -89,8 +101,8 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:9
     <div class="gate-body">
       本ツールでは、利用者の支援経過（結果の様子・課題の推移・前進点・残る課題）を時系列で記録・蓄積します。<br><br>
       <strong>入力したデータについて：</strong><br>
-      ・お使いの端末（ブラウザ）内にのみ保存されます<br>
-      ・外部サーバーには送信されません<br><br>
+      ・記録はお使いの端末（ブラウザ）内に保存します<br>
+      ・「AIで要約」で「送る」を押した時だけ、記録と計画の目標をFusionの中継（hibiki-worker）経由でAIへ送ります。名前の伏せ字は切り替えられます<br><br>
       <strong>支援計画（H1-PLAN）・支援手順書（H1-PROC）との関係：</strong><br>
       ・利用者一覧・支援計画・支援手順書は、それぞれの側のデータを読み取り専用で参照します。この画面から編集することはできません<br><br>
       <strong>個人情報配慮：</strong>個人を特定できる情報は仮名・イニシャルでご入力ください。<br><br>
@@ -162,6 +174,22 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:9
             <textarea id="m-remaining" placeholder="例：長距離歩行時の疲労感が残る"></textarea>
           </div>
           <button class="btn-primary" onclick="saveMonitorRecord()">この内容を記録する</button>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">🤖 AIで要約（ケアマネ向け）</div>
+          <div class="ai-row">
+            <button class="btn-primary" id="aiSummaryBtn" onclick="prepareAiSummary()">AIで要約</button>
+            <label class="mask-sw"><input type="checkbox" id="maskSwitch" onchange="setMaskPref(this.checked)"> 名前を伏せる</label>
+          </div>
+          <div class="ai-confirm" id="aiConfirm" style="display:none;">
+            <details><summary>送る内容を見る</summary><pre id="aiPreview"></pre></details>
+            <div class="ai-btns">
+              <button class="ai-send" onclick="sendAiSummary()">送る</button>
+              <button class="ai-cancel" onclick="cancelAiSummary()">やめる</button>
+            </div>
+          </div>
+          <div class="ai-result" id="aiResult"></div>
         </div>
 
         <div class="panel">
@@ -263,6 +291,7 @@ function openPerson(personId) {
   renderProcReadonly(personId);
   resetForm();
   renderHistory(personId);
+  resetAiSummary();
 }
 
 // ═══════════════════════════════════════════════
@@ -381,6 +410,152 @@ function renderHistory(personId) {
       ${r.remaining ? `<div class="history-field"><span class="fl">残る課題：</span>${esc(r.remaining)}</div>` : ''}
     </div>
   `).join('');
+}
+
+// ═══════════════════════════════════════════════
+//  AIで要約（2026-11-14・柴山さん承認・設計発注）
+//  「AIで要約」→「送る」の2回で要約を受け取る。「送る」を押した時だけ hibiki-worker /analyze へ送る。
+//  伏せ字（既定：あり・前回の選択を記憶）：登録名→〇〇さん、日付→［日付］、電話→［電話］、住所→［住所］、メール→［メール］。
+//  利用者ID・記録日の年は送らない。戻ってきた要約の〇〇さんは、画面の表示だけ登録名に戻す。
+// ═══════════════════════════════════════════════
+const WORKER_URL = 'https://hibiki-worker.fusion-partners-office.workers.dev';
+const MASK_PREF_KEY = 'hibiki_monitor_mask';
+function getDemoId() {
+  let id = localStorage.getItem('hibiki_v2_demo_id');
+  if (!id) {
+    id = 'fp_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8);
+    localStorage.setItem('hibiki_v2_demo_id', id);
+  }
+  return id;
+}
+function getMaskPref() { return localStorage.getItem(MASK_PREF_KEY) !== 'off'; }
+function setMaskPref(on) { localStorage.setItem(MASK_PREF_KEY, on ? 'on' : 'off'); if (pendingAi) prepareAiSummary(); }
+let pendingAi = null;
+
+function reEsc(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+function personNames(v2) {
+  const b = (v2 && v2.modules && v2.modules.basic) || {};
+  const raw = [b.alias, b.nickname, v2 && v2.meta && v2.meta.alias].filter(Boolean).map(x => String(x).trim());
+  const set = new Set();
+  raw.forEach(n => {
+    const base = n.replace(/\s*(さん|様|さま|くん|君|ちゃん)$/, '').trim();
+    if (!base) return;
+    set.add(base);
+    const parts = base.split(/[\s　]+/).filter(Boolean);
+    if (parts.length > 1) { set.add(parts.join('')); parts.forEach(x => set.add(x)); }
+  });
+  return [...set].sort((a, b) => b.length - a.length);
+}
+function maskText(text, v2) {
+  let t = String(text || '');
+  const b = (v2 && v2.modules && v2.modules.basic) || {};
+  if (b.address && String(b.address).trim()) t = t.split(String(b.address).trim()).join('［住所］');
+  t = t.replace(/[\w.+-]+@[\w-]+(\.[\w-]+)+/g, '［メール］');
+  t = t.replace(/(\+81[-\s]?|0)\d{1,4}[-−‐\s]?\d{1,4}[-−‐\s]?\d{3,4}/g, '［電話］');
+  t = t.replace(/(明治|大正|昭和|平成|令和)\s*(\d{1,2}|元)\s*年(\s*\d{1,2}\s*月(\s*\d{1,2}\s*日)?)?/g, '［日付］');
+  t = t.replace(/\d{4}\s*[年\/\-.]\s*\d{1,2}\s*[月\/\-.]\s*\d{1,2}\s*日?/g, '［日付］');
+  t = t.replace(/\d{4}\s*年\s*\d{1,2}\s*月/g, '［日付］');
+  t = t.replace(/\d{1,2}\s*月\s*\d{1,2}\s*日/g, '［日付］');
+  t = t.replace(/(北海道|東京都|京都府|大阪府|[^\s、。]{2,3}県)[^\s、。]{1,6}[市区町村郡](?:[^\s、。]{0,8}?[町村丁目番地号])?[\d０-９\-−‐丁目番地号]*/g, '［住所］');
+  personNames(v2).forEach(n => {
+    t = t.replace(new RegExp(reEsc(n) + '\\s*(さん|様|さま|くん|君|ちゃん)?', 'g'), '〇〇さん');
+  });
+  return t;
+}
+function shortDate(d) {
+  const m = String(d || '').match(/^\d{4}-(\d{2})-(\d{2})/);
+  return m ? `${parseInt(m[1], 10)}/${parseInt(m[2], 10)}` : '';
+}
+function buildAiContent(personId, mask) {
+  const v2 = loadV2Person(personId);
+  const f = (x) => (mask ? maskText(x, v2) : String(x || ''));
+  const plan = loadPlanReadonly(personId) || {};
+  const g = plan.goal || {};
+  const name = mask ? '〇〇さん' : ((v2 && v2.meta && v2.meta.alias) || '（利用者）');
+  const lines = [`対象：${name}`, '', '【支援計画の目標】'];
+  [['優先課題', g.issue], ['長期目標', g.longTerm], ['短期目標', g.shortTerm], ['支援方針', g.policy]]
+    .forEach(([k, v]) => { if (v) lines.push(`${k}：${f(v)}`); });
+  if (lines[lines.length - 1] === '【支援計画の目標】') lines.push('（未入力）');
+  lines.push('', '【モニタリング記録（古い順）】');
+  const recs = loadMonitorRecords(personId).slice().sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.createdAt || '').localeCompare(b.createdAt || ''));
+  recs.forEach(r => {
+    lines.push(`■ ${shortDate(r.date)}${r.trend ? '（推移：' + TREND_LABEL[r.trend].slice(3) + '）' : ''}`);
+    if (r.situation) lines.push(`最近の様子：${f(r.situation)}`);
+    if (r.progress) lines.push(`前進点：${f(r.progress)}`);
+    if (r.remaining) lines.push(`残る課題：${f(r.remaining)}`);
+  });
+  return lines.join('\n');
+}
+const AI_SUMMARY_SYSTEM = 'あなたは障害福祉・介護の相談支援を補助します。渡された支援計画の目標とモニタリング記録だけを根拠に、ケアマネジャー・相談支援専門員向けのモニタリング要約を日本語で書いてください。\n次の見出しの順で、各2〜4行の箇条書きにします。\n1. 計画の目標に照らした評価\n2. 変化\n3. 前進点\n4. 残る課題\n5. 次に見ること\n記録に無いことは推測で書かず「記録なし」と書きます。〇〇さん・［日付］などの伏せ字はそのまま使います。';
+
+function resetAiSummary() {
+  pendingAi = null;
+  document.getElementById('maskSwitch').checked = getMaskPref();
+  document.getElementById('aiConfirm').style.display = 'none';
+  document.getElementById('aiResult').textContent = '';
+}
+function prepareAiSummary() {
+  if (!currentPersonId) return;
+  if (!loadMonitorRecords(currentPersonId).length) { alert('要約する記録がまだありません。'); return; }
+  const mask = getMaskPref();
+  pendingAi = { personId: currentPersonId, mask, content: buildAiContent(currentPersonId, mask) };
+  document.getElementById('aiPreview').textContent = pendingAi.content;
+  document.getElementById('aiConfirm').style.display = '';
+}
+function cancelAiSummary() {
+  pendingAi = null;
+  document.getElementById('aiConfirm').style.display = 'none';
+}
+function restoreName(text, personId) {
+  const v2 = loadV2Person(personId);
+  const alias = (v2 && v2.meta && v2.meta.alias) || '';
+  if (!alias) return text;
+  const disp = /(さん|様|さま|くん|君|ちゃん)$/.test(alias) ? alias : alias + 'さん';
+  return text.split('〇〇さん').join(disp);
+}
+async function sendAiSummary() {
+  if (!pendingAi) return;
+  const job = pendingAi;
+  pendingAi = null;
+  document.getElementById('aiConfirm').style.display = 'none';
+  const out = document.getElementById('aiResult');
+  const btn = document.getElementById('aiSummaryBtn');
+  btn.disabled = true;
+  out.textContent = '要約しています…';
+  let raw = '';
+  try {
+    const res = await fetch(WORKER_URL + '/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: 'demo', fingerprint: getDemoId(), system: AI_SUMMARY_SYSTEM, messages: [{ role: 'user', content: job.content }], maxTokens: 1500 }),
+    });
+    if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.error || `エラー (${res.status})`); }
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = '';
+    outer: while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      const lines = buf.split('\n');
+      buf = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith('data:')) continue;
+        const data = line.slice(5).trim();
+        if (data === '[DONE]') break outer;
+        try {
+          const j = JSON.parse(data);
+          const text = j?.delta?.text || j?.choices?.[0]?.delta?.content || '';
+          if (text) { raw += text; out.textContent = job.mask ? restoreName(raw, job.personId) : raw; }
+        } catch {}
+      }
+    }
+    if (!raw) out.textContent = '要約が空でした。もう一度お試しください。';
+  } catch (e) {
+    out.textContent = '要約できませんでした（' + e.message + '）';
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 // ═══════════════════════════════════════════════
