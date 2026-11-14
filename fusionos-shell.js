@@ -28,7 +28,7 @@
   var MATCH = {
     'hibiki_hub.html': [/^hibiki_/, 'naze_naze.html'],
     'kanade_hub.html': [/^kanade_/, 'mitsumeru_tekisei_check.html'],
-    'nagi_hub.html': [/^nagi_/]
+    'nagi_hub.html': [/^nagi_/, 'mq_calculator.html', 'ta_scan.html', 'pm_scan.html']
   };
   function isActive(href) {
     if (href === CURRENT) return true;
