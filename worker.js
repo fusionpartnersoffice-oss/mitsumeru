@@ -812,6 +812,12 @@ async function handleVaultDashboardWrite(request, env) {
     const lines = [`## 🎯 今日の一手（ミツメルより・${today}更新）`];
     if (ichigon) lines.push(`- 明日への一言：${ichigon}`);
     if (top1) lines.push(`- 最優先：${top1}`);
+    // 健康の数字（#556）：取れなくても今日の一手の書き込みは止めない。★機微情報のため数字はログに出さない
+    try {
+      lines.push('', ...(await buildHealthDashboardLines(env, accessToken, today)));
+    } catch (e) {
+      console.error('[dashboard-write] 健康の数字の作成に失敗（今日の一手は書き込みを続行）:', e.message);
+    }
     const block = `${DASHBOARD_BLOCK_START}\n${lines.join('\n')}\n${DASHBOARD_BLOCK_END}`;
 
     // FUS-20是正の続き（2026-09-06・柴山さん実機指摘）：旧実装は既存ブロックを「その場で
@@ -834,6 +840,81 @@ async function handleVaultDashboardWrite(request, env) {
     console.error('[dashboard-write] 例外:', e.message, e.stack);
     return new Response(JSON.stringify({ ok: false, error: e.message }), { status: 500, headers });
   }
+}
+
+// 健康の数字（直近7日）（2026-11-14・#556・設計発注／依頼元：柴山さん・秘書）。
+// 元データ：各日のミツメル日次記録「## 随時メモ」の #体調 行から歩数・体重を拾う（同じ日に複数あれば最後のもの）。
+// 今日の分は、Vaultへの複製（syncToVault・待たずに走る）より先にこの処理が走りうるため、KVの随時メモを優先する。
+// ★機微情報（健康）：数字はダッシュボードにだけ書く。console.log等に数字を出さない。
+const HEALTH_STEPS_RE = /歩数\s*([\d,]+)/;
+const HEALTH_WEIGHT_RE = /体重\s*([\d.]+)/;
+function extractHealthFromTexts(texts) {
+  let steps = null, weight = null;
+  texts.forEach(t => {
+    const s = String(t || '').match(HEALTH_STEPS_RE); if (s) steps = s[1];
+    const w = String(t || '').match(HEALTH_WEIGHT_RE); if (w) weight = w[1];
+  });
+  return { steps, weight };
+}
+function healthTextsFromVaultMarkdown(content) {
+  const m = String(content || '').match(/## 随時メモ\r?\n([\s\S]*?)(\r?\n## |$)/);
+  if (!m) return [];
+  return m[1].split(/\r?\n/).filter(l => /^- \[[^\]]*\] #体調/.test(l)).map(l => l.replace(/^- \[[^\]]*\] #体調(（P\d+）)?\s?/, ''));
+}
+function buildHealthDashboardMarkdown(days, hba1c) {
+  const out = ['### 🩺 健康の数字（直近7日）', '| 日 | 歩数 | 体重 |', '|---|---|---|'];
+  days.forEach(d => {
+    const md = `${parseInt(d.date.slice(5, 7), 10)}/${parseInt(d.date.slice(8, 10), 10)}`;
+    out.push(`| ${md} | ${d.steps || '—'} | ${d.weight || '—'} |`);
+  });
+  const h = hba1c || {};
+  const val = String(h.value || '').trim();
+  const date = String(h.date || '').trim();
+  const target = String(h.target || '').trim();
+  const valPart = val ? `HbA1c ${val}%${date ? `（${date}）` : ''}` : 'HbA1c 未定';
+  out.push(`- ${valPart} → 先生に聞く目安：${target || '未定'}`);
+  return out;
+}
+async function buildHealthDashboardLines(env, accessToken, today) {
+  const dates = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(today + 'T12:00:00Z');
+    d.setUTCDate(d.getUTCDate() - i);
+    dates.push(d.toISOString().slice(0, 10));
+  }
+  const kv = getKV(env);
+  let hba1c = null;
+  try { const raw = await kv.get('private_hba1c_global'); hba1c = raw ? JSON.parse(raw) : null; } catch (e) { hba1c = null; }
+
+  const textsByDate = {};
+  // 今日：KVの随時メモ（Vault複製より新しい）
+  try {
+    const raw = await kv.get('private_memos_' + today);
+    const data = raw ? (JSON.parse(raw).data || []) : [];
+    if (Array.isArray(data) && data.length) textsByDate[today] = data.filter(m => m && m.tag === 'HP').map(m => m.content || '');
+  } catch (e) { /* Vaultで補う */ }
+
+  const oauthFolderId = await kv.get('vault_oauth_folder');
+  if (oauthFolderId) {
+    const dailyFolderId = await getCachedDailyFolderId(env, accessToken, oauthFolderId, 'ミツメル日次記録');
+    const query = encodeURIComponent(`'${dailyFolderId}' in parents and trashed=false and mimeType='text/markdown'`);
+    const listRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=${query}&orderBy=name desc&pageSize=40&fields=files(id,name,modifiedTime,size)`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    const listData = await listRes.json();
+    if (!listRes.ok) throw new Error('一覧取得失敗(' + listRes.status + ')');
+    const files = dedupeDailyFiles((listData.files || []).filter(f => /^\d{4}-\d{2}-\d{2}\.md$/.test(f.name) && dates.includes(f.name.replace('.md', ''))));
+    await Promise.all(files.map(async f => {
+      const ds = f.name.replace('.md', '');
+      if (textsByDate[ds]) return;
+      try {
+        const r = await fetch(`https://www.googleapis.com/drive/v3/files/${f.id}?alt=media`, { headers: { Authorization: `Bearer ${accessToken}` } });
+        if (r.ok) textsByDate[ds] = healthTextsFromVaultMarkdown(await r.text());
+      } catch (e) { /* その日は「—」 */ }
+    }));
+  }
+  const days = dates.map(ds => ({ date: ds, ...extractHealthFromTexts(textsByDate[ds] || []) }));
+  return buildHealthDashboardMarkdown(days, hba1c);
 }
 
 // ダッシュボード自動反映：本文読み込み（2026-07-28・設計発注）。
@@ -1463,6 +1544,18 @@ async function getCachedDailyFolderId(env, accessToken, parentId, folderName) {
 // 更新が新しく中身のある方を返す。空の記録ファイルは約830〜1,030B、実データのある日は数KBのため、
 // この大きさ未満は「中身が無い」とみなす（該当が無ければ単に更新が新しい方を選ぶ）。
 const VAULT_EMPTY_FILE_MAX_BYTES = 1100;
+// 同名ファイルが複数あるときの選び方（findVaultFile・/vault-close-history・ダッシュボードの健康の数字で共用・#556）
+function pickVaultDuplicate(files) {
+  const sorted = files.slice().sort((a, b) => String(b.modifiedTime || '').localeCompare(String(a.modifiedTime || '')));
+  const withContent = sorted.filter(f => Number(f.size || 0) >= VAULT_EMPTY_FILE_MAX_BYTES);
+  return withContent[0] || sorted[0];
+}
+// 同じ日付の日次記録が複数あれば、日付ごとに1つへ寄せる（#556・11/14に同名ファイル2つの実例）
+function dedupeDailyFiles(files) {
+  const byName = {};
+  files.forEach(f => { (byName[f.name] = byName[f.name] || []).push(f); });
+  return Object.values(byName).map(g => (g.length === 1 ? g[0] : pickVaultDuplicate(g)));
+}
 async function findVaultFile(accessToken, folderId, filename) {
   const query = encodeURIComponent(`name='${filename}' and '${folderId}' in parents and trashed=false`);
   const searchRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id,name,modifiedTime,size)`, {
@@ -1472,9 +1565,7 @@ async function findVaultFile(accessToken, folderId, filename) {
   if (!searchRes.ok) throw new Error('Vault検索失敗: ' + JSON.stringify(searchData));
   const files = searchData.files || [];
   if (files.length <= 1) return files[0] || null;
-  const sorted = files.slice().sort((a, b) => String(b.modifiedTime || '').localeCompare(String(a.modifiedTime || '')));
-  const withContent = sorted.filter(f => Number(f.size || 0) >= VAULT_EMPTY_FILE_MAX_BYTES);
-  const chosen = withContent[0] || sorted[0];
+  const chosen = pickVaultDuplicate(files);
   console.log('[findVaultFile] 同名ファイルが複数あります:', JSON.stringify({
     filename, count: files.length, chosen: chosen.id,
     files: files.map(f => ({ id: f.id, modifiedTime: f.modifiedTime, size: f.size })),
@@ -1939,12 +2030,12 @@ async function handleVaultCloseHistory(request, env) {
     const accessToken = await getVaultAccessToken(env);
     const dailyFolderId = await getCachedDailyFolderId(env, accessToken, oauthFolderId, 'ミツメル日次記録');
     const query = encodeURIComponent(`'${dailyFolderId}' in parents and trashed=false and mimeType='text/markdown'`);
-    const listRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=${query}&orderBy=name desc&pageSize=40&fields=files(id,name)`, {
+    const listRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=${query}&orderBy=name desc&pageSize=40&fields=files(id,name,modifiedTime,size)`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     const listData = await listRes.json();
     if (!listRes.ok) throw new Error('一覧取得失敗: ' + JSON.stringify(listData));
-    const files = (listData.files || []).filter(f => wanted.includes(f.name.replace('.md', '')) && /^\d{4}-\d{2}-\d{2}\.md$/.test(f.name));
+    const files = dedupeDailyFiles((listData.files || []).filter(f => wanted.includes(f.name.replace('.md', '')) && /^\d{4}-\d{2}-\d{2}\.md$/.test(f.name)));
 
     const rows = (await Promise.all(files.map(async f => {
       try {

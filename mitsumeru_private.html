@@ -1156,6 +1156,17 @@
     <div id="mp-signal-saved" style="display:none;font-size:12px;color:var(--green);margin-top:6px;">✓ 保存しました</div>
   </div>
 
+  <!-- HbA1c（2026-11-14・#556・設計発注）：受診ごとに更新。KV（hba1c_global）へ保存し、Workerが代表ダッシュボードの健康の数字の1行に書く。★機微情報：画面・ログ以外に出さない -->
+  <div class="section" style="margin-top:12px;">
+    <div class="section-title">🩺 HbA1c（受診ごとに更新）</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:8px;line-height:1.7;">代表ダッシュボードの「健康の数字」に1行で出ます。夜の「翌日戦略を生成する」のときに反映されます。</p>
+    <label style="font-size:13px;display:block;margin-bottom:6px;">値（%）：<input type="text" id="hba1c-value" inputmode="decimal" style="width:80px;"></label>
+    <label style="font-size:13px;display:block;margin-bottom:6px;">検査日：<input type="date" id="hba1c-date"></label>
+    <label style="font-size:13px;display:block;">先生に聞く目安：<input type="text" id="hba1c-target" placeholder="未定" style="width:160px;"></label>
+    <button class="btn-secondary" onclick="saveHba1cConfig()" style="margin-top:8px;width:100%;">HbA1cを保存する</button>
+    <div id="hba1c-saved" style="display:none;font-size:12px;color:var(--green);margin-top:6px;">✓ 保存しました</div>
+  </div>
+
 
   <!-- UI/UX棚卸しPhase2④（2026-07-26・設計発注・柴山さん承認）：認証・連携系4ブロックを
        折りたたみグループへまとめる。ボタン・入力・onclick等は無変更、見た目のみの変更。 -->
@@ -3957,6 +3968,22 @@ async function updateMpSignalBar() {
   if (bar) bar.style.display = shouldShowMpSignal(today, vaultMpByDate, cfg) ? 'block' : 'none';
 }
 window.addEventListener('DOMContentLoaded', function() { try { updateMpSignalBar(); } catch (e) { console.warn('[MP合図]', e); } });
+// HbA1c（#556）：KVへ保存し、設定タブを開いたときに読み戻す。★数字はconsoleに出さない
+async function saveHba1cConfig() {
+  const value = (document.getElementById('hba1c-value').value || '').trim();
+  const date = (document.getElementById('hba1c-date').value || '').trim();
+  const target = (document.getElementById('hba1c-target').value || '').trim();
+  if (value && !/^\d{1,2}(\.\d)?$/.test(value)) { alert('HbA1cは「6.5」のように数字で入力してください。'); return; }
+  await cloudSaveGlobal('hba1c', { value, date, target });
+  const s = document.getElementById('hba1c-saved'); if (s) s.style.display = 'block';
+}
+async function loadHba1cConfig() {
+  const h = await cloudLoadGlobal('hba1c');
+  if (!h) return;
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ''; };
+  set('hba1c-value', h.value); set('hba1c-date', h.date); set('hba1c-target', h.target);
+}
+window.addEventListener('DOMContentLoaded', function() { loadHba1cConfig().catch(function() {}); });
 
 // 2026-08-04発見（秘書経由・柴山さん実害報告）：夜の締め(closeDayHPMP)で算出したHP/MPは
 // これまでrenderDayClose()による画面表示のみで、KV/localStorageへ一切保存されていなかった。
