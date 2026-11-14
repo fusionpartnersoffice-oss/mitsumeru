@@ -24,6 +24,16 @@
     { label: '響 Hibiki', href: 'hibiki_hub.html', group: 'tool' },
     { label: '3minエマージェンシー', href: 'index.html', group: 'tool' }
   ];
+  // 子ページを開いている時も親ツールの項目を色付きにする（2026-11-14・柴山さん承認・設計発注）
+  var MATCH = {
+    'hibiki_hub.html': [/^hibiki_/, 'naze_naze.html'],
+    'kanade_hub.html': [/^kanade_/, 'mitsumeru_tekisei_check.html'],
+    'nagi_hub.html': [/^nagi_/]
+  };
+  function isActive(href) {
+    if (href === CURRENT) return true;
+    return (MATCH[href] || []).some(function (m) { return typeof m === 'string' ? m === CURRENT : m.test(CURRENT); });
+  }
   var FUTURE = [
     { label: '弦 Yuzuru', tag: '未定' },
     { label: '勤務表', tag: '配属待ち' }
@@ -69,7 +79,7 @@
     '<div class="fos-brand"><img src="logo-mark-transparent.png" alt="Fusion Partners"><span>FusionOS</span></div>';
 
   function itemHtml(t) {
-    var active = t.href === CURRENT ? ' active' : '';
+    var active = isActive(t.href) ? ' active' : '';
     var targetAttr = t.external ? ' target="_blank" rel="noopener"' : '';
     return '<a class="fos-item' + active + '" href="' + t.href + '"' + targetAttr + '>'
       + '<span class="fos-dot"></span>' + t.label + '</a>';
@@ -99,7 +109,7 @@
   ];
   var bottomNavHtml = '<nav id="fos-shell-bottomnav" aria-label="FusionOSナビゲーション">'
     + bnItems.map(function (b) {
-      var active = b.href === CURRENT ? ' active' : '';
+      var active = isActive(b.href) ? ' active' : '';
       var targetAttr = b.external ? ' target="_blank" rel="noopener"' : '';
       return '<a class="' + active.trim() + '" href="' + b.href + '"' + targetAttr + '>'
         + '<span class="fos-ico">' + b.ico + '</span><span>' + b.label + '</span></a>';
