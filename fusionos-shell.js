@@ -3,7 +3,7 @@
  * 「各ツールとも左サイドバー（タブレット/スマホでは下部ボタンバー）は常に表示されていて
  *  遷移できるとありがたい」への対応。
  * mitsumeru_private.htmlに実装済みのサイドバー/ボトムナビを、共有ファイル1本として切り出し、
- * 対象5ページ（kanade_hub.html／nagi_hub.html／hibiki_koe.html／index.html／naze_naze.html）
+ * 対象6ページ（kanade_hub.html／nagi_hub.html／hibiki_hub.html／hibiki_koe.html／index.html／naze_naze.html）
  * から読み込む。1箇所を直せば全ページに反映される構造にする（コピー禁止・Simplicity First）。
  *
  * 使い方：各ページの</body>直前に <script src="fusionos-shell.js"></script> を追加するだけ。
@@ -21,9 +21,8 @@
     { label: 'ダッシュボード', href: DASHBOARD_URL, group: 'core', external: true },
     { label: '奏 Kanade', href: 'kanade_hub.html', group: 'tool' },
     { label: '凪 Nagi', href: 'nagi_hub.html', group: 'tool' },
-    { label: '響 Hibiki', href: 'hibiki_koe.html', group: 'tool' },
-    { label: '3minエマージェンシー', href: 'index.html', group: 'tool' },
-    { label: 'なぜなぜ分析', href: 'naze_naze.html', group: 'tool' }
+    { label: '響 Hibiki', href: 'hibiki_hub.html', group: 'tool' },
+    { label: '3minエマージェンシー', href: 'index.html', group: 'tool' }
   ];
   var FUTURE = [
     { label: '弦 Yuzuru', tag: '未定' },
@@ -95,9 +94,8 @@
     { label: 'ダッシュボード', href: DASHBOARD_URL, ico: '📊', external: true },
     { label: '奏', href: 'kanade_hub.html', ico: '🧰' },
     { label: '凪', href: 'nagi_hub.html', ico: '🧭' },
-    { label: '響', href: 'hibiki_koe.html', ico: '🎙️' },
-    { label: '3min', href: 'index.html', ico: '⚡' },
-    { label: 'なぜなぜ', href: 'naze_naze.html', ico: '🔍' }
+    { label: '響', href: 'hibiki_hub.html', ico: '🎙️' },
+    { label: '3min', href: 'index.html', ico: '⚡' }
   ];
   var bottomNavHtml = '<nav id="fos-shell-bottomnav" aria-label="FusionOSナビゲーション">'
     + bnItems.map(function (b) {
