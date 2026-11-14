@@ -31,7 +31,7 @@ function getKV(env) {
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, PUT, POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
+  'Access-Control-Allow-Headers': 'Content-Type, X-Mitsumeru-Token',
   'Access-Control-Max-Age': '86400',
 };
 
@@ -53,6 +53,11 @@ export default {
     // 認証不要（秘密情報を含まないため）。デプロイ時にBUILD定数を手で更新する運用。
     if (url.pathname === '/version' && request.method === 'GET') {
       return new Response(JSON.stringify({ ok: true, build: BUILD_VERSION }), { status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
+    }
+
+    // ===== 響 運用標準書の端末間共有（2026-11-14・柴山さん承認・設計発注） =====
+    if (url.pathname === '/hibiki-ops' && (request.method === 'GET' || request.method === 'PUT')) {
+      return handleHibikiOps(request, env);
     }
 
     // ===== G連携基盤：ミツメルの記録をVault（Google Drive）へ自動書き出し（Phase2・私専用） =====
@@ -531,6 +536,36 @@ async function getGoogleAccessToken(env, scope) {
 // 呼び出しのたびに毎回リフレッシュしていた（calcMorning()1回の押下で最大3回重複）。
 // KVに55分（3300秒）TTLでキャッシュし、有効期限内は再リフレッシュしない。
 // キャッシュミス・TTL切れ時は従来どおりリフレッシュするため、フォールバック動作は変えていない。
+// 響 運用標準書の置き場（2026-11-14・柴山さん承認・設計発注）：PC・スマホ・iPadで同じ運用標準書を見るため、
+// KVに1件の文書として置く。合言葉はミツメルと同じPRIVATE_ACCESS_TOKEN（ヘッダー X-Mitsumeru-Token で受け取り、
+// URLやログには出さない）。中身の合流（施設ごとに新しい方を採る）はページ側で行い、ここは出し入れだけ。
+const HIBIKI_OPS_KV_KEY = 'private_hibiki_ops_shared';
+const HIBIKI_OPS_MAX_BYTES = 1024 * 1024;
+async function handleHibikiOps(request, env) {
+  const headers = { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' };
+  const token = request.headers.get('X-Mitsumeru-Token') || '';
+  if (!env.PRIVATE_ACCESS_TOKEN || token !== env.PRIVATE_ACCESS_TOKEN) {
+    return new Response(JSON.stringify({ ok: false, error: 'private data requires a valid token' }), { status: 401, headers });
+  }
+  const kv = getKV(env);
+  if (request.method === 'GET') {
+    const raw = await kv.get(HIBIKI_OPS_KV_KEY);
+    return new Response(JSON.stringify({ ok: true, value: raw ? JSON.parse(raw) : null }), { status: 200, headers });
+  }
+  const body = await request.text();
+  if (body.length > HIBIKI_OPS_MAX_BYTES) {
+    return new Response(JSON.stringify({ ok: false, error: '大きすぎます（1MBまで）' }), { status: 413, headers });
+  }
+  let doc;
+  try { doc = JSON.parse(body); } catch (e) { doc = null; }
+  if (!doc || !Array.isArray(doc.facilities) || !Array.isArray(doc.deleted)) {
+    return new Response(JSON.stringify({ ok: false, error: 'facilities・deletedの配列が必要です' }), { status: 400, headers });
+  }
+  const savedAt = new Date().toISOString();
+  await kv.put(HIBIKI_OPS_KV_KEY, JSON.stringify({ facilities: doc.facilities, deleted: doc.deleted, savedAt }));
+  return new Response(JSON.stringify({ ok: true, savedAt }), { status: 200, headers });
+}
+
 async function getVaultAccessToken(env) {
   const kv = getKV(env);
   const cached = await kv.get('vault_access_token_cache');

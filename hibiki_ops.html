@@ -99,7 +99,8 @@ select option{background:var(--card);}
     <div class="gate-body">
       本ツールでは、施設単位の運用標準書を入力・管理します（品目・在庫管理は<a href="./hibiki_inventory.html" target="_blank" style="color:var(--accent);">hibiki_inventory.html</a>に移行しました）。<br><br>
       <strong>入力したデータについて：</strong><br>
-      ・お使いの端末（ブラウザ）内にのみ保存されます<br>
+      ・この端末に保存されます。ミツメルの合言葉を設定した端末では、合言葉付きのFusionの置き場（mitsumeru-sync）にも保存され、柴山さんのほかの端末（スマホ・iPad）から同じ内容を見られます<br>
+      ・個人ルールの利用者ID参照は置き場へ送らず、この端末の中だけに残ります<br>
       ・「AIで作る」を押した時だけ、その内容がFusionの中継（hibiki-worker）を経由してAI（Claude）へ送られます<br>
       ・タブを閉じてもデータは保持されます<br><br>
       <strong>個人ルール参照ポインタについて：</strong><br>
@@ -117,6 +118,7 @@ select option{background:var(--card);}
   <span class="hdr-spacer"></span>
   <button class="hdr-btn" onclick="goList()">← 施設一覧</button>
 </header>
+<div id="opsSyncStatus" style="font-size:.72rem;color:var(--sub);padding:6px 16px;"></div>
 
 <!-- Phase 0: 施設一覧 -->
 <div class="phase active" id="phaseList">
@@ -247,13 +249,16 @@ function saveCurrentFacility() {
   const entry = { id: currentFacility.id, name: currentFacility.meta.name, updatedAt: currentFacility.meta.updatedAt };
   if (existing >= 0) idx[existing] = entry; else idx.push(entry);
   setIndex(idx);
+  scheduleOpsSync();
 }
 function deleteFacility(id, e) {
   e.stopPropagation();
   if (!confirm('この施設を削除しますか？')) return;
   localStorage.removeItem(STORE_PREFIX_OPS + id);
   setIndex(getIndex().filter(x => x.id !== id));
+  addOpsTombstone(id);
   renderFacilityList();
+  scheduleOpsSync();
 }
 
 // ═══════════════════════════════════════════════
@@ -653,10 +658,128 @@ function fmtDate(iso) {
 }
 
 // ═══════════════════════════════════════════════
+//  端末間の共有（2026-11-14・柴山さん承認・設計発注）
+//  運用標準書をFusionの置き場（mitsumeru-sync /hibiki-ops）へ保存し、PC・スマホ・iPadで同じ内容を見る。
+//  合言葉はミツメルで保存したもの（同じブラウザのlocalStorage）を使う。無ければ端末内だけで動く。
+//  共有するのは運用標準書の中身だけ。個人ルールの利用者ID参照（personRefs）は送らず、端末内に残す。
+//  合流は施設ごとに更新時刻の新しい方を採る（後勝ち）。削除は墓標（hibiki_ops_deleted）で伝える。
+// ═══════════════════════════════════════════════
+const OPS_SYNC_URL = 'https://mitsumeru-sync.fusion-partners-office.workers.dev/hibiki-ops';
+const OPS_DELETED_KEY = 'hibiki_ops_deleted';
+function opsToken() { return localStorage.getItem('mitsumeru_private_access_token') || ''; }
+function getOpsDeleted() { try { return JSON.parse(localStorage.getItem(OPS_DELETED_KEY) || '[]'); } catch { return []; } }
+function setOpsDeleted(arr) { localStorage.setItem(OPS_DELETED_KEY, JSON.stringify(arr)); }
+function addOpsTombstone(id) {
+  const d = getOpsDeleted().filter(x => x.id !== id);
+  d.push({ id, deletedAt: new Date().toISOString() });
+  setOpsDeleted(d);
+}
+function stripForShare(f) {
+  const c = JSON.parse(JSON.stringify(f));
+  ((c.modules && c.modules.standards) || []).forEach(s => { delete s.personRefs; });
+  return c;
+}
+function localOpsDoc() {
+  const facilities = getIndex().map(x => loadFacilityById(x.id)).filter(Boolean).map(stripForShare);
+  return { facilities, deleted: getOpsDeleted() };
+}
+function opsFacTime(f) { return String((f.meta && (f.meta.updatedAt || f.meta.createdAt)) || ''); }
+function mergeOpsDocs(a, b) {
+  const del = {};
+  [...(a.deleted || []), ...(b.deleted || [])].forEach(t => {
+    if (!del[t.id] || String(t.deletedAt) > String(del[t.id].deletedAt)) del[t.id] = t;
+  });
+  const fac = {};
+  [...(a.facilities || []), ...(b.facilities || [])].forEach(f => {
+    if (!fac[f.id] || opsFacTime(f) > opsFacTime(fac[f.id])) fac[f.id] = f;
+  });
+  const facilities = Object.values(fac)
+    .filter(f => !del[f.id] || opsFacTime(f) > String(del[f.id].deletedAt))
+    .sort((x, y) => (opsFacTime(x) < opsFacTime(y) ? -1 : 1));
+  const deleted = Object.values(del).sort((x, y) => (x.id < y.id ? -1 : 1));
+  return { facilities: facilities.map(stripForShare), deleted };
+}
+function applyOpsDocToLocal(doc) {
+  const keep = new Set(doc.facilities.map(f => f.id));
+  getIndex().forEach(x => { if (!keep.has(x.id)) localStorage.removeItem(STORE_PREFIX_OPS + x.id); });
+  const idx = [];
+  doc.facilities.forEach(f => {
+    const local = loadFacilityById(f.id);
+    const refs = {};
+    ((local && local.modules && local.modules.standards) || []).forEach(s => { if (s.personRefs) refs[s.id] = s.personRefs; });
+    const merged = JSON.parse(JSON.stringify(f));
+    ((merged.modules && merged.modules.standards) || []).forEach(s => { s.personRefs = refs[s.id] || []; });
+    localStorage.setItem(STORE_PREFIX_OPS + f.id, JSON.stringify(merged));
+    idx.push({ id: f.id, name: f.meta.name, updatedAt: f.meta.updatedAt || '' });
+  });
+  setIndex(idx);
+  setOpsDeleted(doc.deleted);
+}
+function setOpsStatus(text) { const el = document.getElementById('opsSyncStatus'); if (el) el.textContent = text; }
+function fmtDateTime(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return `${fmtDate(iso)} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+async function opsFetch(method, body) {
+  const res = await fetch(OPS_SYNC_URL, {
+    method,
+    headers: { 'Content-Type': 'application/json', 'X-Mitsumeru-Token': opsToken() },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok || !json.ok) throw new Error(res.status === 401 ? '合言葉が違います。ミツメルで合言葉を確かめてください' : ('共有の置き場への接続に失敗しました・' + res.status));
+  return json;
+}
+let opsSyncTimer = null;
+let opsSyncRunning = false;
+function scheduleOpsSync() {
+  clearTimeout(opsSyncTimer);
+  opsSyncTimer = setTimeout(() => syncOps(), 800);
+}
+async function syncOps() {
+  if (!opsToken()) {
+    setOpsStatus('この端末の中だけに保存しています。ほかの端末と共有するには、ミツメルで合言葉を設定してください。');
+    return;
+  }
+  if (opsSyncRunning) { scheduleOpsSync(); return; }
+  opsSyncRunning = true;
+  try {
+    setOpsStatus('共有の置き場と同期しています…');
+    const cloud = (await opsFetch('GET')).value;
+    const local = localOpsDoc();
+    let savedAt;
+    if (!cloud) {
+      // 初回：置き場が空の時だけ、この端末の運用標準書を移す
+      savedAt = (await opsFetch('PUT', local)).savedAt;
+    } else {
+      const merged = mergeOpsDocs(cloud, local);
+      applyOpsDocToLocal(merged);
+      savedAt = cloud.savedAt;
+      const cloudNorm = mergeOpsDocs(cloud, { facilities: [], deleted: [] });
+      if (JSON.stringify(cloudNorm) !== JSON.stringify(merged)) savedAt = (await opsFetch('PUT', merged)).savedAt;
+    }
+    setOpsStatus('共有の置き場と同期済み（置き場の最終保存：' + fmtDateTime(savedAt) + '）');
+    if (currentFacility) {
+      const fresh = loadFacilityById(currentFacility.id);
+      if (!fresh) { alert('この施設は別の端末で削除されました'); goList(); }
+      else { currentFacility = fresh; renderStandards(); }
+    } else {
+      renderFacilityList();
+    }
+  } catch (e) {
+    setOpsStatus('共有の置き場と同期できませんでした。この端末には保存されています。（' + e.message + '）');
+  } finally {
+    opsSyncRunning = false;
+  }
+}
+
+// ═══════════════════════════════════════════════
 //  起動
 // ═══════════════════════════════════════════════
 checkConsent();
 renderFacilityList();
+syncOps();
 </script>
 <script src="fusionos-shell.js"></script>
 </body>
