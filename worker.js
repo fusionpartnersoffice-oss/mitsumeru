@@ -127,6 +127,11 @@ export default {
       return handleVaultSanchoPremise(request, env);
     }
 
+    // ===== 代表ダッシュボード「## 1.」〜「## 5.」の本文（2026-11-15・設計発注） =====
+    if (url.pathname === '/vault-dashboard' && request.method === 'POST') {
+      return handleVaultDashboardSections(request, env);
+    }
+
     // ===== ダンプボックス：種類を問わずファイルをVaultへ放り込む（2026-07-28・設計発注・柴山さん承認） =====
     if (url.pathname === '/vault-inbox-upload' && request.method === 'POST') {
       return handleVaultInboxUpload(request, env);
@@ -2008,6 +2013,48 @@ async function handleVaultSanchoPremise(request, env) {
     // プロンプトの肥大を防ぐ上限（通常は1,500字程度を想定）
     const text = content.length > 6000 ? content.slice(0, 6000) : content;
     return new Response(JSON.stringify({ ok: true, none: false, text, modifiedTime: found.modifiedTime }), { status: 200, headers });
+  } catch (e) {
+    return new Response(JSON.stringify({ ok: true, none: true, error: e.message }), { status: 200, headers });
+  }
+}
+
+// 代表ダッシュボードの本文（2026-11-15・設計発注）：朝の参謀が11/12版の「参謀の前提」に残った
+// 済んだ予定（11/13 退職手続き）をTop3に出した。前提は戦略書の更新時しか書き直されないため、
+// 毎日更新される代表ダッシュボードの「## 1.」〜「## 5.」の本文を、更新時刻つきで朝に渡す。
+// 読み取りのみ。上限6000字。取れない時は none:true で静かにスキップ（朝を止めない）。
+// 本文に書かれた他ファイルへのリンク・パスは開かない（この1ファイルだけを読む）。
+function extractDashboardSections(content) {
+  const lines = String(content || '').replace(/\r\n/g, '\n').split('\n');
+  const start = lines.findIndex(l => /^##\s*1\./.test(l));
+  if (start === -1) return '';
+  const s5 = lines.findIndex((l, i) => i > start && /^##\s*5\./.test(l));
+  let end = lines.length;
+  if (s5 !== -1) {
+    const next = lines.findIndex((l, i) => i > s5 && /^##\s/.test(l));
+    if (next !== -1) end = next;
+  }
+  const text = lines.slice(start, end).join('\n').trim();
+  return text.length > 6000 ? text.slice(0, 6000) : text;
+}
+async function handleVaultDashboardSections(request, env) {
+  const headers = { ...CORS_HEADERS, 'Content-Type': 'application/json' };
+  let token;
+  try { token = (await request.json()).token; } catch (e) { token = null; }
+  if (!env.PRIVATE_ACCESS_TOKEN || token !== env.PRIVATE_ACCESS_TOKEN) {
+    return new Response(JSON.stringify({ ok: false, error: 'private data requires a valid token' }), { status: 401, headers });
+  }
+  try {
+    const kv = getKV(env);
+    const fileId = await kv.get('vault_dashboard_file_id');
+    if (!fileId) return new Response(JSON.stringify({ ok: true, none: true, reason: 'ダッシュボードファイル未設定' }), { status: 200, headers });
+    const accessToken = await getVaultAccessToken(env);
+    const metaRes = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?fields=modifiedTime`, { headers: { Authorization: `Bearer ${accessToken}` } });
+    const meta = metaRes.ok ? await metaRes.json() : {};
+    const getRes = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, { headers: { Authorization: `Bearer ${accessToken}` } });
+    if (!getRes.ok) throw new Error('ダッシュボード読み込み失敗(' + getRes.status + ')');
+    const text = extractDashboardSections(await getRes.text());
+    if (!text) return new Response(JSON.stringify({ ok: true, none: true, reason: '「## 1.」の見出しが見つかりません' }), { status: 200, headers });
+    return new Response(JSON.stringify({ ok: true, none: false, text, modifiedTime: meta.modifiedTime || null }), { status: 200, headers });
   } catch (e) {
     return new Response(JSON.stringify({ ok: true, none: true, error: e.message }), { status: 200, headers });
   }

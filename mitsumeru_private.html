@@ -2798,6 +2798,9 @@ async function buildMorningContext(dateForVault) {
   // ⑥-2参謀の前提（最新）（2026-10-10・柴山さん承認）：Vaultの固定名ファイルから毎回最新を読む。
   context.sanchoPremise = await fetchSanchoPremise();
 
+  // ⑥-3代表ダッシュボード（最新）（2026-11-15・設計発注）：「## 1.」〜「## 5.」の本文を更新時刻つきで読む。
+  context.dashboardSections = await fetchDashboardSections();
+
   // ⑦夜の入眠サポート（2026-07-29・柴山さん本人指示・設計発注）：前日夜のチェックインを読む。
   // localStorage参照のみ（trend7と同じ既存パターン）。デバイスをまたぐ場合は取得できないことがある。
   const baseDate = dateForVault ? new Date(dateForVault) : new Date();
@@ -2917,6 +2920,44 @@ async function fetchSanchoPremise() {
     }
   } catch (e) {}
   return null;
+}
+
+// 代表ダッシュボード（最新）（2026-11-15・設計発注）：参謀の前提は戦略書の更新時しか書き直されず、
+// 済んだ予定（11/13 退職手続き）を未来の予定のまま持っていた。毎日更新されるダッシュボードの
+// 「## 1.」〜「## 5.」を更新時刻つきで渡す。取得できない時は null（朝はブロックなしで進む）。
+async function fetchDashboardSections() {
+  try {
+    const token = getPrivateToken();
+    if (!token) return null;
+    const res = await fetch(`${SYNC_URL}/vault-dashboard`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
+    });
+    const data = await res.json();
+    if (data.ok && !data.none && data.text) return { text: data.text, modifiedTime: data.modifiedTime || null };
+  } catch (e) {}
+  return null;
+}
+function fmtJstDateTime(iso) {
+  const d = new Date(new Date(iso).getTime() + 9 * 3600e3);
+  if (isNaN(d.getTime())) return '';
+  return d.toISOString().slice(0, 16).replace('T', ' ');
+}
+function formatDashboardBlock(dash, premise) {
+  if (!dash || !dash.text) return '';
+  const when = dash.modifiedTime ? `（mdの更新時刻：${fmtJstDateTime(dash.modifiedTime)}）` : '（mdの更新時刻：不明）';
+  const newer = dash.modifiedTime && (!premise || !premise.modifiedTime || new Date(dash.modifiedTime) > new Date(premise.modifiedTime));
+  const rule = newer
+    ? '**このダッシュボードは上の「今の職場の最新の前提」より新しい。予定・用事・済んだかどうかが食い違う時は、このダッシュボードを優先すること。**'
+    : '予定・用事が「今の職場の最新の前提」と食い違う時は、更新時刻の新しい方を優先すること。';
+  return `\n【代表ダッシュボード（最新）${when}】\n${dash.text}\n${rule}\n`;
+}
+function formatTodayDateBlock() {
+  const d = new Date();
+  const ds = localDateStr(d);
+  const wd = '日月火水木金土'[d.getDay()];
+  return `\n【今日の日付】${ds}（${wd}）\n**今日より前の日付が付いた用事・予定は、【今日のTop3タスク】にも【参謀からの一言】にも出さないこと。済んだものとして扱う。**\n`;
 }
 
 // 翌日のGoogleカレンダー（primary）の予定を取得し、夜の評価の「明日の確定アポ」用の文字列にする
@@ -4355,6 +4396,8 @@ async function calcMorning() {
   // 代わりに、Vaultの固定名ファイル`_参謀の前提_最新.md`（戦略書の最新版から定時タスクが毎回書き直す）を
   // 毎回読み、他のどの情報よりも優先させる。
   const sanchoPremiseBlock = formatSanchoPremiseBlock(morningContext.sanchoPremise);
+  const dashboardBlock = formatDashboardBlock(morningContext.dashboardSections, morningContext.sanchoPremise);
+  const todayDateBlock = formatTodayDateBlock();
 
   // 2026-10-10追加（専務の要望・柴山さん承認）：MPが底の時期は「新しく動く」提案を出さず、
   // 休む・決めるだけ・やらない提案に絞る。判定は①前夜の締め後MP＜30（日次記録本文「翌日戦略」の
@@ -4391,7 +4434,7 @@ ${learningLogText}
 ・現在時間帯：${timeOfDay}（「朝タブ」の名称や「おはよう」に固執しない）
 ・今日という日のゆるい着眼点候補：${todayLens}（今日の一言と噛み合う時だけ使ってよい。今日の一言の内容と合わないなら無視すること。強制する主軸ではない）
 ・${vaultContextText}${recallLine}
-${employmentOverrideBlock}${sanchoPremiseBlock}${lowMpBlock}${jobSearchStatusBlock}${sleepCheckinBlock}
+${todayDateBlock}${employmentOverrideBlock}${sanchoPremiseBlock}${dashboardBlock}${lowMpBlock}${jobSearchStatusBlock}${sleepCheckinBlock}
 【今朝の状態】
 HP: ${hpAdj}/100、MP: ${mp}/100
 モード: ${modeText}
