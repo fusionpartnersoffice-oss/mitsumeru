@@ -4398,6 +4398,16 @@ async function calcMorning() {
   const sanchoPremiseBlock = formatSanchoPremiseBlock(morningContext.sanchoPremise);
   const dashboardBlock = formatDashboardBlock(morningContext.dashboardSections, morningContext.sanchoPremise);
   const todayDateBlock = formatTodayDateBlock();
+  // 言い方の決まり（2026-11-15・柴山さん承認・設計発注）：11/15朝のコメントが、気持ちの推測
+  // （「この感覚——…に変わっている」）、本人が書いていない性格の型での諭し（「LSRPの傾向として…今日はそこで止まる」）、
+  // 体調を理由にした「止まる」の勧め、済んだ用事の提案を含んでいたため。
+  const morningToneRulesBlock = `
+【書き方の決まり（すべての欄で守ること）】
+1. 柴山さんの気持ちや心の状態を推測して書かないこと。書いてよいのは、記録にある事実（前の日のメモ、HP・MP、今日の予定、代表ダッシュボード）と、そこからの一言の提案だけ。（悪い例：「やり切った後の、この感覚——『膨らませてもいい』に変わっている」）
+2. 柴山さん本人が書いていない性格の型（LSRPなど）を持ち出して諭さないこと。（悪い例：「LSRPの傾向として、安全圏に収まっていると感じると次の一手を探しに行きやすい。今日はそこで止まる」）
+3. 「止まる」「休む」「何もしない」などを、体調や数値を理由に勝手に勧めないこと。柴山さん本人が今朝の記録や前の日のメモでそう書いている時だけ合わせてよい。
+4. 前の日のメモや今朝の記録で「済んだ」「終わった」「やった」となっている用事は提案しないこと。
+`;
 
   // 2026-10-10追加（専務の要望・柴山さん承認）：MPが底の時期は「新しく動く」提案を出さず、
   // 休む・決めるだけ・やらない提案に絞る。判定は①前夜の締め後MP＜30（日次記録本文「翌日戦略」の
@@ -4434,7 +4444,7 @@ ${learningLogText}
 ・現在時間帯：${timeOfDay}（「朝タブ」の名称や「おはよう」に固執しない）
 ・今日という日のゆるい着眼点候補：${todayLens}（今日の一言と噛み合う時だけ使ってよい。今日の一言の内容と合わないなら無視すること。強制する主軸ではない）
 ・${vaultContextText}${recallLine}
-${todayDateBlock}${employmentOverrideBlock}${sanchoPremiseBlock}${dashboardBlock}${lowMpBlock}${jobSearchStatusBlock}${sleepCheckinBlock}
+${todayDateBlock}${employmentOverrideBlock}${sanchoPremiseBlock}${dashboardBlock}${lowMpBlock}${jobSearchStatusBlock}${sleepCheckinBlock}${morningToneRulesBlock}
 【今朝の状態】
 HP: ${hpAdj}/100、MP: ${mp}/100
 モード: ${modeText}
@@ -4471,14 +4481,14 @@ ${formatRuleList(MORNING_PROMPT_RULES.tone)}
 D-blockモードなら最小限の具体行動、通常モード以上なら積極的に。
 タスクは「〇〇する」で終わる物理的な動作レベルで書いてください。
 **厳守**：ミツメル自体の操作（記録する・入力する・振り返る等）をタスクとして提案しないこと。柴山さんの実生活・実務上の行動のみを対象にする。
-- LSRP（${_lsrpText}）を意思決定の癖・リスクの取り方の傾向として、Top3タスクの組み立てか上記【参謀からの一言】のどちらかで必ず1回具体的に反映すること
+- LSRPなどの性格の型は持ち出さないこと（2026-11-15・柴山さん承認。柴山さん本人が今朝の記録に書いた時だけ、その言葉に合わせてよい）
 - キャリアアンカー（${_anchorText}）を「柴山さんにとって譲れないもの」として、Top3タスクの選定理由（なぜこの3つを選んだか）に必ず1回具体的に反映すること` : `
 MUST「${_mustText}」とNEVER「${_neverText}」を判断基準に、
 コース${courseVal}（${course.name}）の柴山さんが今日「これだけはやる」3つを決めてください。
 D-blockモードなら最小限の具体行動、通常モード以上なら積極的に。
 タスクは「〇〇する」で終わる物理的な動作レベルで書いてください。
 **厳守**：ミツメル自体の操作（記録する・入力する・振り返る等）をタスクとして提案しないこと。柴山さんの実生活・実務上の行動のみを対象にする。
-- LSRP（${_lsrpText}）を意思決定の癖・リスクの取り方の傾向として、Top3タスクの組み立てか上記【参謀からの一言】のどちらかで必ず1回具体的に反映すること
+- LSRPなどの性格の型は持ち出さないこと（2026-11-15・柴山さん承認。柴山さん本人が今朝の記録に書いた時だけ、その言葉に合わせてよい）
 - キャリアアンカー（${_anchorText}）を「柴山さんにとって譲れないもの」として、Top3タスクの選定理由（なぜこの3つを選んだか）に必ず1回具体的に反映すること${jobSearchStatusText ? '\n- 【直近の面接・選考状況】が実在する場合、そこに書かれた選考の進み具合を必ず踏まえること（例：既に面接済み・二次面接待ち等の会社に対し「まず応募する」「書類を絞り込む」等、選考が始まっていない前提のタスクを提案しないこと）' : ''}`}`;
 
   const loading = document.getElementById('morning-loading');
