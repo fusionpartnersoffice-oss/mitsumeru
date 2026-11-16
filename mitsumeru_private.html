@@ -3974,8 +3974,14 @@ async function saveHba1cConfig() {
   const date = (document.getElementById('hba1c-date').value || '').trim();
   const target = (document.getElementById('hba1c-target').value || '').trim();
   if (value && !/^\d{1,2}(\.\d)?$/.test(value)) { alert('HbA1cは「6.5」のように数字で入力してください。'); return; }
-  await cloudSaveGlobal('hba1c', { value, date, target });
-  const s = document.getElementById('hba1c-saved'); if (s) s.style.display = 'block';
+  // 保存に失敗した時は「保存できませんでした」と出す（2026-11-16・QA指摘・設計判断）
+  const saved = await cloudSaveGlobal('hba1c', { value, date, target });
+  const s = document.getElementById('hba1c-saved');
+  if (s) {
+    s.textContent = saved ? '✓ 保存しました' : '保存できませんでした。通信を確かめて、もう一度押してください';
+    s.style.color = saved ? 'var(--green)' : 'var(--red, #d33)';
+    s.style.display = 'block';
+  }
 }
 async function loadHba1cConfig() {
   const h = await cloudLoadGlobal('hba1c');

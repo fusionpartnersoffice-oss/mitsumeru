@@ -75,13 +75,15 @@ function cloudSaveDebounced(type, data, date, delay = 1500) {
   _cloudSaveDebounceTimers[key] = setTimeout(() => cloudSave(type, data, date), delay);
 }
 
+// 戻り値：保存できたら true、できなければ false（2026-11-16・HbA1cの保存結果を画面に出すため。ほかの呼び出し元は戻り値を使わない）
 async function cloudSaveGlobal(type, data) {
   try {
-    await fetch(`${SYNC_URL}?key=${encodeURIComponent(kvPrefix() + type + '_global')}&token=${encodeURIComponent(getPrivateToken())}`, {
+    const res = await fetch(`${SYNC_URL}?key=${encodeURIComponent(kvPrefix() + type + '_global')}&token=${encodeURIComponent(getPrivateToken())}`, {
       method: 'PUT', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({...data, _ts: Date.now()})
     });
-  } catch(e) {}
+    return res.ok;
+  } catch(e) { return false; }
 }
 
 async function cloudSaveFusionOSStatus(data) {
