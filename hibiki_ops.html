@@ -99,7 +99,7 @@ select option{background:var(--card);}
     <div class="gate-body">
       本ツールでは、施設単位の運用標準書を入力・管理します（品目・在庫管理は<a href="./hibiki_inventory.html" target="_blank" style="color:var(--accent);">hibiki_inventory.html</a>に移行しました）。<br><br>
       <strong>入力したデータについて：</strong><br>
-      ・この端末に保存されます。ミツメルの合言葉を設定した端末では、合言葉付きのFusionの置き場（mitsumeru-sync）にも保存され、柴山さんのほかの端末（スマホ・iPad）から同じ内容を見られます<br>
+      ・この端末に保存されます。自動では外へ送りません。「クラウドへ保存」を押した時だけ、柴山さんのサーバー（合言葉付きのFusionの置き場・mitsumeru-sync）へ送り、柴山さんのほかの端末（スマホ・iPad）から同じ内容を見られます<br>
       ・個人ルールの利用者ID参照は置き場へ送らず、この端末の中だけに残ります<br>
       ・「AIで作る」を押した時だけ、その内容がFusionの中継（hibiki-worker）を経由してAI（Claude）へ送られます<br>
       ・タブを閉じてもデータは保持されます<br><br>
@@ -118,7 +118,11 @@ select option{background:var(--card);}
   <span class="hdr-spacer"></span>
   <button class="hdr-btn" onclick="goList()">← 施設一覧</button>
 </header>
-<div id="opsSyncStatus" style="font-size:.72rem;color:var(--sub);padding:6px 16px;"></div>
+<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:6px 16px;">
+  <button class="hdr-btn" id="opsCloudBtn" onclick="syncOps()">クラウドへ保存</button>
+  <span style="font-size:.72rem;color:var(--sub);">押すと柴山さんのサーバーへ送ります。押さなければ、この端末の中だけに保存します。</span>
+</div>
+<div id="opsSyncStatus" style="font-size:.72rem;color:var(--sub);padding:0 16px 6px;"></div>
 
 <!-- Phase 0: 施設一覧 -->
 <div class="phase active" id="phaseList">
@@ -249,7 +253,6 @@ function saveCurrentFacility() {
   const entry = { id: currentFacility.id, name: currentFacility.meta.name, updatedAt: currentFacility.meta.updatedAt };
   if (existing >= 0) idx[existing] = entry; else idx.push(entry);
   setIndex(idx);
-  scheduleOpsSync();
 }
 function deleteFacility(id, e) {
   e.stopPropagation();
@@ -258,7 +261,6 @@ function deleteFacility(id, e) {
   setIndex(getIndex().filter(x => x.id !== id));
   addOpsTombstone(id);
   renderFacilityList();
-  scheduleOpsSync();
 }
 
 // ═══════════════════════════════════════════════
@@ -660,6 +662,7 @@ function fmtDate(iso) {
 // ═══════════════════════════════════════════════
 //  端末間の共有（2026-11-14・柴山さん承認・設計発注）
 //  運用標準書をFusionの置き場（mitsumeru-sync /hibiki-ops）へ保存し、PC・スマホ・iPadで同じ内容を見る。
+//  2026-11-16（設計発注）：自動では送らない。「クラウドへ保存」ボタンを押した時だけ同期する。
 //  合言葉はミツメルで保存したもの（同じブラウザのlocalStorage）を使う。無ければ端末内だけで動く。
 //  共有するのは運用標準書の中身だけ。個人ルールの利用者ID参照（personRefs）は送らず、端末内に残す。
 //  合流は施設ごとに更新時刻の新しい方を採る（後勝ち）。削除は墓標（hibiki_ops_deleted）で伝える。
@@ -777,9 +780,10 @@ async function syncOps() {
 // ═══════════════════════════════════════════════
 //  起動
 // ═══════════════════════════════════════════════
+// 開いた時は送らない（2026-11-16・設計発注）。送るのは「クラウドへ保存」を押した時だけ。
 checkConsent();
 renderFacilityList();
-syncOps();
+setOpsStatus('この端末の中だけに保存しています。ほかの端末と共有する時は「クラウドへ保存」を押してください。');
 </script>
 <script src="fusionos-shell.js"></script>
 </body>
