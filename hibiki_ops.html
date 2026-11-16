@@ -119,8 +119,9 @@ select option{background:var(--card);}
   <button class="hdr-btn" onclick="goList()">← 施設一覧</button>
 </header>
 <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:6px 16px;">
-  <button class="hdr-btn" id="opsCloudBtn" onclick="syncOps()">クラウドへ保存</button>
-  <span style="font-size:.72rem;color:var(--sub);">押すと柴山さんのサーバーへ送ります。押さなければ、この端末の中だけに保存します。</span>
+  <button class="hdr-btn" id="opsCloudBtn" onclick="pushOpsToCloud()">クラウドへ保存</button>
+  <button class="hdr-btn" id="opsPullBtn" onclick="pullOpsFromCloud()">クラウドから読み込む</button>
+  <span style="font-size:.72rem;color:var(--sub);">「クラウドへ保存」を押すと柴山さんのサーバーへ送ります。押さなければ、この端末の中だけに保存します。「クラウドから読み込む」は、この端末に無い施設を足すだけで、端末の施設は消しません。</span>
 </div>
 <div id="opsSyncStatus" style="font-size:.72rem;color:var(--sub);padding:0 16px 6px;"></div>
 
@@ -772,6 +773,57 @@ async function syncOps() {
     }
   } catch (e) {
     setOpsStatus('共有の置き場と同期できませんでした。この端末には保存されています。（' + e.message + '）');
+  } finally {
+    opsSyncRunning = false;
+  }
+}
+
+// 2026-11-16（設計発注）：送る・読み込むを分ける。syncOps（取り込みで端末の施設を消し得る）はボタンから呼ばない。
+// 送る：クラウドの施設は消さず、この端末の施設を足して（同じ施設は新しい方）保存する。送る前に件数を見せて確認する。
+async function pushOpsToCloud() {
+  if (!opsToken()) { alert('合言葉が設定されていません。ミツメルで合言葉を設定してから押してください。'); return; }
+  if (opsSyncRunning) return;
+  opsSyncRunning = true;
+  try {
+    setOpsStatus('クラウドの件数を確かめています…');
+    const cloud = (await opsFetch('GET')).value || { facilities: [], deleted: [] };
+    const local = localOpsDoc();
+    const ok = confirm(`クラウドにある施設：${(cloud.facilities || []).length}件\nこの端末の施設：${local.facilities.length}件\n\nこの端末の施設を柴山さんのサーバーへ送ります。クラウドにだけある施設は消しません。送りますか？`);
+    if (!ok) { setOpsStatus('送るのをやめました。この端末の中だけに保存しています。'); return; }
+    const merged = mergeOpsDocs({ facilities: cloud.facilities || [], deleted: [] }, { facilities: local.facilities, deleted: [] });
+    merged.deleted = cloud.deleted || [];
+    const savedAt = (await opsFetch('PUT', merged)).savedAt;
+    setOpsStatus('クラウドへ送りました（クラウドの施設：' + merged.facilities.length + '件・最終保存：' + fmtDateTime(savedAt) + '）');
+  } catch (e) {
+    setOpsStatus('クラウドへ送れませんでした。この端末には保存されています。（' + e.message + '）');
+  } finally {
+    opsSyncRunning = false;
+  }
+}
+// 読み込む：この端末に無い施設だけを足す。端末にある施設は消さず、上書きもしない。
+async function pullOpsFromCloud() {
+  if (!opsToken()) { alert('合言葉が設定されていません。ミツメルで合言葉を設定してから押してください。'); return; }
+  if (opsSyncRunning) return;
+  opsSyncRunning = true;
+  try {
+    setOpsStatus('クラウドから読み込んでいます…');
+    const cloud = (await opsFetch('GET')).value || { facilities: [] };
+    const idx = getIndex();
+    const have = new Set(idx.map(x => x.id));
+    let added = 0;
+    (cloud.facilities || []).forEach(f => {
+      if (!f || !f.id || have.has(f.id)) return;
+      const c = JSON.parse(JSON.stringify(f));
+      ((c.modules && c.modules.standards) || []).forEach(s => { s.personRefs = []; });
+      localStorage.setItem(STORE_PREFIX_OPS + c.id, JSON.stringify(c));
+      idx.push({ id: c.id, name: (c.meta && c.meta.name) || '', updatedAt: (c.meta && c.meta.updatedAt) || '' });
+      added++;
+    });
+    setIndex(idx);
+    setOpsStatus('クラウドから' + added + '件を足しました（この端末の施設：' + idx.length + '件。端末にあった施設はそのままです）');
+    if (!currentFacility) renderFacilityList();
+  } catch (e) {
+    setOpsStatus('クラウドから読み込めませんでした。（' + e.message + '）');
   } finally {
     opsSyncRunning = false;
   }
