@@ -102,7 +102,7 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:9
       本ツールでは、利用者の支援経過（結果の様子・課題の推移・前進点・残る課題）を時系列で記録・蓄積します。<br><br>
       <strong>入力したデータについて：</strong><br>
       ・記録はお使いの端末（ブラウザ）内に保存します<br>
-      ・「AIで要約」で「送る」を押した時だけ、記録と計画の目標をFusionの中継（hibiki-worker）経由でAIへ送ります。名前の伏せ字は切り替えられます<br><br>
+      ・「AIで要約」で「送る」を押した時だけ、記録と計画の目標をFusionの中継（hibiki-worker）経由でAIへ送ります。名前の伏せ字は切り替えられます。登録していない呼び方・読み方は伏せられません。送る内容の画面で確かめてください<br><br>
       <strong>支援計画（H1-PLAN）・支援手順書（H1-PROC）との関係：</strong><br>
       ・利用者一覧・支援計画・支援手順書は、それぞれの側のデータを読み取り専用で参照します。この画面から編集することはできません<br><br>
       <strong>個人情報配慮：</strong>個人を特定できる情報は仮名・イニシャルでご入力ください。<br><br>
@@ -438,18 +438,23 @@ function personNames(v2) {
   const raw = [b.alias, b.nickname, v2 && v2.meta && v2.meta.alias].filter(Boolean).map(x => String(x).trim());
   const set = new Set();
   raw.forEach(n => {
-    const base = n.replace(/\s*(さん|様|さま|くん|君|ちゃん)$/, '').trim();
+    const base = n.replace(/\s*(さん|様|さま|くん|君|ちゃん|サン|サマ|クン|チャン)$/, '').trim();
     if (!base) return;
     set.add(base);
     const parts = base.split(/[\s　]+/).filter(Boolean);
     if (parts.length > 1) { set.add(parts.join('')); parts.forEach(x => set.add(x)); }
+  });
+  // 登録した名前・呼び方の、ひらがな⇔カタカナを入れ替えた形も伏せる（2026-11-16・設計判断）
+  [...set].forEach(n => {
+    set.add(n.replace(/[\u3041-\u3096]/g, c => String.fromCharCode(c.charCodeAt(0) + 0x60)));
+    set.add(n.replace(/[\u30A1-\u30F6]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60)));
   });
   return [...set].sort((a, b) => b.length - a.length);
 }
 function maskText(text, v2) {
   // 全角の数字・ハイフンを半角へ直してから判定する（2026-11-16・QA指摘：全角の電話番号が残った）
   const z2h = (x) => String(x || '').replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))
-    .replace(/(\d)[－ー―‐−](?=\d)/g, '$1-');
+    .replace(/(\d)[－ー―‐−](?=\d)/g, '$1-').replace(/　/g, ' ');
   let t = z2h(text);
   const b = (v2 && v2.modules && v2.modules.basic) || {};
   if (b.address && String(b.address).trim()) {
@@ -459,8 +464,13 @@ function maskText(text, v2) {
     const noCity = noPref.replace(/^.{1,6}?[市区郡]/, '');
     [a, noPref, noCity].filter(x => x.length >= 4).sort((x, y) => y.length - x.length)
       .forEach(x => { t = t.split(x).join('［住所］'); });
+    // 町名以下を丁目・番・号で書いた形（架空町1丁目2番3号）も伏せる（2026-11-16・設計判断）
+    const town = noCity.replace(/[\d\-丁目番地号]+$/, '');
+    if (town.length >= 2) t = t.replace(new RegExp(reEsc(town) + '[\\d\\-丁目番地号]+', 'g'), '［住所］');
   }
-  t = t.replace(/〒\s*\d{3}-?\d{4}/g, '［住所］');
+  t = t.replace(/〒\s*\d{3}-?\d{4}/g, '［郵便番号］');
+  // 年の付いた略記の日付（R7.10.1・S20.3.4 等）は生年月日になり得るため伏せる（2026-11-16・設計判断）。月日だけ（11/3）は送る
+  t = t.replace(/(?<![A-Za-z])[MTSHRmtshr]\s*(\d{1,2}|元)\s*[.\/\-]\s*\d{1,2}\s*[.\/\-]\s*\d{1,2}(?!\d)/g, '［日付］');
   t = t.replace(/[\w.+-]+@[\w-]+(\.[\w-]+)+/g, '［メール］');
   t = t.replace(/(\+81[-\s]?|0)\d{1,4}[-−‐\s]?\d{1,4}[-−‐\s]?\d{3,4}/g, '［電話］');
   t = t.replace(/(明治|大正|昭和|平成|令和)\s*(\d{1,2}|元)\s*年(\s*\d{1,2}\s*月(\s*\d{1,2}\s*日)?)?/g, '［日付］');
@@ -471,7 +481,7 @@ function maskText(text, v2) {
   // 県名なしの「〇〇市〇〇町1-2-3」も住所として伏せる（QA指摘）
   t = t.replace(/[^\s、。［］]{1,5}[市区][^\s、。［］]{1,6}?[町村][\d\-丁目番地号]+/g, '［住所］');
   personNames(v2).forEach(n => {
-    t = t.replace(new RegExp(reEsc(n) + '\\s*(さん|様|さま|くん|君|ちゃん)?', 'g'), '〇〇さん');
+    t = t.replace(new RegExp(reEsc(n) + '\\s*(さん|様|さま|くん|君|ちゃん|サン|サマ|クン|チャン)?', 'g'), '〇〇さん');
   });
   return t;
 }
