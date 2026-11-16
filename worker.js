@@ -37,7 +37,7 @@ const CORS_HEADERS = {
 
 // 版数確認用（2026-08-04・設計発注）。デプロイのたびに手で更新する（自動生成の仕組みは
 // 作らない・完璧さより外から見えることを優先、という発注時の指示に従う）。
-const BUILD_VERSION = '2026-08-05T08:50 FP-0018-ai-narrative-to-vault';
+const BUILD_VERSION = '2026-11-16 #556-zenkaku-digits';
 
 export default {
   async fetch(request, env) {
@@ -852,6 +852,8 @@ function extractHealthFromTexts(texts) {
   let steps = null, weight = null;
   texts.forEach(t => {
     // 全角のカンマ・ピリオドは半角へ直す（秘書・Coworkの代筆で書き方がばらつく前提・設計指示）
+    // 全角の数字も半角へ直してから拾う（2026-11-16・QA指摘・設計指示）
+    t = String(t || '').replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
     const s = String(t || '').match(HEALTH_STEPS_RE); if (s) steps = s[1].replace(/，/g, ',');
     const w = String(t || '').match(HEALTH_WEIGHT_RE); if (w) weight = w[1].replace(/．/g, '.');
   });
