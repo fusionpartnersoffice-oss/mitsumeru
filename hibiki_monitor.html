@@ -447,9 +447,20 @@ function personNames(v2) {
   return [...set].sort((a, b) => b.length - a.length);
 }
 function maskText(text, v2) {
-  let t = String(text || '');
+  // 全角の数字・ハイフンを半角へ直してから判定する（2026-11-16・QA指摘：全角の電話番号が残った）
+  const z2h = (x) => String(x || '').replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))
+    .replace(/(\d)[－ー―‐−](?=\d)/g, '$1-');
+  let t = z2h(text);
   const b = (v2 && v2.modules && v2.modules.basic) || {};
-  if (b.address && String(b.address).trim()) t = t.split(String(b.address).trim()).join('［住所］');
+  if (b.address && String(b.address).trim()) {
+    // 登録住所そのもの・県名を外した形・市区郡まで外した形を伏せる（QA指摘：県名から書かない住所が残った）
+    const a = z2h(String(b.address).trim()).replace(/\s+/g, '');
+    const noPref = a.replace(/^(北海道|東京都|京都府|大阪府|.{2,3}県)/, '');
+    const noCity = noPref.replace(/^.{1,6}?[市区郡]/, '');
+    [a, noPref, noCity].filter(x => x.length >= 4).sort((x, y) => y.length - x.length)
+      .forEach(x => { t = t.split(x).join('［住所］'); });
+  }
+  t = t.replace(/〒\s*\d{3}-?\d{4}/g, '［住所］');
   t = t.replace(/[\w.+-]+@[\w-]+(\.[\w-]+)+/g, '［メール］');
   t = t.replace(/(\+81[-\s]?|0)\d{1,4}[-−‐\s]?\d{1,4}[-−‐\s]?\d{3,4}/g, '［電話］');
   t = t.replace(/(明治|大正|昭和|平成|令和)\s*(\d{1,2}|元)\s*年(\s*\d{1,2}\s*月(\s*\d{1,2}\s*日)?)?/g, '［日付］');
@@ -457,6 +468,8 @@ function maskText(text, v2) {
   t = t.replace(/\d{4}\s*年\s*\d{1,2}\s*月/g, '［日付］');
   t = t.replace(/\d{1,2}\s*月\s*\d{1,2}\s*日/g, '［日付］');
   t = t.replace(/(北海道|東京都|京都府|大阪府|[^\s、。]{2,3}県)[^\s、。]{1,6}[市区町村郡](?:[^\s、。]{0,8}?[町村丁目番地号])?[\d０-９\-−‐丁目番地号]*/g, '［住所］');
+  // 県名なしの「〇〇市〇〇町1-2-3」も住所として伏せる（QA指摘）
+  t = t.replace(/[^\s、。［］]{1,5}[市区][^\s、。［］]{1,6}?[町村][\d\-丁目番地号]+/g, '［住所］');
   personNames(v2).forEach(n => {
     t = t.replace(new RegExp(reEsc(n) + '\\s*(さん|様|さま|くん|君|ちゃん)?', 'g'), '〇〇さん');
   });
