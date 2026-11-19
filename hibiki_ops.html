@@ -81,6 +81,32 @@ select option{background:var(--card);}
 
 /* ── 運用標準書（B-1） ── */
 .standard-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px;}
+/* ===== 響② 検索・分類・1日の流れ（board#569・2026-11-19） ===== */
+#stdTools{position:sticky;top:var(--hdrH,52px);z-index:50;background:var(--bg);padding:8px 0 6px;margin-bottom:8px;border-bottom:1px solid var(--border);}
+#stdSearch{width:100%;font-size:16px;padding:10px 12px;min-height:44px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;}
+.std-count{font-size:.85rem;color:var(--sub);margin:6px 0 2px;}
+.std-chips{display:flex;gap:6px;overflow-x:auto;padding:4px 0;-webkit-overflow-scrolling:touch;}
+.std-chip{flex:0 0 auto;min-height:44px;padding:0 14px;font-size:16px;border:1px solid var(--border);border-radius:22px;background:var(--card);color:var(--sub);cursor:pointer;font-family:inherit;white-space:nowrap;}
+.std-chip.on{background:rgba(129,199,132,.2);border-color:var(--accent);color:var(--accent);font-weight:700;}
+.std-view{display:flex;gap:6px;margin-top:4px;}
+.std-view .std-chip{flex:1;}
+.std-head{display:flex;align-items:center;gap:8px;width:100%;min-height:44px;background:none;border:none;color:var(--accent);font-size:16px;font-weight:700;text-align:left;cursor:pointer;font-family:inherit;padding:0;}
+.std-head .std-arrow{color:var(--sub);flex:0 0 auto;}
+.std-head .std-ttl{flex:1;min-width:0;overflow-wrap:anywhere;}
+.std-tags{font-size:.8rem;color:var(--sub);margin:2px 0 4px;}
+.std-tag{display:inline-block;border:1px solid var(--border);border-radius:10px;padding:1px 8px;margin:2px 4px 2px 0;}
+.std-body{margin-top:8px;}
+.std-body .hdr-btn,.std-body .del-btn{min-height:44px;padding:0 14px;font-size:16px;}
+.flow-slot{margin:14px 0 4px;font-size:.95rem;font-weight:700;color:var(--accent2,var(--accent));border-bottom:1px solid var(--border);padding-bottom:4px;}
+.flow-item{display:block;width:100%;min-height:44px;text-align:left;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:16px;padding:10px 12px;margin:6px 0;cursor:pointer;font-family:inherit;overflow-wrap:anywhere;}
+mark.std-hit{background:#ffe082;color:#1a1a1a;border-radius:2px;}
+.std-reload-note{font-size:.85rem;background:rgba(255,224,130,.12);border:1px solid #ffe082;border-radius:8px;padding:8px 10px;margin-bottom:10px;line-height:1.6;}
+@media (max-width:600px){
+  #tab-standards .standard-field{font-size:16px;}
+  #tab-standards .standard-card{padding:12px;}
+  #tab-standards .std-body button{font-size:16px !important;min-height:44px;}  /* 5Sゲートのボタンも見た目だけ大きくする（ゲートの仕組みは触らない） */
+  #standardForm select,#standardForm input,#standardForm textarea{font-size:16px;}
+}
 .standard-card-title{font-size:.9rem;font-weight:700;color:var(--accent);margin-bottom:8px;}
 .standard-field{margin-bottom:6px;font-size:.8rem;line-height:1.6;}
 .standard-field b{color:var(--sub);font-weight:700;margin-right:4px;}
@@ -160,6 +186,10 @@ select option{background:var(--card);}
       <div class="form-group"><label>④運用手順書</label><textarea id="st-procedure" placeholder="具体的な手順（ステップ形式で記入）" style="min-height:100px;"></textarea></div>
       <div class="form-group"><label>⑤留意事項</label><textarea id="st-notes" placeholder="注意点・NG事項"></textarea></div>
       <div class="form-group"><label>⑥参考文献・引用（備考）</label><input type="text" id="st-references" placeholder="根拠となる資料・出典"></div>
+      <div class="form-row">
+        <div class="form-group"><label>時間帯（1つ・未選択可）</label><select id="st-slot"></select></div>
+        <div class="form-group"><label>業務の区分（1つ・未選択可）</label><select id="st-cat"></select></div>
+      </div>
 
       <div class="form-group">
         <label>個人ルール参照ポインタ（響・利用者支援系のIDを参照）</label>
@@ -176,6 +206,17 @@ select option{background:var(--card);}
       </div>
     </div>
 
+    <div id="stdReloadNote" class="std-reload-note" style="display:none;">時間帯・業務の区分の欄が増えました。ほかの端末で古い画面のまま編集・保存すると、この2つの欄が消えることがあります。各端末で一度ページを読み込み直してから使ってください。<button class="hdr-btn" style="margin-left:6px;" onclick="dismissStdReloadNote()">わかった</button></div>
+    <div id="stdTools">
+      <input type="search" id="stdSearch" placeholder="🔍 標準書を検索（題名・手順・留意事項など）" oninput="stdState.q=this.value;renderStandards()">
+      <div class="std-count" id="stdCount"></div>
+      <div class="std-chips" id="stdSlotChips"></div>
+      <div class="std-chips" id="stdCatChips"></div>
+      <div class="std-view">
+        <button class="std-chip on" id="stdViewList" onclick="setStdView('list')">一覧</button>
+        <button class="std-chip" id="stdViewFlow" onclick="setStdView('flow')">1日の流れ</button>
+      </div>
+    </div>
     <div id="standardList"></div>
   </div>
 
@@ -375,6 +416,7 @@ function showStandardForm(editId) {
   document.getElementById('st-procedure').value = '';
   document.getElementById('st-notes').value = '';
   document.getElementById('st-references').value = '';
+  fillStdSelects('', '');
   document.getElementById('standardForm').dataset.editId = '';
   if (editId) {
     const s = (currentFacility.modules.standards || []).find(x => x.id === editId);
@@ -386,6 +428,7 @@ function showStandardForm(editId) {
       document.getElementById('st-procedure').value = s.procedure || '';
       document.getElementById('st-notes').value = s.notes || '';
       document.getElementById('st-references').value = s.references || '';
+      fillStdSelects(s.timeSlot || '', s.category || '');
       standardFormPersonRefs = [...(s.personRefs || [])];
       document.getElementById('standardForm').dataset.editId = editId;
     }
@@ -412,6 +455,8 @@ function submitStandardForm() {
     procedure: document.getElementById('st-procedure').value.trim(),
     notes: document.getElementById('st-notes').value.trim(),
     references: document.getElementById('st-references').value.trim(),
+    timeSlot: document.getElementById('st-slot').value,
+    category: document.getElementById('st-cat').value,
     personRefs: [...standardFormPersonRefs],
     createdAt: prev?.createdAt || new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -431,30 +476,124 @@ function deleteStandard(id) {
   saveCurrentFacility();
   renderStandards();
 }
+// ═══ 検索・分類・1日の流れ（board#569・2026-11-19・設計書「響②_運用標準書_検索と1日の流れ_設計書.md」）
+// 分類の言葉はここ1か所だけ（後で変える時はここを直す。保存済みの値が無くなっても消さず「その他（旧：○○）」と出す）
+const STD_TIME_SLOTS = ['朝', '午前', '昼', '午後', '夕', '夜', '随時'];
+const STD_CATEGORIES = ['身体介護', '衛生・感染対策', '医療的ケア', '事務', 'その他'];
+const STD_NONE = '__none__';
+const stdState = { q: '', slot: '', cat: '', view: 'list', open: new Set() };
+const STD_NOTE_KEY = 'hibiki_ops_std_reload_note_v1';
+
+function stdLabel(v, list) {
+  if (!v) return '未分類';
+  return list.includes(v) ? v : `その他（旧：${v}）`;
+}
+function fillStdSelects(slot, cat) {
+  const mk = (list, v) => '<option value="">未選択</option>' + list.map(x => `<option value="${esc(x)}">${esc(x)}</option>`).join('') +
+    (v && !list.includes(v) ? `<option value="${esc(v)}">その他（旧：${esc(v)}）</option>` : '');
+  const a = document.getElementById('st-slot'), b = document.getElementById('st-cat');
+  a.innerHTML = mk(STD_TIME_SLOTS, slot); a.value = slot || '';
+  b.innerHTML = mk(STD_CATEGORIES, cat); b.value = cat || '';
+}
+function stdText(s) {
+  return [s.title, s.purpose, s.timing, s.goal, s.procedure, s.notes, s.references].map(x => x || '').join('\n');
+}
+function stdMatches(s) {
+  const q = stdState.q.trim().toLowerCase();
+  if (q && !stdText(s).toLowerCase().includes(q)) return false;
+  if (stdState.slot === STD_NONE ? !!s.timeSlot : (stdState.slot && s.timeSlot !== stdState.slot)) return false;
+  if (stdState.cat === STD_NONE ? !!s.category : (stdState.cat && s.category !== stdState.cat)) return false;
+  return true;
+}
+// 該当語に色を付ける（エスケープした後に包むので、HTMLは壊れない）
+function hl(text) {
+  const t = esc(text);
+  const q = stdState.q.trim();
+  if (!q) return t;
+  const eq = esc(q).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return t.replace(new RegExp(eq, 'gi'), m => `<mark class="std-hit">${m}</mark>`);
+}
+function renderStdChips() {
+  const chip = (key, val, label) => `<button class="std-chip${stdState[key] === val ? ' on' : ''}" onclick="setStdFilter('${key}','${val}')">${esc(label)}</button>`;
+  document.getElementById('stdSlotChips').innerHTML = chip('slot', '', '時間帯：すべて') + STD_TIME_SLOTS.map(x => chip('slot', x, x)).join('') + chip('slot', STD_NONE, '未分類');
+  document.getElementById('stdCatChips').innerHTML = chip('cat', '', '区分：すべて') + STD_CATEGORIES.map(x => chip('cat', x, x)).join('') + chip('cat', STD_NONE, '未分類');
+  document.getElementById('stdViewList').classList.toggle('on', stdState.view === 'list');
+  document.getElementById('stdViewFlow').classList.toggle('on', stdState.view === 'flow');
+}
+function setStdFilter(key, val) { stdState[key] = val; renderStandards(); }
+function setStdView(v) { stdState.view = v; renderStandards(); }
+function toggleStd(id) {
+  if (stdState.open.has(id)) stdState.open.delete(id); else stdState.open.add(id);
+  renderStandards();
+}
+function jumpToStd(id) {
+  stdState.view = 'list';
+  stdState.open.add(id);
+  renderStandards();
+  const el = document.getElementById('stdcard-' + id);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+function dismissStdReloadNote() {
+  try { localStorage.setItem(STD_NOTE_KEY, '1'); } catch (e) {}
+  document.getElementById('stdReloadNote').style.display = 'none';
+}
+function setHdrH() {
+  const h = document.querySelector('header');
+  if (h) document.documentElement.style.setProperty('--hdrH', h.offsetHeight + 'px');
+}
+window.addEventListener('resize', setHdrH);
+
 function renderStandards() {
   const list = document.getElementById('standardList');
   const standards = currentFacility.modules.standards || [];
+  setHdrH();
+  try { document.getElementById('stdReloadNote').style.display = localStorage.getItem(STD_NOTE_KEY) ? 'none' : ''; } catch (e) {}
+  renderStdChips();
   if (!standards.length) {
-    list.innerHTML = '<div style="font-size:.8rem;color:var(--sub);">まだ運用標準書が登録されていません。</div>';
+    document.getElementById('stdCount').textContent = '0件';
+    list.innerHTML = '<div style="font-size:.9rem;color:var(--sub);">まだ運用標準書が登録されていません。</div>';
     return;
   }
-  list.innerHTML = standards.map(s => `
-    <div class="standard-card">
-      <div class="standard-card-title">${esc(s.title)}</div>
-      <div class="standard-field"><b>①目的</b>${esc(s.purpose || '—')}</div>
-      <div class="standard-field"><b>②運用時期</b>${esc(s.timing || '—')}</div>
-      <div class="standard-field"><b>③完了ゴール</b>${esc(s.goal || '—')}</div>
-      <div class="standard-field"><b>④運用手順書</b><div style="white-space:pre-wrap;margin-top:2px;">${esc(s.procedure || '—')}</div></div>
-      <div class="standard-field"><b>⑤留意事項</b>${esc(s.notes || '—')}</div>
-      <div class="standard-field"><b>⑥参考文献・引用</b>${esc(s.references || '—')}</div>
+  const shown = standards.filter(stdMatches);
+  document.getElementById('stdCount').textContent = `${standards.length}件中${shown.length}件`;
+  if (!shown.length) {
+    list.innerHTML = '<div style="font-size:.9rem;color:var(--sub);">当てはまる標準書はありません。</div>';
+    return;
+  }
+  if (stdState.view === 'flow') {
+    // 時間帯の順（朝→…→随時→旧の値→未分類）に見出しを立て、題名だけを並べる
+    const groups = [...STD_TIME_SLOTS];
+    shown.forEach(s => { if (s.timeSlot && !groups.includes(s.timeSlot)) groups.push(s.timeSlot); });
+    groups.push('');
+    list.innerHTML = groups.map(g => {
+      const items = shown.filter(s => (s.timeSlot || '') === g);
+      if (!items.length) return '';
+      return `<div class="flow-slot">${esc(stdLabel(g, STD_TIME_SLOTS))}</div>` +
+        items.map(s => `<button class="flow-item" onclick="jumpToStd('${s.id}')">${hl(s.title)}</button>`).join('');
+    }).join('');
+    return;
+  }
+  list.innerHTML = shown.map(s => {
+    const open = stdState.open.has(s.id);
+    return `
+    <div class="standard-card" id="stdcard-${s.id}">
+      <button class="std-head" onclick="toggleStd('${s.id}')"><span class="std-arrow">${open ? '▼' : '▶'}</span><span class="std-ttl">${hl(s.title)}</span></button>
+      <div class="std-tags"><span class="std-tag">${esc(stdLabel(s.timeSlot, STD_TIME_SLOTS))}</span><span class="std-tag">${esc(stdLabel(s.category, STD_CATEGORIES))}</span></div>
+      ${open ? `<div class="std-body">
+      <div class="standard-field"><b>①目的</b>${hl(s.purpose || '—')}</div>
+      <div class="standard-field"><b>②運用時期</b>${hl(s.timing || '—')}</div>
+      <div class="standard-field"><b>③完了ゴール</b>${hl(s.goal || '—')}</div>
+      <div class="standard-field"><b>④運用手順書</b><div style="white-space:pre-wrap;margin-top:2px;">${hl(s.procedure || '—')}</div></div>
+      <div class="standard-field"><b>⑤留意事項</b>${hl(s.notes || '—')}</div>
+      <div class="standard-field"><b>⑥参考文献・引用</b>${hl(s.references || '—')}</div>
       ${(s.personRefs && s.personRefs.length) ? `<div class="standard-field"><b>個人ルール参照</b>${s.personRefs.map(id => `<span class="person-ref-chip">${esc(lookupPersonAlias(id) || `未検出・ID:${id}`)}</span>`).join('')}</div>` : ''}
       ${render5sGateBlock(s)}
-      <div style="margin-top:8px;display:flex;gap:8px;">
+      <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">
         <button class="hdr-btn" onclick="showStandardForm('${s.id}')">編集</button>
         <button class="del-btn" onclick="deleteStandard('${s.id}')">✕ 削除</button>
-      </div>
-    </div>
-  `).join('');
+      </div></div>` : ''}
+    </div>`;
+  }).join('');
 }
 
 // ═══════════════════════════════════════════════
