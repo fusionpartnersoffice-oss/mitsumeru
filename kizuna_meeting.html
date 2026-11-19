@@ -65,9 +65,40 @@ html,body{background:var(--bg);font-family:'Hiragino Kaku Gothic Pro','Meiryo','
 .a4-footer{margin-top:auto;padding-top:14px;border-top:1px solid #ddd;font-size:11px;color:#888;text-align:center;}
 .a4-empty{color:#aaa;font-style:italic;}
 
+/* ===== v2：決定の行・返ってこない決定（FUS-256 v2・2026-11-19） ===== */
+.overdue-panel{max-width:1180px;margin:16px auto 0;padding:0 20px;}
+.overdue-box{background:#fff7e6;border:1px solid #f0c36d;border-radius:6px;padding:12px 16px;}
+.overdue-box h3{font-size:12px;color:#8a5a00;margin-bottom:8px;font-weight:700;}
+.overdue-item{display:flex;flex-wrap:wrap;gap:4px 10px;padding:7px 0;border-bottom:1px solid #f3dca8;cursor:pointer;font-size:13px;}
+.overdue-item:last-child{border-bottom:none;}
+.overdue-item:hover{color:var(--navy2);}
+.overdue-item .od-days{color:#b3261e;font-weight:700;min-width:5.5em;}
+.overdue-item .od-text{flex:1 1 12em;min-width:0;overflow-wrap:anywhere;}
+.overdue-item .od-sub{color:var(--dim);font-size:11.5px;}
+.dec-row{border:1px solid var(--border);border-radius:5px;padding:10px;margin-bottom:10px;background:#fbfcfd;}
+.dec-row.flash{outline:3px solid #f0c36d;}
+.dec-head{display:flex;justify-content:space-between;align-items:center;font-weight:700;color:var(--navy);margin-bottom:6px;}
+.dec-del{border:none;background:none;color:var(--dim2);cursor:pointer;font-size:12px;}
+.dec-row label{display:block;font-size:11px;color:var(--dim);margin:6px 0 3px;}
+.dec-row input,.dec-row textarea{width:100%;padding:6px 8px;font-size:13px;border:1px solid var(--border);border-radius:4px;background:#fff;color:var(--text);font-family:inherit;}
+.dec-row textarea{min-height:48px;resize:vertical;}
+.dec-row .dec-result{background:#f3f8ff;}
+.dec-row .dec-resat{font-size:11px;color:var(--dim2);margin-top:3px;}
+.legacy-note{font-size:11px;color:var(--dim);margin-bottom:6px;}
+.a4-dec{width:100%;border-collapse:collapse;font-size:12px;}
+.a4-dec th,.a4-dec td{border:1px solid #ccc;padding:5px 6px;text-align:left;vertical-align:top;white-space:pre-wrap;overflow-wrap:anywhere;}
+.a4-dec th{background:#f0f3f6;}
+@media (max-width:760px){
+  .layout{flex-direction:column;padding:12px;}
+  .editor-pane{flex:none;width:100%;}
+  .preview-wrap{width:100%;}
+  .a4-page{width:100%;min-height:0;padding:16px;}
+  .overdue-panel{padding:0 12px;}
+}
+
 @media print{
   body{background:#fff;}
-  .topbar,.editor-pane,.history-panel{display:none !important;}
+  .topbar,.editor-pane,.history-panel,.overdue-panel{display:none !important;}
   .layout{padding:0;max-width:none;display:block;}
   .preview-wrap{display:block;}
   .a4-page{box-shadow:none;width:auto;min-height:0;margin:0;padding:0;}
@@ -79,6 +110,8 @@ html,body{background:var(--bg);font-family:'Hiragino Kaku Gothic Pro','Meiryo','
   <a class="topbar-brand" href="./index_full.html">🧭 FusionOS</a>
   <a class="topbar-back" href="./yuzuru_hub.html">← 弦へ戻る</a>
 </div>
+
+<div class="overdue-panel" id="overdue-panel"></div>
 
 <div class="layout">
   <div class="editor-pane">
@@ -104,8 +137,13 @@ html,body{background:var(--bg);font-family:'Hiragino Kaku Gothic Pro','Meiryo','
     </div>
 
     <div class="field-card">
-      <h3>決まったこと</h3>
-      <div class="field-row"><textarea id="m-decided" placeholder="誰が・何を決めたか" oninput="onEdit()"></textarea></div>
+      <h3>決まったこと（1行＝1つの決定・番号は自動）</h3>
+      <div id="legacy-decided-wrap" style="display:none;">
+        <div class="legacy-note">この会議は以前の形式で保存されています（文のまま表示）。</div>
+        <div class="field-row"><textarea id="m-decided" oninput="onEdit()"></textarea></div>
+      </div>
+      <div id="dec-list"></div>
+      <button class="btn" id="btn-add-dec" style="width:100%;" onclick="addDecision()">＋ 決定を足す</button>
     </div>
 
     <div class="field-card">
@@ -128,6 +166,10 @@ html,body{background:var(--bg);font-family:'Hiragino Kaku Gothic Pro','Meiryo','
       <button class="btn" onclick="window.print()">🖨️ 印刷 / PDF保存</button>
       <button class="btn" onclick="exportWord()">📄 Wordで開く</button>
       <button class="btn" id="btn-new-meeting" style="display:none;" onclick="startNewMeeting()">＋ 新しい会議を編集</button>
+      <button class="btn" onclick="exportAll()">⬇️ 全部の会議を書き出す（JSONファイル）</button>
+      <button class="btn" onclick="document.getElementById('import-file').click()">⬆️ 書き出したファイルを読み込む</button>
+      <input type="file" id="import-file" accept=".json,application/json" style="display:none;" onchange="importAll(this)">
+      <div class="save-indicator" id="export-age"></div>
       <div class="save-indicator" id="save-indicator"></div>
     </div>
   </div>
@@ -162,7 +204,7 @@ let meeting = defaultMeeting();
 let mode = 'edit'; // 'edit'（新規/継続編集）｜'view'（履歴の閲覧のみ）
 
 function defaultMeeting() {
-  return { date:'', type:'', participants:'', decided:'', next:'', pending:'', memo:'' };
+  return { date:'', type:'', participants:'', decided:'', decisions:[], next:'', pending:'', memo:'' };
 }
 
 function val(id) { return document.getElementById(id).value; }
@@ -185,12 +227,17 @@ function populateFormFromMeeting() {
   document.getElementById('m-next').value = meeting.next || '';
   document.getElementById('m-pending').value = meeting.pending || '';
   document.getElementById('m-memo').value = meeting.memo || '';
+  if (!Array.isArray(meeting.decisions)) meeting.decisions = [];
+  // v1で保存した会議の「決まったこと」（自由文）は、消さず・割らず、そのまま見せる
+  document.getElementById('legacy-decided-wrap').style.display = (meeting.decided || '').trim() ? 'block' : 'none';
+  renderDecisionRows();
 }
 
 function setFormDisabled(disabled) {
   ['m-date','m-type','m-participants','m-decided','m-next','m-pending','m-memo'].forEach(id => {
     document.getElementById(id).disabled = disabled;
   });
+  document.getElementById('btn-add-dec').style.display = disabled ? 'none' : 'block';
   document.getElementById('btn-save-meeting').style.display = disabled ? 'none' : 'block';
   document.getElementById('btn-new-meeting').style.display = disabled ? 'block' : 'none';
 }
@@ -233,6 +280,7 @@ function saveMeetingToHistory() {
   const list = loadHistoryIndex();
   list.push({ id, date: meeting.date || '（日付未入力）', type: meeting.type || '', participants: meeting.participants || '', savedAt: Date.now() });
   saveHistoryIndex(list);
+  renderOverdue();
   // 保存後は下書きをクリアし、次の会議を編集できる状態にする（保存済み記録自体は履歴に残る＝消さず殺す）
   localStorage.removeItem(DRAFT_KEY);
   meeting = defaultMeeting();
@@ -266,6 +314,7 @@ function viewHistoryItem(id) {
   try { record = JSON.parse(localStorage.getItem(RECORD_PREFIX + id) || 'null'); } catch(e) { record = null; }
   if (!record) { alert('この記録は読み込めませんでした。'); return; }
   mode = 'view';
+  viewingId = id;
   meeting = record;
   populateFormFromMeeting();
   setFormDisabled(true);
@@ -276,6 +325,7 @@ function viewHistoryItem(id) {
 
 function startNewMeeting() {
   mode = 'edit';
+  viewingId = null;
   meeting = loadDraft()?.meeting || defaultMeeting();
   populateFormFromMeeting();
   setFormDisabled(false);
@@ -303,13 +353,23 @@ function renderPreview() {
   if (participants) metaLines.push(`参加者：${escapeHtml(participants)}`);
   document.getElementById('p-meta').innerHTML = metaLines.join('<br>');
 
+  const decs = Array.isArray(meeting.decisions) ? meeting.decisions : [];
+  const legacy = (meeting.decided || '').trim();
+  let decHtml = '';
+  if (legacy) decHtml += `<div class="a4-body">${escapeHtml(legacy)}</div>`;
+  if (decs.length) {
+    decHtml += '<table class="a4-dec"><tr><th>決N</th><th>内容</th><th>実行する人</th><th>期日</th><th>その結果どうなったか</th></tr>' +
+      decs.map((d, i) => `<tr><td>決${i + 1}</td><td>${escapeHtml(d.text || '')}${d.quote ? `<br><small>根拠：${escapeHtml(d.quote)}</small>` : ''}</td><td>${escapeHtml(d.who || '')}</td><td>${escapeHtml(d.due || '')}</td><td>${escapeHtml(d.result || '')}${d.resultAt ? `<br><small>${escapeHtml(d.resultAt)}記入</small>` : ''}</td></tr>`).join('') + '</table>';
+  }
+  if (!decHtml) decHtml = '<div class="a4-body a4-empty">（未入力）</div>';
+  const decSection = `<div class="a4-section"><h4>決まったこと</h4>${decHtml}</div>`;
+
   const sections = [
-    ['決まったこと', meeting.decided],
     ['次のアクション', meeting.next],
     ['議論したが決まらなかったこと', meeting.pending],
     ['自由メモ', meeting.memo],
   ];
-  document.getElementById('p-content').innerHTML = sections.map(([label, text]) => {
+  document.getElementById('p-content').innerHTML = decSection + sections.map(([label, text]) => {
     const t = (text || '').trim();
     return `<div class="a4-section"><h4>${escapeHtml(label)}</h4><div class="a4-body ${t ? '' : 'a4-empty'}">${escapeHtml(t || '（未入力）')}</div></div>`;
   }).join('');
@@ -350,7 +410,161 @@ async function fixDocxPageSizeToA4(blob) {
   }
 }
 
+// ===== v2：決定の行（FUS-256 v2・2026-11-19・設計書「きずな_決定の書き戻し_設計書.md」） =====
+let viewingId = null; // 履歴の閲覧中の会議ID（閲覧中は「その結果どうなったか」だけ書ける）
+const LAST_EXPORT_KEY = 'kizuna_last_export_v2';
+
+function parseYmd(s) {
+  const m = String(s || '').trim().match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (!m) return null;
+  const d = new Date(+m[1], +m[2] - 1, +m[3]);
+  return isNaN(d) ? null : d;
+}
+function ymd(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function todayYmd() { return ymd(new Date()); }
+
+function addDecision() {
+  if (mode !== 'edit') return;
+  pullFormIntoMeeting();
+  const base = parseYmd(meeting.date);
+  let due = '';
+  if (base) { base.setDate(base.getDate() + 7); due = ymd(base); } // 期日の初期値＝会議日＋7日
+  meeting.decisions.push({ text:'', quote:'', who:'', due, result:'', resultAt:'' });
+  renderDecisionRows();
+  onEdit();
+}
+function deleteDecision(i) {
+  if (mode !== 'edit') return;
+  if (!confirm(`決${i + 1}を消しますか？`)) return;
+  meeting.decisions.splice(i, 1);
+  renderDecisionRows();
+  onEdit();
+}
+function renderDecisionRows() {
+  const box = document.getElementById('dec-list');
+  const decs = meeting.decisions || [];
+  const ro = mode !== 'edit' ? ' disabled' : '';
+  box.innerHTML = decs.map((d, i) => `
+    <div class="dec-row" id="dec-row-${i}">
+      <div class="dec-head"><span>決${i + 1}</span>${ro ? '' : `<button class="dec-del" onclick="deleteDecision(${i})">× 消す</button>`}</div>
+      <label>内容</label><input type="text" value="${escapeHtml(d.text || '')}" oninput="setDec(${i},'text',this.value)"${ro}>
+      <label>根拠の原文（誰の言葉か）</label><input type="text" value="${escapeHtml(d.quote || '')}" oninput="setDec(${i},'quote',this.value)"${ro}>
+      <label>実行する人</label><input type="text" value="${escapeHtml(d.who || '')}" oninput="setDec(${i},'who',this.value)"${ro}>
+      <label>期日</label><input type="date" value="${escapeHtml(d.due || '')}" oninput="setDec(${i},'due',this.value)"${ro}>
+      <label>その結果どうなったか</label><textarea class="dec-result" oninput="setResult(${i},this.value)">${escapeHtml(d.result || '')}</textarea>
+      <div class="dec-resat" id="dec-resat-${i}">${d.resultAt ? escapeHtml(d.resultAt) + ' 記入' : ''}</div>
+    </div>`).join('');
+}
+function setDec(i, key, v) {
+  if (mode !== 'edit') return;
+  meeting.decisions[i][key] = v;
+  onEdit();
+}
+function setResult(i, v) {
+  const d = meeting.decisions[i];
+  d.result = v;
+  d.resultAt = v.trim() ? todayYmd() : '';
+  document.getElementById('dec-resat-' + i).textContent = d.resultAt ? d.resultAt + ' 記入' : '';
+  if (mode === 'edit') { onEdit(); }
+  else if (viewingId) {
+    // 閲覧中：結果だけを保存済みの記録へ書き戻す（他の欄は変えない）
+    let rec;
+    try { rec = JSON.parse(localStorage.getItem(RECORD_PREFIX + viewingId) || 'null'); } catch(e) { rec = null; }
+    if (!rec || !Array.isArray(rec.decisions) || !rec.decisions[i]) return;
+    rec.decisions[i].result = d.result;
+    rec.decisions[i].resultAt = d.resultAt;
+    localStorage.setItem(RECORD_PREFIX + viewingId, JSON.stringify(rec));
+    renderPreview();
+    const ind = document.getElementById('save-indicator');
+    ind.textContent = '結果を保存しました ' + new Date().toLocaleTimeString('ja-JP');
+    clearTimeout(ind._t);
+    ind._t = setTimeout(() => { ind.textContent = ''; }, 2500);
+  }
+  renderOverdue();
+}
+
+// ===== 返ってこない決定（結果が空で期日を過ぎたもの・過ぎた日数の多い順） =====
+function renderOverdue() {
+  const today = parseYmd(todayYmd());
+  const rows = [];
+  loadHistoryIndex().forEach(item => {
+    let rec;
+    try { rec = JSON.parse(localStorage.getItem(RECORD_PREFIX + item.id) || 'null'); } catch(e) { rec = null; }
+    if (!rec || !Array.isArray(rec.decisions)) return;
+    rec.decisions.forEach((d, i) => {
+      const due = parseYmd(d.due);
+      if (!due || (d.result || '').trim()) return;
+      const days = Math.round((today - due) / 86400000);
+      if (days > 0) rows.push({ id: item.id, i, days, date: rec.date || '', text: d.text || '', who: d.who || '' });
+    });
+  });
+  rows.sort((a, b) => b.days - a.days);
+  const box = document.getElementById('overdue-panel');
+  if (!rows.length) { box.innerHTML = ''; return; }
+  box.innerHTML = `<div class="overdue-box"><h3>⚠️ 結果が返ってきていない決定（${rows.length}件・期日を過ぎた日数の多い順）</h3>` +
+    rows.map(r => `<div class="overdue-item" onclick="openDecision('${r.id}',${r.i})"><span class="od-days">${r.days}日超過</span><span class="od-text">決${r.i + 1}　${escapeHtml(r.text || '（内容未入力）')}</span><span class="od-sub">${escapeHtml(r.date)}／実行：${escapeHtml(r.who || '未設定')}</span></div>`).join('') + '</div>';
+}
+function openDecision(id, i) {
+  viewHistoryItem(id);
+  const el = document.getElementById('dec-row-' + i);
+  if (!el) return;
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  el.classList.add('flash');
+  setTimeout(() => el.classList.remove('flash'), 2000);
+}
+
+// ===== 書き出し／読み込み（JSONファイル1つ・どこへも送らない） =====
+function exportAll() {
+  const meetings = loadHistoryIndex().map(item => {
+    let rec;
+    try { rec = JSON.parse(localStorage.getItem(RECORD_PREFIX + item.id) || 'null'); } catch(e) { rec = null; }
+    return { index: item, record: rec };
+  }).filter(m => m.record);
+  const data = { app: 'kizuna_meeting', version: 2, exportedAt: new Date().toISOString(), meetings };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'きずな_会議_' + todayYmd() + '.json';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  try { localStorage.setItem(LAST_EXPORT_KEY, String(Date.now())); } catch(e) {}
+  renderExportAge();
+}
+function importAll(input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    let data;
+    try { data = JSON.parse(reader.result); } catch(e) { alert('このファイルは読み込めませんでした（JSONではありません）。'); return; }
+    if (!data || data.app !== 'kizuna_meeting' || !Array.isArray(data.meetings)) { alert('きずなの書き出しファイルではありません。'); return; }
+    const list = loadHistoryIndex();
+    const have = new Set(list.map(x => x.id));
+    let added = 0, skipped = 0;
+    data.meetings.forEach(m => {
+      if (!m || !m.index || !m.index.id || !m.record || typeof m.record !== 'object') return;
+      if (have.has(m.index.id)) { skipped++; return; } // 同じ会議は上書きしない（既存を消さない）
+      localStorage.setItem(RECORD_PREFIX + m.index.id, JSON.stringify(m.record));
+      list.push(m.index); have.add(m.index.id); added++;
+    });
+    saveHistoryIndex(list);
+    renderHistoryList();
+    renderOverdue();
+    alert(`${added}件の会議を足しました。${skipped}件はすでにあるため足していません（上書きしていません）。`);
+  };
+  reader.readAsText(file, 'utf-8');
+  input.value = '';
+}
+function renderExportAge() {
+  let t = null;
+  try { t = +localStorage.getItem(LAST_EXPORT_KEY) || null; } catch(e) {}
+  const el = document.getElementById('export-age');
+  el.textContent = t ? `最終書き出し：${Math.floor((Date.now() - t) / 86400000)}日前` : '最終書き出し：まだありません（ブラウザのデータが消えると戻せません）';
+}
+
 window.addEventListener('DOMContentLoaded', function() {
+  renderOverdue();
+  renderExportAge();
   const draft = loadDraft();
   if (draft && draft.meeting) meeting = draft.meeting;
   populateFormFromMeeting();
