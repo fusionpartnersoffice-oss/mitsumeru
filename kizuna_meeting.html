@@ -359,7 +359,7 @@ function renderPreview() {
   if (legacy) decHtml += `<div class="a4-body">${escapeHtml(legacy)}</div>`;
   if (decs.length) {
     decHtml += '<table class="a4-dec"><tr><th>決N</th><th>内容</th><th>実行する人</th><th>期日</th><th>その結果どうなったか</th></tr>' +
-      decs.map((d, i) => `<tr><td>決${i + 1}</td><td>${escapeHtml(d.text || '')}${d.quote ? `<br><small>根拠：${escapeHtml(d.quote)}</small>` : ''}</td><td>${escapeHtml(d.who || '')}</td><td>${escapeHtml(d.due || '')}</td><td>${escapeHtml(d.result || '')}${d.resultAt ? `<br><small>${escapeHtml(d.resultAt)}記入</small>` : ''}</td></tr>`).join('') + '</table>';
+      decs.map((d, i) => `<tr><td>決${decNo(d, i)}</td><td>${escapeHtml(d.text || '')}${d.quote ? `<br><small>根拠：${escapeHtml(d.quote)}</small>` : ''}</td><td>${escapeHtml(d.who || '')}</td><td>${escapeHtml(d.due || '')}</td><td>${escapeHtml(d.result || '')}${d.resultAt ? `<br><small>${escapeHtml(d.resultAt)}記入</small>` : ''}</td></tr>`).join('') + '</table>';
   }
   if (!decHtml) decHtml = '<div class="a4-body a4-empty">（未入力）</div>';
   const decSection = `<div class="a4-section"><h4>決まったこと</h4>${decHtml}</div>`;
@@ -422,6 +422,8 @@ function parseYmd(s) {
 }
 function ymd(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
 function todayYmd() { return ymd(new Date()); }
+// 決Nは一度振ったら変えない。行を消しても詰めない（欠番のまま）（2026-11-19・設計書「細かい決まり」）
+function decNo(d, i) { return d && d.n ? d.n : i + 1; }
 
 function addDecision() {
   if (mode !== 'edit') return;
@@ -429,13 +431,19 @@ function addDecision() {
   const base = parseYmd(meeting.date);
   let due = '';
   if (base) { base.setDate(base.getDate() + 7); due = ymd(base); } // 期日の初期値＝会議日＋7日
-  meeting.decisions.push({ text:'', quote:'', who:'', due, result:'', resultAt:'' });
+  const used = meeting.decisions.reduce((m, d, i) => Math.max(m, decNo(d, i)), 0);
+  const n = Math.max(used, meeting.lastDecNo || 0) + 1;
+  meeting.lastDecNo = n;
+  meeting.decisions.push({ n, text:'', quote:'', who:'', due, result:'', resultAt:'' });
   renderDecisionRows();
   onEdit();
 }
 function deleteDecision(i) {
   if (mode !== 'edit') return;
-  if (!confirm(`決${i + 1}を消しますか？`)) return;
+  const d = meeting.decisions[i];
+  if (!confirm(`決${decNo(d, i)}を消しますか？（番号は詰めません）`)) return;
+  meeting.lastDecNo = Math.max(meeting.lastDecNo || 0, decNo(d, i));
+  meeting.decisions.forEach((x, k) => { if (!x.n) x.n = k + 1; });
   meeting.decisions.splice(i, 1);
   renderDecisionRows();
   onEdit();
@@ -446,7 +454,7 @@ function renderDecisionRows() {
   const ro = mode !== 'edit' ? ' disabled' : '';
   box.innerHTML = decs.map((d, i) => `
     <div class="dec-row" id="dec-row-${i}">
-      <div class="dec-head"><span>決${i + 1}</span>${ro ? '' : `<button class="dec-del" onclick="deleteDecision(${i})">× 消す</button>`}</div>
+      <div class="dec-head"><span>決${decNo(d, i)}</span>${ro ? '' : `<button class="dec-del" onclick="deleteDecision(${i})">× 消す</button>`}</div>
       <label>内容</label><input type="text" value="${escapeHtml(d.text || '')}" oninput="setDec(${i},'text',this.value)"${ro}>
       <label>根拠の原文（誰の言葉か）</label><input type="text" value="${escapeHtml(d.quote || '')}" oninput="setDec(${i},'quote',this.value)"${ro}>
       <label>実行する人</label><input type="text" value="${escapeHtml(d.who || '')}" oninput="setDec(${i},'who',this.value)"${ro}>
@@ -495,14 +503,14 @@ function renderOverdue() {
       const due = parseYmd(d.due);
       if (!due || (d.result || '').trim()) return;
       const days = Math.round((today - due) / 86400000);
-      if (days > 0) rows.push({ id: item.id, i, days, date: rec.date || '', text: d.text || '', who: d.who || '' });
+      if (days > 0) rows.push({ id: item.id, i, no: decNo(d, i), days, date: rec.date || '', text: d.text || '', who: d.who || '' });  // 当日は出さない・翌日から
     });
   });
   rows.sort((a, b) => b.days - a.days);
   const box = document.getElementById('overdue-panel');
   if (!rows.length) { box.innerHTML = ''; return; }
   box.innerHTML = `<div class="overdue-box"><h3>⚠️ 結果が返ってきていない決定（${rows.length}件・期日を過ぎた日数の多い順）</h3>` +
-    rows.map(r => `<div class="overdue-item" onclick="openDecision('${r.id}',${r.i})"><span class="od-days">${r.days}日超過</span><span class="od-text">決${r.i + 1}　${escapeHtml(r.text || '（内容未入力）')}</span><span class="od-sub">${escapeHtml(r.date)}／実行：${escapeHtml(r.who || '未設定')}</span></div>`).join('') + '</div>';
+    rows.map(r => `<div class="overdue-item" onclick="openDecision('${r.id}',${r.i})"><span class="od-days">${r.days}日超過</span><span class="od-text">決${r.no}　${escapeHtml(r.text || '（内容未入力）')}</span><span class="od-sub">${escapeHtml(r.date)}／実行：${escapeHtml(r.who || '未設定')}</span></div>`).join('') + '</div>';
 }
 function openDecision(id, i) {
   viewHistoryItem(id);
@@ -559,7 +567,7 @@ function renderExportAge() {
   let t = null;
   try { t = +localStorage.getItem(LAST_EXPORT_KEY) || null; } catch(e) {}
   const el = document.getElementById('export-age');
-  el.textContent = t ? `最終書き出し：${Math.floor((Date.now() - t) / 86400000)}日前` : '最終書き出し：まだありません（ブラウザのデータが消えると戻せません）';
+  el.textContent = t ? `最終書き出し：${Math.floor((Date.now() - t) / 86400000)}日前` : '最終書き出し：まだ書き出していません（ブラウザのデータが消えると戻せません）';
 }
 
 window.addEventListener('DOMContentLoaded', function() {
