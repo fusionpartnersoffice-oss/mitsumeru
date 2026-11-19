@@ -97,6 +97,8 @@ select option{background:var(--card);}
 .std-tag{display:inline-block;border:1px solid var(--border);border-radius:10px;padding:1px 8px;margin:2px 4px 2px 0;}
 .std-body{margin-top:8px;}
 .std-body .hdr-btn,.std-body .del-btn{min-height:44px;padding:0 14px;font-size:16px;}
+.flow-slot.pin{color:#ffe082;}
+#tab-standards .standard-card{scroll-margin-top:calc(var(--hdrH,52px) + var(--toolsH,0px) + 8px);}  /* 飛んだ先の題名が上の検索欄に隠れないように */
 .flow-slot{margin:14px 0 4px;font-size:.95rem;font-weight:700;color:var(--accent2,var(--accent));border-bottom:1px solid var(--border);padding-bottom:4px;}
 .flow-item{display:block;width:100%;min-height:44px;text-align:left;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:16px;padding:10px 12px;margin:6px 0;cursor:pointer;font-family:inherit;overflow-wrap:anywhere;}
 mark.std-hit{background:#ffe082;color:#1a1a1a;border-radius:2px;}
@@ -190,6 +192,7 @@ mark.std-hit{background:#ffe082;color:#1a1a1a;border-radius:2px;}
         <div class="form-group"><label>時間帯（1つ・未選択可）</label><select id="st-slot"></select></div>
         <div class="form-group"><label>業務の区分（1つ・未選択可）</label><select id="st-cat"></select></div>
       </div>
+      <label style="display:flex;align-items:center;gap:8px;min-height:44px;font-size:16px;cursor:pointer;"><input type="checkbox" id="st-pin" style="width:22px;height:22px;"> ★ 上に固定する（一覧・1日の流れの一番上に出す）</label>
 
       <div class="form-group">
         <label>個人ルール参照ポインタ（響・利用者支援系のIDを参照）</label>
@@ -417,6 +420,7 @@ function showStandardForm(editId) {
   document.getElementById('st-notes').value = '';
   document.getElementById('st-references').value = '';
   fillStdSelects('', '');
+  document.getElementById('st-pin').checked = false;
   document.getElementById('standardForm').dataset.editId = '';
   if (editId) {
     const s = (currentFacility.modules.standards || []).find(x => x.id === editId);
@@ -429,6 +433,7 @@ function showStandardForm(editId) {
       document.getElementById('st-notes').value = s.notes || '';
       document.getElementById('st-references').value = s.references || '';
       fillStdSelects(s.timeSlot || '', s.category || '');
+      document.getElementById('st-pin').checked = !!s.pinned;
       standardFormPersonRefs = [...(s.personRefs || [])];
       document.getElementById('standardForm').dataset.editId = editId;
     }
@@ -457,6 +462,7 @@ function submitStandardForm() {
     references: document.getElementById('st-references').value.trim(),
     timeSlot: document.getElementById('st-slot').value,
     category: document.getElementById('st-cat').value,
+    pinned: document.getElementById('st-pin').checked,
     personRefs: [...standardFormPersonRefs],
     createdAt: prev?.createdAt || new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -546,6 +552,8 @@ function dismissStdReloadNote() {
 function setHdrH() {
   const h = document.querySelector('header');
   if (h) document.documentElement.style.setProperty('--hdrH', h.offsetHeight + 'px');
+  const t = document.getElementById('stdTools');
+  if (t) document.documentElement.style.setProperty('--toolsH', t.offsetHeight + 'px');
 }
 window.addEventListener('resize', setHdrH);
 
@@ -568,18 +576,22 @@ function renderStandards() {
   }
   if (stdState.view === 'flow') {
     // 時間帯の順（朝→…→随時→旧の値→未分類）に見出しを立て、題名だけを並べる
+    // 固定した標準書は時間帯の見出しより上の「★固定」へ（外せば元の時間帯へ戻る）（変えること7・19:40）
+    const pins = shown.filter(s => s.pinned);
+    const rest = shown.filter(s => !s.pinned);
     const groups = [...STD_TIME_SLOTS];
-    shown.forEach(s => { if (s.timeSlot && !groups.includes(s.timeSlot)) groups.push(s.timeSlot); });
+    rest.forEach(s => { if (s.timeSlot && !groups.includes(s.timeSlot)) groups.push(s.timeSlot); });
     groups.push('');
-    list.innerHTML = groups.map(g => {
-      const items = shown.filter(s => (s.timeSlot || '') === g);
+    list.innerHTML = (pins.length ? '<div class="flow-slot pin">★固定</div>' + pins.map(s => `<button class="flow-item" onclick="jumpToStd('${s.id}')">${hl(s.title)}</button>`).join('') : '') + groups.map(g => {
+      const items = rest.filter(s => (s.timeSlot || '') === g);
       if (!items.length) return '';
       return `<div class="flow-slot">${esc(stdLabel(g, STD_TIME_SLOTS))}</div>` +
         items.map(s => `<button class="flow-item" onclick="jumpToStd('${s.id}')">${hl(s.title)}</button>`).join('');
     }).join('');
     return;
   }
-  list.innerHTML = shown.map(s => {
+  const pinsL = shown.filter(s => s.pinned), restL = shown.filter(s => !s.pinned);
+  const card = s => {
     const open = stdState.open.has(s.id);
     return `
     <div class="standard-card" id="stdcard-${s.id}">
@@ -599,7 +611,8 @@ function renderStandards() {
         <button class="del-btn" onclick="deleteStandard('${s.id}')">✕ 削除</button>
       </div></div>` : ''}
     </div>`;
-  }).join('');
+  };
+  list.innerHTML = (pinsL.length ? '<div class="flow-slot pin">★固定</div>' + pinsL.map(card).join('') + (restL.length ? '<div class="flow-slot">そのほか</div>' : '') : '') + restL.map(card).join('');
 }
 
 // ═══════════════════════════════════════════════
