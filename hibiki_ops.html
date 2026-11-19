@@ -507,11 +507,17 @@ function stdMatches(s) {
 }
 // 該当語に色を付ける（エスケープした後に包むので、HTMLは壊れない）
 function hl(text) {
-  const t = esc(text);
+  const src = String(text == null ? '' : text);
   const q = stdState.q.trim();
-  if (!q) return t;
-  const eq = esc(q).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  return t.replace(new RegExp(eq, 'gi'), m => `<mark class="std-hit">${m}</mark>`);
+  if (!q) return esc(src);
+  // 元の文の上で位置を探し、切り出した断片をそれぞれエスケープしてから包む（< > & を含む語でも壊れない）
+  const lo = src.toLowerCase(), lq = q.toLowerCase();
+  let out = '', i = 0, j;
+  while ((j = lo.indexOf(lq, i)) !== -1) {
+    out += esc(src.slice(i, j)) + '<mark class="std-hit">' + esc(src.slice(j, j + q.length)) + '</mark>';
+    i = j + q.length;
+  }
+  return out + esc(src.slice(i));
 }
 function renderStdChips() {
   const chip = (key, val, label) => `<button class="std-chip${stdState[key] === val ? ' on' : ''}" onclick="setStdFilter('${key}','${val}')">${esc(label)}</button>`;
@@ -940,6 +946,43 @@ async function pushOpsToCloud() {
   }
 }
 // 読み込む：この端末に無い施設だけを足す。端末にある施設は消さず、上書きもしない。
+// 標準書の新しさ：updatedAt・createdAt・5Sの最後の記録のうち一番新しい時刻（5Sゲートの仕組みは触らずに5Sの進みも比べる）
+function stdTime(s) {
+  const h = (s && s.phase5sHistory) || [];
+  const last = h.length ? String(h[h.length - 1].at || '') : '';
+  return [String((s && s.updatedAt) || ''), String((s && s.createdAt) || ''), last].sort().pop();
+}
+// クラウドの施設と端末の施設を標準書1件ずつ比べる（board#569 変えること6・2026-11-19）
+// ・クラウドの方が新しい標準書だけ置き換える／端末に無い標準書は足す
+// ・端末にだけある標準書・端末の方が新しい標準書は消さない・戻さない（読み込みで消さない＝a45b946の決まりを守る）
+function planStdMerge(localF, cloudF) {
+  const loc = (localF.modules && localF.modules.standards) || [];
+  const byId = new Map(loc.map(x => [x.id, x]));
+  const updates = [], adds = [];
+  ((cloudF.modules && cloudF.modules.standards) || []).forEach(cs => {
+    if (!cs || !cs.id) return;
+    const ls = byId.get(cs.id);
+    if (!ls) adds.push(cs);
+    else if (stdTime(cs) > stdTime(ls)) updates.push(cs);
+  });
+  return { updates, adds };
+}
+function applyStdMerge(localF, plan) {
+  localF.modules = localF.modules || {};
+  const list = localF.modules.standards = localF.modules.standards || [];
+  plan.updates.forEach(cs => {
+    const k = list.findIndex(x => x.id === cs.id);
+    const c = JSON.parse(JSON.stringify(cs));
+    c.personRefs = (list[k] && list[k].personRefs) || [];  // 個人ルール参照はクラウドへ送っていないので端末の分を残す
+    list[k] = c;
+  });
+  plan.adds.forEach(cs => {
+    const c = JSON.parse(JSON.stringify(cs));
+    c.personRefs = [];
+    list.push(c);
+  });
+}
+
 async function pullOpsFromCloud() {
   if (!opsToken()) { alert('合言葉が設定されていません。ミツメルで合言葉を設定してから押してください。'); return; }
   if (opsSyncRunning) return;
@@ -949,18 +992,36 @@ async function pullOpsFromCloud() {
     const cloud = (await opsFetch('GET')).value || { facilities: [] };
     const idx = getIndex();
     const have = new Set(idx.map(x => x.id));
-    let added = 0;
+    const newFacs = [], merges = [];
+    let nUpd = 0, nAdd = 0;
     (cloud.facilities || []).forEach(f => {
-      if (!f || !f.id || have.has(f.id)) return;
+      if (!f || !f.id) return;
+      if (!have.has(f.id)) { newFacs.push(f); return; }
+      const lf = loadFacilityById(f.id);
+      if (!lf) return;
+      const plan = planStdMerge(lf, f);
+      if (plan.updates.length || plan.adds.length) { merges.push({ lf, plan }); nUpd += plan.updates.length; nAdd += plan.adds.length; }
+    });
+    if (!newFacs.length && !merges.length) {
+      setOpsStatus('クラウドに新しいものはありませんでした（この端末はそのままです）');
+      return;
+    }
+    const msg = `クラウドから読み込みます。\n・この端末に無い施設：${newFacs.length}件を足す\n・この端末にある施設の標準書：更新${nUpd}件・追加${nAdd}件\n\nこの端末にだけある標準書・この端末の方が新しい標準書は消さず、戻しません。よろしいですか？`;
+    if (!confirm(msg)) { setOpsStatus('読み込みをやめました（この端末はそのままです）'); return; }
+    newFacs.forEach(f => {
       const c = JSON.parse(JSON.stringify(f));
       ((c.modules && c.modules.standards) || []).forEach(s => { s.personRefs = []; });
       localStorage.setItem(STORE_PREFIX_OPS + c.id, JSON.stringify(c));
       idx.push({ id: c.id, name: (c.meta && c.meta.name) || '', updatedAt: (c.meta && c.meta.updatedAt) || '' });
-      added++;
     });
     setIndex(idx);
-    setOpsStatus('クラウドから' + added + '件を足しました（この端末の施設：' + idx.length + '件。端末にあった施設はそのままです）');
-    if (!currentFacility) renderFacilityList();
+    merges.forEach(({ lf, plan }) => {
+      applyStdMerge(lf, plan);
+      localStorage.setItem(STORE_PREFIX_OPS + lf.id, JSON.stringify(lf));
+      if (currentFacility && currentFacility.id === lf.id) currentFacility = lf;
+    });
+    setOpsStatus(`クラウドから読み込みました：施設${newFacs.length}件を追加・標準書を更新${nUpd}件・追加${nAdd}件（端末にだけある標準書は消していません）`);
+    if (currentFacility) renderStandards(); else renderFacilityList();
   } catch (e) {
     setOpsStatus('クラウドから読み込めませんでした。（' + e.message + '）');
   } finally {
