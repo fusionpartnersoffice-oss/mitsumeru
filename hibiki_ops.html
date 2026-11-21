@@ -957,7 +957,14 @@ async function pushOpsToCloud() {
     setOpsStatus('クラウドの件数を確かめています…');
     const cloud = (await opsFetch('GET')).value || { facilities: [], deleted: [] };
     const local = localOpsDoc();
-    const ok = confirm(`クラウドにある施設：${(cloud.facilities || []).length}件\nこの端末の施設：${local.facilities.length}件\n\nこの端末の施設を柴山さんのサーバーへ送ります。クラウドにだけある施設は消しません。送りますか？`);
+    // 前回この端末から保存した後に新しくなった標準書の件数（題名は出さない・未保存なら全件）（2026-11-21・完了条件17）
+    let lastPush = '';
+    try { lastPush = localStorage.getItem(OPS_LAST_PUSH_KEY) || ''; } catch (e) {}
+    const changed = local.facilities.reduce((n, f) => n + ((f.modules && f.modules.standards) || []).filter(st => !lastPush || stdTime(st) > lastPush).length, 0);
+    const head = `クラウドにある施設：${(cloud.facilities || []).length}件\nこの端末の施設：${local.facilities.length}件\n前回この端末から保存した後に新しくなった標準書：${changed}件\n\n`;
+    const ok = confirm(changed
+      ? head + 'この端末の施設を柴山さんのサーバーへ送ります。クラウドにだけある施設・標準書は消しません。送りますか？'
+      : head + '送る新しい変更がありません。標準書の編集画面で『登録する』を押しましたか？それでも送りますか？');
     if (!ok) { setOpsStatus('送るのをやめました。この端末の中だけに保存しています。'); return; }
     const merged = mergeOpsDocs({ facilities: cloud.facilities || [], deleted: [] }, { facilities: local.facilities, deleted: [] });
     merged.deleted = cloud.deleted || [];
