@@ -149,7 +149,7 @@ mark.std-hit{background:#ffe082;color:#1a1a1a;border-radius:2px;}
 <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:6px 16px;">
   <button class="hdr-btn" id="opsCloudBtn" onclick="pushOpsToCloud()">クラウドへ保存</button>
   <button class="hdr-btn" id="opsPullBtn" onclick="pullOpsFromCloud()">クラウドから読み込む</button>
-  <span style="font-size:.72rem;color:var(--sub);">「クラウドへ保存」を押すと柴山さんのサーバーへ送ります。押さなければ、この端末の中だけに保存します。「クラウドから読み込む」は、この端末に無い施設を足すだけで、端末の施設は消しません。</span>
+  <span style="font-size:.72rem;color:var(--sub);">「クラウドへ保存」を押すと柴山さんのサーバーへ送ります。押さなければ、この端末の中だけに保存します。読み込むと、この端末に無い施設を足し、ある施設は標準書を1件ずつ新しい方にそろえます。この端末にだけある標準書は消しません。「クラウドへ保存」も標準書を1件ずつ比べて新しい方を送り、クラウドにだけある標準書は消しません。</span>
 </div>
 <div id="opsSyncStatus" style="font-size:.72rem;color:var(--sub);padding:0 16px 6px;"></div>
 
@@ -163,6 +163,7 @@ mark.std-hit{background:#ffe082;color:#1a1a1a;border-radius:2px;}
       </div>
       <button class="hdr-btn" style="background:rgba(129,199,132,.15);border-color:var(--accent);color:var(--accent);" onclick="createFacility()">＋ 新しい施設を追加</button>
     </div>
+    <div id="opsSyncTimes" style="font-size:.85rem;color:var(--sub);margin:0 0 10px;line-height:1.7;"></div>
     <div class="facility-grid" id="facilityGrid"></div>
   </div>
 </div>
@@ -311,7 +312,17 @@ function deleteFacility(id, e) {
 // ═══════════════════════════════════════════════
 //  施設一覧
 // ═══════════════════════════════════════════════
+const OPS_LAST_PULL_KEY = 'hibiki_ops_last_pull';
+const OPS_LAST_PUSH_KEY = 'hibiki_ops_last_push';
+function renderOpsSyncTimes() {
+  const el = document.getElementById('opsSyncTimes');
+  if (!el) return;
+  let pull = '', push = '';
+  try { pull = localStorage.getItem(OPS_LAST_PULL_KEY) || ''; push = localStorage.getItem(OPS_LAST_PUSH_KEY) || ''; } catch (e) {}
+  el.innerHTML = `この端末で最後にクラウドから読み込んだ時刻：<b>${pull ? esc(fmtDateTime(pull)) : 'まだ読み込んでいません'}</b><br>この端末から最後にクラウドへ保存した時刻：<b>${push ? esc(fmtDateTime(push)) : 'まだ保存していません'}</b>`;
+}
 function renderFacilityList() {
+  renderOpsSyncTimes();
   const grid = document.getElementById('facilityGrid');
   const idx = getIndex();
   if (!idx.length) {
@@ -950,7 +961,16 @@ async function pushOpsToCloud() {
     if (!ok) { setOpsStatus('送るのをやめました。この端末の中だけに保存しています。'); return; }
     const merged = mergeOpsDocs({ facilities: cloud.facilities || [], deleted: [] }, { facilities: local.facilities, deleted: [] });
     merged.deleted = cloud.deleted || [];
+    // 標準書は1件ずつ新しい方を採る（読み込みと同じ比べ方）。クラウドにだけある標準書は落とさない（2026-11-21・変えること9）
+    const cloudById = new Map((cloud.facilities || []).filter(f => f && f.id).map(f => [f.id, f]));
+    const localById = new Map(local.facilities.map(f => [f.id, f]));
+    merged.facilities = merged.facilities.map(f => {
+      const cf = cloudById.get(f.id), lf = localById.get(f.id);
+      return (cf && lf) ? stripForShare(mergeFacStandards(f, cf, lf)) : f;
+    });
     const savedAt = (await opsFetch('PUT', merged)).savedAt;
+    try { localStorage.setItem(OPS_LAST_PUSH_KEY, savedAt || new Date().toISOString()); } catch (e) {}
+    renderOpsSyncTimes();
     setOpsStatus('クラウドへ送りました（クラウドの施設：' + merged.facilities.length + '件・最終保存：' + fmtDateTime(savedAt) + '）');
   } catch (e) {
     setOpsStatus('クラウドへ送れませんでした。この端末には保存されています。（' + e.message + '）');
@@ -958,7 +978,22 @@ async function pushOpsToCloud() {
     opsSyncRunning = false;
   }
 }
-// 読み込む：この端末に無い施設だけを足す。端末にある施設は消さず、上書きもしない。
+// 読み込む：この端末に無い施設を足し、ある施設は標準書を1件ずつ新しい方にそろえる。この端末にだけある標準書は消さない（2026-11-21 注記を実際の動きに是正）。
+// 施設の標準書を、クラウド版と端末版の和集合にし、同じIDは新しい方を採る（並びは採った施設の順、無い分は後ろへ）
+function mergeFacStandards(base, cf, lf) {
+  const out = JSON.parse(JSON.stringify(base));
+  out.modules = out.modules || {};
+  const pick = new Map();
+  [...((cf.modules && cf.modules.standards) || []), ...((lf.modules && lf.modules.standards) || [])].forEach(st => {
+    if (!st || !st.id) return;
+    const cur = pick.get(st.id);
+    if (!cur || stdTime(st) > stdTime(cur)) pick.set(st.id, st);
+  });
+  const order = ((base.modules && base.modules.standards) || []).map(x => x.id);
+  pick.forEach((v, k) => { if (!order.includes(k)) order.push(k); });
+  out.modules.standards = order.filter(k => pick.has(k)).map(k => JSON.parse(JSON.stringify(pick.get(k))));
+  return out;
+}
 // 標準書の新しさ：updatedAt・createdAt・5Sの最後の記録のうち一番新しい時刻（5Sゲートの仕組みは触らずに5Sの進みも比べる）
 function stdTime(s) {
   const h = (s && s.phase5sHistory) || [];
@@ -1015,6 +1050,8 @@ async function pullOpsFromCloud() {
       const plan = planStdMerge(lf, f);
       if (plan.updates.length || plan.adds.length) { merges.push({ lf, plan }); nUpd += plan.updates.length; nAdd += plan.adds.length; }
     });
+    try { localStorage.setItem(OPS_LAST_PULL_KEY, new Date().toISOString()); } catch (e) {}
+    renderOpsSyncTimes();
     if (!newFacs.length && !merges.length) {
       setOpsStatus('クラウドに新しいものはありませんでした（この端末はそのままです）');
       return;
